@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+*.csproj.user
+artifacts/
+.playwright-browsers/
+**/appsettings.Local.json
+**/secrets.json
+**/DataProtectionKeys/
+**/logs/
+**/appsettings.Development.json

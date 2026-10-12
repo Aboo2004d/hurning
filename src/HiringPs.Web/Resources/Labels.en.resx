@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+ <data name="Jobs" xml:space="preserve"><value>Jobs</value></data>
+ <data name="Training" xml:space="preserve"><value>Training</value></data>
+ <data name="Tender" xml:space="preserve"><value>Tenders</value></data>
+ <data name="ProcurementNotice" xml:space="preserve"><value>Procurement notices</value></data>
+ <data name="Job" xml:space="preserve"><value>Job</value></data>
+ <data name="Archive" xml:space="preserve"><value>Archive</value></data>
+ <data name="All" xml:space="preserve"><value>All</value></data>
+ <data name="Search" xml:space="preserve"><value>Search</value></data>
+ <data name="SearchPlaceholder" xml:space="preserve"><value>Search opportunity title or organization</value></data>
+ <data name="Headline" xml:space="preserve"><value>Your next opportunity, closer.</value></data>
+ <data name="Subtitle" xml:space="preserve"><value>Jobs, training and procurement opportunities in Palestine.</value></data>
+ <data name="Filters" xml:space="preserve"><value>Refine results</value></data>
+ <data name="Clear" xml:space="preserve"><value>Clear all</value></data>
+ <data name="Location" xml:space="preserve"><value>Location</value></data>
+ <data name="Category" xml:space="preserve"><value>Category</value></data>
+ <data name="Employment" xml:space="preserve"><value>Employment type</value></data>
+ <data name="Experience" xml:space="preserve"><value>Experience</value></data>
+ <data name="Kind" xml:space="preserve"><value>Opportunity type</value></data>
+ <data name="Results" xml:space="preserve"><value>results</value></data>
+ <data name="Newest" xml:space="preserve"><value>Newest first</value></data>
+ <data name="Details" xml:space="preserve"><value>View details</value></data>
+ <data name="Deadline" xml:space="preserve"><value>Apply by</value></data>
+ <data name="UnknownDeadline" xml:space="preserve"><value>Closing date not specified</value></data>
+ <data name="Expired" xml:space="preserve"><value>Applications closed</value></data>
+ <data name="Empty" xml:space="preserve"><value>No matching opportunities right now.</value></data>
+ <data name="Back" xml:space="preserve"><value>Back to opportunities</value></data>
+ <data name="Summary" xml:space="preserve"><value>At a glance</value></data>
+ <data name="Original" xml:space="preserve"><value>Original listing &amp; apply</value></data>
+ <data name="SummaryNote" xml:space="preserve"><value>Brief summary; full application conditions are at the original source.</value></data>
+ <data name="Report" xml:space="preserve"><value>Report an issue</value></data>
+ <data name="ReportReceived" xml:space="preserve"><value>Your report was received for administrator review.</value></data>
+ <data name="ReportReason" xml:space="preserve"><value>Reason</value></data>
+ <data name="Report_expired" xml:space="preserve"><value>Expired</value></data>
+ <data name="duplicate" xml:space="preserve"><value>Duplicate</value></data>
+ <data name="incorrect" xml:space="preserve"><value>Incorrect information</value></data>
+ <data name="broken" xml:space="preserve"><value>Broken link</value></data>
+ <data name="other" xml:space="preserve"><value>Other</value></data>
+ <data name="ReportDetails" xml:space="preserve"><value>Additional details</value></data>
+ <data name="Send" xml:space="preserve"><value>Send</value></data>
+ <data name="Organization" xml:space="preserve"><value>Organization</value></data>
+ <data name="Title" xml:space="preserve"><value>Title</value></data>
+ <data name="Language" xml:space="preserve"><value>Original content language</value></data>
+ <data name="ApplyUrl" xml:space="preserve"><value>Application URL or contact</value></data>
+ <data name="SourceUrl" xml:space="preserve"><value>Original source URL</value></data>
+ <data name="Reference" xml:space="preserve"><value>Reference number</value></data>
+ <data name="Duration" xml:space="preserve"><value>Duration</value></data>
+ <data name="Eligibility" xml:space="preserve"><value>Target audience / eligibility</value></data>
+ <data name="Cost" xml:space="preserve"><value>Cost if stated</value></data>
+ <data name="WorkMode" xml:space="preserve"><value>Work arrangement</value></data>
+ <data name="Verified" xml:space="preserve"><value>Last verified</value></data>
+ <data name="Source" xml:space="preserve"><value>Source</value></data>
+ <data name="Privacy" xml:space="preserve"><value>Privacy &amp; terms</value></data>
+ <data name="Admin" xml:space="preserve"><value>Administration</value></data>
+ <data name="Login" xml:space="preserve"><value>Administrator sign in</value></data>
+ <data name="Logout" xml:space="preserve"><value>Sign out</value></data>
+ <data name="Email" xml:space="preserve"><value>Email</value></data>
+ <data name="Password" xml:space="preserve"><value>Password</value></data>
+ <data name="LoginFailed" xml:space="preserve"><value>Sign-in failed. Check your credentials or try later.</value></data>
+ <data name="Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+ <data name="Opportunities" xml:space="preserve"><value>Opportunities</value></data>
+ <data name="Sources" xml:space="preserve"><value>Sources</value></data>
+ <data name="Review" xml:space="preserve"><value>Review</value></data>
+ <data name="Reports" xml:space="preserve"><value>Reports</value></data>
+ <data name="Queue" xml:space="preserve"><value>Queue</value></data>
+ <data name="Published" xml:space="preserve"><value>Published</value></data>
+ <data name="NeedsReview" xml:space="preserve"><value>Needs review</value></data>
+ <data name="Draft" xml:space="preserve"><value>Draft</value></data>
+ <data name="Hidden" xml:space="preserve"><value>Hidden</value></data>
+ <data name="Archived" xml:space="preserve"><value>Archived</value></data>
+ <data name="Add" xml:space="preserve"><value>Add</value></data>
+ <data name="Edit" xml:space="preserve"><value>Edit</value></data>
+ <data name="Save" xml:space="preserve"><value>Save</value></data>
+ <data name="Status" xml:space="preserve"><value>Status</value></data>
+ <data name="ClosureEvidence" xml:space="preserve"><value>Closure evidence</value></data>
+ <data name="SummaryLimit" xml:space="preserve"><value>Maximum 200 characters, including spaces, in the original language.</value></data>
+ <data name="Worker" xml:space="preserve"><value>Collection worker</value></data>
+ <data name="Never" xml:space="preserve"><value>Not run yet</value></data>
+ <data name="Runs" xml:space="preserve"><value>Collection runs</value></data>
+ <data name="Found" xml:space="preserve"><value>Found</value></data>
+ <data name="Changed" xml:space="preserve"><value>New</value></data>
+ <data name="Started" xml:space="preserve"><value>Started</value></data>
+ <data name="Finished" xml:space="preserve"><value>Finished</value></data>
+ <data name="Error" xml:space="preserve"><value>Error / review reason</value></data>
+ <data name="Retry" xml:space="preserve"><value>Retry</value></data>
+ <data name="Resolve" xml:space="preserve"><value>Resolve report</value></data>
+ <data name="Resolved" xml:space="preserve"><value>Resolved</value></data>
+ <data name="Enabled" xml:space="preserve"><value>Enabled</value></data>
+ <data name="Approval" xml:space="preserve"><value>Source usage approved</value></data>
+ <data name="ApprovalNote" xml:space="preserve"><value>Usage approval reference / terms</value></data>
+ <data name="Interval" xml:space="preserve"><value>Interval in hours</value></data>
+ <data name="NextDue" xml:space="preserve"><value>Next run</value></data>
+ <data name="Config" xml:space="preserve"><value>Collection settings JSON</value></data>
+ <data name="Connector" xml:space="preserve"><value>Connector</value></data>
+ <data name="Content" xml:space="preserve"><value>Stored original content</value></data>
+ <data name="Extraction" xml:space="preserve"><value>Extraction result</value></data>
+ <data name="Name" xml:space="preserve"><value>Name</value></data>
+ <data name="Url" xml:space="preserve"><value>Source URL</value></data>
+ <data name="SourcesNote" xml:space="preserve"><value>A URL is not enough: configure and test listing, detail and pagination rules before enabling.</value></data>
+ <data name="SourceLinkNote" xml:space="preserve"><value>No CVs or tender submissions are collected. Apply through the original source.</value></data>
+ <data name="PrivacyText" xml:space="preserve"><value>We collect permitted opportunity listings and retain reports and operational logs for review. Summaries do not replace the original terms. Report errors or request content removal. We do not guarantee acceptance or continued availability; verify at the source.</value></data>
+ <data name="Next" xml:space="preserve"><value>Next</value></data>
+ <data name="Previous" xml:space="preserve"><value>Previous</value></data>
+ <data name="StartTime" xml:space="preserve"><value>Collection start time</value></data>
+ <data name="ScheduleZone" xml:space="preserve"><value>Schedule uses Palestine time (Asia/Hebron)</value></data>
+ <data name="CollectNow" xml:space="preserve"><value>Collect now</value></data>
+ <data name="CollectStatus" xml:space="preserve"><value>Manual collection status</value></data>
+ <data name="CollectWorkerNote" xml:space="preserve"><value>The worker processes requests automatically; it must be running.</value></data>
+ <data name="CollectQueued" xml:space="preserve"><value>Collection queued for this source only. Track its status below.</value></data>
+ <data name="CollectNotApproved" xml:space="preserve"><value>Enable the source and record its usage approval before collecting.</value></data>
+ <data name="CollectAlreadyQueued" xml:space="preserve"><value>This source already has a pending or running request.</value></data>
+ <data name="Request_Pending" xml:space="preserve"><value>Pending worker</value></data>
+ <data name="Request_Running" xml:space="preserve"><value>Collecting</value></data>
+ <data name="Request_Completed" xml:space="preserve"><value>Collection finished; check processing queue</value></data>
+ <data name="Request_Failed" xml:space="preserve"><value>Collection failed</value></data>
+ <data name="Request_Cancelled" xml:space="preserve"><value>Request cancelled</value></data>
+<data name="AutomaticSourceHelp" xml:space="preserve"><value>Automatic discovery: enter the opportunity listing URL. JSON is optional; the host comes from the URL. Uncertain layouts require review.</value></data><data name="AdvancedSourceConfig" xml:space="preserve"><value>Advanced settings for special sources</value></data></root>
