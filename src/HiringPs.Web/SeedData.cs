@@ -111,25 +111,54 @@ public static class SeedData
                 new Source
                 {
                     Name = "ReliefWeb",
-                    Url = "https://reliefweb.int/jobs",
-                    Connector = ConnectorKind.ReliefWeb
+                    Url = OpportunityRss.ReliefUrl,
+                    Connector = ConnectorKind.ReliefWebRss
                 },
                 new Source
                 {
-                    Name = "Jobs.ps",
-                    Url = "https://www.jobs.ps/jobs",
-                    Connector = ConnectorKind.BrowserSelectors
+                    Name = "Jobs.ps — غزة (RSS)",
+                    Url = OpportunityRss.JobsUrl,
+                    Connector = ConnectorKind.JobsRss
                 },
                 new Source
                 {
                     Name = "UNRWA",
-                    Url = "https://www.unrwa.org/careers/vacancies",
-                    Connector = ConnectorKind.BrowserSelectors
+                    Url = UnCareersFeed.Url,
+                    Connector = ConnectorKind.UnrwaInspira
                 }
             );
 
             await db.SaveChangesAsync();
         }
+
+        // Upgrade only the former default UNRWA endpoint; preserve approval and scheduling.
+        var legacyUnrwa = await db.Sources.Where(x => x.Url == "https://www.unrwa.org/careers/vacancies").ToListAsync();
+        foreach (var source in legacyUnrwa)
+        {
+            source.Url = UnCareersFeed.Url;
+            source.Connector = ConnectorKind.UnrwaInspira;
+            source.ConfigurationJson = "{}";
+            source.CollectionRetryAt = null;
+            source.LastError = "";
+        }
+        if (legacyUnrwa.Count > 0) await db.SaveChangesAsync();
+
+        // Idempotent source-only upgrades; no recreated database or invented approvals.
+        var rssSources = await db.Sources.Where(x => x.Name != "Manual entries" &&
+            (x.Url == "https://reliefweb.int/jobs" || x.Url == "https://www.jobs.ps/" || x.Url == "https://www.jobs.ps/jobs" || x.Url == "https://www.jobs.ps/jobs/latest")).ToListAsync();
+        foreach (var source in rssSources)
+        {
+            var relief = source.Url == "https://reliefweb.int/jobs";
+            source.Url = relief ? OpportunityRss.ReliefUrl : OpportunityRss.JobsUrl;
+            source.Connector = relief ? ConnectorKind.ReliefWebRss : ConnectorKind.JobsRss;
+            if (!relief) source.Name = "Jobs.ps — غزة (RSS)";
+            source.ConfigurationJson = "{}";
+            source.CollectionRetryAt = null;
+            source.LastError = "";
+        }
+        var manualSources = await db.Sources.Where(x => x.Name == "Manual entries").ToListAsync();
+        foreach (var source in manualSources) { source.Enabled = false; source.Url = "https://hiring.ps"; }
+        if (rssSources.Count > 0 || manualSources.Count > 0) await db.SaveChangesAsync();
 
         // Seed PRCS Tenders
         var prcsUrl =

@@ -1,0 +1,3 @@
+const {chromium}=require('C:/Users/lolly1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');(async()=>{const b=await chromium.launch({channel:'msedge',headless:true});try{const p=await b.newPage();const r=await p.goto('https://inspira.un.org/psc/UNCAREERS/EMPLOYEE/HRMS/c/UN_CUSTOMIZATIONS.UN_JOB_DETAIL.GBL?JobOpeningId=278490&PostingSeq=1',{waitUntil:'load',timeout:45000});await p.waitForTimeout(8000);console.log(JSON.stringify({status:r?.status(),url:p.url(),text:(await p.locator('body').innerText()).slice(0,1600),links:await p.locator('a[href]').evaluateAll(es=>es.map(e=>({text:e.textContent.trim(),url:e.href})).slice(0,12)),frames:p.frames().map(f=>f.url())}));}finally{await b.close()}})();
+
+

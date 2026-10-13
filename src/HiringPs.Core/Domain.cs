@@ -5,7 +5,7 @@ namespace HiringPs.Core;
 public enum OpportunityKind { Job, Training, Tender, ProcurementNotice }
 public enum PublicationStatus { Draft, NeedsReview, Published, Archived, Hidden }
 public enum ProcessingStatus { Discovered, AwaitingAi, Retry, Ready, NeedsReview, OutOfScope, Published }
-public enum ConnectorKind { Gpc, PalCareer, BrowserSelectors, ReliefWeb, Automatic }
+public enum ConnectorKind { Gpc, PalCareer, BrowserSelectors, ReliefWeb, Automatic, UnrwaInspira, JobsRss, ReliefWebRss }
 public class Source
 {
     public int Id { get; set; }

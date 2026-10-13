@@ -26,7 +26,7 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy) : Controller
     public async Task<IActionResult> Edit([Bind("Id,Kind,Title,Organization,OriginalLanguage,Summary,Locations,Category,EmploymentType,ExperienceLevel,WorkMode,ReferenceNumber,Duration,Eligibility,Cost,ApplyUrl,Deadline,Status,ClosureEvidence,Version")] Opportunity input, string? sourceUrl, CancellationToken ct)
     {
         NormalizeStrings(input);
-        foreach (var error in OpportunityService.Validate(input)) ModelState.AddModelError("", error);
+        foreach (var error in OpportunityService.Validate(input, allowUnrecognizedLocation: true)) ModelState.AddModelError("", error);
         if (!Enum.IsDefined(input.Status)) ModelState.AddModelError("", "Invalid publication status.");
         if (input.Status == PublicationStatus.Archived && string.IsNullOrWhiteSpace(input.ClosureEvidence) && input.Deadline is null) ModelState.AddModelError("", "Closure evidence is required without a deadline.");
         if (sourceUrl?.Length > 1500) ModelState.AddModelError("", "Source URL is too long.");
@@ -71,7 +71,9 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy) : Controller
             if(!Uri.TryCreate(input.Url,UriKind.Absolute,out var uri)||uri.Scheme!="https"||uri.UserInfo.Length>0||!uri.IsDefaultPort)throw new InvalidOperationException("Source URL must use public HTTPS without credentials.");
             if(previous is null||previous.Url!=input.Url||previous.ConfigurationJson!=input.ConfigurationJson||(!previous.Enabled&&input.Enabled))await urlPolicy.ValidateAsync(input.Url,conf.AllowedHosts.Append(uri.IdnHost),ct);
             if (input.Enabled && input.Connector == ConnectorKind.BrowserSelectors && conf.ListingLinkSelector.Length == 0) throw new InvalidOperationException("ListingLinkSelector is required.");
+            if (input.Connector == ConnectorKind.UnrwaInspira && input.Url != UnCareersFeed.Url) throw new InvalidOperationException("UNRWA/Inspira connector requires https://careers.un.org/jobfeed.");
             if (input.Enabled && input.Connector == ConnectorKind.ReliefWeb) throw new InvalidOperationException("ReliefWeb adapter is pending appname approval and verification.");
+            if (input.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss && input.Url != OpportunityRss.Endpoint(input.Connector)) throw new InvalidOperationException("RSS connector requires its official tested feed URL.");
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { ModelState.AddModelError("", ex is InvalidOperationException ? ex.Message : "Invalid public source URL/configuration."); }
         if (!ModelState.IsValid) return View(input);

@@ -19,6 +19,7 @@ public class SourceConfiguration
     public string NextSelector { get; set; } = "";
     public int MaxPages { get; set; } = 10;
     public string AppName { get; set; } = "";
+    public int ForbiddenWaitSeconds { get; set; } = 20;
 }
 public class UrlPolicy
 {
@@ -45,7 +46,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
     private async Task<IBrowserContext> ContextAsync(Source source, CancellationToken ct)
     {
         var conf = JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
-        var hosts = conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).ToArray();
+        var hosts = conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).Concat(source.Connector == ConnectorKind.UnrwaInspira ? new[] { "inspira.un.org" } : []).ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
         playwright ??= await Playwright.CreateAsync();
         browser ??= await playwright.Chromium.LaunchAsync(new() { Headless = true, Channel = configuration["Browser:Channel"] is { Length: > 0 } channel ? channel : null });
@@ -66,6 +67,13 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
     public virtual async Task<List<(string Id, string Url)>> DiscoverAsync(Source source, CancellationToken ct)
     {
         if (!source.Enabled || !source.UsageApproved) throw new InvalidOperationException("Source must be enabled and usage approved.");
+        if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
+            return (await OpportunityRss.ReadAsync(source, policy, ct)).Keys.Select(url => (TextRules.Hash(url), url)).ToList();
+        if (source.Connector == ConnectorKind.UnrwaInspira)
+        {
+            if (source.Url != UnCareersFeed.Url) throw new InvalidOperationException("UNRWA/Inspira requires the official careers.un.org/jobfeed source.");
+            return await UnCareersFeed.DiscoverAsync(policy, ct);
+        }
         if (source.Connector == ConnectorKind.ReliefWeb) throw new InvalidOperationException("ReliefWeb requires an approved appname and a tested API adapter; this source remains pending.");
         var conf = JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
         if (source.Connector == ConnectorKind.Automatic)
@@ -79,8 +87,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
                 ct.ThrowIfCancellationRequested();
                 if (!visited.Add(current)) throw new InvalidOperationException("Automatic pagination loop; source needs review.");
                 await policy.ValidateAsync(current, [new Uri(source.Url).IdnHost], ct);
-                var result = await automaticPage.GotoAsync(current, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
-                if (result is null || result.Status >= 400) throw new InvalidOperationException($"Source returned HTTP {result?.Status}; collection stopped.");
+                await BrowserNavigation.OpenAsync(automaticPage, current, WaitUntilState.DOMContentLoaded, conf.ForbiddenWaitSeconds, ct);
                 await WaitForAutomaticContentAsync(automaticPage);
                 var discovered = AutomaticSource.Discover(await automaticPage.ContentAsync(), new Uri(automaticPage.Url));
                 foreach (var link in discovered.Links) { await policy.ValidateAsync(link, [new Uri(source.Url).IdnHost], ct); automaticLinks.Add(link); }
@@ -93,8 +100,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         var selector = source.Connector switch { ConnectorKind.Gpc => "a[href*='viewPublicAdvertismentInfoAll.gpc']", ConnectorKind.PalCareer => "a[href*='job-single.aspx?id=']", _ => conf.ListingLinkSelector };
         if (string.IsNullOrWhiteSpace(selector)) throw new InvalidOperationException("A listing link selector is required.");
         await using var context = await ContextAsync(source, ct); var page = await context.NewPageAsync();
-        var response = await page.GotoAsync(source.Url, new() { WaitUntil = source.Connector == ConnectorKind.Gpc ? WaitUntilState.DOMContentLoaded : WaitUntilState.Commit, Timeout = 45000 });
-        if (response is null || response.Status >= 400) throw new InvalidOperationException($"Source returned HTTP {response?.Status}; collection stopped.");
+        await BrowserNavigation.OpenAsync(page, source.Url, source.Connector == ConnectorKind.Gpc ? WaitUntilState.DOMContentLoaded : WaitUntilState.Commit, conf.ForbiddenWaitSeconds, ct);
         if (conf.WaitSelector.Length > 0) await page.Locator(conf.WaitSelector).First.WaitForAsync(new() { Timeout = 25000 });
         var found = new Dictionary<string, string>();
         if (source.Connector == ConnectorKind.Gpc)
@@ -133,16 +139,21 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
     public async Task<string> FetchAsync(Source source,string url,CancellationToken ct)=>(await FetchBundleAsync(source,url,ct)).Text;
     public virtual async Task<ContentBundle> FetchBundleAsync(Source source, string url, CancellationToken ct)
     {
+        if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
+        {
+            var entries = await OpportunityRss.ReadAsync(source, policy, ct);
+            if (!entries.TryGetValue(url, out var content)) throw new ContentNeedsReviewException("Job is no longer in the RSS window; not evidence of closure.");
+            return content;
+        }
         var conf = JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
-        await policy.ValidateAsync(url, conf.AllowedHosts.Append(new Uri(source.Url).IdnHost), ct);
+        await policy.ValidateAsync(url, conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).Concat(source.Connector == ConnectorKind.UnrwaInspira ? new[] { "inspira.un.org" } : []), ct);
         if(new Uri(url).AbsolutePath.EndsWith(".pdf",StringComparison.OrdinalIgnoreCase))
         {
             var pdfText=await attachmentReader.ReadPdfAsync(url,conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).ToArray(),ct);
             return new(pdfText+"\nSOURCE LINKS:\n"+url,[url]);
         }
         await using var context = await ContextAsync(source, ct); var page = await context.NewPageAsync();
-        var response = await page.GotoAsync(url, new() { WaitUntil = WaitUntilState.Commit, Timeout = 45000 });
-        if (response is null || response.Status >= 400) throw new InvalidOperationException($"Detail HTTP {response?.Status}; not evidence of closure.");
+        await BrowserNavigation.OpenAsync(page, url, WaitUntilState.Commit, conf.ForbiddenWaitSeconds, ct);
         if (conf.WaitSelector.Length > 0) await page.Locator(conf.WaitSelector).First.WaitForAsync(new() { Timeout = 20000 });
         await page.WaitForFunctionAsync("() => document.readyState !== 'loading'", null, new() { Timeout = 25000 });
         string html;
