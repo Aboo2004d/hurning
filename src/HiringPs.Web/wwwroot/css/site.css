@@ -21,3 +21,9 @@
 .table-nowrap{width:max-content;min-width:100%;table-layout:auto}
 .table-nowrap th,.table-nowrap td{white-space:nowrap;overflow-wrap:normal;word-break:normal;vertical-align:middle}
 
+
+.diagnostic-details{display:inline-block;margin-inline-start:8px;font-size:12px;vertical-align:top}.diagnostic-details summary{cursor:pointer;color:var(--muted)}.diagnostic-details pre{max-width:min(760px,80vw);white-space:pre-wrap;overflow-wrap:anywhere;text-align:start}
+
+
+.diagnostic-image{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:12px}
+

@@ -1,4 +1,6 @@
 (()=>{
+ const connector=document.getElementById('source-connector'),connectorHelp=document.getElementById('connector-help');
+ if(connector&&connectorHelp){const update=()=>{connectorHelp.textContent=connector.selectedOptions[0]?.dataset.help||'';};connector.addEventListener('change',update);update();}
  if(/^\/admin\/opportunities\/?$/i.test(location.pathname))document.querySelectorAll('.table-wrap table').forEach(table=>{table.classList.remove('admin-table');table.classList.add('table-nowrap');});
  if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table:not(.table-nowrap)').forEach(table=>{
   table.classList.add('admin-table');

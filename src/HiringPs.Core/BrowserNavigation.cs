@@ -22,6 +22,7 @@ public static class BrowserNavigation
             if (initial?.Status == 403)
             {
                 var duration = TimeSpan.FromSeconds(Math.Clamp(forbiddenWaitSeconds, 0, 30));
+                CollectorDiagnosticSession.PageStep(page, "WaitForAccess", (int)duration.TotalMilliseconds);
                 var deadline = DateTimeOffset.UtcNow + duration;
                 while (DateTimeOffset.UtcNow < deadline)
                 {

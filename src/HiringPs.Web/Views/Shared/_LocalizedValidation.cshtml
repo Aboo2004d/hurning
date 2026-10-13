@@ -1,0 +1,5 @@
+@{var errors=ViewData.ModelState.Values.SelectMany(x=>x.Errors).Select(x=>string.IsNullOrWhiteSpace(x.ErrorMessage)?T["Error_Unmapped"].Value:x.ErrorMessage).ToList();}
+@if(errors.Count>0)
+{
+ <div class="validation" role="alert"><ul>@foreach(var error in errors){<li><partial name="_Diagnostic" model="error"/></li>}</ul></div>
+}
