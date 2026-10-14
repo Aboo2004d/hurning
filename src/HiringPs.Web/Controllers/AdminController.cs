@@ -3,7 +3,6 @@ using HiringPs.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace HiringPs.Web.Controllers;
 
@@ -18,29 +17,8 @@ public class AdminDashboard
     public List<SourceItem> Items { get; set; } = [];
 }
 [Authorize(Roles = "Admin")]
-public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration configuration) : Controller
+public class AdminController(HiringDb db, UrlPolicy urlPolicy) : Controller
 {
-    public async Task<IActionResult> Diagnostic(Guid id, CancellationToken ct)
-    {
-        var audit = await db.Audit.AsNoTracking().FirstOrDefaultAsync(x => x.Action == "Collector.Diagnostic" && x.Detail.Contains(id.ToString("N")), ct);
-        if (audit is null) return NotFound();
-        var file = CollectorDiagnosticFiles.FilePath(configuration, id);
-        if (System.IO.File.Exists(file))
-        {
-            var report = JsonSerializer.Deserialize<CollectorDiagnostic>(await System.IO.File.ReadAllTextAsync(file, ct), CollectorDiagnosticFiles.Json);
-            return report is null || report.Id != id ? NotFound() : View(report);
-        }
-        using var metadata = JsonDocument.Parse(audit.Detail);
-        var root = metadata.RootElement;
-        return View(new CollectorDiagnostic { Id = id, At = root.GetProperty("At").GetDateTimeOffset(), SourceId = root.GetProperty("SourceId").GetInt32(), Stage = root.GetProperty("Stage").GetString() ?? "", Operation = root.GetProperty("Operation").GetString() ?? "", HttpStatus = root.GetProperty("HttpStatus").ValueKind == JsonValueKind.Number ? root.GetProperty("HttpStatus").GetInt32() : null, FinalUrl = root.GetProperty("finalUrl").GetString() ?? "", Selector = root.GetProperty("selector").GetString() ?? "", TimeoutMs = root.GetProperty("TimeoutMs").GetInt32(), ElapsedMs = root.GetProperty("ElapsedMs").GetInt64(), StageElapsedMs = root.GetProperty("StageElapsedMs").GetInt64(), ExceptionType = root.GetProperty("ExceptionType").GetString() ?? "", CaptureNote = "Capture storage unavailable; metadata only." });
-    }
-    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> DiagnosticImage(Guid id, CancellationToken ct)
-    {
-        if (!await db.Audit.AnyAsync(x => x.Action == "Collector.Diagnostic" && x.Detail.Contains(id.ToString("N")), ct)) return NotFound();
-        var path = CollectorDiagnosticFiles.FilePath(configuration, id, true);
-        return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
-    }
     public async Task<IActionResult> Index(CancellationToken ct) => View(new AdminDashboard { Published = await db.Opportunities.CountAsync(x => x.Status == PublicationStatus.Published, ct), Review = await db.Opportunities.CountAsync(x => x.Status == PublicationStatus.NeedsReview, ct), Queued = await db.SourceItems.CountAsync(x => x.Status == ProcessingStatus.Discovered || x.Status == ProcessingStatus.AwaitingAi || x.Status == ProcessingStatus.Retry, ct), Reports = await db.Reports.CountAsync(x => !x.Resolved, ct), Heartbeat = await db.Heartbeats.AsNoTracking().OrderBy(x=>x.Id).FirstOrDefaultAsync(ct), Runs = await db.Runs.AsNoTracking().OrderByDescending(x => x.Id).Take(20).ToListAsync(ct), Items = await db.SourceItems.AsNoTracking().Include(x => x.Source).Where(x => x.Status != ProcessingStatus.Published).OrderByDescending(x => x.Id).Take(50).ToListAsync(ct) });
     public async Task<IActionResult> Opportunities(PublicationStatus? status, CancellationToken ct) { ViewBag.Status = status; return View(await db.Opportunities.AsNoTracking().Where(x => status == null || x.Status == status).OrderByDescending(x => x.Id).Take(100).ToListAsync(ct)); }
     public async Task<IActionResult> Edit(long? id, CancellationToken ct) { var o = id is null ? new Opportunity { Status = PublicationStatus.Draft } : await db.Opportunities.FindAsync([id.Value], ct); return o is null ? NotFound() : View(o); }
@@ -48,7 +26,7 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
     public async Task<IActionResult> Edit([Bind("Id,Kind,Title,Organization,OriginalLanguage,Summary,Locations,Category,EmploymentType,ExperienceLevel,WorkMode,ReferenceNumber,Duration,Eligibility,Cost,ApplyUrl,Deadline,Status,ClosureEvidence,Version")] Opportunity input, string? sourceUrl, CancellationToken ct)
     {
         NormalizeStrings(input);
-        foreach (var error in OpportunityService.Validate(input, allowUnrecognizedLocation: true)) ModelState.AddModelError("", error);
+        foreach (var error in OpportunityService.Validate(input)) ModelState.AddModelError("", error);
         if (!Enum.IsDefined(input.Status)) ModelState.AddModelError("", "Invalid publication status.");
         if (input.Status == PublicationStatus.Archived && string.IsNullOrWhiteSpace(input.ClosureEvidence) && input.Deadline is null) ModelState.AddModelError("", "Closure evidence is required without a deadline.");
         if (sourceUrl?.Length > 1500) ModelState.AddModelError("", "Source URL is too long.");
@@ -71,25 +49,6 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
             db.SourceItems.Add(item); db.SourceLinks.Add(new() { Opportunity = entity, SourceItem = item, ChildKey = "manual" });
         }
         Audit("Opportunity.Edit", $"Opportunity {input.Id}; status {entity.Status}");
-        if (entity.Status is PublicationStatus.Published or PublicationStatus.Archived)
-        {
-            var known = await LocationCatalog.ApprovedAsync(db, ct);
-            foreach (var location in LocationCatalog.Split(entity.Locations).Where(x => !known.Contains(x, StringComparer.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase))
-                Audit("Location.Approved", location);
-        }
-        if (input.Id > 0)
-        {
-            var rawIds = await db.SourceLinks.Where(x => x.OpportunityId == input.Id).Select(x => x.SourceItemId).Distinct().ToListAsync(ct);
-            foreach (var rawId in rawIds)
-            {
-                var raw = await db.SourceItems.FindAsync([rawId], ct);
-                if (raw is null || raw.Status != ProcessingStatus.NeedsReview) continue;
-                var links = await db.SourceLinks.Include(x => x.Opportunity).Where(x => x.SourceItemId == rawId).ToListAsync(ct);
-                var pending = links.Where(x => x.Opportunity.Status == PublicationStatus.NeedsReview).ToList();
-                raw.Status = pending.Count == 0 ? ProcessingStatus.Published : ProcessingStatus.NeedsReview;
-                raw.Error = string.Join(" ", pending.Select(x => x.Opportunity.ReviewReason).Distinct()).Truncate(1800);
-            }
-        }
         try { await db.SaveChangesAsync(ct); } catch (DbUpdateConcurrencyException) { ModelState.AddModelError("", "The record changed; reload before saving."); return View(input); }
         return RedirectToAction(nameof(Opportunities));
     }
@@ -112,10 +71,8 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
             if(!Uri.TryCreate(input.Url,UriKind.Absolute,out var uri)||uri.Scheme!="https"||uri.UserInfo.Length>0||!uri.IsDefaultPort)throw new InvalidOperationException("Source URL must use public HTTPS without credentials.");
             if(previous is null||previous.Url!=input.Url||previous.ConfigurationJson!=input.ConfigurationJson||(!previous.Enabled&&input.Enabled))await urlPolicy.ValidateAsync(input.Url,conf.AllowedHosts.Append(uri.IdnHost),ct);
             if (input.Enabled && input.Connector == ConnectorKind.BrowserSelectors && conf.ListingLinkSelector.Length == 0) throw new InvalidOperationException("ListingLinkSelector is required.");
-            if (input.Connector == ConnectorKind.Automatic && (input.Url == OpportunityRss.JobsUrl || input.Url == OpportunityRss.ReliefUrl || input.Url == UnCareersFeed.Url)) throw new InvalidOperationException("This is an RSS URL; choose its feed connector instead of Automatic HTML discovery.");
             if (input.Connector == ConnectorKind.UnrwaInspira && input.Url != UnCareersFeed.Url) throw new InvalidOperationException("UNRWA/Inspira connector requires https://careers.un.org/jobfeed.");
             if (input.Enabled && input.Connector == ConnectorKind.ReliefWeb) throw new InvalidOperationException("ReliefWeb adapter is pending appname approval and verification.");
-            if (input.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss && input.Url != OpportunityRss.Endpoint(input.Connector)) throw new InvalidOperationException("RSS connector requires its official tested feed URL.");
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { ModelState.AddModelError("", ex is InvalidOperationException ? ex.Message : "Invalid public source URL/configuration."); }
         if (!ModelState.IsValid) return View(input);

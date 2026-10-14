@@ -2,12 +2,10 @@
 @{ ViewData["Title"] = T["Edit"]; }
 <partial name="_AdminNav" />
 <h1>@T["Edit"]</h1>
-<p class="notice">@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar"?"يمكنك تصحيح المكان وحفظ الإعلان حتى إن لم يتعرف عليه النظام. لاعتماد الإعلان اختر الحالة «منشور» ثم احفظ؛ سيُحفظ قرارك ولن يغيّره الاستخراج اللاحق. لا يُضاف المكان تلقائيًا إلى القائمة المعتمدة.":"You may correct and save an unrecognized location. To approve the opportunity, select Published and save. Later extraction preserves your decision; no location is automatically added to the approved list.")</p>
-@if(!string.IsNullOrWhiteSpace(Model.ReviewReason)){<div class="notice"><partial name="_Diagnostic" model="Model.ReviewReason"/></div>}
 <form method="post" class="edit-form">
  <input asp-for="Id" type="hidden" />
  <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version)" />
- <partial name="_LocalizedValidation"/>
+ <div asp-validation-summary="All" class="validation" role="alert"></div>
  <div class="form-grid">
   <label>@T["Kind"]<select asp-for="Kind" id="edit-kind">
    @foreach(var kind in Enum.GetValues<OpportunityKind>()) { <option value="@kind">@T[kind.ToString()]</option> }

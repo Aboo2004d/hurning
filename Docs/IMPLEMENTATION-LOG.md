@@ -88,31 +88,3 @@ Tested 22 official in-scope location feed URLs with bounded parallelism (2). Gaz
 
 ## 2026-10-13 — ReliefWeb saved page recheck
 Saved jobs HTML includes official /jobs/rss.xml. Fresh local HTTP probes returned jobs HTML200 with20 detail links and RSS200 with20 items. This is current diagnostic evidence, superseding earlier generic403 assumptions for these endpoints only. No source/SeedData/database edits; API adapter still pending approved appname and implementation. RSS is a separate website endpoint, not proof that the API accepts an unapproved identifier or that global20 items cover Palestine.
-
-## 2026-10-13 — Sources table horizontal scrolling
-Source table headers and cell text now remain on a single line with width determined by content and horizontal scrolling inside the existing wrapper. This table stays a table on phones instead of receiving stacked admin-record styling; other admin tables retain their existing behavior. Edit/Collect actions remain aligned. UI-only change; program not started and no database/seed changes.
-
-
-## 2026-10-13 — Opportunities/review table layout
-Applied existing table-nowrap styling to the opportunities table (including review listings): headers, values and Edit action remain on one line; table scrolls horizontally within its wrapper. Reuses the sources table behavior on phone/desktop. No program launch, AI logic or database changes.
-
-
-## 2026-10-13 — Manual approval and queue diagnosis
-Manual admin save now allows a nonempty unrecognized location while retaining required fields, summary bounds and safe URL checks. Automatic extraction keeps geographic review; no automatic location whitelist learning. Manual override and clearing old review reasons use the existing edit workflow. Four focused validation checks passed without SQL/app startup; isolated solution build completed. Review-list JS now adds nowrap styling to previously compiled list markup on refresh.
-Queue diagnosis from screenshots and worker log: successful Gemini3.5 responses200 at66s/85s/45s alongside503 provider failures; ExperienceLevel exceeds existing60-char bound. Manual request completion excludes Retry entries with future RetryAt, so Completed does not imply all detail/AI work succeeded. Some NeedsReview items have blank raw-item Error because reasons are stored on linked Opportunity.ReviewReason. Live admin inspection was unavailable (connection refused); no app restarted. No new diagnostic fixes or database migrations applied in this step.
-
-
-## 2026-10-13 — Approved locations and robust processing status
-- Manual publication/archive records Location.Approved audit entries. LocationCatalog combines these with existing manual approvals; future geographic validation accepts only previously approved locations. No automatic approval of unknown locations. Home city filter unions baseline cities with the approved catalog. No schema migration or connection/SeedData change.
-- Manual save synchronizes linked NeedsReview raw-item state after all related opportunities are resolved, preserving outstanding review reasons for other roles.
-- AI prompt includes current field length constraints. Oversized ExperienceLevel now creates a reviewable opportunity with a blank short field and preserves the complete AI value in ExtractionJson; it does not silently truncate or publish it.
-- AI default model is gemini-3.5-flash-lite. Timeout defaults180 seconds, configurable Ai:TimeoutSeconds clamped30–300. Network/timeout/500/502/503/504/408 wait15 minutes as AwaitingAi without exhausting content-validation attempts. Credential/quota/model/request failures show HTTP code/model with six-hour wait. No automatic paid fallback and no raw provider response or secrets displayed.
-- Title/location/org/reference/deadline evidence tolerates whitespace, HTML entity and dash formatting only; fabricated factual evidence remains rejected. Actual numeric date check remains independent.
-- Raw item review messages expose linked opportunity reasons; completed source requests report source totals for each processing state. Completion label explicitly means discovery round completion, not all items published. Dashboard tables use horizontal scroll/nowrap.
-- Removed obsolete solution reference to user-deleted HiringPs.Checks; tests were not restored. Isolated solution build succeeded with0 warnings/errors. Sixteen mocked/format/location checks passed from ignored artifacts, without running app/worker, real API or SQL writes. Actual admin workflow and live retry need user runtime verification after rebuild/restart.
-
-
-## 2026-10-13 — Localized collector diagnostics and labels
-All admin diagnostics are presented through UiMessages and shared diagnostic/validation partials using current Arabic/English culture. Known legacy and current errors localize actual HTTP codes, timeout seconds, affected fields, evidence failures and round counts. Original text remains in collapsed technical details; unrecognized/free-form AI notes receive localized guidance instead of claiming automatic translation. Stored errors and enum/boolean values are unchanged. Connector options and help, worker/run/queue states and Yes/No now use resources. Known RSS endpoints reject Automatic HTML mode at source validation; dedicated source behavior preserved.
-Validation: Release build passed0 warnings/errors;147 localization checks across Arabic/English using actual embedded resources passed, including compound errors, field names, HTTP status/duration/count preservation and unknown fallback. No app/worker started, real AI request, production access or database migration. Current runtime UI needs user rebuild/restart to verify.
-

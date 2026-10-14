@@ -1,8 +1,5 @@
 (()=>{
- const connector=document.getElementById('source-connector'),connectorHelp=document.getElementById('connector-help');
- if(connector&&connectorHelp){const update=()=>{connectorHelp.textContent=connector.selectedOptions[0]?.dataset.help||'';};connector.addEventListener('change',update);update();}
- if(/^\/admin\/opportunities\/?$/i.test(location.pathname))document.querySelectorAll('.table-wrap table').forEach(table=>{table.classList.remove('admin-table');table.classList.add('table-nowrap');});
- if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table:not(.table-nowrap)').forEach(table=>{
+ if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table').forEach(table=>{
   table.classList.add('admin-table');
   const headings=Array.from(table.querySelectorAll('thead th'),th=>th.textContent.trim());
   table.querySelectorAll('tbody tr').forEach(row=>Array.from(row.cells).forEach((cell,index)=>{cell.dataset.label=headings[index]||'';}));
