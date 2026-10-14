@@ -41,7 +41,7 @@ public class AttachmentReader(UrlPolicy policy)
   try
   {
    using var document=PdfDocument.Open(bytes);if(document.NumberOfPages>40)throw new ContentNeedsReviewException("PDF exceeds 40 pages; review needed.");
-   var text=new StringBuilder();foreach(var page in document.GetPages()){text.AppendLine(ContentOrderTextExtractor.GetText(page));if(text.Length>35000)throw new ContentNeedsReviewException("PDF text exceeds processing limit.");}
+   var text=new StringBuilder();foreach(var page in document.GetPages()){text.AppendLine(ContentOrderTextExtractor.GetText(page));}
    if(text.ToString().Count(char.IsLetter)<40)throw new ContentNeedsReviewException("PDF is image-only or unreadable; OCR/manual review required.");
    return text.ToString();
   }

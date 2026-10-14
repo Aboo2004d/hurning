@@ -2,19 +2,31 @@
 @{ ViewData["Title"] = T["Edit"]; }
 <partial name="_AdminNav" />
 <h1>@T["Edit"]</h1>
+@if(ViewBag.OriginalSources is IEnumerable<string> originalSources)
+{
+ <div class="actions">
+ @foreach(var originalUrl in originalSources)
+ {
+  if(Uri.TryCreate(originalUrl,UriKind.Absolute,out var originalUri)&&originalUri.Scheme=="https"&&string.IsNullOrEmpty(originalUri.UserInfo))
+  {<a class="button" href="@originalUrl" target="_blank" rel="noopener noreferrer">@T["SourceUrl"]</a>}
+ }
+ </div>
+}
+<p class="notice">@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar"?"يمكنك تصحيح المكان وحفظ الإعلان حتى إن لم يتعرف عليه النظام. لاعتماد الإعلان اختر الحالة «منشور» ثم احفظ؛ سيُحفظ قرارك ولن يغيّره الاستخراج اللاحق. لا يُضاف المكان تلقائيًا إلى القائمة المعتمدة.":"You may correct and save an unrecognized location. To approve the opportunity, select Published and save. Later extraction preserves your decision; no location is automatically added to the approved list.")</p>
+@if(!string.IsNullOrWhiteSpace(Model.ReviewReason)){<div class="notice"><partial name="_Diagnostic" model="Model.ReviewReason"/></div>}
 <form method="post" class="edit-form">
  <input asp-for="Id" type="hidden" />
  <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version)" />
- <div asp-validation-summary="All" class="validation" role="alert"></div>
+ <partial name="_LocalizedValidation"/>
  <div class="form-grid">
   <label>@T["Kind"]<select asp-for="Kind" id="edit-kind">
    @foreach(var kind in Enum.GetValues<OpportunityKind>()) { <option value="@kind">@T[kind.ToString()]</option> }
   </select></label>
   <label>@T["Language"]<select asp-for="OriginalLanguage"><option value="ar">العربية</option><option value="en">English</option></select></label>
-  <label>@T["Title"]<input asp-for="Title" maxlength="250" dir="auto" required /></label>
-  <label>@T["Organization"]<input asp-for="Organization" maxlength="200" dir="auto" required /></label>
-  <label>@T["Location"]<input asp-for="Locations" maxlength="300" dir="auto" required /></label>
-  <label>@T["Category"]<input asp-for="Category" maxlength="120" dir="auto" /></label>
+  <label>@T["Title"]<input asp-for="Title" dir="auto" required /></label>
+  <label>@T["Organization"]<input asp-for="Organization" dir="auto" required /></label>
+  <label>@T["Location"]<input asp-for="Locations" dir="auto" required /></label>
+  <label>@T["Category"]<input asp-for="Category" dir="auto" /></label>
   <label>@T["Deadline"]<input asp-for="Deadline" type="date" /></label>
   <label>@T["Status"]<select asp-for="Status">
    @foreach(var status in Enum.GetValues<PublicationStatus>()) { <option value="@status">@T[status.ToString()]</option> }
@@ -22,13 +34,13 @@
  </div>
  <label>@T["Summary"]<textarea asp-for="Summary" id="summary-input" rows="3" dir="auto" required></textarea><span class="muted">@T["SummaryLimit"] <output id="summary-count"></output></span></label>
  <div class="form-grid">
-  <label data-job-field>@T["Employment"]<input asp-for="EmploymentType" maxlength="60" /></label>
-  <label data-job-field>@T["Experience"]<input asp-for="ExperienceLevel" maxlength="60" /></label>
-  <label data-job-field>@T["WorkMode"]<input asp-for="WorkMode" maxlength="80" /></label>
-  <label data-training-field>@T["Duration"]<input asp-for="Duration" maxlength="160" /></label>
-  <label data-training-field>@T["Cost"]<input asp-for="Cost" maxlength="120" /></label>
-  <label data-tender-field>@T["Reference"]<input asp-for="ReferenceNumber" maxlength="160" dir="auto" /></label>
-  <label>@T["Eligibility"]<input asp-for="Eligibility" maxlength="300" dir="auto" /></label>
+  <label data-job-field>@T["Employment"]<input asp-for="EmploymentType" /></label>
+  <label data-job-field>@T["Experience"]<input asp-for="ExperienceLevel" /></label>
+  <label data-job-field>@T["WorkMode"]<input asp-for="WorkMode" /></label>
+  <label data-training-field>@T["Duration"]<input asp-for="Duration" /></label>
+  <label data-training-field>@T["Cost"]<input asp-for="Cost" /></label>
+  <label data-tender-field>@T["Reference"]<input asp-for="ReferenceNumber" dir="auto" /></label>
+  <label>@T["Eligibility"]<input asp-for="Eligibility" dir="auto" /></label>
   <label>@T["ApplyUrl"]<input asp-for="ApplyUrl" maxlength="1500" dir="ltr" /></label>
   @if(Model.Id==0)
   {

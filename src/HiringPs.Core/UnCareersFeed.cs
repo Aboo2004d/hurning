@@ -11,8 +11,10 @@ public static class UnCareersFeed
 {
     public const string Url = "https://careers.un.org/jobfeed";
     public static async Task<List<(string Id, string Url)>> DiscoverAsync(UrlPolicy policy, CancellationToken ct)
+        => Parse(await ReadXmlAsync(Url, ["careers.un.org"], policy, ct));
+    public static async Task<XDocument> ReadXmlAsync(string url, string[] hosts, UrlPolicy policy, CancellationToken ct)
     {
-        await policy.ValidateAsync(Url, ["careers.un.org"], ct);
+        await policy.ValidateAsync(url, hosts, ct);
         using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false };
         handler.ConnectCallback = async (context, token) =>
         {
@@ -24,7 +26,9 @@ public static class UnCareersFeed
             catch { socket.Dispose(); throw; }
         };
         using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
-        using var response = await http.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead, ct);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("HiringPs/1.0 (+https://hiring.ps)");
+        http.DefaultRequestHeaders.Accept.ParseAdd("application/rss+xml, application/xml, text/xml");
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var data = new MemoryStream(); var chunk = new byte[8192]; int read;
@@ -35,7 +39,7 @@ public static class UnCareersFeed
         }
         data.Position = 0;
         using var reader = XmlReader.Create(data, new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 4 * 1024 * 1024 });
-        return Parse(XDocument.Load(reader));
+        return XDocument.Load(reader);
     }
     public static List<(string Id, string Url)> Parse(XDocument feed)
     {

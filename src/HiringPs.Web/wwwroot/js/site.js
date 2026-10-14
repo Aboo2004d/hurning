@@ -1,5 +1,8 @@
 (()=>{
- if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table').forEach(table=>{
+ const connector=document.getElementById('source-connector'),connectorHelp=document.getElementById('connector-help');
+ if(connector&&connectorHelp){const update=()=>{connectorHelp.textContent=connector.selectedOptions[0]?.dataset.help||'';};connector.addEventListener('change',update);update();}
+ if(/^\/admin\/opportunities\/?$/i.test(location.pathname))document.querySelectorAll('.table-wrap table').forEach(table=>{table.classList.remove('admin-table');table.classList.add('table-nowrap');});
+ if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table:not(.table-nowrap)').forEach(table=>{
   table.classList.add('admin-table');
   const headings=Array.from(table.querySelectorAll('thead th'),th=>th.textContent.trim());
   table.querySelectorAll('tbody tr').forEach(row=>Array.from(row.cells).forEach((cell,index)=>{cell.dataset.label=headings[index]||'';}));
@@ -10,6 +13,6 @@
  const editor=document.getElementById('edit-kind');
  if(editor){const update=()=>{for(const [selector,show]of[['[data-job-field]',editor.value==='Job'],['[data-training-field]',editor.value==='Training'],['[data-tender-field]',['Tender','ProcurementNotice'].includes(editor.value)]])document.querySelectorAll(selector).forEach(el=>{el.hidden=!show;if(!show)el.querySelectorAll('input').forEach(x=>x.value='');});};editor.addEventListener('change',update);update();}
  const text=document.getElementById('summary-input'),counter=document.getElementById('summary-count');
- if(text&&counter){const update=()=>{const length=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text.value)].length:Array.from(text.value).length;counter.textContent=length+' / 200';text.setCustomValidity(length>200?'Maximum 200 characters':'');};text.addEventListener('input',update);update();}
+ if(text&&counter){const update=()=>{const length=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text.value)].length:Array.from(text.value).length;counter.textContent=length+' / 200';text.setCustomValidity('');};text.addEventListener('input',update);update();}
  if(window.matchMedia('(max-width:800px)').matches)document.querySelectorAll('.filter-panel details').forEach(x=>x.open=false);
 })();
