@@ -29,14 +29,18 @@ public static class TextEvidence
     public static bool OrganizationContains(string source, string organization)
     {
         if (Contains(source, organization)) return true;
-        var normalizedSource = Normalize(source);
-        var parts = Regex.Split(Normalize(organization), @"\s*/\s*|\s*[-–—]\s*|(?<=[\u0600-\u06FF])\s+(?=[A-Za-z])|(?<=[A-Za-z])\s+(?=[\u0600-\u06FF])").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
-        return parts.Length > 0 && parts.All(part =>
+        static string NameText(string value) => Regex.Replace(Regex.Replace(Normalize(value), @"[^\p{L}\p{N}\s]", " "), @"\s+", " ").Trim();
+        var normalizedSource = " " + NameText(source) + " ";
+        var fullName = NameText(organization);
+        if (fullName.Length > 0 && normalizedSource.Contains(" " + fullName + " ", StringComparison.OrdinalIgnoreCase)) return true;
+        var parts = Regex.Split(Normalize(organization), @"\s*/\s*|\s*[-–—]\s*|[()]|(?<=[\u0600-\u06FF])\s+(?=[A-Za-z])|(?<=[A-Za-z])\s+(?=[\u0600-\u06FF])").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+        // An original bilingual name or acronym is sufficient; never require a translation to occur too.
+        return parts.Any(part =>
         {
-            if (normalizedSource.Contains(part, StringComparison.OrdinalIgnoreCase)) return true;
             var name = Regex.Replace(part, @"^(?:شركة|مؤسسة|جمعية|Company)\s+", "", RegexOptions.IgnoreCase);
-            return name != part && name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2
-                && normalizedSource.Contains(name, StringComparison.OrdinalIgnoreCase);
+            name = NameText(name);
+            if (Regex.IsMatch(name, @"\A(?:شركة|مؤسسة|جمعية|company|organization|organisation)\z", RegexOptions.IgnoreCase)) return false;
+            return name.Length >= 3 && normalizedSource.Contains(" " + name + " ", StringComparison.OrdinalIgnoreCase);
         });
     }
 }

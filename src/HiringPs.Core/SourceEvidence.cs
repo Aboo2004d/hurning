@@ -39,6 +39,8 @@ public static class SourceEvidence
     {
         // Remove only obsolete deterministic checks; other AI concerns still require review.
         var text = Regex.Replace(reason, @"Summary must contain 1[–-]200 characters\.?|Invalid application link\.?|Apply URL not in source text; use original source\.?|AI field \w+ exceeds schema limit; inspect stored source\.?", "", RegexOptions.IgnoreCase);
+        text = text.Replace("Deadline is unspecified; verify original source before publication.", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("موعد انتهاء الإعلان غير محدد؛ بانتظار المراجعة. افتح الإعلان الأصلي للتحقق قبل الاعتماد.", "", StringComparison.Ordinal);
         return text.Trim();
     }
 }
