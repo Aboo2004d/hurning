@@ -31,21 +31,9 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     }
     private void NormalizeRecords()
     {
-        foreach(var entry in ChangeTracker.Entries<Opportunity>().Where(x=>x.State is EntityState.Added or EntityState.Modified))entry.Entity.NormalizedOrganization=TextRules.Normalize(entry.Entity.Organization);
+        foreach(var entry in ChangeTracker.Entries<Opportunity>().Where(x=>x.State is EntityState.Added or EntityState.Modified))entry.Entity.NormalizedOrganization=TextRules.OrganizationKey(entry.Entity.Organization);
     }
     public override int SaveChanges(bool acceptAllChangesOnSuccess){NormalizeRecords();return base.SaveChanges(acceptAllChangesOnSuccess);}
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,CancellationToken cancellationToken=default){NormalizeRecords();return base.SaveChangesAsync(acceptAllChangesOnSuccess,cancellationToken);}
 }
-public static class Registration
-{
-    public static IServiceCollection AddHiring(this IServiceCollection services, IConfiguration config)
-    {
-        var connection = config.GetConnectionString("Hiring") ?? throw new InvalidOperationException("Configure ConnectionStrings:Hiring through User Secrets or environment variables.");
-        services.AddDbContext<HiringDb>(o => o.UseSqlServer(connection));
-        services.AddScoped<OpportunityService>(); services.AddScoped<CollectionPipeline>();
-        services.AddSingleton<UrlPolicy>(); services.AddScoped<BrowserCollector>();
-        services.AddScoped<AttachmentReader>();
-        services.AddHttpClient<AiExtractor>(c => c.Timeout = TimeSpan.FromSeconds(90));
-        return services;
-    }
-}
+

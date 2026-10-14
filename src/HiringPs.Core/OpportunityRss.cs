@@ -31,7 +31,7 @@ public static class OpportunityRss
                 if (!countries.Any(c => c.Contains("occupied Palestinian territory", StringComparison.OrdinalIgnoreCase) || c.Contains("State of Palestine", StringComparison.OrdinalIgnoreCase))) continue;
             }
             var text = Regex.Replace(doc.Body?.TextContent ?? "", @"\s+", " ").Trim();
-            if (text.Length < 80 || text.Length > 39000) throw new ContentNeedsReviewException("RSS description incomplete or too long; source needs review.");
+            if (text.Length < 80) throw new ContentNeedsReviewException("RSS description incomplete; source needs review.");
             var links = doc.QuerySelectorAll("a[href]").Select(a => Uri.TryCreate(link, a.GetAttribute("href"), out var uri) ? uri : null).Where(u => u is not null && u.Scheme == "https").Select(u => u!.ToString());
             result[link.ToString()] = new((item.Element("title")?.Value ?? "") + "\n" + text + "\nSOURCE LINKS:\n" + link + "\n" + string.Join('\n', links.Take(30)), []);
         }

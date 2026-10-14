@@ -5,7 +5,7 @@ namespace HiringPs.Core;
 public enum OpportunityKind { Job, Training, Tender, ProcurementNotice }
 public enum PublicationStatus { Draft, NeedsReview, Published, Archived, Hidden }
 public enum ProcessingStatus { Discovered, AwaitingAi, Retry, Ready, NeedsReview, OutOfScope, Published }
-public enum ConnectorKind { Gpc, PalCareer, BrowserSelectors, ReliefWeb, Automatic, UnrwaInspira }
+public enum ConnectorKind { Gpc, PalCareer, BrowserSelectors, ReliefWeb, Automatic, UnrwaInspira, JobsRss, ReliefWebRss }
 public class Source
 {
     public int Id { get; set; }
@@ -65,20 +65,20 @@ public class Opportunity
 {
     public long Id { get; set; }
     public OpportunityKind Kind { get; set; }
-    [Required, MaxLength(250)] public string Title { get; set; } = "";
-    [Required, MaxLength(200)] public string Organization { get; set; } = "";
+    [Required] public string Title { get; set; } = "";
+    [Required] public string Organization { get; set; } = "";
     [MaxLength(200)] public string NormalizedOrganization { get; set; } = "";
     [MaxLength(30)] public string OriginalLanguage { get; set; } = "ar";
-    [MaxLength(1000)] public string Summary { get; set; } = "";
-    [MaxLength(300)] public string Locations { get; set; } = "";
-    [MaxLength(120)] public string Category { get; set; } = "";
-    [MaxLength(60)] public string EmploymentType { get; set; } = "";
-    [MaxLength(60)] public string ExperienceLevel { get; set; } = "";
-    [MaxLength(80)] public string WorkMode { get; set; } = "";
-    [MaxLength(160)] public string ReferenceNumber { get; set; } = "";
-    [MaxLength(160)] public string Duration { get; set; } = "";
-    [MaxLength(300)] public string Eligibility { get; set; } = "";
-    [MaxLength(120)] public string Cost { get; set; } = "";
+     public string Summary { get; set; } = "";
+     public string Locations { get; set; } = "";
+     public string Category { get; set; } = "";
+     public string EmploymentType { get; set; } = "";
+     public string ExperienceLevel { get; set; } = "";
+     public string WorkMode { get; set; } = "";
+     public string ReferenceNumber { get; set; } = "";
+     public string Duration { get; set; } = "";
+     public string Eligibility { get; set; } = "";
+     public string Cost { get; set; } = "";
     [MaxLength(1500)] public string ApplyUrl { get; set; } = "";
     public string AttachmentsJson { get; set; } = "[]";
     public DateOnly? Deadline { get; set; }
@@ -88,7 +88,7 @@ public class Opportunity
     public PublicationStatus Status { get; set; } = PublicationStatus.NeedsReview;
     public bool AdminOverride { get; set; }
     [MaxLength(64)] public string Fingerprint { get; set; } = "";
-    [MaxLength(1000)] public string ReviewReason { get; set; } = "";
+     public string ReviewReason { get; set; } = "";
     [MaxLength(1000)] public string ClosureEvidence { get; set; } = "";
     public ICollection<OpportunitySourceLink> SourceLinks { get; set; } = [];
     [Timestamp] public byte[] Version { get; set; } = [];
@@ -149,6 +149,7 @@ public static class TextRules
 {
     public static int CharacterCount(string text) => new StringInfo(text).LengthInTextElements;
     public static string Hash(string text) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
+    public static string OrganizationKey(string text) { var value = Normalize(text); return value.Length <= 200 ? value : "sha256:" + Hash(value); }
     public static string Normalize(string text) => string.Join(' ', text.ToLowerInvariant().Normalize().Replace('أ', 'ا').Replace('إ', 'ا').Replace('آ', 'ا').Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     public static DateOnly PalestineToday() => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).DateTime);
 }

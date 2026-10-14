@@ -74,7 +74,7 @@
  <data name="Save" xml:space="preserve"><value>Save</value></data>
  <data name="Status" xml:space="preserve"><value>Status</value></data>
  <data name="ClosureEvidence" xml:space="preserve"><value>Closure evidence</value></data>
- <data name="SummaryLimit" xml:space="preserve"><value>Maximum 200 characters, including spaces, in the original language.</value></data>
+ <data name="SummaryLimit" xml:space="preserve"><value>Aim for at most 200 characters in the original language; longer text can still be saved.</value></data>
  <data name="Worker" xml:space="preserve"><value>Collection worker</value></data>
  <data name="Never" xml:space="preserve"><value>Not run yet</value></data>
  <data name="Runs" xml:space="preserve"><value>Collection runs</value></data>
@@ -112,7 +112,192 @@
  <data name="CollectAlreadyQueued" xml:space="preserve"><value>This source already has a pending or running request.</value></data>
  <data name="Request_Pending" xml:space="preserve"><value>Pending worker</value></data>
  <data name="Request_Running" xml:space="preserve"><value>Collecting</value></data>
- <data name="Request_Completed" xml:space="preserve"><value>Collection finished; check processing queue</value></data>
+ <data name="Request_Completed" xml:space="preserve"><value>Discovery round finished; processing may still be pending</value></data>
  <data name="Request_Failed" xml:space="preserve"><value>Collection failed</value></data>
  <data name="Request_Cancelled" xml:space="preserve"><value>Request cancelled</value></data>
-<data name="AutomaticSourceHelp" xml:space="preserve"><value>Automatic discovery: enter the opportunity listing URL. JSON is optional; the host comes from the URL. Uncertain layouts require review.</value></data><data name="AdvancedSourceConfig" xml:space="preserve"><value>Advanced settings for special sources</value></data></root>
+<data name="AutomaticSourceHelp" xml:space="preserve"><value>Automatic discovery: enter the opportunity listing URL. JSON is optional; the host comes from the URL. Uncertain layouts require review.</value></data><data name="AdvancedSourceConfig" xml:space="preserve"><value>Advanced settings for special sources</value></data> <data name="Yes" xml:space="preserve"><value>Yes</value></data>
+ <data name="No" xml:space="preserve"><value>No</value></data>
+ <data name="TechnicalDetails" xml:space="preserve"><value>Original technical details</value></data>
+ <data name="FieldValue" xml:space="preserve"><value>Value</value></data>
+ <data name="RoundTotals" xml:space="preserve"><value>Link discovery finished. Source item totals (pending does not mean published):</value></data>
+ <data name="State_Discovered" xml:space="preserve"><value>Awaiting content</value></data>
+ <data name="State_AwaitingAi" xml:space="preserve"><value>Awaiting AI</value></data>
+ <data name="State_Retry" xml:space="preserve"><value>Retry scheduled</value></data>
+ <data name="State_Ready" xml:space="preserve"><value>Ready</value></data>
+ <data name="State_NeedsReview" xml:space="preserve"><value>Needs manual review</value></data>
+ <data name="State_OutOfScope" xml:space="preserve"><value>Out of scope</value></data>
+ <data name="State_Published" xml:space="preserve"><value>Processed and published or approved</value></data>
+ <data name="State_Idle" xml:space="preserve"><value>Idle</value></data>
+ <data name="State_Running" xml:space="preserve"><value>Running</value></data>
+ <data name="State_Success" xml:space="preserve"><value>Discovery succeeded</value></data>
+ <data name="State_Failed" xml:space="preserve"><value>Failed</value></data>
+ <data name="Connector_Gpc" xml:space="preserve"><value>GPC — dedicated connector</value></data>
+ <data name="Connector_PalCareer" xml:space="preserve"><value>PalCareer — dedicated connector</value></data>
+ <data name="Connector_BrowserSelectors" xml:space="preserve"><value>Browser with manual selectors</value></data>
+ <data name="Connector_ReliefWeb" xml:space="preserve"><value>ReliefWeb API (pending)</value></data>
+ <data name="Connector_Automatic" xml:space="preserve"><value>Automatic website discovery</value></data>
+ <data name="Connector_UnrwaInspira" xml:space="preserve"><value>UNRWA — RSS and Inspira details</value></data>
+ <data name="Connector_JobsRss" xml:space="preserve"><value>Jobs.ps — Gaza RSS</value></data>
+ <data name="Connector_ReliefWebRss" xml:space="preserve"><value>ReliefWeb — RSS with Palestine filter</value></data>
+ <data name="ConnectorHelp_Gpc" xml:space="preserve"><value>Reads GPC listing data using its dedicated adapter.</value></data>
+ <data name="ConnectorHelp_PalCareer" xml:space="preserve"><value>Finds PalCareer details using the job ID.</value></data>
+ <data name="ConnectorHelp_BrowserSelectors" xml:space="preserve"><value>Requires listing and content selectors for the site.</value></data>
+ <data name="ConnectorHelp_ReliefWeb" xml:space="preserve"><value>API is pending an approved appname and adapter. Use RSS for the current feed URL.</value></data>
+ <data name="ConnectorHelp_Automatic" xml:space="preserve"><value>Attempts HTML discovery. It does not process RSS or guarantee access to protected or unusual layouts.</value></data>
+ <data name="ConnectorHelp_UnrwaInspira" xml:space="preserve"><value>Uses UN Careers RSS for UNRWA Palestine listings and reads Inspira details.</value></data>
+ <data name="ConnectorHelp_JobsRss" xml:space="preserve"><value>Covers the tested Gaza feed; other cities are not yet approved technically.</value></data>
+ <data name="ConnectorHelp_ReliefWebRss" xml:space="preserve"><value>Filters Palestine from the site's latest feed window; complete coverage is not guaranteed.</value></data>
+ <data name="Error_Geography" xml:space="preserve"><value>Location is not in the approved area list; review and approve manually if appropriate.</value></data>
+ <data name="Error_Location" xml:space="preserve"><value>Location is missing; enter it before saving.</value></data>
+ <data name="Error_TitleEvidence" xml:space="preserve"><value>Extracted title does not match the original text; review the title.</value></data>
+ <data name="Error_OrganizationEvidence" xml:space="preserve"><value>Organisation name lacks original-text evidence.</value></data>
+ <data name="Error_ReferenceEvidence" xml:space="preserve"><value>Extracted reference is absent from the original text.</value></data>
+ <data name="Error_LocationEvidence" xml:space="preserve"><value>Location evidence is missing or does not match the original text.</value></data>
+ <data name="Error_DeadlineEvidence" xml:space="preserve"><value>Deadline evidence is missing or does not match the original.</value></data>
+ <data name="Error_DeadlineMismatch" xml:space="preserve"><value>Extracted deadline does not match the date in its evidence.</value></data>
+ <data name="Error_ApplyEvidence" xml:space="preserve"><value>Application URL is absent from the original; use the source link.</value></data>
+ <data name="Error_Title" xml:space="preserve"><value>Title is required, up to 250 characters.</value></data>
+ <data name="Error_Organization" xml:space="preserve"><value>Organisation is required, up to 200 characters.</value></data>
+ <data name="Error_Summary" xml:space="preserve"><value>Summary is required and must not exceed 200 characters.</value></data>
+ <data name="Error_ApplyUrl" xml:space="preserve"><value>Application link is invalid or uses an unsupported scheme.</value></data>
+ <data name="Error_Kind" xml:space="preserve"><value>Opportunity type is invalid.</value></data>
+ <data name="Error_Language" xml:space="preserve"><value>Content language must be Arabic or English.</value></data>
+ <data name="Error_JobFields" xml:space="preserve"><value>Employment and experience fields are for jobs only.</value></data>
+ <data name="Error_AiKey" xml:space="preserve"><value>AI key is not configured; saved content is waiting.</value></data>
+ <data name="Error_AiCredentials" xml:space="preserve"><value>AI credentials or quota are unavailable; check account settings.</value></data>
+ <data name="Error_AiNetwork" xml:space="preserve"><value>AI network connection failed; content is retained for retry.</value></data>
+ <data name="Error_ExperienceLength" xml:space="preserve"><value>Experience exceeded 60 characters; original extraction is retained. Enter a short value and approve manually.</value></data>
+ <data name="Error_Duplicate" xml:space="preserve"><value>Possible duplicate without a confirmed reference; compare before approval.</value></data>
+ <data name="Error_Repost" xml:space="preserve"><value>Possible repost or similar existing opportunity; compare and merge if identical.</value></data>
+ <data name="Error_RemovedRole" xml:space="preserve"><value>A role or lot disappeared from the updated source; verify before closure.</value></data>
+ <data name="Error_AiOutOfScope" xml:space="preserve"><value>AI marked the item out of scope; verify before exclusion.</value></data>
+ <data name="Error_PageTimeout" xml:space="preserve"><value>Source page readiness timed out; retry scheduled, not evidence of closure.</value></data>
+ <data name="Error_SourceTimeout" xml:space="preserve"><value>Request timed out or was cancelled; retry, not evidence of closure.</value></data>
+ <data name="Error_AwaitingAi" xml:space="preserve"><value>Discovery finished; some items are still waiting for AI.</value></data>
+ <data name="Error_Selector" xml:space="preserve"><value>Manual browser connector requires a listing selector. Configure it or use Automatic for HTML.</value></data>
+ <data name="Error_Approval" xml:space="preserve"><value>Record source usage approval before enabling collection.</value></data>
+ <data name="Error_ReliefApi" xml:space="preserve"><value>ReliefWeb API is pending approved appname and integration; RSS is a separate connector.</value></data>
+ <data name="Error_SourceConfig" xml:space="preserve"><value>Source URL/configuration is invalid, or public-host validation failed.</value></data>
+ <data name="Error_PublicHttps" xml:space="preserve"><value>Use public HTTPS without credentials in the URL.</value></data>
+ <data name="Error_Host" xml:space="preserve"><value>Host is not approved for this source.</value></data>
+ <data name="Error_PrivateNetwork" xml:space="preserve"><value>Private or reserved network target is blocked.</value></data>
+ <data name="Error_Connector" xml:space="preserve"><value>Selected connector is invalid.</value></data>
+ <data name="Error_Interval" xml:space="preserve"><value>Interval must be 1–168 hours.</value></data>
+ <data name="Error_MaxPages" xml:space="preserve"><value>Page limit must be 1–50.</value></data>
+ <data name="Error_ConfigLength" xml:space="preserve"><value>Source configuration exceeds the allowed size.</value></data>
+ <data name="Error_UrlLength" xml:space="preserve"><value>Source URL exceeds the allowed length.</value></data>
+ <data name="Error_SourceRequired" xml:space="preserve"><value>Enter a source or application URL.</value></data>
+ <data name="Error_Status" xml:space="preserve"><value>Publication status is invalid.</value></data>
+ <data name="Error_Closure" xml:space="preserve"><value>Closure evidence is required to archive without a deadline.</value></data>
+ <data name="Error_Concurrency" xml:space="preserve"><value>Record changed during editing; reload before saving.</value></data>
+ <data name="Error_RssContent" xml:space="preserve"><value>RSS description is incomplete or exceeds the processing limit.</value></data>
+ <data name="Error_RssFormat" xml:space="preserve"><value>Response is not valid RSS; possible protection page or changed source.</value></data>
+ <data name="Error_RssUrl" xml:space="preserve"><value>RSS connector requires its tested official feed URL.</value></data>
+ <data name="Error_RssWindow" xml:space="preserve"><value>Item left the current RSS window; this is not proof of closure.</value></data>
+ <data name="Error_UnrwaUrl" xml:space="preserve"><value>UNRWA connector requires https://careers.un.org/jobfeed.</value></data>
+ <data name="Error_Content" xml:space="preserve"><value>Detail content is incomplete; review the source before publication.</value></data>
+ <data name="Error_AutoContent" xml:space="preserve"><value>Automatic content detection is uncertain; source needs review.</value></data>
+ <data name="Error_AutoLinks" xml:space="preserve"><value>No reliable opportunity links found; possible protection or changed layout.</value></data>
+ <data name="Error_InteractivePages" xml:space="preserve"><value>Interactive pagination needs a tested dedicated adapter.</value></data>
+ <data name="Error_PageLimit" xml:space="preserve"><value>Pagination limit reached; review source and limit for coverage.</value></data>
+ <data name="Error_PageLoop" xml:space="preserve"><value>Pagination loop detected; collection stopped.</value></data>
+ <data name="Error_ContentLimit" xml:space="preserve"><value>Detail text exceeds limit; configure a narrower content area.</value></data>
+ <data name="Error_Attachment" xml:space="preserve"><value>Attachment could not be downloaded; review before publication.</value></data>
+ <data name="Error_PdfImage" xml:space="preserve"><value>PDF is scanned or unreadable; OCR/manual reading needed.</value></data>
+ <data name="Error_PdfParse" xml:space="preserve"><value>PDF parsing failed or response is not a valid PDF.</value></data>
+ <data name="Error_AiFormat" xml:space="preserve"><value>AI result is incomplete or malformed; retry or review.</value></data>
+ <data name="Error_AiKeys" xml:space="preserve"><value>Extracted role identifiers are missing or duplicated; review required.</value></data>
+ <data name="Error_ModelName" xml:space="preserve"><value>AI model name is invalid.</value></data>
+ <data name="Error_FieldLength" xml:space="preserve"><value>AI value for {0} exceeds its limit; inspect saved text and enter a shorter value.</value></data>
+ <data name="Error_AiTimeout" xml:space="preserve"><value>AI request exceeded {0} seconds; content retained for retry.</value></data>
+ <data name="Error_AiModel" xml:space="preserve"><value>AI returned HTTP {0}; check model {1} and request compatibility.</value></data>
+ <data name="Error_AiQuota" xml:space="preserve"><value>AI quota/rate limit reached (HTTP {0}); waiting for quota reset.</value></data>
+ <data name="Error_AiAccess" xml:space="preserve"><value>AI credentials/access rejected (HTTP {0}); check key/account.</value></data>
+ <data name="Error_AiProvider" xml:space="preserve"><value>Temporary AI provider failure (HTTP {0}); content retained for retry.</value></data>
+ <data name="Error_HttpWait" xml:space="preserve"><value>Source HTTP {0} remained blocked after {1} seconds; not evidence of closure.</value></data>
+ <data name="Error_Http" xml:space="preserve"><value>Source access failed (HTTP {0}); check URL/access, not evidence of closure.</value></data>
+ <data name="Error_LegacyNetwork" xml:space="preserve"><value>Earlier network request failed; legacy error has no HTTP code. Retry for clearer diagnostics.</value></data>
+ <data name="Error_Required" xml:space="preserve"><value>{0} is required.</value></data>
+ <data name="Error_MaxLength" xml:space="preserve"><value>{0} must not exceed {1} characters.</value></data>
+ <data name="Error_Unmapped" xml:space="preserve"><value>Diagnostic requires review; open technical details for the original reason.</value></data>
+ <data name="Error_RssAutomatic" xml:space="preserve"><value>This is an RSS URL; choose its feed connector instead of Automatic HTML discovery.</value></data>
+ <data name="UnknownState" xml:space="preserve"><value>Unknown state; inspect details</value></data>
+ <data name="Error_AttachmentSize" xml:space="preserve"><value>Attachment exceeds 8 MB; review required.</value></data>
+ <data name="Error_PdfSize" xml:space="preserve"><value>PDF exceeds 40 pages; manual review required.</value></data>
+ <data name="Error_RssSize" xml:space="preserve"><value>RSS feed exceeds 4 MB; review source.</value></data>
+ <data name="Error_AttachmentCount" xml:space="preserve"><value>More than 3 PDF attachments; configure source or review.</value></data>
+ <data name="AttemptDiagnostic" xml:space="preserve"><value>Attempt diagnostics</value></data>
+ <data name="DiagnosticScope" xml:space="preserve"><value>Snapshot at source-page failure. Missing elements or blocked hosts do not prove slow internet. Cookies/auth headers are not recorded and form values are masked.</value></data>
+ <data name="DiagnosticAt" xml:space="preserve"><value>Failure time</value></data>
+ <data name="DiagnosticOperation" xml:space="preserve"><value>Operation</value></data>
+ <data name="DiagnosticStage" xml:space="preserve"><value>Failed step</value></data>
+ <data name="DiagnosticUnknown" xml:space="preserve"><value>Unavailable</value></data>
+ <data name="DiagnosticNotApplicable" xml:space="preserve"><value>Not applicable</value></data>
+ <data name="PageTitle" xml:space="preserve"><value>Page title</value></data>
+ <data name="RequestedUrl" xml:space="preserve"><value>Requested URL</value></data>
+ <data name="FinalUrl" xml:space="preserve"><value>Final URL</value></data>
+ <data name="WaitSelector" xml:space="preserve"><value>Awaited selector</value></data>
+ <data name="SelectorMatches" xml:space="preserve"><value>Matching elements</value></data>
+ <data name="SelectorVisible" xml:space="preserve"><value>Element visible</value></data>
+ <data name="DocumentReady" xml:space="preserve"><value>Document readiness</value></data>
+ <data name="ConfiguredTimeout" xml:space="preserve"><value>Step timeout</value></data>
+ <data name="StageElapsed" xml:space="preserve"><value>Time in step</value></data>
+ <data name="TotalElapsed" xml:space="preserve"><value>Total duration</value></data>
+ <data name="ExceptionType" xml:space="preserve"><value>Exception type</value></data>
+ <data name="Seconds" xml:space="preserve"><value>seconds</value></data>
+ <data name="FailureScreenshot" xml:space="preserve"><value>Failure screenshot</value></data>
+ <data name="FailedRequests" xml:space="preserve"><value>Failed or blocked requests</value></data>
+ <data name="NoFailedRequests" xml:space="preserve"><value>No failed-request data in this report; that alone does not establish network health.</value></data>
+ <data name="NetworkDiagnosticNote" xml:space="preserve"><value>Intentionally blocked images/fonts/media are excluded. Policy-blocked hosts are recorded separately.</value></data>
+ <data name="CaptureIncomplete" xml:space="preserve"><value>Some capture files are unavailable; check shared storage and permissions. Basic metadata is retained in the audit log.</value></data>
+ <data name="DiagOp_Discovery" xml:space="preserve"><value>Discover listings</value></data>
+ <data name="DiagOp_Detail" xml:space="preserve"><value>Fetch detail</value></data>
+ <data name="DiagStage_NavigateListing" xml:space="preserve"><value>Open listing page</value></data>
+ <data name="DiagStage_NavigateDetail" xml:space="preserve"><value>Open detail page</value></data>
+ <data name="DiagStage_WaitForAccess" xml:space="preserve"><value>Wait for automatic access recovery</value></data>
+ <data name="DiagStage_WaitAutomaticContent" xml:space="preserve"><value>Wait for dynamic content</value></data>
+ <data name="DiagStage_DiscoverLinks" xml:space="preserve"><value>Discover and validate links</value></data>
+ <data name="DiagStage_WaitSourceSelector" xml:space="preserve"><value>Wait for source readiness selector</value></data>
+ <data name="DiagStage_ReadEmbeddedData" xml:space="preserve"><value>Read embedded listing data</value></data>
+ <data name="DiagStage_WaitListingSelector" xml:space="preserve"><value>Wait for listing links</value></data>
+ <data name="DiagStage_Pagination" xml:space="preserve"><value>Advance pagination</value></data>
+ <data name="DiagStage_WaitDocumentReady" xml:space="preserve"><value>Wait for document readiness</value></data>
+ <data name="DiagStage_WaitContentSelector" xml:space="preserve"><value>Wait for content selector</value></data>
+ <data name="DiagStage_ReadContent" xml:space="preserve"><value>Read content</value></data>
+ <data name="DiagStage_ReadAttachments" xml:space="preserve"><value>Read attachments</value></data>
+ <data name="DiagStage_ValidateContent" xml:space="preserve"><value>Validate content</value></data>
+ <data name="DiagReady_loading" xml:space="preserve"><value>Loading</value></data>
+ <data name="DiagReady_interactive" xml:space="preserve"><value>Interactive; data requests may still run</value></data>
+ <data name="DiagReady_complete" xml:space="preserve"><value>Document complete</value></data>
+ <data name="DiagReady_Unknown" xml:space="preserve"><value>Readiness unavailable</value></data>
+ <data name="DiagReason_HttpFailure" xml:space="preserve"><value>Failed HTTP response</value></data>
+ <data name="DiagReason_PolicyBlocked" xml:space="preserve"><value>Blocked by collector host/network policy</value></data>
+ <data name="DiagReason_NetworkFailure" xml:space="preserve"><value>Network request failed; exact cause unavailable</value></data>
+ <data name="DiagType_document" xml:space="preserve"><value>Document</value></data>
+ <data name="DiagType_script" xml:space="preserve"><value>Script</value></data>
+ <data name="DiagType_stylesheet" xml:space="preserve"><value>Stylesheet</value></data>
+ <data name="DiagType_xhr" xml:space="preserve"><value>Data request</value></data>
+ <data name="DiagType_fetch" xml:space="preserve"><value>Data request</value></data>
+ <data name="DiagType_other" xml:space="preserve"><value>Other</value></data>
+ <data name="DiagType_image" xml:space="preserve"><value>Image</value></data>
+ <data name="DiagType_font" xml:space="preserve"><value>Font</value></data>
+ <data name="DiagType_media" xml:space="preserve"><value>Media</value></data>
+ <data name="DiagType_websocket" xml:space="preserve"><value>WebSocket</value></data>
+ <data name="DiagType_manifest" xml:space="preserve"><value>Manifest</value></data>
+ <data name="DiagType_eventsource" xml:space="preserve"><value>Event stream</value></data>
+ <data name="DiagType_texttrack" xml:space="preserve"><value>Text track</value></data>
+ <data name="DiagStage_BrowserSetup" xml:space="preserve"><value>Validate source and launch browser</value></data>
+ <data name="DiagOp_Browser" xml:space="preserve"><value>Browser setup</value></data>
+ <data name="DiagStage_ReadRss" xml:space="preserve"><value>Fetch and parse RSS</value></data>
+ <data name="Error_AiContext" xml:space="preserve"><value>Original text exceeds the provider context capacity. It is saved; use a supported larger-context model or review manually.</value></data>
+<data name="Error_TitleRequired" xml:space="preserve"><value>Title is required.</value></data>
+<data name="Error_OrganizationRequired" xml:space="preserve"><value>Organization is required.</value></data>
+<data name="Error_SummaryRequired" xml:space="preserve"><value>Summary is required.</value></data>
+<data name="Error_DeadlineUnspecified" xml:space="preserve"><value>Deadline is unspecified; awaiting review. Open the original listing to verify before approval.</value></data>
+<data name="Error_RelatedRole" xml:space="preserve"><value>This extracted role came from related jobs, not the original announcement; review it before approval.</value></data>
+<data name="Error_ExtractionMissing" xml:space="preserve"><value>No saved AI extraction is available; the original content is retained and queued for processing.</value></data>
+<data name="Error_OriginalUrlMissing" xml:space="preserve"><value>No valid original listing URL is available; inspect the source record.</value></data>
+</root>
+
+
+
