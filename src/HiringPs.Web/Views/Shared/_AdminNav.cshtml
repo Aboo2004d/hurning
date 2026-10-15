@@ -1,1 +1,47 @@
-<nav class="admin-nav"><a asp-controller="Admin" asp-action="Index">@T["Dashboard"]</a><a asp-controller="Admin" asp-action="Opportunities">@T["Opportunities"]</a><a asp-controller="Admin" asp-action="Opportunities" asp-route-status="NeedsReview">@T["Review"]</a><a asp-controller="Admin" asp-action="Sources">@T["Sources"]</a><a asp-controller="Admin" asp-action="Pages">@T["PageContents"]</a><a asp-controller="Admin" asp-action="Messages">@T["ContactInbox"]</a><a asp-controller="Admin" asp-action="Reports">@T["Reports"]</a><a asp-controller="Account" asp-action="ChangePassword">@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar"?"كلمة المرور":"Password")</a><form asp-controller="Account" asp-action="Logout" method="post"><button class="secondary" type="submit">@T["Logout"]</button></form></nav>
+@{
+    var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var links = new[]
+    {
+        (Controller: "Home", Action: "Index", Label: isArabic ? "الموقع الرئيسي" : "Main website"),
+        (Controller: "Admin", Action: "Index", Label: T["Dashboard"].Value),
+        (Controller: "Admin", Action: "Opportunities", Label: T["Opportunities"].Value),
+        (Controller: "Admin", Action: "Sources", Label: T["Sources"].Value),
+        (Controller: "Admin", Action: "Pages", Label: T["PageContents"].Value),
+        (Controller: "Admin", Action: "Messages", Label: T["ContactInbox"].Value),
+        (Controller: "Admin", Action: "Reports", Label: T["Reports"].Value),
+        (Controller: "Account", Action: "ChangePassword", Label: isArabic ? "كلمة المرور" : "Password")
+    };
+}
+<nav class="admin-nav" aria-label="@(isArabic ? "قائمة الإدارة" : "Administration")">
+    <div class="admin-dropdown">
+        <button class="admin-menu-toggle secondary" type="button" aria-expanded="false" aria-controls="admin-menu">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>@T["ControlPanel"]</span>
+            <span class="menu-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="admin-menu" class="admin-menu-panel" hidden>
+            @foreach (var link in links)
+            {
+                var isCurrent = currentController == link.Controller && currentAction == link.Action
+                    && !(link.Action == "Opportunities" && Context.Request.Query["status"] == "NeedsReview");
+                <a asp-controller="@link.Controller" asp-action="@link.Action" aria-current="@(isCurrent ? "page" : null)">
+                    @link.Label
+                </a>
+                @if (link.Action == "Opportunities")
+                {
+                    <a asp-controller="Admin" asp-action="Opportunities" asp-route-status="NeedsReview"
+                       aria-current="@(currentAction == "Opportunities" && Context.Request.Query["status"] == "NeedsReview" ? "page" : null)">
+                        @T["Review"]
+                    </a>
+                }
+            }
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button class="secondary" type="submit">@T["Logout"]</button>
+            </form>
+        </div>
+    </div>
+</nav>

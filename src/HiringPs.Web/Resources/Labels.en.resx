@@ -353,6 +353,10 @@
 <data name="PageBody" xml:space="preserve"><value>Page text</value></data>
 <data name="PageEditConflict" xml:space="preserve"><value>This page was edited elsewhere. Reload it before saving another change.</value></data>
 <data name="PageContentSaved" xml:space="preserve"><value>Page content saved successfully.</value></data>
+ <data name="JobSubtitle" xml:space="preserve"><value>Jobs in the West Bank, Gaza and Jerusalem.</value></data>
+ <data name="TrainingSubtitle" xml:space="preserve"><value>Training opportunities in the West Bank, Gaza and Jerusalem.</value></data>
+ <data name="TenderSubtitle" xml:space="preserve"><value>Tenders in the West Bank, Gaza and Jerusalem.</value></data>
+ <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>Procurement notices in the West Bank, Gaza and Jerusalem.</value></data>
 </root>
 
 

@@ -1,11 +1,30 @@
 (()=>{
- const menuButton=document.querySelector('.header-menu-toggle'),siteHeader=document.querySelector('.site-header');
- if(menuButton&&siteHeader){
-  const closeMenu=()=>{siteHeader.classList.remove('menu-open');menuButton.setAttribute('aria-expanded','false');};
-  menuButton.addEventListener('click',()=>{const open=siteHeader.classList.toggle('menu-open');menuButton.setAttribute('aria-expanded',String(open));});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&siteHeader.classList.contains('menu-open')){closeMenu();menuButton.focus();}});
-  siteHeader.querySelectorAll('.header-nav a').forEach(link=>link.addEventListener('click',closeMenu));
- }
+ // Public menu is a dropdown on smaller screens; the admin menu is always a dropdown.
+ const siteHeader = document.querySelector('.site-header');
+ const mobileNavigation = window.matchMedia('(max-width:1100px)');
+ const setupDropdown = (button, panel, isPublic = false) => {
+  if (!button || !panel) return;
+  const isOpen = () => button.getAttribute('aria-expanded') === 'true';
+  const setOpen = open => {
+   button.setAttribute('aria-expanded', String(open));
+   if (isPublic) siteHeader.classList.toggle('menu-open', open);
+   else panel.hidden = !open;
+  };
+  button.addEventListener('click', () => setOpen(!isOpen()));
+  document.addEventListener('click', event => {
+   if (isOpen() && !button.contains(event.target) && !panel.contains(event.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', event => {
+   if (event.key === 'Escape' && isOpen()) { setOpen(false); button.focus(); }
+  });
+  panel.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+  panel.addEventListener('focusout', event => {
+   if (isOpen() && event.relatedTarget && !panel.contains(event.relatedTarget) && !button.contains(event.relatedTarget)) setOpen(false);
+  });
+  if (isPublic) mobileNavigation.addEventListener('change', () => setOpen(false));
+ };
+ setupDropdown(document.querySelector('.header-menu-toggle'), document.getElementById('header-menu'), true);
+ setupDropdown(document.querySelector('.admin-menu-toggle'), document.getElementById('admin-menu'));
  const connector=document.getElementById('source-connector'),connectorHelp=document.getElementById('connector-help');
  if(connector&&connectorHelp){const update=()=>{connectorHelp.textContent=connector.selectedOptions[0]?.dataset.help||'';};connector.addEventListener('change',update);update();}
  if(/^\/admin\/opportunities\/?$/i.test(location.pathname))document.querySelectorAll('.table-wrap table').forEach(table=>{table.classList.remove('admin-table');table.classList.add('table-nowrap');});

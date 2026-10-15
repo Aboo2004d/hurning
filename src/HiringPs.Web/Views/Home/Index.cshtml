@@ -1,6 +1,12 @@
 @model ListingModel
-@{var heading=Model.Archive?"Archive":Model.Kind==OpportunityKind.Job?"Jobs":Model.Kind?.ToString()??"Headline";ViewData["Title"]=T[heading];}
-<section class="intro"><h1>@T[heading]</h1><p>@T["Subtitle"]</p></section>
+@{
+    var kindHeading = Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind?.ToString() ?? "Headline";
+    var heading = Model.Archive ? T["Archive"].Value + (Model.Kind is null ? "" : " · " + T[kindHeading].Value) : T[kindHeading].Value;
+    var subtitle = Model.Kind is null ? "Subtitle" : Model.Kind + "Subtitle";
+    ViewData["Title"] = heading;
+    ViewData["Description"] = T[subtitle].Value;
+}
+<section class="intro"><h1>@heading</h1><p>@T[subtitle]</p></section>
 <form method="get" asp-action="Index" id="listing-form"><input type="hidden" name="archive" value="@Model.Archive.ToString().ToLowerInvariant()"/>
 <input type="hidden" name="kind" value="@Model.Kind"/><div class="searchbar"><input type="search" name="q" value="@Model.Query" placeholder="@T["SearchPlaceholder"]" aria-label="@T["Search"]"/><button type="submit">@T["Search"]</button></div>
 <div class="listing-layout"><aside class="filter-panel"><details open><summary>@T["Filters"]</summary><label>@T["Location"]<select name="city"><option value="">@T["All"]</option>@foreach(var city in Model.Cities){<option selected="@(Model.City==city)" value="@city">@city</option>}</select></label><label>@T["Category"]<select name="category"><option value="">@T["All"]</option>@foreach(var category in Model.Categories){<option selected="@(Model.Category==category)">@category</option>}</select></label>

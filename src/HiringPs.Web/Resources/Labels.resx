@@ -353,6 +353,10 @@
 <data name="PageBody" xml:space="preserve"><value>محتوى الصفحة</value></data>
 <data name="PageEditConflict" xml:space="preserve"><value>عدلت الصفحة من نافذة أخرى؛ أعد تحميلها قبل حفظ تعديل جديد.</value></data>
 <data name="PageContentSaved" xml:space="preserve"><value>تم حفظ محتوى الصفحة بنجاح.</value></data>
+ <data name="JobSubtitle" xml:space="preserve"><value>وظائف في الضفة وغزة والقدس.</value></data>
+ <data name="TrainingSubtitle" xml:space="preserve"><value>فرص تدريب في الضفة وغزة والقدس.</value></data>
+ <data name="TenderSubtitle" xml:space="preserve"><value>عطاءات في الضفة وغزة والقدس.</value></data>
+ <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>مناقصات في الضفة وغزة والقدس.</value></data>
 </root>
 
 
