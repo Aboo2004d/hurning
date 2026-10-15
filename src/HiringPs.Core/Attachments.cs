@@ -6,24 +6,26 @@ using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
 namespace HiringPs.Core;
+
 public class ContentNeedsReviewException(string message) : Exception(message);
+
 public record ContentBundle(string Text, string[] Attachments);
+
 public class AttachmentReader(UrlPolicy policy)
 {
     public const int MaxBytes = 8 * 1024 * 1024;
+
     public async Task<string> ReadPdfAsync(string url, string[] hosts, CancellationToken ct)
     {
-        using var handler = new SocketsHttpHandler
-        {
-            AllowAutoRedirect = false,
-            UseProxy = false
-        };
+        using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false };
         handler.ConnectCallback = async (ctx, cancel) =>
         {
             var addresses = await Dns.GetHostAddressesAsync(ctx.DnsEndPoint.Host, cancel);
             if (addresses.Length == 0 || addresses.Any(UrlPolicy.IsPrivate))
                 throw new InvalidOperationException("Attachment network target is not public.");
-            var target = addresses.OrderBy(x => x.AddressFamily == AddressFamily.InterNetwork ? 0 : 1).First();
+            var target = addresses
+                .OrderBy(x => x.AddressFamily == AddressFamily.InterNetwork ? 0 : 1)
+                .First();
             var socket = new Socket(target.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             try
             {
@@ -36,23 +38,29 @@ public class AttachmentReader(UrlPolicy policy)
                 throw;
             }
         };
-        using var http = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(40)
-        };
+        using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
         var current = url;
         for (var redirects = 0; redirects < 5; redirects++)
         {
             var uri = await policy.ValidateAsync(current, hosts, ct);
-            using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
-            if ((int)response.StatusCode is >= 300 and < 400 && response.Headers.Location is { } location)
+            using var response = await http.GetAsync(
+                uri,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct
+            );
+            if (
+                (int)response.StatusCode is >= 300 and < 400
+                && response.Headers.Location is { } location
+            )
             {
                 current = new Uri(uri, location).ToString();
                 continue;
             }
 
             if (!response.IsSuccessStatusCode)
-                throw new ContentNeedsReviewException("Attachment unavailable; review before publishing.");
+                throw new ContentNeedsReviewException(
+                    "Attachment unavailable; review before publishing."
+                );
             if (response.Content.Headers.ContentLength > MaxBytes)
                 throw new ContentNeedsReviewException("Attachment exceeds 8 MB limit.");
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
@@ -88,7 +96,9 @@ public class AttachmentReader(UrlPolicy policy)
             }
 
             if (text.ToString().Count(char.IsLetter) < 40)
-                throw new ContentNeedsReviewException("PDF is image-only or unreadable; OCR/manual review required.");
+                throw new ContentNeedsReviewException(
+                    "PDF is image-only or unreadable; OCR/manual review required."
+                );
             return text.ToString();
         }
         catch (ContentNeedsReviewException)

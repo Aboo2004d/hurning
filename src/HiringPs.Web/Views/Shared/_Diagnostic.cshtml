@@ -5,7 +5,12 @@
     <span dir="auto">@UiMessages.Error(Model,T)</span>
     @if (reference.Success)
     {
-        <a class="button button-outline" asp-controller="Admin" asp-action="Diagnostic" asp-route-id="@reference.Groups[1].Value">
+        <a
+            class="button button-outline"
+            asp-controller="Admin"
+            asp-action="Diagnostic"
+            asp-route-id="@reference.Groups[1].Value"
+        >
             @T["AttemptDiagnostic"]
         </a>
     }

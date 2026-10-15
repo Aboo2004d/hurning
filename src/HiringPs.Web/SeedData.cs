@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web;
+
 public static class SeedData
 {
     public static async Task SeedAsync(IServiceProvider services)
@@ -11,10 +12,7 @@ public static class SeedData
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
         // 1. Seed Roles
-        string[] roles =
-        {
-            "Admin"
-        };
+        string[] roles = { "Admin" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -35,7 +33,7 @@ public static class SeedData
             {
                 UserName = AdminEmail,
                 Email = AdminEmail,
-                EmailConfirmed = true
+                EmailConfirmed = true,
             };
             var result = await userManager.CreateAsync(admin, password);
             EnsureSuccess(result);
@@ -56,13 +54,17 @@ public static class SeedData
     {
         if (!result.Succeeded)
         {
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+            throw new InvalidOperationException(
+                string.Join("; ", result.Errors.Select(e => e.Description))
+            );
         }
     }
 
     private static async Task SeedSourcesAsync(HiringDb db)
     {
-        var oldRecords = await db.Opportunities.Where(x => x.Organization != "" && x.NormalizedOrganization == "").ToListAsync();
+        var oldRecords = await db
+            .Opportunities.Where(x => x.Organization != "" && x.NormalizedOrganization == "")
+            .ToListAsync();
         foreach (var record in oldRecords)
         {
             record.NormalizedOrganization = TextRules.Normalize(record.Organization);
@@ -73,12 +75,45 @@ public static class SeedData
         // Seed default sources
         if (!await db.Sources.AnyAsync())
         {
-            db.Sources.AddRange(new Source { Name = "ديوان الموظفين العام", Url = "https://www.gpc.pna.ps/diwan/viewPublicVacancyList.gpc", Connector = ConnectorKind.Gpc }, new Source { Name = "PalCareer", Url = "https://palcareer.com/", Connector = ConnectorKind.PalCareer }, new Source { Name = "ReliefWeb", Url = OpportunityRss.ReliefUrl, Connector = ConnectorKind.ReliefWebRss }, new Source { Name = "Jobs.ps — غزة (RSS)", Url = OpportunityRss.JobsUrl, Connector = ConnectorKind.JobsRss }, new Source { Name = "UNRWA", Url = UnCareersFeed.Url, Connector = ConnectorKind.UnrwaInspira });
+            db.Sources.AddRange(
+                new Source
+                {
+                    Name = "ديوان الموظفين العام",
+                    Url = "https://www.gpc.pna.ps/diwan/viewPublicVacancyList.gpc",
+                    Connector = ConnectorKind.Gpc,
+                },
+                new Source
+                {
+                    Name = "PalCareer",
+                    Url = "https://palcareer.com/",
+                    Connector = ConnectorKind.PalCareer,
+                },
+                new Source
+                {
+                    Name = "ReliefWeb",
+                    Url = OpportunityRss.ReliefUrl,
+                    Connector = ConnectorKind.ReliefWebRss,
+                },
+                new Source
+                {
+                    Name = "Jobs.ps — غزة (RSS)",
+                    Url = OpportunityRss.JobsUrl,
+                    Connector = ConnectorKind.JobsRss,
+                },
+                new Source
+                {
+                    Name = "UNRWA",
+                    Url = UnCareersFeed.Url,
+                    Connector = ConnectorKind.UnrwaInspira,
+                }
+            );
             await db.SaveChangesAsync();
         }
 
         // Upgrade only the former default UNRWA endpoint; preserve approval and scheduling.
-        var legacyUnrwa = await db.Sources.Where(x => x.Url == "https://www.unrwa.org/careers/vacancies").ToListAsync();
+        var legacyUnrwa = await db
+            .Sources.Where(x => x.Url == "https://www.unrwa.org/careers/vacancies")
+            .ToListAsync();
         foreach (var source in legacyUnrwa)
         {
             source.Url = UnCareersFeed.Url;
@@ -91,7 +126,17 @@ public static class SeedData
         if (legacyUnrwa.Count > 0)
             await db.SaveChangesAsync();
         // Idempotent source-only upgrades; no recreated database or invented approvals.
-        var rssSources = await db.Sources.Where(x => x.Name != "Manual entries" && (x.Url == "https://reliefweb.int/jobs" || x.Url == "https://www.jobs.ps/" || x.Url == "https://www.jobs.ps/jobs" || x.Url == "https://www.jobs.ps/jobs/latest")).ToListAsync();
+        var rssSources = await db
+            .Sources.Where(x =>
+                x.Name != "Manual entries"
+                && (
+                    x.Url == "https://reliefweb.int/jobs"
+                    || x.Url == "https://www.jobs.ps/"
+                    || x.Url == "https://www.jobs.ps/jobs"
+                    || x.Url == "https://www.jobs.ps/jobs/latest"
+                )
+            )
+            .ToListAsync();
         foreach (var source in rssSources)
         {
             var relief = source.Url == "https://reliefweb.int/jobs";
@@ -117,7 +162,17 @@ public static class SeedData
         var prcsUrl = "https://www.palestinercs.org/en/Category/50/tenders";
         if (!await db.Sources.AnyAsync(x => x.Url == prcsUrl))
         {
-            db.Sources.Add(new Source { Name = "PRCS Tenders", Url = prcsUrl, Connector = ConnectorKind.BrowserSelectors, Enabled = false, ConfigurationJson = "{\"ListingLinkSelector\":\"a[href*='/tenders/'][href$='.pdf']\",\"ContentSelector\":\"body\",\"MaxPages\":5}" });
+            db.Sources.Add(
+                new Source
+                {
+                    Name = "PRCS Tenders",
+                    Url = prcsUrl,
+                    Connector = ConnectorKind.BrowserSelectors,
+                    Enabled = false,
+                    ConfigurationJson =
+                        "{\"ListingLinkSelector\":\"a[href*='/tenders/'][href$='.pdf']\",\"ContentSelector\":\"body\",\"MaxPages\":5}",
+                }
+            );
             await db.SaveChangesAsync();
         }
     }

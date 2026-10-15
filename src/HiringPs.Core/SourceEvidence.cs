@@ -1,9 +1,12 @@
 using System.Text.RegularExpressions;
 
 namespace HiringPs.Core;
+
 public static class SourceEvidence
 {
-    public static string ForItem(SourceItem item) => Prepare(item.Source.Connector, item.Url, item.Content);
+    public static string ForItem(SourceItem item) =>
+        Prepare(item.Source.Connector, item.Url, item.Content);
+
     public static string Prepare(ConnectorKind connector, string originalUrl, string content)
     {
         if (connector != ConnectorKind.PalCareer)
@@ -22,10 +25,19 @@ public static class SourceEvidence
         return match.Success ? match.Groups["title"].Value.Trim() : "";
     }
 
-    public static bool IsPublicationDate(string evidence) => Regex.IsMatch(evidence, @"تاريخ\s+النشر|publication\s+date|posted\s+(?:on|date)", RegexOptions.IgnoreCase);
+    public static bool IsPublicationDate(string evidence) =>
+        Regex.IsMatch(
+            evidence,
+            @"تاريخ\s+النشر|publication\s+date|posted\s+(?:on|date)",
+            RegexOptions.IgnoreCase
+        );
+
     public static bool IsRelatedOnly(SourceItem item, string title)
     {
-        if (item.Source.Connector != ConnectorKind.PalCareer || TextEvidence.TitleContains(ForItem(item), title))
+        if (
+            item.Source.Connector != ConnectorKind.PalCareer
+            || TextEvidence.TitleContains(ForItem(item), title)
+        )
             return false;
         var start = item.Content.IndexOf("وظائف مشابهة", StringComparison.Ordinal);
         if (start < 0)
@@ -38,8 +50,22 @@ public static class SourceEvidence
     public static string RelevantReviewReason(string reason)
     {
         // Remove only obsolete deterministic checks; other AI concerns still require review.
-        var text = Regex.Replace(reason, @"Summary must contain 1[–-]200 characters\.?|Invalid application link\.?|Apply URL not in source text; use original source\.?|AI field \w+ exceeds schema limit; inspect stored source\.?", "", RegexOptions.IgnoreCase);
-        text = text.Replace("Deadline is unspecified; verify original source before publication.", "", StringComparison.OrdinalIgnoreCase).Replace("موعد انتهاء الإعلان غير محدد؛ بانتظار المراجعة. افتح الإعلان الأصلي للتحقق قبل الاعتماد.", "", StringComparison.Ordinal);
+        var text = Regex.Replace(
+            reason,
+            @"Summary must contain 1[–-]200 characters\.?|Invalid application link\.?|Apply URL not in source text; use original source\.?|AI field \w+ exceeds schema limit; inspect stored source\.?",
+            "",
+            RegexOptions.IgnoreCase
+        );
+        text = text.Replace(
+                "Deadline is unspecified; verify original source before publication.",
+                "",
+                StringComparison.OrdinalIgnoreCase
+            )
+            .Replace(
+                "موعد انتهاء الإعلان غير محدد؛ بانتظار المراجعة. افتح الإعلان الأصلي للتحقق قبل الاعتماد.",
+                "",
+                StringComparison.Ordinal
+            );
         return text.Trim();
     }
 }

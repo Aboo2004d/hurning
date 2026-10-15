@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace HiringPs.Core;
+
 public class SitePage
 {
     [Key, MaxLength(40)]

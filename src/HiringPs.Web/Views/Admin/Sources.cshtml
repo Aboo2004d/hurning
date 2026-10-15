@@ -8,7 +8,10 @@
 </div>
 <p class="notice">@T["SourcesNote"]</p>
 <p class="muted">@T["ScheduleZone"] · @T["CollectWorkerNote"]</p>
-<div class="table-wrap" data-collection-pending="@(Model.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")">
+<div
+    class="table-wrap"
+    data-collection-pending="@(Model.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")"
+>
     <table class="table-nowrap">
         <thead>
             <tr>
@@ -45,7 +48,11 @@
                             <a class="button button-outline" asp-action="Source" asp-route-id="@source.Id">@T["Edit"]</a>
                             <form asp-action="CollectNow" method="post">
                                 <input type="hidden" name="id" value="@source.Id"/>
-                                <button class="button-outline" type="submit" disabled="@(!source.Enabled||!source.UsageApproved||request?.Status is "Pending" or "Running")">
+                                <button
+                                    class="button-outline"
+                                    type="submit"
+                                    disabled="@(!source.Enabled||!source.UsageApproved||request?.Status is "Pending" or "Running")"
+                                >
                                     @T["CollectNow"]
                                 </button>
                             </form>

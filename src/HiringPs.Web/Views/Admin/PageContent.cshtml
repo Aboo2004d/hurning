@@ -45,7 +45,13 @@
     </div>
     <div class="actions">
         <button type="submit">@T["Save"]</button>
-        <a class="textlink" asp-controller="Home" asp-action="@(Model.Key=="about"?"About":"Privacy")" target="_blank" rel="noopener noreferrer">
+        <a
+            class="textlink"
+            asp-controller="Home"
+            asp-action="@(Model.Key=="about"?"About":"Privacy")"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
             @T["PreviewPage"]
         </a>
     </div>

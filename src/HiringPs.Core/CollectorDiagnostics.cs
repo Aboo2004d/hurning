@@ -5,7 +5,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
 
 namespace HiringPs.Core;
+
 public record NetworkDiagnostic(string Url, string Type, string Reason, int? Status);
+
 public class CollectorDiagnostic
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -30,7 +32,8 @@ public class CollectorDiagnostic
     public List<NetworkDiagnostic> Network { get; set; } = [];
 }
 
-public class CollectorDiagnosticException(CollectorDiagnostic diagnostic, Exception original) : Exception(original.Message, original)
+public class CollectorDiagnosticException(CollectorDiagnostic diagnostic, Exception original)
+    : Exception(original.Message, original)
 {
     public CollectorDiagnostic Diagnostic { get; } = diagnostic;
 }
@@ -39,8 +42,9 @@ public static class CollectorDiagnosticFiles
 {
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
-        WriteIndented = true
+        WriteIndented = true,
     };
+
     public static string DirectoryPath(IConfiguration configuration)
     {
         if (configuration["Diagnostics:Directory"] is { Length: > 0 } configured)
@@ -50,22 +54,57 @@ public static class CollectorDiagnosticFiles
             return Path.GetFullPath(configured);
         }
 
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        for (
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            dir is not null;
+            dir = dir.Parent
+        )
             if (File.Exists(Path.Combine(dir.FullName, "HiringPs.sln")))
                 return Path.Combine(dir.FullName, "artifacts", "collector-diagnostics");
         return Path.Combine(AppContext.BaseDirectory, "Data", "CollectorDiagnostics");
     }
 
-    public static string FilePath(IConfiguration configuration, Guid id, bool image = false) => Path.Combine(DirectoryPath(configuration), id.ToString("N") + (image ? ".jpg" : ".json"));
-    public static string AuditDetail(CollectorDiagnostic data, long? itemId = null) => JsonSerializer.Serialize(new { id = data.Id.ToString("N"), data.SourceId, itemId, data.Operation, data.At, data.Stage, data.HttpStatus, data.ElapsedMs, data.StageElapsedMs, data.TimeoutMs, selector = data.Selector.Length > 150 ? data.Selector[..150] : data.Selector, finalUrl = data.FinalUrl.Length > 300 ? data.FinalUrl[..300] : data.FinalUrl, data.ExceptionType, data.Screenshot, data.CaptureNote });
-    public static async Task<T> WithoutPageAsync<T>(Source source, string operation, string stage, string url, IConfiguration configuration, Func<Task<T>> work, CancellationToken ct)
+    public static string FilePath(IConfiguration configuration, Guid id, bool image = false) =>
+        Path.Combine(DirectoryPath(configuration), id.ToString("N") + (image ? ".jpg" : ".json"));
+
+    public static string AuditDetail(CollectorDiagnostic data, long? itemId = null) =>
+        JsonSerializer.Serialize(
+            new
+            {
+                id = data.Id.ToString("N"),
+                data.SourceId,
+                itemId,
+                data.Operation,
+                data.At,
+                data.Stage,
+                data.HttpStatus,
+                data.ElapsedMs,
+                data.StageElapsedMs,
+                data.TimeoutMs,
+                selector = data.Selector.Length > 150 ? data.Selector[..150] : data.Selector,
+                finalUrl = data.FinalUrl.Length > 300 ? data.FinalUrl[..300] : data.FinalUrl,
+                data.ExceptionType,
+                data.Screenshot,
+                data.CaptureNote,
+            }
+        );
+
+    public static async Task<T> WithoutPageAsync<T>(
+        Source source,
+        string operation,
+        string stage,
+        string url,
+        IConfiguration configuration,
+        Func<Task<T>> work,
+        CancellationToken ct
+    )
     {
         var started = Stopwatch.StartNew();
         try
         {
             return await work();
         }
-        catch (OperationCanceledException)when (ct.IsCancellationRequested)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
@@ -81,12 +120,18 @@ public static class CollectorDiagnosticFiles
                 ElapsedMs = started.ElapsedMilliseconds,
                 StageElapsedMs = started.ElapsedMilliseconds,
                 ExceptionType = ex.GetType().Name,
-                HttpStatus = ex is HttpRequestException http && http.StatusCode is { } code ? (int)code : null
+                HttpStatus =
+                    ex is HttpRequestException http && http.StatusCode is { } code
+                        ? (int)code
+                        : null,
             };
             try
             {
                 Directory.CreateDirectory(DirectoryPath(configuration));
-                await File.WriteAllTextAsync(FilePath(configuration, report.Id), JsonSerializer.Serialize(report, Json));
+                await File.WriteAllTextAsync(
+                    FilePath(configuration, report.Id),
+                    JsonSerializer.Serialize(report, Json)
+                );
             }
             catch
             {
@@ -99,7 +144,10 @@ public static class CollectorDiagnosticFiles
 
     public static string SafeUrl(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
+        if (
+            !Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("https" or "http")
+        )
             return "";
         var safeKeys = new[]
         {
@@ -109,33 +157,49 @@ public static class CollectorDiagnosticFiles
             "page",
             "language",
             "languageCd",
-            "vacancyNum"
+            "vacancyNum",
         };
-        var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries).Select(part =>
-        {
-            var bits = part.Split('=', 2);
-            var key = Uri.UnescapeDataString(bits[0]);
-            return safeKeys.Contains(key, StringComparer.OrdinalIgnoreCase) && bits.Length == 2 && bits[1].Length <= 80 ? Uri.EscapeDataString(key) + "=" + bits[1] : "redacted=1";
-        });
+        var query = uri
+            .Query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part =>
+            {
+                var bits = part.Split('=', 2);
+                var key = Uri.UnescapeDataString(bits[0]);
+                return
+                    safeKeys.Contains(key, StringComparer.OrdinalIgnoreCase)
+                    && bits.Length == 2
+                    && bits[1].Length <= 80
+                    ? Uri.EscapeDataString(key) + "=" + bits[1]
+                    : "redacted=1";
+            });
         return new UriBuilder(uri)
         {
             UserName = "",
             Password = "",
             Fragment = "",
-            Query = string.Join('&', query)
+            Query = string.Join('&', query),
         }.Uri.ToString();
     }
 }
 
 public sealed class CollectorDiagnosticSession : IDisposable
 {
-    private static readonly ConditionalWeakTable<IPage, CollectorDiagnosticSession> Sessions = new();
+    private static readonly ConditionalWeakTable<IPage, CollectorDiagnosticSession> Sessions =
+        new();
     private readonly IPage page;
     private readonly IConfiguration configuration;
     private readonly Stopwatch total = Stopwatch.StartNew();
     private readonly Stopwatch stage = Stopwatch.StartNew();
     private readonly CollectorDiagnostic data;
-    public CollectorDiagnosticSession(IPage page, Source source, string operation, string url, IConfiguration configuration)
+
+    public CollectorDiagnosticSession(
+        IPage page,
+        Source source,
+        string operation,
+        string url,
+        IConfiguration configuration
+    )
     {
         this.page = page;
         this.configuration = configuration;
@@ -143,7 +207,7 @@ public sealed class CollectorDiagnosticSession : IDisposable
         {
             SourceId = source.Id,
             Operation = operation,
-            RequestedUrl = CollectorDiagnosticFiles.SafeUrl(url)
+            RequestedUrl = CollectorDiagnosticFiles.SafeUrl(url),
         };
         Sessions.Add(page, this);
         page.Response += Response;
@@ -164,7 +228,7 @@ public sealed class CollectorDiagnosticSession : IDisposable
         {
             return await work();
         }
-        catch (OperationCanceledException)when (ct.IsCancellationRequested)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
@@ -181,44 +245,63 @@ public sealed class CollectorDiagnosticSession : IDisposable
             {
                 data.Title = await page.TitleAsync().WaitAsync(TimeSpan.FromSeconds(2));
             }
-            catch
-            {
-            }
+            catch { }
 
             if (data.Title.Length > 200)
                 data.Title = data.Title[..200];
             try
             {
-                data.ReadyState = await page.EvaluateAsync<string>("() => document.readyState").WaitAsync(TimeSpan.FromSeconds(2));
+                data.ReadyState = await page.EvaluateAsync<string>("() => document.readyState")
+                    .WaitAsync(TimeSpan.FromSeconds(2));
             }
-            catch
-            {
-            }
+            catch { }
 
             if (data.Selector.Length > 0)
             {
                 try
                 {
-                    data.SelectorMatches = await page.Locator(data.Selector).CountAsync().WaitAsync(TimeSpan.FromSeconds(2));
-                    data.SelectorVisible = await page.Locator(data.Selector).First.IsVisibleAsync().WaitAsync(TimeSpan.FromSeconds(2));
+                    data.SelectorMatches = await page.Locator(data.Selector)
+                        .CountAsync()
+                        .WaitAsync(TimeSpan.FromSeconds(2));
+                    data.SelectorVisible = await page.Locator(data.Selector)
+                        .First.IsVisibleAsync()
+                        .WaitAsync(TimeSpan.FromSeconds(2));
                 }
-                catch
-                {
-                }
+                catch { }
             }
 
             try
             {
                 Directory.CreateDirectory(CollectorDiagnosticFiles.DirectoryPath(configuration));
                 // Bounded screenshot count/size; form input values are masked and no HTML/cookies/headers are saved.
-                if (Directory.EnumerateFiles(CollectorDiagnosticFiles.DirectoryPath(configuration), "*.jpg").Take(500).Count() < 500)
+                if (
+                    Directory
+                        .EnumerateFiles(
+                            CollectorDiagnosticFiles.DirectoryPath(configuration),
+                            "*.jpg"
+                        )
+                        .Take(500)
+                        .Count() < 500
+                )
                 {
                     try
                     {
-                        var bytes = await page.ScreenshotAsync(new() { Type = ScreenshotType.Jpeg, Quality = 45, FullPage = false, Timeout = 2000, Mask = [page.Locator("input,textarea,[contenteditable=true]")] });
+                        var bytes = await page.ScreenshotAsync(
+                            new()
+                            {
+                                Type = ScreenshotType.Jpeg,
+                                Quality = 45,
+                                FullPage = false,
+                                Timeout = 2000,
+                                Mask = [page.Locator("input,textarea,[contenteditable=true]")],
+                            }
+                        );
                         if (bytes.Length <= 2 * 1024 * 1024)
                         {
-                            await File.WriteAllBytesAsync(CollectorDiagnosticFiles.FilePath(configuration, data.Id, true), bytes);
+                            await File.WriteAllBytesAsync(
+                                CollectorDiagnosticFiles.FilePath(configuration, data.Id, true),
+                                bytes
+                            );
                             data.Screenshot = true;
                         }
                     }
@@ -228,7 +311,10 @@ public sealed class CollectorDiagnosticSession : IDisposable
                     }
                 }
 
-                await File.WriteAllTextAsync(CollectorDiagnosticFiles.FilePath(configuration, data.Id), JsonSerializer.Serialize(data, CollectorDiagnosticFiles.Json));
+                await File.WriteAllTextAsync(
+                    CollectorDiagnosticFiles.FilePath(configuration, data.Id),
+                    JsonSerializer.Serialize(data, CollectorDiagnosticFiles.Json)
+                );
             }
             catch
             {
@@ -270,9 +356,7 @@ public sealed class CollectorDiagnosticSession : IDisposable
             if (Sessions.TryGetValue(request.Frame.Page, out var session))
                 session.Add(request.Url, request.ResourceType, "PolicyBlocked", null);
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     public static void PageStep(IPage page, string stage, int timeoutMs)

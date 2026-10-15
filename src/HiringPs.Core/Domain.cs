@@ -3,12 +3,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 
 namespace HiringPs.Core;
+
 public enum OpportunityKind
 {
     Job,
     Training,
     Tender,
-    ProcurementNotice
+    ProcurementNotice,
 }
 
 public enum PublicationStatus
@@ -17,7 +18,7 @@ public enum PublicationStatus
     NeedsReview,
     Published,
     Archived,
-    Hidden
+    Hidden,
 }
 
 public enum ProcessingStatus
@@ -28,7 +29,7 @@ public enum ProcessingStatus
     Ready,
     NeedsReview,
     OutOfScope,
-    Published
+    Published,
 }
 
 public enum ConnectorKind
@@ -40,7 +41,7 @@ public enum ConnectorKind
     Automatic,
     UnrwaInspira,
     JobsRss,
-    ReliefWebRss
+    ReliefWebRss,
 }
 
 public class Source
@@ -76,11 +77,18 @@ public class Source
 
 public class SourceCollectionRequest
 {
-    [Key, System.ComponentModel.DataAnnotations.Schema.DatabaseGenerated(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.None)]
+    [
+        Key,
+        System.ComponentModel.DataAnnotations.Schema.DatabaseGenerated(
+            System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.None
+        )
+    ]
     public int SourceId { get; set; }
 
     [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(SourceId))]
-    [System.ComponentModel.DataAnnotations.Schema.InverseProperty(nameof(HiringPs.Core.Source.CollectionRequests))]
+    [System.ComponentModel.DataAnnotations.Schema.InverseProperty(
+        nameof(HiringPs.Core.Source.CollectionRequests)
+    )]
     public Source Source { get; set; } = null!;
     public Guid RequestToken { get; set; } = Guid.NewGuid();
     public DateTimeOffset RequestedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -254,13 +262,36 @@ public class WorkerHeartbeat
 public static class TextRules
 {
     public static int CharacterCount(string text) => new StringInfo(text).LengthInTextElements;
-    public static string Hash(string text) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
+
+    public static string Hash(string text) =>
+        Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))
+        );
+
     public static string OrganizationKey(string text)
     {
         var value = Normalize(text);
         return value.Length <= 200 ? value : "sha256:" + Hash(value);
     }
 
-    public static string Normalize(string text) => string.Join(' ', text.ToLowerInvariant().Normalize().Replace('أ', 'ا').Replace('إ', 'ا').Replace('آ', 'ا').Split((char[]? )null, StringSplitOptions.RemoveEmptyEntries));
-    public static DateOnly PalestineToday() => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).DateTime);
+    public static string Normalize(string text) =>
+        string.Join(
+            ' ',
+            text.ToLowerInvariant()
+                .Normalize()
+                .Replace('أ', 'ا')
+                .Replace('إ', 'ا')
+                .Replace('آ', 'ا')
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+        );
+
+    public static DateOnly PalestineToday() =>
+        DateOnly.FromDateTime(
+            TimeZoneInfo
+                .ConvertTime(
+                    DateTimeOffset.UtcNow,
+                    TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")
+                )
+                .DateTime
+        );
 }

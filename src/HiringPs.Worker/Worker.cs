@@ -2,7 +2,12 @@
 using HiringPs.Core;
 
 namespace HiringPs.Worker;
-public class Worker(IServiceScopeFactory scopes, ILogger<Worker> logger, IConfiguration configuration) : BackgroundService
+
+public class Worker(
+    IServiceScopeFactory scopes,
+    ILogger<Worker> logger,
+    IConfiguration configuration
+) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -11,18 +16,28 @@ public class Worker(IServiceScopeFactory scopes, ILogger<Worker> logger, IConfig
             try
             {
                 await using var scope = scopes.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<CollectionPipeline>().TickAsync(stoppingToken);
+                await scope
+                    .ServiceProvider.GetRequiredService<CollectionPipeline>()
+                    .TickAsync(stoppingToken);
             }
-            catch (OperationCanceledException)when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
             }
             catch (Exception ex)
             {
-                logger.LogError("Pipeline failed ({Type}); retry in one minute. Check SQL/service configuration.", ex.GetType().Name);
+                logger.LogError(
+                    "Pipeline failed ({Type}); retry in one minute. Check SQL/service configuration.",
+                    ex.GetType().Name
+                );
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(configuration.GetValue<int?>("Worker:PollSeconds") ?? 5, 2, 60)), stoppingToken);
+            await Task.Delay(
+                TimeSpan.FromSeconds(
+                    Math.Clamp(configuration.GetValue<int?>("Worker:PollSeconds") ?? 5, 2, 60)
+                ),
+                stoppingToken
+            );
         }
     }
 }

@@ -86,7 +86,11 @@
 @if (Model.Screenshot)
 {
     <h2>@T["FailureScreenshot"]</h2>
-    <img class="diagnostic-image" src="@Url.Action("DiagnosticImage",new{id=Model.Id})" alt="@T["FailureScreenshot"]"/>
+    <img
+        class="diagnostic-image"
+        src="@Url.Action("DiagnosticImage",new{id=Model.Id})"
+        alt="@T["FailureScreenshot"]"
+    />
 }
 <h2>@T["FailedRequests"]</h2>
 <p class="muted">@T["NetworkDiagnosticNote"]</p>

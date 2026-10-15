@@ -15,7 +15,13 @@
     <input type="hidden" name="archive" value="@Model.Archive.ToString().ToLowerInvariant()"/>
     <input type="hidden" name="kind" value="@Model.Kind"/>
     <div class="searchbar">
-        <input type="search" name="q" value="@Model.Query" placeholder="@T["SearchPlaceholder"]" aria-label="@T["Search"]"/>
+        <input
+            type="search"
+            name="q"
+            value="@Model.Query"
+            placeholder="@T["SearchPlaceholder"]"
+            aria-label="@T["Search"]"
+        />
         <button type="submit">@T["Search"]</button>
     </div>
     <div class="listing-layout">
@@ -120,14 +126,32 @@
             <nav class="pagination" aria-label="Pagination">
                 @if (Model.Page > 1)
                 {
-                    <a asp-route-page="@(Model.Page-1)" asp-route-q="@Model.Query" asp-route-kind="@Model.Kind" asp-route-city="@Model.City" asp-route-category="@Model.Category" asp-route-employment="@Model.Employment" asp-route-experience="@Model.Experience" asp-route-archive="@Model.Archive">
+                    <a
+                        asp-route-page="@(Model.Page-1)"
+                        asp-route-q="@Model.Query"
+                        asp-route-kind="@Model.Kind"
+                        asp-route-city="@Model.City"
+                        asp-route-category="@Model.Category"
+                        asp-route-employment="@Model.Employment"
+                        asp-route-experience="@Model.Experience"
+                        asp-route-archive="@Model.Archive"
+                    >
                         @T["Previous"]
                     </a>
                 }
                 <span>@Model.Page / @Math.Max(1,(Model.Count+11)/12)</span>
                 @if (Model.Page * 12 < Model.Count)
                 {
-                    <a asp-route-page="@(Model.Page+1)" asp-route-q="@Model.Query" asp-route-kind="@Model.Kind" asp-route-city="@Model.City" asp-route-category="@Model.Category" asp-route-employment="@Model.Employment" asp-route-experience="@Model.Experience" asp-route-archive="@Model.Archive">
+                    <a
+                        asp-route-page="@(Model.Page+1)"
+                        asp-route-q="@Model.Query"
+                        asp-route-kind="@Model.Kind"
+                        asp-route-city="@Model.City"
+                        asp-route-category="@Model.Category"
+                        asp-route-employment="@Model.Employment"
+                        asp-route-experience="@Model.Experience"
+                        asp-route-archive="@Model.Archive"
+                    >
                         @T["Next"]
                     </a>
                 }

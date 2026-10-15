@@ -16,7 +16,12 @@
     }
     )
     {
-        <a asp-action="Messages" asp-route-status="@status" class="@(Model.Status==status?"is-current":null)" aria-current="@(Model.Status==status?"page":null)">
+        <a
+            asp-action="Messages"
+            asp-route-status="@status"
+            class="@(Model.Status==status?"is-current":null)"
+            aria-current="@(Model.Status==status?"page":null)"
+        >
             @T["ContactStatus_"+status]
         </a>
     }

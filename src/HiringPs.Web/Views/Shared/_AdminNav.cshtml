@@ -23,8 +23,12 @@
     </a>
     @if (link.Action == "Opportunities")
     {
-        <a asp-controller="Admin" asp-action="Opportunities" asp-route-status="NeedsReview"
-           aria-current="@(currentAction == "Opportunities" && Context.Request.Query["status"] == "NeedsReview" ? "page" : null)">
+        <a
+            asp-controller="Admin"
+            asp-action="Opportunities"
+            asp-route-status="NeedsReview"
+            aria-current="@(currentAction == "Opportunities" && Context.Request.Query["status"] == "NeedsReview" ? "page" : null)"
+        >
             @T["Review"]
         </a>
     }

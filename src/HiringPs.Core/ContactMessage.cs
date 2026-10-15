@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace HiringPs.Core;
+
 public class ContactMessage
 {
     public long Id { get; set; }

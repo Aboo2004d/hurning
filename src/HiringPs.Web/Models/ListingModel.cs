@@ -1,6 +1,7 @@
 using HiringPs.Core;
 
 namespace HiringPs.Web.Models;
+
 public class ListingModel
 {
     public List<Opportunity> Items { get; set; } = [];

@@ -3,7 +3,10 @@ using HiringPs.Core;
 using HiringPs.Worker;
 using Microsoft.EntityFrameworkCore;
 
-var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory });
+var builder = Host.CreateApplicationBuilder(
+    new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
+);
+
 // ========================================
 // 1. Command Arguments
 // ========================================
@@ -22,12 +25,17 @@ if (installBrowser)
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<AttachmentReader>();
 builder.Services.AddScoped<BrowserCollector>();
+
 // ========================================
 // 3. Database & Processing Services
 // ========================================
 if (!isProbe)
 {
-    var connectionString = builder.Configuration.GetConnectionString("Hiring") ?? throw new InvalidOperationException("Missing ConnectionStrings:Hiring in appsettings.json.");
+    var connectionString =
+        builder.Configuration.GetConnectionString("Hiring")
+        ?? throw new InvalidOperationException(
+            "Missing ConnectionStrings:Hiring in appsettings.json."
+        );
     builder.Services.AddDbContext<HiringDb>(options =>
     {
         options.UseSqlServer(connectionString);
@@ -53,6 +61,7 @@ builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = builder.Configuration["Service:Name"] ?? "HiringPsCollector";
 });
+
 // ========================================
 // 5. Background Worker
 // ========================================
@@ -65,6 +74,7 @@ if (!isOnce && !isProbe)
 // 6. Build Host
 // ========================================
 using var host = builder.Build();
+
 // ========================================
 // 7. Probe Mode
 // ========================================
@@ -80,7 +90,7 @@ if (isProbe)
             Url = "https://www.gpc.pna.ps/diwan/viewPublicVacancyList.gpc",
             Connector = ConnectorKind.Gpc,
             Enabled = true,
-            UsageApproved = true
+            UsageApproved = true,
         },
         new Source
         {
@@ -88,7 +98,7 @@ if (isProbe)
             Url = "https://palcareer.com/",
             Connector = ConnectorKind.PalCareer,
             Enabled = true,
-            UsageApproved = true
+            UsageApproved = true,
         },
         new Source
         {
@@ -97,7 +107,8 @@ if (isProbe)
             Connector = ConnectorKind.BrowserSelectors,
             Enabled = true,
             UsageApproved = true,
-            ConfigurationJson = "{\"ListingLinkSelector\":\"a[href*='view-one-tender']\",\"ContentSelector\":\"body\",\"MaxPages\":5}"
+            ConfigurationJson =
+                "{\"ListingLinkSelector\":\"a[href*='view-one-tender']\",\"ContentSelector\":\"body\",\"MaxPages\":5}",
         },
         new Source
         {
@@ -106,16 +117,26 @@ if (isProbe)
             Connector = ConnectorKind.BrowserSelectors,
             Enabled = true,
             UsageApproved = true,
-            ConfigurationJson = "{\"ListingLinkSelector\":\"a[href*='/tenders/'][href$='.pdf']\",\"ContentSelector\":\"body\",\"MaxPages\":5}"
-        }
+            ConfigurationJson =
+                "{\"ListingLinkSelector\":\"a[href*='/tenders/'][href$='.pdf']\",\"ContentSelector\":\"body\",\"MaxPages\":5}",
+        },
     };
-    foreach (var source in samples.Where(x => (!args.Contains("--birzeit") || x.Name.Contains("Birzeit")) && (!args.Contains("--prcs") || x.Name.Contains("PRCS"))))
+    foreach (
+        var source in samples.Where(x =>
+            (!args.Contains("--birzeit") || x.Name.Contains("Birzeit"))
+            && (!args.Contains("--prcs") || x.Name.Contains("PRCS"))
+        )
+    )
     {
         try
         {
             var links = await collector.DiscoverAsync(source, CancellationToken.None);
             var sample = await collector.FetchAsync(source, links[0].Url, CancellationToken.None);
-            Console.WriteLine($"{source.Name}: discovered={links.Count}, " + $"sampleCharacters={sample.Length}; " + "diagnostic only, no storage or publication.");
+            Console.WriteLine(
+                $"{source.Name}: discovered={links.Count}, "
+                    + $"sampleCharacters={sample.Length}; "
+                    + "diagnostic only, no storage or publication."
+            );
         }
         catch (Exception ex)
         {
@@ -132,7 +153,9 @@ if (isProbe)
 if (isOnce)
 {
     await using var scope = host.Services.CreateAsyncScope();
-    await scope.ServiceProvider.GetRequiredService<CollectionPipeline>().TickAsync(CancellationToken.None);
+    await scope
+        .ServiceProvider.GetRequiredService<CollectionPipeline>()
+        .TickAsync(CancellationToken.None);
     return;
 }
 
@@ -140,4 +163,5 @@ if (isOnce)
 // 9. Run Windows Service
 // ========================================
 await host.RunAsync();
+
 public partial class Program;

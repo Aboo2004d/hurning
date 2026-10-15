@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace HiringPs.Web.Controllers;
+
 public class LoginInput
 {
     [Required, EmailAddress]
@@ -28,9 +29,11 @@ public class PasswordInput
     public string ConfirmPassword { get; set; } = "";
 }
 
-public class AccountController(SignInManager<IdentityUser> signIn, UserManager<IdentityUser> users) : Controller
+public class AccountController(SignInManager<IdentityUser> signIn, UserManager<IdentityUser> users)
+    : Controller
 {
     public IActionResult Login(string? returnUrl) => View(new LoginInput { ReturnUrl = returnUrl });
+
     [HttpPost, EnableRateLimiting("public")]
     public async Task<IActionResult> Login(LoginInput input)
     {
@@ -57,6 +60,7 @@ public class AccountController(SignInManager<IdentityUser> signIn, UserManager<I
 
     [Authorize(Roles = "Admin")]
     public IActionResult ChangePassword() => View(new PasswordInput());
+
     [HttpPost, Authorize(Roles = "Admin"), EnableRateLimiting("public")]
     public async Task<IActionResult> ChangePassword(PasswordInput input)
     {
@@ -65,7 +69,11 @@ public class AccountController(SignInManager<IdentityUser> signIn, UserManager<I
         var user = await users.GetUserAsync(User);
         if (user is null)
             return Challenge();
-        var result = await users.ChangePasswordAsync(user, input.CurrentPassword, input.NewPassword);
+        var result = await users.ChangePasswordAsync(
+            user,
+            input.CurrentPassword,
+            input.NewPassword
+        );
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)

@@ -30,7 +30,13 @@
             </p>
             <div class="actions">
                 <a class="button" asp-action="PageContent" asp-route-key="@key">@T["Edit"]</a>
-                <a class="textlink" asp-controller="Home" asp-action="@(key=="about"?"About":"Privacy")" target="_blank" rel="noopener noreferrer">
+                <a
+                    class="textlink"
+                    asp-controller="Home"
+                    asp-action="@(key=="about"?"About":"Privacy")"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
                     @T["PreviewPage"]
                 </a>
             </div>
