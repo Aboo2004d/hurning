@@ -28,7 +28,6 @@
         <header class="topbar site-header">
             <a class="brand" asp-controller="Home" asp-action="Index" aria-label="@(T["SiteName"].Value + (ar ? " — الرئيسية" : " — Home"))">
                 <img class="brand-logo" src="~/images/brand/basket-logo.png" asp-append-version="true" width="56" height="56" alt=""/>
-                <span class="brand-name" dir="auto">@T["SiteName"]</span>
             </a>
             <button class="header-menu-toggle secondary" type="button" aria-expanded="false" aria-controls="header-menu" aria-label="@(adminArea ? T["ControlPanel"] : T["Menu"])">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
