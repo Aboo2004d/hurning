@@ -1,6 +1,5 @@
 @model SitePageInput
 @{ViewData["Title"]=T["PageContents"];}
-<partial name="_AdminNav"/>
 <a class="textlink" asp-action="Pages">@T["BackToPages"]</a>
 <h1>@T[Model.Key=="about"?"About":"Privacy"]</h1><p class="muted">@T["PageEditorHelp"]</p>
 @if(!ViewData.ModelState.IsValid){<div class="validation-summary-errors" role="alert"><ul>@foreach(var error in ViewData.ModelState.Values.SelectMany(x=>x.Errors)){<li>@T[error.ErrorMessage]</li>}</ul></div>}

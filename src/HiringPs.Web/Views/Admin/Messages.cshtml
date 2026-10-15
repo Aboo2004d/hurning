@@ -1,6 +1,5 @@
 @model ContactInbox
 @{ViewData["Title"]=T["ContactInbox"];}
-<partial name="_AdminNav"/>
 <div class="heading-row"><h1>@T["ContactInbox"]</h1><span class="badge">@T["UnreadMessages"]: @Model.UnreadCount</span></div>
 <nav class="message-tabs" aria-label="@T["Status"]">
  @foreach(var status in new[]{"all","unread","read","handled"}){<a asp-action="Messages" asp-route-status="@status" class="@(Model.Status==status?"is-current":null)" aria-current="@(Model.Status==status?"page":null)">@T["ContactStatus_"+status]</a>}

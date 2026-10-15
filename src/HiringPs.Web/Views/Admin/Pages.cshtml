@@ -1,6 +1,5 @@
 @model List<SitePage>
 @{ViewData["Title"]=T["PageContents"];}
-<partial name="_AdminNav"/>
 <h1>@T["PageContents"]</h1><p class="muted">@T["PageContentsHelp"]</p>
 <div class="managed-pages">
 @foreach(var key in new[]{"about","privacy"})

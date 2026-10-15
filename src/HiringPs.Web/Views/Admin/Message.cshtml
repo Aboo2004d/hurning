@@ -1,6 +1,5 @@
 @model ContactMessage
 @{ViewData["Title"]=T["ContactMessage"];}
-<partial name="_AdminNav"/>
 <a class="textlink" asp-action="Messages">@T["BackToMessages"]</a>
 <article class="detail-panel message-detail">
  <div class="heading-row"><h1>@T["ContactMessage"]</h1><span class="badge">@T["ContactStatus_"+(Model.IsHandled?"handled":"read")]</span></div>

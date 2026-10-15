@@ -14,34 +14,18 @@
         (Controller: "Account", Action: "ChangePassword", Label: isArabic ? "كلمة المرور" : "Password")
     };
 }
-<nav class="admin-nav" aria-label="@(isArabic ? "قائمة الإدارة" : "Administration")">
-    <div class="admin-dropdown">
-        <button class="admin-menu-toggle secondary" type="button" aria-expanded="false" aria-controls="admin-menu">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span>@T["ControlPanel"]</span>
-            <span class="menu-chevron" aria-hidden="true">⌄</span>
-        </button>
-        <div id="admin-menu" class="admin-menu-panel" hidden>
-            @foreach (var link in links)
-            {
-                var isCurrent = currentController == link.Controller && currentAction == link.Action
-                    && !(link.Action == "Opportunities" && Context.Request.Query["status"] == "NeedsReview");
-                <a asp-controller="@link.Controller" asp-action="@link.Action" aria-current="@(isCurrent ? "page" : null)">
-                    @link.Label
-                </a>
-                @if (link.Action == "Opportunities")
-                {
-                    <a asp-controller="Admin" asp-action="Opportunities" asp-route-status="NeedsReview"
-                       aria-current="@(currentAction == "Opportunities" && Context.Request.Query["status"] == "NeedsReview" ? "page" : null)">
-                        @T["Review"]
-                    </a>
-                }
-            }
-            <form asp-controller="Account" asp-action="Logout" method="post">
-                <button class="secondary" type="submit">@T["Logout"]</button>
-            </form>
-        </div>
-    </div>
-</nav>
+@foreach (var link in links)
+{
+    var isCurrent = currentController == link.Controller && currentAction == link.Action
+        && !(link.Action == "Opportunities" && Context.Request.Query["status"] == "NeedsReview");
+    <a asp-controller="@link.Controller" asp-action="@link.Action" aria-current="@(isCurrent ? "page" : null)">
+        @link.Label
+    </a>
+    @if (link.Action == "Opportunities")
+    {
+        <a asp-controller="Admin" asp-action="Opportunities" asp-route-status="NeedsReview"
+           aria-current="@(currentAction == "Opportunities" && Context.Request.Query["status"] == "NeedsReview" ? "page" : null)">
+            @T["Review"]
+        </a>
+    }
+}

@@ -1,5 +1,5 @@
 (()=>{
- // Public menu is a dropdown on smaller screens; the admin menu is always a dropdown.
+ // The header uses the public or administration links supplied by the layout.
  const siteHeader = document.querySelector('.site-header');
  const mobileNavigation = window.matchMedia('(max-width:1100px)');
  const setupDropdown = (button, panel, isPublic = false) => {
@@ -24,11 +24,10 @@
   if (isPublic) mobileNavigation.addEventListener('change', () => setOpen(false));
  };
  setupDropdown(document.querySelector('.header-menu-toggle'), document.getElementById('header-menu'), true);
- setupDropdown(document.querySelector('.admin-menu-toggle'), document.getElementById('admin-menu'));
  const connector=document.getElementById('source-connector'),connectorHelp=document.getElementById('connector-help');
  if(connector&&connectorHelp){const update=()=>{connectorHelp.textContent=connector.selectedOptions[0]?.dataset.help||'';};connector.addEventListener('change',update);update();}
  if(/^\/admin\/opportunities\/?$/i.test(location.pathname))document.querySelectorAll('.table-wrap table').forEach(table=>{table.classList.remove('admin-table');table.classList.add('table-nowrap');});
- if(document.querySelector('.admin-nav'))document.querySelectorAll('.table-wrap table:not(.table-nowrap)').forEach(table=>{
+ if(document.body.classList.contains('admin-area'))document.querySelectorAll('.table-wrap table:not(.table-nowrap)').forEach(table=>{
   table.classList.add('admin-table');
   const headings=Array.from(table.querySelectorAll('thead th'),th=>th.textContent.trim());
   table.querySelectorAll('tbody tr').forEach(row=>Array.from(row.cells).forEach((cell,index)=>{cell.dataset.label=headings[index]||'';}));
