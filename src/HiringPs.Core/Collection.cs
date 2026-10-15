@@ -50,6 +50,12 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         var conf = JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
         var hosts = conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).Concat(source.Connector == ConnectorKind.UnrwaInspira ? new[] { "inspira.un.org" } : []).ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
+        // Jobs.ps loads its browser verification resources from this separate origin.
+        // Allow it only for browser requests, not discovery, detail URLs or attachments.
+        var browserHosts = source.Connector == ConnectorKind.JobsRss
+            && string.Equals(new Uri(source.Url).IdnHost, new Uri(OpportunityRss.JobsUrl).IdnHost, StringComparison.OrdinalIgnoreCase)
+            ? hosts.Append("challenges.cloudflare.com").ToArray()
+            : hosts;
         playwright ??= await Playwright.CreateAsync();
         browser ??= await playwright.Chromium.LaunchAsync(new() { Headless = true, Channel = configuration["Browser:Channel"] is { Length: > 0 } channel ? channel : null });
         var context = await browser.NewContextAsync(new() { AcceptDownloads = false, IgnoreHTTPSErrors = false, ServiceWorkers = ServiceWorkerPolicy.Block });
@@ -59,7 +65,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
             try
             {
                 if (route.Request.ResourceType is "image" or "font" or "media") { await route.AbortAsync(); return; }
-                await policy.ValidateAsync(route.Request.Url, hosts, ct);
+                await policy.ValidateAsync(route.Request.Url, browserHosts, ct);
                 await route.ContinueAsync();
             }
             catch { CollectorDiagnosticSession.PolicyBlock(route.Request); await route.AbortAsync(); }
