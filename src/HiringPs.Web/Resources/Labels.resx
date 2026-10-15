@@ -10,7 +10,7 @@
  <data name="Search" xml:space="preserve"><value>بحث</value></data>
  <data name="SearchPlaceholder" xml:space="preserve"><value>ابحث بعنوان الفرصة أو الجهة</value></data>
  <data name="Headline" xml:space="preserve"><value>بوابتك للوظائف والفرص في فلسطين</value></data>
- <data name="Subtitle" xml:space="preserve"><value>وظائف وتدريب وعطاءات ومناقصات في الضفة وغزة والقدس.</value></data>
+ <data name="Subtitle" xml:space="preserve"><value>نجمع تلقائيًا الوظائف وفرص التدريب والعطاءات والمناقصات من مواقع متعددة، لتجدها في مكان واحد.</value></data>
  <data name="Filters" xml:space="preserve"><value>تصفية النتائج</value></data>
  <data name="Clear" xml:space="preserve"><value>مسح الكل</value></data>
  <data name="Location" xml:space="preserve"><value>المكان</value></data>
@@ -358,6 +358,9 @@
  <data name="TenderSubtitle" xml:space="preserve"><value>عطاءات في الضفة وغزة والقدس.</value></data>
  <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>مناقصات في الضفة وغزة والقدس.</value></data>
  <data name="SiteName" xml:space="preserve"><value>فرص فلسطين</value></data>
+ <data name="BetaBadge" xml:space="preserve"><value>نسخة تجريبية</value></data>
+ <data name="BetaMessage" xml:space="preserve"><value>نطوّر فرص فلسطين لأجلكم — هذه نسخة تجريبية، والإطلاق الرسمي قريبًا.</value></data>
+ <data name="DismissBeta" xml:space="preserve"><value>إغلاق تنبيه النسخة التجريبية</value></data>
 </root>
 
 

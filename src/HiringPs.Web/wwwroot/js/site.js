@@ -1,4 +1,15 @@
 (()=>{
+ const betaBanner = document.querySelector('[data-beta-banner]');
+ if (betaBanner) {
+  const storageKey = 'hiring.beta-banner.v1.dismissed';
+  try { betaBanner.hidden = localStorage.getItem(storageKey) === 'true'; } catch { /* Storage may be unavailable. */ }
+  betaBanner.querySelector('[data-beta-dismiss]')?.addEventListener('click', () => {
+   betaBanner.hidden = true;
+   try { localStorage.setItem(storageKey, 'true'); } catch { /* Dismissal still works for this page. */ }
+   document.querySelector('.site-header .brand')?.focus();
+  });
+ }
+
  // The header uses the public or administration links supplied by the layout.
  const siteHeader = document.querySelector('.site-header');
  const mobileNavigation = window.matchMedia('(max-width:1100px)');

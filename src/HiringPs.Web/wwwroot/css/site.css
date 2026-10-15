@@ -100,3 +100,47 @@
 @media (max-width: 540px) {
     .brand-name { font-size: 16px; }
 }
+
+/* A quiet, dismissible beta notice above the public header. */
+.beta-banner {
+    background: var(--soft);
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+}
+.beta-banner-inner {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.beta-badge {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+.beta-banner p { margin: 0; font-size: 13px; min-width: 0; }
+.beta-dismiss {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    color: var(--accent);
+    border-color: transparent;
+    border-radius: 9px;
+}
+.beta-dismiss:hover { background: var(--surface); border-color: var(--line); }
+@media (max-width: 540px) {
+    .beta-banner-inner { padding: 10px 16px; gap: 8px; flex-wrap: wrap; }
+    .beta-banner p { order: 3; flex-basis: 100%; }
+}

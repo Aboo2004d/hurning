@@ -10,7 +10,7 @@
  <data name="Search" xml:space="preserve"><value>Search</value></data>
  <data name="SearchPlaceholder" xml:space="preserve"><value>Search opportunity title or organization</value></data>
  <data name="Headline" xml:space="preserve"><value>Your gateway to jobs and opportunities in Palestine</value></data>
- <data name="Subtitle" xml:space="preserve"><value>Jobs, training and procurement opportunities in Palestine.</value></data>
+ <data name="Subtitle" xml:space="preserve"><value>We automatically bring together jobs, training opportunities, tenders and procurement notices from multiple websites in one place.</value></data>
  <data name="Filters" xml:space="preserve"><value>Refine results</value></data>
  <data name="Clear" xml:space="preserve"><value>Clear all</value></data>
  <data name="Location" xml:space="preserve"><value>Location</value></data>
@@ -358,6 +358,9 @@
  <data name="TenderSubtitle" xml:space="preserve"><value>Tenders in the West Bank, Gaza and Jerusalem.</value></data>
  <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>Procurement notices in the West Bank, Gaza and Jerusalem.</value></data>
  <data name="SiteName" xml:space="preserve"><value>Palestine Opportunities</value></data>
+ <data name="BetaBadge" xml:space="preserve"><value>Beta</value></data>
+ <data name="BetaMessage" xml:space="preserve"><value>We’re building Palestine Opportunities for you — this is a beta version. Our official launch is coming soon.</value></data>
+ <data name="DismissBeta" xml:space="preserve"><value>Dismiss the beta notice</value></data>
 </root>
 
 
