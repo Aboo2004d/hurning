@@ -1,10 +1,43 @@
 @model ContactMessage
-@{ViewData["Title"]=T["ContactMessage"];}
+@{
+    ViewData["Title"] = T["ContactMessage"];
+}
 <a class="textlink" asp-action="Messages">@T["BackToMessages"]</a>
 <article class="detail-panel message-detail">
- <div class="heading-row"><h1>@T["ContactMessage"]</h1><span class="badge">@T["ContactStatus_"+(Model.IsHandled?"handled":"read")]</span></div>
- <dl class="detail-grid"><div><dt>@T["Name"]</dt><dd>@Model.Name</dd></div><div><dt>@T["Email"]</dt><dd dir="ltr">@Model.Email</dd></div><div><dt>@T["ContactDate"]</dt><dd>@TimeZoneInfo.ConvertTime(Model.CreatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")</dd></div></dl>
- <h2>@T["ContactMessage"]</h2><div class="message-content" dir="auto">@Model.Message</div>
- <div class="actions message-actions"><a class="button" href="@ContactReplyLinks.Mailto(Model.Email,T["ContactReplySubject"].Value)">@T["ReplyEmail"]</a><a class="button secondary" href="@ContactReplyLinks.Gmail(Model.Email,T["ContactReplySubject"].Value)" target="_blank" rel="noopener noreferrer">@T["ReplyGmail"]</a><form asp-action="MessageStatus" method="post"><input type="hidden" name="id" value="@Model.Id"/><input type="hidden" name="handled" value="@((!Model.IsHandled).ToString().ToLowerInvariant())"/><button type="submit" class="secondary">@T[Model.IsHandled?"ReopenMessage":"MarkHandled"]</button></form></div>
- <p class="muted">@T["ReplyEmailNote"]</p>
+    <div class="heading-row">
+        <h1>@T["ContactMessage"]</h1>
+        <span class="badge">@T["ContactStatus_"+(Model.IsHandled?"handled":"read")]</span>
+    </div>
+    <dl class="detail-grid">
+        <div>
+            <dt>@T["Name"]</dt>
+            <dd>@Model.Name</dd>
+        </div>
+        <div>
+            <dt>@T["Email"]</dt>
+            <dd dir="ltr">@Model.Email</dd>
+        </div>
+        <div>
+            <dt>@T["ContactDate"]</dt>
+            <dd>
+                @TimeZoneInfo.ConvertTime(Model.CreatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")
+            </dd>
+        </div>
+    </dl>
+    <h2>@T["ContactMessage"]</h2>
+    <div class="message-content" dir="auto">@Model.Message</div>
+    <div class="actions message-actions">
+        <a class="button" href="@ContactReplyLinks.Mailto(Model.Email,T["ContactReplySubject"].Value)">
+            @T["ReplyEmail"]
+        </a>
+        <a class="button secondary" href="@ContactReplyLinks.Gmail(Model.Email,T["ContactReplySubject"].Value)" target="_blank" rel="noopener noreferrer">
+            @T["ReplyGmail"]
+        </a>
+        <form asp-action="MessageStatus" method="post">
+            <input type="hidden" name="id" value="@Model.Id"/>
+            <input type="hidden" name="handled" value="@((!Model.IsHandled).ToString().ToLowerInvariant())"/>
+            <button type="submit" class="secondary">@T[Model.IsHandled?"ReopenMessage":"MarkHandled"]</button>
+        </form>
+    </div>
+    <p class="muted">@T["ReplyEmailNote"]</p>
 </article>

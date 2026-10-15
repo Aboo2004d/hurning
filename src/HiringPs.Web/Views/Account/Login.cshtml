@@ -1,3 +1,23 @@
 @model HiringPs.Web.Controllers.LoginInput
-@{ViewData["Title"]=T["Login"];}
-<section class="login-panel"><h1>@T["Login"]</h1><form method="post"><input asp-for="ReturnUrl" type="hidden"/>@foreach(var entry in ViewData.ModelState.Values.SelectMany(x=>x.Errors)){<div class="validation" role="alert">@T[entry.ErrorMessage]</div>}<label>@T["Email"]<input asp-for="Email" autocomplete="username" dir="ltr"/></label><label>@T["Password"]<input asp-for="Password" autocomplete="current-password"/></label><button type="submit">@T["Login"]</button></form></section>
+@{
+    ViewData["Title"] = T["Login"];
+}
+<section class="login-panel">
+    <h1>@T["Login"]</h1>
+    <form method="post">
+        <input asp-for="ReturnUrl" type="hidden"/>
+        @foreach (var entry in ViewData.ModelState.Values.SelectMany(x => x.Errors))
+        {
+            <div class="validation" role="alert">@T[entry.ErrorMessage]</div>
+        }
+        <label>
+            @T["Email"]
+            <input asp-for="Email" autocomplete="username" dir="ltr"/>
+        </label>
+        <label>
+            @T["Password"]
+            <input asp-for="Password" autocomplete="current-password"/>
+        </label>
+        <button type="submit">@T["Login"]</button>
+    </form>
+</section>

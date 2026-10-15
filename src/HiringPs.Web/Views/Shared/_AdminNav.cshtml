@@ -1,3 +1,4 @@
+@* روابط الإدارة المشتركة التي تظهر داخل الهيدر وقائمة الهاتف. *@
 @{
     var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -16,8 +17,7 @@
 }
 @foreach (var link in links)
 {
-    var isCurrent = currentController == link.Controller && currentAction == link.Action
-        && !(link.Action == "Opportunities" && Context.Request.Query["status"] == "NeedsReview");
+    var isCurrent = currentController == link.Controller && currentAction == link.Action && !(link.Action == "Opportunities" && Context.Request.Query["status"] == "NeedsReview");
     <a asp-controller="@link.Controller" asp-action="@link.Action" aria-current="@(isCurrent ? "page" : null)">
         @link.Label
     </a>

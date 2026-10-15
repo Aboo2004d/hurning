@@ -1,13 +1,58 @@
 @model List<Source>
-@{ViewData["Title"]=T["Sources"];}
-<div class="heading-row"><h1>@T["Sources"]</h1><a class="button button-outline" asp-action="Source">@T["Add"]</a></div>
+@{
+    ViewData["Title"] = T["Sources"];
+}
+<div class="heading-row">
+    <h1>@T["Sources"]</h1>
+    <a class="button button-outline" asp-action="Source">@T["Add"]</a>
+</div>
 <p class="notice">@T["SourcesNote"]</p>
 <p class="muted">@T["ScheduleZone"] · @T["CollectWorkerNote"]</p>
-<div class="table-wrap" data-collection-pending="@(Model.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")"><table class="table-nowrap"><thead><tr><th>@T["Name"]</th><th>@T["Enabled"]</th><th>@T["StartTime"]</th><th>@T["Interval"]</th><th>@T["NextDue"]</th><th>@T["CollectStatus"]</th><th>@T["Error"]</th><th></th></tr></thead><tbody>
-@foreach(var source in Model)
-{
- var request=source.CollectionRequests.FirstOrDefault();
- <tr><td>@source.Name</td><td>@T[source.Enabled?"Yes":"No"]</td><td>@source.CollectionStartTime.ToString("HH:mm")</td><td>@source.IntervalHours</td><td>@SourceSchedule.Display(source.NextDueAt)</td><td>@(request is null?T["Never"].Value:T["Request_"+request.Status].Value)</td><td><partial name="_Diagnostic" model="source.LastError"/> @if(request is not null){<partial name="_Diagnostic" model="request.Error"/>}</td><td><div class="source-actions"><a class="button button-outline" asp-action="Source" asp-route-id="@source.Id">@T["Edit"]</a>
- <form asp-action="CollectNow" method="post"><input type="hidden" name="id" value="@source.Id"/><button class="button-outline" type="submit" disabled="@(!source.Enabled||!source.UsageApproved||request?.Status is "Pending" or "Running")">@T["CollectNow"]</button></form></div></td></tr>
-}
-</tbody></table></div>
+<div class="table-wrap" data-collection-pending="@(Model.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")">
+    <table class="table-nowrap">
+        <thead>
+            <tr>
+                <th>@T["Name"]</th>
+                <th>@T["Enabled"]</th>
+                <th>@T["StartTime"]</th>
+                <th>@T["Interval"]</th>
+                <th>@T["NextDue"]</th>
+                <th>@T["CollectStatus"]</th>
+                <th>@T["Error"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var source in Model)
+            {
+                var request = source.CollectionRequests.FirstOrDefault();
+                <tr>
+                    <td>@source.Name</td>
+                    <td>@T[source.Enabled?"Yes":"No"]</td>
+                    <td>@source.CollectionStartTime.ToString("HH:mm")</td>
+                    <td>@source.IntervalHours</td>
+                    <td>@SourceSchedule.Display(source.NextDueAt)</td>
+                    <td>@(request is null?T["Never"].Value:T["Request_"+request.Status].Value)</td>
+                    <td>
+                        <partial name="_Diagnostic" model="source.LastError"/>
+                        @if (request is not null)
+                        {
+                            <partial name="_Diagnostic" model="request.Error"/>
+                        }
+                    </td>
+                    <td>
+                        <div class="source-actions">
+                            <a class="button button-outline" asp-action="Source" asp-route-id="@source.Id">@T["Edit"]</a>
+                            <form asp-action="CollectNow" method="post">
+                                <input type="hidden" name="id" value="@source.Id"/>
+                                <button class="button-outline" type="submit" disabled="@(!source.Enabled||!source.UsageApproved||request?.Status is "Pending" or "Running")">
+                                    @T["CollectNow"]
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

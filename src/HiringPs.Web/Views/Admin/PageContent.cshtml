@@ -1,13 +1,52 @@
 @model SitePageInput
-@{ViewData["Title"]=T["PageContents"];}
+@{
+    ViewData["Title"] = T["PageContents"];
+}
 <a class="textlink" asp-action="Pages">@T["BackToPages"]</a>
-<h1>@T[Model.Key=="about"?"About":"Privacy"]</h1><p class="muted">@T["PageEditorHelp"]</p>
-@if(!ViewData.ModelState.IsValid){<div class="validation-summary-errors" role="alert"><ul>@foreach(var error in ViewData.ModelState.Values.SelectMany(x=>x.Errors)){<li>@T[error.ErrorMessage]</li>}</ul></div>}
+<h1>@T[Model.Key=="about"?"About":"Privacy"]</h1>
+<p class="muted">@T["PageEditorHelp"]</p>
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="validation-summary-errors" role="alert">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(x => x.Errors))
+            {
+                <li>@T[error.ErrorMessage]</li>
+            }
+        </ul>
+    </div>
+}
 <form method="post" asp-action="PageContent" class="edit-form page-content-editor">
- <input asp-for="Key" type="hidden"/><input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version??[])"/>
- <div class="page-language-grid">
-  <fieldset><legend>@T["PageArabic"]</legend><label asp-for="TitleAr">@T["Title"]<input asp-for="TitleAr" maxlength="200" dir="rtl" lang="ar"/></label><label asp-for="BodyAr">@T["PageBody"]<textarea asp-for="BodyAr" rows="18" dir="rtl" lang="ar"></textarea></label></fieldset>
-  <fieldset><legend>@T["PageEnglish"]</legend><label asp-for="TitleEn">@T["Title"]<input asp-for="TitleEn" maxlength="200" dir="ltr" lang="en"/></label><label asp-for="BodyEn">@T["PageBody"]<textarea asp-for="BodyEn" rows="18" dir="ltr" lang="en"></textarea></label></fieldset>
- </div>
- <div class="actions"><button type="submit">@T["Save"]</button><a class="textlink" asp-controller="Home" asp-action="@(Model.Key=="about"?"About":"Privacy")" target="_blank" rel="noopener noreferrer">@T["PreviewPage"]</a></div>
+    <input asp-for="Key" type="hidden"/>
+    <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version??[])"/>
+    <div class="page-language-grid">
+        <fieldset>
+            <legend>@T["PageArabic"]</legend>
+            <label asp-for="TitleAr">
+                @T["Title"]
+                <input asp-for="TitleAr" maxlength="200" dir="rtl" lang="ar"/>
+            </label>
+            <label asp-for="BodyAr">
+                @T["PageBody"]
+                <textarea asp-for="BodyAr" rows="18" dir="rtl" lang="ar"></textarea>
+            </label>
+        </fieldset>
+        <fieldset>
+            <legend>@T["PageEnglish"]</legend>
+            <label asp-for="TitleEn">
+                @T["Title"]
+                <input asp-for="TitleEn" maxlength="200" dir="ltr" lang="en"/>
+            </label>
+            <label asp-for="BodyEn">
+                @T["PageBody"]
+                <textarea asp-for="BodyEn" rows="18" dir="ltr" lang="en"></textarea>
+            </label>
+        </fieldset>
+    </div>
+    <div class="actions">
+        <button type="submit">@T["Save"]</button>
+        <a class="textlink" asp-controller="Home" asp-action="@(Model.Key=="about"?"About":"Privacy")" target="_blank" rel="noopener noreferrer">
+            @T["PreviewPage"]
+        </a>
+    </div>
 </form>

@@ -1,23 +1,7 @@
 namespace HiringPs.Web.Models;
-
 public sealed record SiteQuestion(string Question, string Answer);
-
 /// <summary>Shared visible answers and structured facts; no invented employer or contact claims.</summary>
 public static class SiteFacts
 {
-    public static IReadOnlyList<SiteQuestion> Questions(bool english) => english
-        ? [
-            new("What is Palestine Opportunities?", "Palestine Opportunities (hiring.ps) brings together jobs, training opportunities, tenders and procurement notices related to Palestine from multiple websites. It is an opportunity aggregator, not the recruiting employer."),
-            new("How do I apply?", "Open an opportunity and follow the original announcement or application link. Full conditions and application procedures are provided by the original source. The site does not receive CVs or tender submissions."),
-            new("What information does an opportunity page contain?", "It contains a short summary, available location and deadline information, source links and the last verification date. A verification date is not necessarily the original publication date. Check the source before applying."),
-            new("What does a missing deadline mean?", "It means no confirmed closing date is available in the displayed record. It does not mean the opportunity stays open indefinitely; check the original announcement."),
-            new("How can I report an error?", "Use the report form on the opportunity page or the Contact page. Automated collection and extraction may produce incomplete or incorrect information; the original announcement remains the reference.")
-        ]
-        : [
-            new("ما هو موقع فرص فلسطين؟", "فرص فلسطين (hiring.ps) يجمع الوظائف وفرص التدريب والعطاءات والمناقصات المرتبطة بفلسطين من مواقع متعددة. الموقع يجمع الفرص ولا يمثل جهة التوظيف المعلنة."),
-            new("كيف أتقدم لفرصة؟", "افتح صفحة الفرصة ثم اتبع رابط الإعلان الأصلي أو التقديم. الشروط الكاملة وإجراءات التقديم لدى المصدر الأصلي، والموقع لا يستقبل السير الذاتية أو عروض العطاءات."),
-            new("ماذا تعرض صفحة الفرصة؟", "تعرض ملخصًا مختصرًا والمعلومات المتاحة عن المكان والموعد وروابط المصادر وتاريخ آخر تحقق. تاريخ التحقق ليس بالضرورة تاريخ النشر الأصلي؛ راجع المصدر قبل التقديم."),
-            new("ماذا يعني عدم تحديد موعد انتهاء؟", "يعني أنه لا يوجد موعد إغلاق مؤكد ضمن البيانات المعروضة، ولا يعني استمرار الفرصة إلى أجل غير محدد. تحقق من الإعلان الأصلي."),
-            new("كيف أبلغ عن معلومة غير صحيحة؟", "استخدم نموذج البلاغ في صفحة الفرصة أو صفحة تواصل معنا. قد تنتج عن الجمع والاستخراج الآلي معلومات ناقصة أو غير صحيحة؛ يبقى الإعلان الأصلي المرجع.")
-        ];
+    public static IReadOnlyList<SiteQuestion> Questions(bool english) => english ? [new("What is Palestine Opportunities?", "Palestine Opportunities (hiring.ps) brings together jobs, training opportunities, tenders and procurement notices related to Palestine from multiple websites. It is an opportunity aggregator, not the recruiting employer."), new("How do I apply?", "Open an opportunity and follow the original announcement or application link. Full conditions and application procedures are provided by the original source. The site does not receive CVs or tender submissions."), new("What information does an opportunity page contain?", "It contains a short summary, available location and deadline information, source links and the last verification date. A verification date is not necessarily the original publication date. Check the source before applying."), new("What does a missing deadline mean?", "It means no confirmed closing date is available in the displayed record. It does not mean the opportunity stays open indefinitely; check the original announcement."), new("How can I report an error?", "Use the report form on the opportunity page or the Contact page. Automated collection and extraction may produce incomplete or incorrect information; the original announcement remains the reference.")] : [new("ما هو موقع فرص فلسطين؟", "فرص فلسطين (hiring.ps) يجمع الوظائف وفرص التدريب والعطاءات والمناقصات المرتبطة بفلسطين من مواقع متعددة. الموقع يجمع الفرص ولا يمثل جهة التوظيف المعلنة."), new("كيف أتقدم لفرصة؟", "افتح صفحة الفرصة ثم اتبع رابط الإعلان الأصلي أو التقديم. الشروط الكاملة وإجراءات التقديم لدى المصدر الأصلي، والموقع لا يستقبل السير الذاتية أو عروض العطاءات."), new("ماذا تعرض صفحة الفرصة؟", "تعرض ملخصًا مختصرًا والمعلومات المتاحة عن المكان والموعد وروابط المصادر وتاريخ آخر تحقق. تاريخ التحقق ليس بالضرورة تاريخ النشر الأصلي؛ راجع المصدر قبل التقديم."), new("ماذا يعني عدم تحديد موعد انتهاء؟", "يعني أنه لا يوجد موعد إغلاق مؤكد ضمن البيانات المعروضة، ولا يعني استمرار الفرصة إلى أجل غير محدد. تحقق من الإعلان الأصلي."), new("كيف أبلغ عن معلومة غير صحيحة؟", "استخدم نموذج البلاغ في صفحة الفرصة أو صفحة تواصل معنا. قد تنتج عن الجمع والاستخراج الآلي معلومات ناقصة أو غير صحيحة؛ يبقى الإعلان الأصلي المرجع.")];
 }

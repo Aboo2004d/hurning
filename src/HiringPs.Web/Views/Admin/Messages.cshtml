@@ -1,12 +1,75 @@
 @model ContactInbox
-@{ViewData["Title"]=T["ContactInbox"];}
-<div class="heading-row"><h1>@T["ContactInbox"]</h1><span class="badge">@T["UnreadMessages"]: @Model.UnreadCount</span></div>
+@{
+    ViewData["Title"] = T["ContactInbox"];
+}
+<div class="heading-row">
+    <h1>@T["ContactInbox"]</h1>
+    <span class="badge">@T["UnreadMessages"]: @Model.UnreadCount</span>
+</div>
 <nav class="message-tabs" aria-label="@T["Status"]">
- @foreach(var status in new[]{"all","unread","read","handled"}){<a asp-action="Messages" asp-route-status="@status" class="@(Model.Status==status?"is-current":null)" aria-current="@(Model.Status==status?"page":null)">@T["ContactStatus_"+status]</a>}
+    @foreach (var status in new[]
+    {
+        "all",
+        "unread",
+        "read",
+        "handled"
+    }
+    )
+    {
+        <a asp-action="Messages" asp-route-status="@status" class="@(Model.Status==status?"is-current":null)" aria-current="@(Model.Status==status?"page":null)">
+            @T["ContactStatus_"+status]
+        </a>
+    }
 </nav>
-@if(Model.Items.Count==0){<div class="empty-state">@T["NoContactMessages"]</div>}
-else{
-<div class="table-wrap"><table class="table-nowrap contact-table"><thead><tr><th>@T["Name"]</th><th>@T["Email"]</th><th>@T["ContactDate"]</th><th>@T["Status"]</th><th>@T["Details"]</th></tr></thead><tbody>
-@foreach(var message in Model.Items){<tr class="@(!message.IsRead?"message-unread":null)"><td>@message.Name</td><td dir="ltr">@message.Email</td><td>@TimeZoneInfo.ConvertTime(message.CreatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")</td><td>@T["ContactStatus_"+(message.IsHandled?"handled":message.IsRead?"read":"unread")]</td><td><div class="actions"><a class="button" asp-action="Message" asp-route-id="@message.Id">@T["ViewMessage"]</a><a class="button" href="@ContactReplyLinks.Mailto(message.Email,T["ContactReplySubject"].Value)">@T["ReplyEmail"]</a></div></td></tr>}
-</tbody></table></div>}
-<nav class="pagination" aria-label="@T["Pagination"]">@if(Model.Page>1){<a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page-1)">@T["Previous"]</a>}<span>@Model.Page / @Model.Pages</span>@if(Model.Page<Model.Pages){<a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page+1)">@T["Next"]</a>}</nav>
+@if (Model.Items.Count == 0)
+{
+    <div class="empty-state">@T["NoContactMessages"]</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-nowrap contact-table">
+            <thead>
+                <tr>
+                    <th>@T["Name"]</th>
+                    <th>@T["Email"]</th>
+                    <th>@T["ContactDate"]</th>
+                    <th>@T["Status"]</th>
+                    <th>@T["Details"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var message in Model.Items)
+                {
+                    <tr class="@(!message.IsRead?"message-unread":null)">
+                        <td>@message.Name</td>
+                        <td dir="ltr">@message.Email</td>
+                        <td>
+                            @TimeZoneInfo.ConvertTime(message.CreatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")
+                        </td>
+                        <td>@T["ContactStatus_"+(message.IsHandled?"handled":message.IsRead?"read":"unread")]</td>
+                        <td>
+                            <div class="actions">
+                                <a class="button" asp-action="Message" asp-route-id="@message.Id">@T["ViewMessage"]</a>
+                                <a class="button" href="@ContactReplyLinks.Mailto(message.Email,T["ContactReplySubject"].Value)">
+                                    @T["ReplyEmail"]
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+<nav class="pagination" aria-label="@T["Pagination"]">
+    @if (Model.Page > 1)
+    {
+        <a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page-1)">@T["Previous"]</a>
+    }
+    <span>@Model.Page / @Model.Pages</span>
+    @if (Model.Page < Model.Pages)
+    {
+        <a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page+1)">@T["Next"]</a>
+    }
+</nav>

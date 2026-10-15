@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-namespace HiringPs.Core;
 
+namespace HiringPs.Core;
 public class DesignTimeFactory : IDesignTimeDbContextFactory<HiringDb>
 {
     public HiringDb CreateDbContext(string[] args)

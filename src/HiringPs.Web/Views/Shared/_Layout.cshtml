@@ -1,16 +1,15 @@
 @inject SiteSeo Seo
+@* القالب العام: بيانات SEO ثم تنبيه النسخة التجريبية والهيدر ومحتوى الصفحة والفوتر. *@
 @{
-    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar";
-    var returnUrl = Context.Request.Path+Context.Request.QueryString;
-    var activeKind = ViewData["ListingKind"] as OpportunityKind?;
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var activeKind = ViewData["ListingKind"] as OpportunityKind? ;
     var archive = ViewData["ListingArchive"] is true;
     var action = ViewContext.RouteData.Values["action"]?.ToString();
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var adminArea = User.IsInRole("Admin") && (controller == "Admin" || (controller == "Account" && action == "ChangePassword"));
-    var metadata = Seo.Build(Context.Request, ViewData.Model,
-        ViewData["Title"]?.ToString() ?? T["SiteName"].Value,
-        ViewData["Description"]?.ToString() ?? T["Subtitle"].Value);
-    var listing = ViewContext.RouteData.Values["controller"]?.ToString()=="Home" && action is "Index" or "Details";
+    var metadata = Seo.Build(Context.Request, ViewData.Model, ViewData["Title"]?.ToString() ?? T["SiteName"].Value, ViewData["Description"]?.ToString() ?? T["Subtitle"].Value);
+    var listing = ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && action is "Index" or "Details";
 }
 <!DOCTYPE html>
 <html lang="@(ar?"ar":"en")" dir="@(ar?"rtl":"ltr")">
@@ -162,7 +161,9 @@
         <footer class="site-footer">
             <div class="footer-inner">
                 <div class="footer-description">
-                    <span class="footer-copyright">© @DateTime.UtcNow.Year <bdi>@T["SiteName"]</bdi>
+                    <span class="footer-copyright">
+                        © @DateTime.UtcNow.Year
+                        <bdi>@T["SiteName"]</bdi>
                     </span>
                     <p>
                         @T["SourceLinkNote"]

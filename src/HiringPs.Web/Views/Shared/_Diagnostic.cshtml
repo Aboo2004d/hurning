@@ -1,8 +1,16 @@
 @model string
-@if(!string.IsNullOrWhiteSpace(Model))
+@if (!string.IsNullOrWhiteSpace(Model))
 {
- var reference = System.Text.RegularExpressions.Regex.Match(Model,@"Diagnostic ID: ([a-fA-F0-9]{32})");
- <span dir="auto">@UiMessages.Error(Model,T)</span>
- @if(reference.Success){<a class="button button-outline" asp-controller="Admin" asp-action="Diagnostic" asp-route-id="@reference.Groups[1].Value">@T["AttemptDiagnostic"]</a>}
- <details class="diagnostic-details"><summary>@T["TechnicalDetails"]</summary><pre dir="auto">@Model</pre></details>
+    var reference = System.Text.RegularExpressions.Regex.Match(Model, @"Diagnostic ID: ([a-fA-F0-9]{32})");
+    <span dir="auto">@UiMessages.Error(Model,T)</span>
+    @if (reference.Success)
+    {
+        <a class="button button-outline" asp-controller="Admin" asp-action="Diagnostic" asp-route-id="@reference.Groups[1].Value">
+            @T["AttemptDiagnostic"]
+        </a>
+    }
+    <details class="diagnostic-details">
+        <summary>@T["TechnicalDetails"]</summary>
+        <pre dir="auto">@Model</pre>
+    </details>
 }

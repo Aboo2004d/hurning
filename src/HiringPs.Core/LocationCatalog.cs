@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Core;
-
 public static class LocationCatalog
 {
     public static string[] Split(string locations) => locations.Split([',', '،', ';'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
@@ -12,5 +11,6 @@ public static class LocationCatalog
         var previous = await db.Opportunities.AsNoTracking().Where(x => x.AdminOverride && (x.Status == PublicationStatus.Published || x.Status == PublicationStatus.Archived)).Select(x => x.Locations).Distinct().ToListAsync(ct);
         return recorded.Concat(previous).SelectMany(Split).Where(x => x.Length <= 200).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
     }
+
     public static bool Matches(string location, IEnumerable<string> approved) => Split(location).Any(part => approved.Any(x => string.Equals(TextRules.Normalize(part), TextRules.Normalize(x), StringComparison.Ordinal)));
 }

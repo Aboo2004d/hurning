@@ -1,8 +1,14 @@
 @model SitePageViewModel
-@{ViewData["Title"]=Model.Title;ViewData["Description"]=SiteSeo.Snippet(Model.Body,170);}
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["Description"] = SiteSeo.Snippet(Model.Body, 170);
+}
 <article class="detail-panel info-page">
- <h1 dir="auto">@Model.Title</h1>
- <div class="editable-page-body" dir="auto">@Model.Body</div>
- <partial name="_SiteQuestions" />
- <div class="actions"><a class="button" asp-action="Index">@T["BrowseOpportunities"]</a><a class="textlink" asp-action="Contact">@T["Contact"]</a></div>
+    <h1 dir="auto">@Model.Title</h1>
+    <div class="editable-page-body" dir="auto">@Model.Body</div>
+    <partial name="_SiteQuestions" />
+    <div class="actions">
+        <a class="button" asp-action="Index">@T["BrowseOpportunities"]</a>
+        <a class="textlink" asp-action="Contact">@T["Contact"]</a>
+    </div>
 </article>
