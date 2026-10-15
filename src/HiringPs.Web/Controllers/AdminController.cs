@@ -219,9 +219,8 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
         if (item is null)
             return NotFound();
 
-        // Jobs.ps items may contain only an old RSS snippet; fetch the detail page again.
-        // Other connectors can reprocess their saved content as before.
-        item.Status = item.Content.Length > 0 && item.Source.Connector != ConnectorKind.JobsRss
+        // Reprocess using saved content when available.
+        item.Status = item.Content.Length > 0
             ? ProcessingStatus.AwaitingAi
             : ProcessingStatus.Discovered;
 

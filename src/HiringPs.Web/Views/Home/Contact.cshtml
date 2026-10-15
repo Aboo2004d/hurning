@@ -1,5 +1,5 @@
 @model ContactInput
-@{ViewData["Title"]=T["Contact"];}
+@{ViewData["Title"]=T["Contact"];ViewData["Description"]=T["ContactIntro"].Value;}
 <section class="detail-panel contact-page">
  <h1>@T["Contact"]</h1><p class="muted">@T["ContactIntro"]</p>
  @if(!ViewData.ModelState.IsValid){<div class="validation-summary-errors" role="alert"><ul>@foreach(var error in ViewData.ModelState.Values.SelectMany(x=>x.Errors)){<li>@T[error.ErrorMessage]</li>}</ul></div>}

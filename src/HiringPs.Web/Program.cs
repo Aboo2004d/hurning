@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<HiringPs.Web.Models.SiteSeo>();
 
 // ======================================
 // Database
@@ -216,6 +217,20 @@ app.UseRequestLocalization(
         .SetDefaultCulture("ar")
         .AddSupportedCultures("ar", "en")
         .AddSupportedUICultures("ar", "en"));
+
+// Private and error responses must not enter search indexes, including redirects.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        if (context.Request.Path.StartsWithSegments("/Admin", StringComparison.OrdinalIgnoreCase)
+            || context.Request.Path.StartsWithSegments("/Account", StringComparison.OrdinalIgnoreCase)
+            || context.Response.StatusCode >= 400)
+            context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 app.UseStaticFiles();
 

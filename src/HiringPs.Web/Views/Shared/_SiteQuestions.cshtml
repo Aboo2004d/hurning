@@ -1,0 +1,12 @@
+@{
+    var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+}
+<section id="common-questions" class="site-questions" aria-labelledby="common-questions-heading">
+    <h2 id="common-questions-heading">@(english ? "How the site works" : "كيف يعمل الموقع؟")</h2>
+    @foreach (var item in SiteFacts.Questions(english))
+    {
+        <h3>@item.Question</h3>
+        <p>@item.Answer</p>
+    }
+    <a class="textlink" asp-controller="Home" asp-action="Contact">@T["Contact"]</a>
+</section>

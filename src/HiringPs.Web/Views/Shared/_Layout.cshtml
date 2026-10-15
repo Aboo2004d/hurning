@@ -1,3 +1,4 @@
+@inject SiteSeo Seo
 @{
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar";
     var returnUrl = Context.Request.Path+Context.Request.QueryString;
@@ -6,6 +7,9 @@
     var action = ViewContext.RouteData.Values["action"]?.ToString();
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var adminArea = User.IsInRole("Admin") && (controller == "Admin" || (controller == "Account" && action == "ChangePassword"));
+    var metadata = Seo.Build(Context.Request, ViewData.Model,
+        ViewData["Title"]?.ToString() ?? T["SiteName"].Value,
+        ViewData["Description"]?.ToString() ?? T["Subtitle"].Value);
     var listing = ViewContext.RouteData.Values["controller"]?.ToString()=="Home" && action is "Index" or "Details";
 }
 <!DOCTYPE html>
@@ -16,10 +20,41 @@
         <link rel="icon" type="image/png" sizes="32x32" href="~/images/brand/favicon-32.png" asp-append-version="true"/>
         <link rel="icon" type="image/png" sizes="64x64" href="~/images/brand/favicon-64.png" asp-append-version="true"/>
         <link rel="apple-touch-icon" sizes="180x180" href="~/images/brand/apple-touch-icon.png" asp-append-version="true"/>
-        <title>
-            @ViewData["Title"] · @T["SiteName"]
-        </title>
-        <meta name="description" content="@(ViewData["Description"]??T["Subtitle"].Value)"/>
+        <title>@metadata.Title</title>
+        <meta name="description" content="@metadata.Description" />
+        <meta name="robots" content="@metadata.Robots" />
+        <link rel="canonical" href="@metadata.Canonical" />
+        @if (!metadata.Robots.StartsWith("noindex"))
+        {
+            <link rel="alternate" hreflang="ar" href="@metadata.Arabic" />
+            <link rel="alternate" hreflang="en" href="@metadata.English" />
+            <link rel="alternate" hreflang="x-default" href="@metadata.Arabic" />
+        }
+        @if (metadata.Previous is not null)
+        {
+            <link rel="prev" href="@metadata.Previous" />
+        }
+        @if (metadata.Next is not null)
+        {
+            <link rel="next" href="@metadata.Next" />
+        }
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="@T["SiteName"]" />
+        <meta property="og:title" content="@metadata.Title" />
+        <meta property="og:description" content="@metadata.Description" />
+        <meta property="og:url" content="@metadata.Canonical" />
+        <meta property="og:locale" content="@(metadata.Language == "ar" ? "ar_PS" : "en_US")" />
+        <meta property="og:locale:alternate" content="@(metadata.Language == "ar" ? "en_US" : "ar_PS")" />
+        <meta property="og:image" content="@(Seo.Origin + "/images/brand/apple-touch-icon.png")" />
+        <meta property="og:image:alt" content="@T["SiteName"]" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="@metadata.Title" />
+        <meta name="twitter:description" content="@metadata.Description" />
+        <meta name="twitter:image" content="@(Seo.Origin + "/images/brand/apple-touch-icon.png")" />
+        @if (metadata.StructuredData.Length > 0)
+        {
+            <script type="application/ld+json">@Html.Raw(metadata.StructuredData)</script>
+        }
         <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
         <script src="~/js/site.js" asp-append-version="true" defer>
         </script>

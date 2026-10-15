@@ -50,12 +50,6 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         var conf = JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
         var hosts = conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).Concat(source.Connector == ConnectorKind.UnrwaInspira ? new[] { "inspira.un.org" } : []).ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
-        // Jobs.ps loads its browser verification resources from this separate origin.
-        // Allow it only for browser requests, not discovery, detail URLs or attachments.
-        var browserHosts = source.Connector == ConnectorKind.JobsRss
-            && string.Equals(new Uri(source.Url).IdnHost, new Uri(OpportunityRss.JobsUrl).IdnHost, StringComparison.OrdinalIgnoreCase)
-            ? hosts.Append("challenges.cloudflare.com").ToArray()
-            : hosts;
         playwright ??= await Playwright.CreateAsync();
         browser ??= await playwright.Chromium.LaunchAsync(new() { Headless = true, Channel = configuration["Browser:Channel"] is { Length: > 0 } channel ? channel : null });
         var context = await browser.NewContextAsync(new() { AcceptDownloads = false, IgnoreHTTPSErrors = false, ServiceWorkers = ServiceWorkerPolicy.Block });
@@ -65,7 +59,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
             try
             {
                 if (route.Request.ResourceType is "image" or "font" or "media") { await route.AbortAsync(); return; }
-                await policy.ValidateAsync(route.Request.Url, browserHosts, ct);
+                await policy.ValidateAsync(route.Request.Url, hosts, ct);
                 await route.ContinueAsync();
             }
             catch { CollectorDiagnosticSession.PolicyBlock(route.Request); await route.AbortAsync(); }
@@ -163,9 +157,7 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
     public async Task<string> FetchAsync(Source source,string url,CancellationToken ct)=>(await FetchBundleAsync(source,url,ct)).Text;
     public virtual async Task<ContentBundle> FetchBundleAsync(Source source, string url, CancellationToken ct)
     {
-        // Jobs.ps RSS supplies discovery snippets, not complete announcements.
-        // Fetch its detail page through the normal browser and URL-policy path.
-        if (source.Connector == ConnectorKind.ReliefWebRss)
+        if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
         {
             return await CollectorDiagnosticFiles.WithoutPageAsync(source,"Detail","ReadRss",source.Url,configuration,async () =>
             {
@@ -195,12 +187,11 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         diagnostics.Step("WaitDocumentReady", timeoutMs: 25000);
         await page.WaitForFunctionAsync("() => document.readyState !== 'loading'", null, new() { Timeout = 25000 });
         string html;
-        if (source.Connector == ConnectorKind.Automatic ||
-            (source.Connector == ConnectorKind.JobsRss && conf.ContentSelector == "body"))
+        if (source.Connector == ConnectorKind.Automatic)
         {
             diagnostics.Step("WaitAutomaticContent", "body", 25000);
             await WaitForAutomaticContentAsync(page);
-            html = AutomaticSource.ContentHtml(await page.ContentAsync(), preserveMetadata: source.Connector == ConnectorKind.JobsRss);
+            html = AutomaticSource.ContentHtml(await page.ContentAsync());
         }
         else
         {
@@ -212,8 +203,6 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         var doc = await new HtmlParser().ParseDocumentAsync(html, ct);
         foreach (var e in doc.QuerySelectorAll("script,style,nav,header,footer,noscript,iframe")) e.Remove();
         var text = Regex.Replace(doc.Body?.TextContent ?? "", "\\s+", " ").Trim();
-        if (source.Connector == ConnectorKind.JobsRss && text.Length < 80)
-            throw new ContentNeedsReviewException("Jobs.ps detail content is incomplete; RSS summary is not a substitute.");
         var hosts=conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).ToArray();
         var links=new List<string> { url };
         foreach(var anchor in doc.QuerySelectorAll("a[href]"))
