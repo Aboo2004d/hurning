@@ -1,0 +1,16 @@
+@model ContactInput
+@{ViewData["Title"]=T["Contact"];}
+<section class="detail-panel contact-page">
+ <h1>@T["Contact"]</h1><p class="muted">@T["ContactIntro"]</p>
+ @if(!ViewData.ModelState.IsValid){<div class="validation-summary-errors" role="alert"><ul>@foreach(var error in ViewData.ModelState.Values.SelectMany(x=>x.Errors)){<li>@T[error.ErrorMessage]</li>}</ul></div>}
+ <form method="post" asp-action="Contact">
+  <div class="form-grid">
+   <label asp-for="Name">@T["Name"]<input asp-for="Name" maxlength="120" required autocomplete="name"/></label>
+   <label asp-for="Email">@T["Email"]<input asp-for="Email" type="email" maxlength="254" required autocomplete="email" dir="ltr"/></label>
+  </div>
+  <label asp-for="Message">@T["ContactMessage"]<textarea asp-for="Message" maxlength="5000" rows="7" required dir="auto"></textarea></label>
+  <div hidden aria-hidden="true"><label asp-for="Website">Website<input asp-for="Website" autocomplete="off" tabindex="-1"/></label></div>
+  <p class="muted contact-privacy-note">@T["ContactPrivacyNote"]</p>
+  <button type="submit">@T["SendMessage"]</button>
+ </form>
+</section>

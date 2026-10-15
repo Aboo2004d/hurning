@@ -297,6 +297,62 @@
 <data name="Error_RelatedRole" xml:space="preserve"><value>هذه النتيجة مأخوذة من قسم الوظائف المشابهة، وليست من الإعلان الأصلي؛ تحتاج مراجعة قبل الاعتماد.</value></data>
 <data name="Error_ExtractionMissing" xml:space="preserve"><value>لا توجد نتيجة AI محفوظة؛ المحتوى الأصلي موجود وبانتظار المعالجة.</value></data>
 <data name="Error_OriginalUrlMissing" xml:space="preserve"><value>لا يوجد رابط صالح للإعلان الأصلي؛ راجع سجل المصدر.</value></data>
+<data name="ContactMessageRequired" xml:space="preserve"><value>الرسالة مطلوبة.</value></data>
+<data name="ContactMessageLength" xml:space="preserve"><value>الرسالة يجب ألا تتجاوز 5000 حرف.</value></data>
+<data name="FooterNavigation" xml:space="preserve"><value>روابط الموقع</value></data>
+<data name="ViewMessage" xml:space="preserve"><value>عرض الرسالة</value></data>
+<data name="ContactMessage" xml:space="preserve"><value>الرسالة</value></data>
+<data name="NoContactMessages" xml:space="preserve"><value>لا توجد رسائل ضمن هذه القائمة.</value></data>
+<data name="ContactStatus_handled" xml:space="preserve"><value>تمت المعالجة</value></data>
+<data name="ContactStatus_unread" xml:space="preserve"><value>غير مقروءة</value></data>
+<data name="ReplyGmail" xml:space="preserve"><value>فتح Gmail</value></data>
+<data name="BackToMessages" xml:space="preserve"><value>العودة إلى الرسائل</value></data>
+<data name="ContactNameLength" xml:space="preserve"><value>الاسم يجب ألا يتجاوز 120 حرفًا.</value></data>
+<data name="ContactDate" xml:space="preserve"><value>تاريخ الاستلام</value></data>
+<data name="UnreadMessages" xml:space="preserve"><value>غير مقروءة</value></data>
+<data name="ContactStatus_read" xml:space="preserve"><value>مقروءة</value></data>
+<data name="ContactInbox" xml:space="preserve"><value>رسائل التواصل</value></data>
+<data name="SendMessage" xml:space="preserve"><value>إرسال الرسالة</value></data>
+<data name="ContactIntro" xml:space="preserve"><value>لديك استفسار عن الموقع أو ملاحظة على إعلان؟ أرسل رسالتك وسنتمكن من الرد عبر بريدك الإلكتروني. التقديم للفرص يكون لدى المصدر الأصلي.</value></data>
+<data name="Contact" xml:space="preserve"><value>تواصل معنا</value></data>
+<data name="ReplyEmail" xml:space="preserve"><value>رد عبر البريد</value></data>
+<data name="ContactEmailRequired" xml:space="preserve"><value>البريد الإلكتروني مطلوب.</value></data>
+<data name="Menu" xml:space="preserve"><value>القائمة</value></data>
+<data name="BrowseOpportunities" xml:space="preserve"><value>تصفح الفرص</value></data>
+<data name="AboutOfferTitle" xml:space="preserve"><value>اكتشف الفرصة المناسبة</value></data>
+<data name="ContactChanged" xml:space="preserve"><value>تغيرت حالة الرسالة؛ راجع الحالة الحالية ثم حاول مجددًا.</value></data>
+<data name="MainNavigation" xml:space="preserve"><value>التنقل الرئيسي</value></data>
+<data name="ControlPanel" xml:space="preserve"><value>لوحة التحكم</value></data>
+<data name="Pagination" xml:space="preserve"><value>التنقل بين الصفحات</value></data>
+<data name="About" xml:space="preserve"><value>من نحن</value></data>
+<data name="ContactEmailInvalid" xml:space="preserve"><value>أدخل عنوان بريد إلكتروني صالحًا.</value></data>
+<data name="ContactReceived" xml:space="preserve"><value>تم استلام رسالتك بنجاح. شكرًا لتواصلك معنا.</value></data>
+<data name="AboutIntro" xml:space="preserve"><value>hiring.ps يجمع فرص العمل والتدريب والعطاءات والمناقصات المرتبطة بفلسطين في مكان واحد.</value></data>
+<data name="ReopenMessage" xml:space="preserve"><value>إعادة فتح الرسالة</value></data>
+<data name="AboutSources" xml:space="preserve"><value>نعرض معلومات مختصرة وروابط الإعلانات الأصلية. شروط التقديم والمواعيد والتحديثات تُراجع لدى الجهة الناشرة، ويكون التقديم عبر المصدر.</value></data>
+<data name="ContactReplySubject" xml:space="preserve"><value>رد على رسالتك إلى hiring.ps</value></data>
+<data name="ContactPrivacyNote" xml:space="preserve"><value>يظهر اسمك وبريدك ورسالتك لإدارة الموقع فقط بغرض متابعة استفسارك.</value></data>
+<data name="AboutOffer" xml:space="preserve"><value>تصفح كل نوع من الفرص من القائمة، واستخدم البحث وفلاتر المكان والمجال للوصول إلى النتائج التي تناسبك.</value></data>
+<data name="ContactNameRequired" xml:space="preserve"><value>الاسم مطلوب.</value></data>
+<data name="ContactPrivacyText" xml:space="preserve"><value>عند إرسال نموذج التواصل نحفظ الاسم والبريد الإلكتروني والرسالة لتتمكن إدارة الموقع من متابعة الطلب والرد. هذه البيانات لا تُعرض في الصفحات العامة.</value></data>
+<data name="ReplyEmailNote" xml:space="preserve"><value>يفتح زر الرد برنامج البريد المحدد على جهازك، أو يمكنك استخدام Gmail. إرسال الرد يتم من حسابك؛ بعد الانتهاء حدد الرسالة كتمت المعالجة.</value></data>
+<data name="ContactStatus_all" xml:space="preserve"><value>جميع الرسائل</value></data>
+<data name="LoginShort" xml:space="preserve"><value>دخول</value></data>
+<data name="MarkHandled" xml:space="preserve"><value>تحديد كتمت المعالجة</value></data>
+<data name="AboutSourcesTitle" xml:space="preserve"><value>الإعلان الأصلي هو المرجع</value></data>
+<data name="PageContents" xml:space="preserve"><value>محتوى الصفحات</value></data>
+<data name="PageEnglish" xml:space="preserve"><value>النسخة الإنجليزية</value></data>
+<data name="PageEditorHelp" xml:space="preserve"><value>اكتب عنوان الصفحة ونصها لكل لغة. تُحفظ فواصل الأسطر والفقرات كما تكتبها. ترك حقل فارغًا يعرض نصه الافتراضي. المحتوى نص عادي ولا ينفذ HTML.</value></data>
+<data name="PageUsingDefault" xml:space="preserve"><value>يُعرض المحتوى الافتراضي حاليًا.</value></data>
+<data name="PreviewPage" xml:space="preserve"><value>عرض الصفحة</value></data>
+<data name="PageTitleLength" xml:space="preserve"><value>عنوان الصفحة يجب ألا يتجاوز 200 حرف.</value></data>
+<data name="PageLastUpdated" xml:space="preserve"><value>آخر تعديل:</value></data>
+<data name="PageContentsHelp" xml:space="preserve"><value>تحكم في نصوص الصفحات العامة بالعربية والإنجليزية. التعديلات المحفوظة تظهر مباشرة للزوار.</value></data>
+<data name="PageArabic" xml:space="preserve"><value>النسخة العربية</value></data>
+<data name="BackToPages" xml:space="preserve"><value>العودة إلى محتوى الصفحات</value></data>
+<data name="PageBody" xml:space="preserve"><value>محتوى الصفحة</value></data>
+<data name="PageEditConflict" xml:space="preserve"><value>عدلت الصفحة من نافذة أخرى؛ أعد تحميلها قبل حفظ تعديل جديد.</value></data>
+<data name="PageContentSaved" xml:space="preserve"><value>تم حفظ محتوى الصفحة بنجاح.</value></data>
 </root>
 
 

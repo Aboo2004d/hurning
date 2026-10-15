@@ -20,6 +20,43 @@ public class AdminDashboard
 [Authorize(Roles = "Admin")]
 public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration configuration) : Controller
 {
+    public async Task<IActionResult> Pages(CancellationToken ct) => View(await db.SitePages.AsNoTracking().ToListAsync(ct));
+    [HttpGet]
+    public async Task<IActionResult> PageContent(string key, CancellationToken ct)
+    {
+        if (!HiringPs.Web.Models.SitePageDefaults.IsEditable(key)) return NotFound();
+        var page = await db.SitePages.AsNoTracking().SingleOrDefaultAsync(x => x.Key == key, ct);
+        var ar = HiringPs.Web.Models.SitePageDefaults.Resolve(key, page, "ar");
+        var en = HiringPs.Web.Models.SitePageDefaults.Resolve(key, page, "en");
+        return View(new HiringPs.Web.Models.SitePageInput { Key = key, TitleAr = ar.Title, BodyAr = ar.Body, TitleEn = en.Title, BodyEn = en.Body, Version = page?.Version ?? [] });
+    }
+    [HttpPost]
+    public async Task<IActionResult> PageContent(HiringPs.Web.Models.SitePageInput input, CancellationToken ct)
+    {
+        NormalizeStrings(input);
+        if (!HiringPs.Web.Models.SitePageDefaults.IsEditable(input.Key)) return NotFound();
+        if (!ModelState.IsValid) return View(input);
+        var page = await db.SitePages.SingleOrDefaultAsync(x => x.Key == input.Key, ct);
+        if (page is not null && (input.Version is null || input.Version.Length == 0))
+        {
+            ModelState.AddModelError("", "PageEditConflict"); return View(input);
+        }
+        if (page is null)
+        {
+            if (input.Version is { Length: > 0 }) { ModelState.AddModelError("", "PageEditConflict"); return View(input); }
+            page = new SitePage { Key = input.Key }; db.SitePages.Add(page);
+        }
+        else db.Entry(page).Property(x => x.Version).OriginalValue = input.Version!;
+        page.TitleAr = input.TitleAr.Trim(); page.TitleEn = input.TitleEn.Trim();
+        page.BodyAr = input.BodyAr.Trim(); page.BodyEn = input.BodyEn.Trim(); page.UpdatedAt = DateTimeOffset.UtcNow;
+        Audit("SitePage.Update", $"Page {page.Key}");
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { ModelState.AddModelError("", "PageEditConflict"); return View(input); }
+        catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException sql && sql.Number is 2601 or 2627)
+        { ModelState.AddModelError("", "PageEditConflict"); return View(input); }
+        TempData["Notice"] = "PageContentSaved";
+        return RedirectToAction(nameof(PageContent), new { key = input.Key });
+    }
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Diagnostic(Guid id, CancellationToken ct)
     {
@@ -95,6 +132,31 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
         }
         try { await db.SaveChangesAsync(ct); } catch (DbUpdateConcurrencyException) { ModelState.AddModelError("", "The record changed; reload before saving."); return View(input); }
         return RedirectToAction(nameof(Opportunities));
+    }
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Messages(string status = "all", int page = 1, CancellationToken ct = default)
+    {
+        if (status is not ("all" or "unread" or "read" or "handled")) status = "all";
+        var query = db.ContactMessages.AsNoTracking();
+        query = status switch { "unread" => query.Where(x => !x.IsRead && !x.IsHandled), "read" => query.Where(x => x.IsRead && !x.IsHandled), "handled" => query.Where(x => x.IsHandled), _ => query };
+        var count = await query.CountAsync(ct); page = Math.Clamp(page, 1, Math.Max(1, (count + 19) / 20));
+        return View(new HiringPs.Web.Models.ContactInbox { Items = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Skip((page - 1) * 20).Take(20).ToListAsync(ct), Status = status, Count = count, Page = page, UnreadCount = await db.ContactMessages.CountAsync(x => !x.IsRead && !x.IsHandled, ct) });
+    }
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Message(long id, CancellationToken ct)
+    {
+        var message = await db.ContactMessages.FindAsync([id], ct); if (message is null) return NotFound();
+        if (!message.IsRead) { message.IsRead = true; await db.SaveChangesAsync(ct); }
+        return View(message);
+    }
+    [HttpPost]
+    public async Task<IActionResult> MessageStatus(long id, bool handled, CancellationToken ct)
+    {
+        var message = await db.ContactMessages.FindAsync([id], ct); if (message is null) return NotFound();
+        message.IsHandled = handled; message.IsRead = true;
+        Audit("Contact.Status", $"Message {id}; handled {handled}");
+        try { await db.SaveChangesAsync(ct); } catch (DbUpdateConcurrencyException) { TempData["Notice"] = "ContactChanged"; }
+        return RedirectToAction(nameof(Message), new { id });
     }
     public async Task<IActionResult> Sources(CancellationToken ct) => View(await db.Sources.AsNoTracking().Include(x=>x.CollectionRequests).OrderBy(x => x.Id).ToListAsync(ct));
     public async Task<IActionResult> Source(int? id, CancellationToken ct) { var source = id is null ? new Source { Connector = ConnectorKind.Automatic } : await db.Sources.FindAsync([id.Value], ct); return source is null ? NotFound() : View(source); }

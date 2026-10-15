@@ -297,6 +297,62 @@
 <data name="Error_RelatedRole" xml:space="preserve"><value>This extracted role came from related jobs, not the original announcement; review it before approval.</value></data>
 <data name="Error_ExtractionMissing" xml:space="preserve"><value>No saved AI extraction is available; the original content is retained and queued for processing.</value></data>
 <data name="Error_OriginalUrlMissing" xml:space="preserve"><value>No valid original listing URL is available; inspect the source record.</value></data>
+<data name="ContactMessageRequired" xml:space="preserve"><value>Please enter a message.</value></data>
+<data name="ContactMessageLength" xml:space="preserve"><value>The message must not exceed 5000 characters.</value></data>
+<data name="FooterNavigation" xml:space="preserve"><value>Site links</value></data>
+<data name="ViewMessage" xml:space="preserve"><value>View message</value></data>
+<data name="ContactMessage" xml:space="preserve"><value>Message</value></data>
+<data name="NoContactMessages" xml:space="preserve"><value>There are no messages in this list.</value></data>
+<data name="ContactStatus_handled" xml:space="preserve"><value>Handled</value></data>
+<data name="ContactStatus_unread" xml:space="preserve"><value>Unread</value></data>
+<data name="ReplyGmail" xml:space="preserve"><value>Open Gmail</value></data>
+<data name="BackToMessages" xml:space="preserve"><value>Back to messages</value></data>
+<data name="ContactNameLength" xml:space="preserve"><value>The name must not exceed 120 characters.</value></data>
+<data name="ContactDate" xml:space="preserve"><value>Received</value></data>
+<data name="UnreadMessages" xml:space="preserve"><value>Unread</value></data>
+<data name="ContactStatus_read" xml:space="preserve"><value>Read</value></data>
+<data name="ContactInbox" xml:space="preserve"><value>Contact messages</value></data>
+<data name="SendMessage" xml:space="preserve"><value>Send message</value></data>
+<data name="ContactIntro" xml:space="preserve"><value>Have a question about the site or feedback on a listing? Send a message so we can reply by email. Applications are made through the original source.</value></data>
+<data name="Contact" xml:space="preserve"><value>Contact us</value></data>
+<data name="ReplyEmail" xml:space="preserve"><value>Reply by email</value></data>
+<data name="ContactEmailRequired" xml:space="preserve"><value>Please enter your email address.</value></data>
+<data name="Menu" xml:space="preserve"><value>Menu</value></data>
+<data name="BrowseOpportunities" xml:space="preserve"><value>Browse opportunities</value></data>
+<data name="AboutOfferTitle" xml:space="preserve"><value>Find the right opportunity</value></data>
+<data name="ContactChanged" xml:space="preserve"><value>The message changed. Review its current status and try again.</value></data>
+<data name="MainNavigation" xml:space="preserve"><value>Main navigation</value></data>
+<data name="ControlPanel" xml:space="preserve"><value>Control panel</value></data>
+<data name="Pagination" xml:space="preserve"><value>Pagination</value></data>
+<data name="About" xml:space="preserve"><value>About us</value></data>
+<data name="ContactEmailInvalid" xml:space="preserve"><value>Enter a valid email address.</value></data>
+<data name="ContactReceived" xml:space="preserve"><value>Your message was received. Thank you for contacting us.</value></data>
+<data name="AboutIntro" xml:space="preserve"><value>hiring.ps brings together jobs, training, tenders and procurement opportunities related to Palestine.</value></data>
+<data name="ReopenMessage" xml:space="preserve"><value>Reopen message</value></data>
+<data name="AboutSources" xml:space="preserve"><value>We display concise information and links to original announcements. Check the publisher for application requirements, deadlines and updates, and apply through the original source.</value></data>
+<data name="ContactReplySubject" xml:space="preserve"><value>Reply to your message to hiring.ps</value></data>
+<data name="ContactPrivacyNote" xml:space="preserve"><value>Your name, email and message are visible only to site administrators to follow up on your enquiry.</value></data>
+<data name="AboutOffer" xml:space="preserve"><value>Choose an opportunity type from the navigation, then narrow the results by search, location and category.</value></data>
+<data name="ContactNameRequired" xml:space="preserve"><value>Please enter your name.</value></data>
+<data name="ContactPrivacyText" xml:space="preserve"><value>When you submit the contact form, we store your name, email and message so administrators can follow up and reply. These details are not displayed on public pages.</value></data>
+<data name="ReplyEmailNote" xml:space="preserve"><value>Reply opens your default email app, or you can use Gmail. Send the reply from your own account, then mark the message as handled.</value></data>
+<data name="ContactStatus_all" xml:space="preserve"><value>All messages</value></data>
+<data name="LoginShort" xml:space="preserve"><value>Sign in</value></data>
+<data name="MarkHandled" xml:space="preserve"><value>Mark as handled</value></data>
+<data name="AboutSourcesTitle" xml:space="preserve"><value>The original announcement is the reference</value></data>
+<data name="PageContents" xml:space="preserve"><value>Page content</value></data>
+<data name="PageEnglish" xml:space="preserve"><value>English version</value></data>
+<data name="PageEditorHelp" xml:space="preserve"><value>Enter the title and text for each language. Line breaks and paragraphs are preserved. An empty field uses its default text. Content is plain text; HTML is not executed.</value></data>
+<data name="PageUsingDefault" xml:space="preserve"><value>Default content is currently displayed.</value></data>
+<data name="PreviewPage" xml:space="preserve"><value>View page</value></data>
+<data name="PageTitleLength" xml:space="preserve"><value>The page title must not exceed 200 characters.</value></data>
+<data name="PageLastUpdated" xml:space="preserve"><value>Last updated:</value></data>
+<data name="PageContentsHelp" xml:space="preserve"><value>Manage public page text in Arabic and English. Saved changes are visible to visitors immediately.</value></data>
+<data name="PageArabic" xml:space="preserve"><value>Arabic version</value></data>
+<data name="BackToPages" xml:space="preserve"><value>Back to page content</value></data>
+<data name="PageBody" xml:space="preserve"><value>Page text</value></data>
+<data name="PageEditConflict" xml:space="preserve"><value>This page was edited elsewhere. Reload it before saving another change.</value></data>
+<data name="PageContentSaved" xml:space="preserve"><value>Page content saved successfully.</value></data>
 </root>
 
 

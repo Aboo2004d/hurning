@@ -1,0 +1,7 @@
+@model SitePageViewModel
+@{ViewData["Title"]=Model.Title;}
+<article class="detail-panel info-page">
+ <h1 dir="auto">@Model.Title</h1>
+ <div class="editable-page-body" dir="auto">@Model.Body</div>
+ <div class="actions"><a class="button" asp-action="Index">@T["BrowseOpportunities"]</a><a class="textlink" asp-action="Contact">@T["Contact"]</a></div>
+</article>

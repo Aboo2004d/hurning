@@ -16,9 +16,12 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     public DbSet<UserReport> Reports => Set<UserReport>();
     public DbSet<AuditEntry> Audit => Set<AuditEntry>();
     public DbSet<WorkerHeartbeat> Heartbeats => Set<WorkerHeartbeat>();
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
+    public DbSet<SitePage> SitePages => Set<SitePage>();
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<ContactMessage>().HasIndex(x => new { x.IsHandled, x.IsRead, x.CreatedAt });
         b.Entity<SourceItem>().HasIndex(x => new { x.SourceId, x.ExternalId }).IsUnique();
         b.Entity<SourceItem>().HasIndex(x => new { x.Status, x.RetryAt });
         b.Entity<Opportunity>().HasIndex(x => new { x.Status, x.Kind, x.Deadline });

@@ -1,2 +1,3 @@
-@{ViewData["Title"]=T["Privacy"];}
-<article class="detail-panel"><h1>@T["Privacy"]</h1><p>@T["PrivacyText"]</p><p>@T["SourceLinkNote"]</p></article>
+@model SitePageViewModel
+@{ViewData["Title"]=Model.Title;}
+<article class="detail-panel info-page"><h1 dir="auto">@Model.Title</h1><div class="editable-page-body" dir="auto">@Model.Body</div></article>

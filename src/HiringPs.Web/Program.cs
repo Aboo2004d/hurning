@@ -115,6 +115,9 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
 
+    options.AddPolicy("contact", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 3, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
     options.AddPolicy("public", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -143,12 +146,6 @@ if (!string.IsNullOrWhiteSpace(keyPath))
         new DirectoryInfo(keyPath));
 }
 
-if (!builder.Environment.IsDevelopment() &&
-    string.IsNullOrWhiteSpace(keyPath))
-{
-    throw new InvalidOperationException(
-        "Configure persistent DataProtection:KeyPath outside wwwroot.");
-}
 
 
 // ========================================
