@@ -9,7 +9,7 @@
  <data name="All" xml:space="preserve"><value>All</value></data>
  <data name="Search" xml:space="preserve"><value>Search</value></data>
  <data name="SearchPlaceholder" xml:space="preserve"><value>Search opportunity title or organization</value></data>
- <data name="Headline" xml:space="preserve"><value>Your next opportunity, closer.</value></data>
+ <data name="Headline" xml:space="preserve"><value>Your gateway to jobs and opportunities in Palestine</value></data>
  <data name="Subtitle" xml:space="preserve"><value>Jobs, training and procurement opportunities in Palestine.</value></data>
  <data name="Filters" xml:space="preserve"><value>Refine results</value></data>
  <data name="Clear" xml:space="preserve"><value>Clear all</value></data>
@@ -327,10 +327,10 @@
 <data name="About" xml:space="preserve"><value>About us</value></data>
 <data name="ContactEmailInvalid" xml:space="preserve"><value>Enter a valid email address.</value></data>
 <data name="ContactReceived" xml:space="preserve"><value>Your message was received. Thank you for contacting us.</value></data>
-<data name="AboutIntro" xml:space="preserve"><value>hiring.ps brings together jobs, training, tenders and procurement opportunities related to Palestine.</value></data>
+<data name="AboutIntro" xml:space="preserve"><value>Palestine Opportunities brings together jobs, training, tenders and procurement opportunities related to Palestine.</value></data>
 <data name="ReopenMessage" xml:space="preserve"><value>Reopen message</value></data>
 <data name="AboutSources" xml:space="preserve"><value>We display concise information and links to original announcements. Check the publisher for application requirements, deadlines and updates, and apply through the original source.</value></data>
-<data name="ContactReplySubject" xml:space="preserve"><value>Reply to your message to hiring.ps</value></data>
+<data name="ContactReplySubject" xml:space="preserve"><value>Reply to your message to Palestine Opportunities</value></data>
 <data name="ContactPrivacyNote" xml:space="preserve"><value>Your name, email and message are visible only to site administrators to follow up on your enquiry.</value></data>
 <data name="AboutOffer" xml:space="preserve"><value>Choose an opportunity type from the navigation, then narrow the results by search, location and category.</value></data>
 <data name="ContactNameRequired" xml:space="preserve"><value>Please enter your name.</value></data>
@@ -357,6 +357,7 @@
  <data name="TrainingSubtitle" xml:space="preserve"><value>Training opportunities in the West Bank, Gaza and Jerusalem.</value></data>
  <data name="TenderSubtitle" xml:space="preserve"><value>Tenders in the West Bank, Gaza and Jerusalem.</value></data>
  <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>Procurement notices in the West Bank, Gaza and Jerusalem.</value></data>
+ <data name="SiteName" xml:space="preserve"><value>Palestine Opportunities</value></data>
 </root>
 
 

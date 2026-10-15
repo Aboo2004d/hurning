@@ -9,7 +9,7 @@
  <data name="All" xml:space="preserve"><value>الكل</value></data>
  <data name="Search" xml:space="preserve"><value>بحث</value></data>
  <data name="SearchPlaceholder" xml:space="preserve"><value>ابحث بعنوان الفرصة أو الجهة</value></data>
- <data name="Headline" xml:space="preserve"><value>فرصتك القادمة، أقرب.</value></data>
+ <data name="Headline" xml:space="preserve"><value>بوابتك للوظائف والفرص في فلسطين</value></data>
  <data name="Subtitle" xml:space="preserve"><value>وظائف وتدريب وعطاءات ومناقصات في الضفة وغزة والقدس.</value></data>
  <data name="Filters" xml:space="preserve"><value>تصفية النتائج</value></data>
  <data name="Clear" xml:space="preserve"><value>مسح الكل</value></data>
@@ -327,10 +327,10 @@
 <data name="About" xml:space="preserve"><value>من نحن</value></data>
 <data name="ContactEmailInvalid" xml:space="preserve"><value>أدخل عنوان بريد إلكتروني صالحًا.</value></data>
 <data name="ContactReceived" xml:space="preserve"><value>تم استلام رسالتك بنجاح. شكرًا لتواصلك معنا.</value></data>
-<data name="AboutIntro" xml:space="preserve"><value>hiring.ps يجمع فرص العمل والتدريب والعطاءات والمناقصات المرتبطة بفلسطين في مكان واحد.</value></data>
+<data name="AboutIntro" xml:space="preserve"><value>فرص فلسطين يجمع فرص العمل والتدريب والعطاءات والمناقصات المرتبطة بفلسطين في مكان واحد.</value></data>
 <data name="ReopenMessage" xml:space="preserve"><value>إعادة فتح الرسالة</value></data>
 <data name="AboutSources" xml:space="preserve"><value>نعرض معلومات مختصرة وروابط الإعلانات الأصلية. شروط التقديم والمواعيد والتحديثات تُراجع لدى الجهة الناشرة، ويكون التقديم عبر المصدر.</value></data>
-<data name="ContactReplySubject" xml:space="preserve"><value>رد على رسالتك إلى hiring.ps</value></data>
+<data name="ContactReplySubject" xml:space="preserve"><value>رد على رسالتك إلى فرص فلسطين</value></data>
 <data name="ContactPrivacyNote" xml:space="preserve"><value>يظهر اسمك وبريدك ورسالتك لإدارة الموقع فقط بغرض متابعة استفسارك.</value></data>
 <data name="AboutOffer" xml:space="preserve"><value>تصفح كل نوع من الفرص من القائمة، واستخدم البحث وفلاتر المكان والمجال للوصول إلى النتائج التي تناسبك.</value></data>
 <data name="ContactNameRequired" xml:space="preserve"><value>الاسم مطلوب.</value></data>
@@ -357,6 +357,7 @@
  <data name="TrainingSubtitle" xml:space="preserve"><value>فرص تدريب في الضفة وغزة والقدس.</value></data>
  <data name="TenderSubtitle" xml:space="preserve"><value>عطاءات في الضفة وغزة والقدس.</value></data>
  <data name="ProcurementNoticeSubtitle" xml:space="preserve"><value>مناقصات في الضفة وغزة والقدس.</value></data>
+ <data name="SiteName" xml:space="preserve"><value>فرص فلسطين</value></data>
 </root>
 
 

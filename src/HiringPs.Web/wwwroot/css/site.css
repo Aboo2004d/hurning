@@ -94,3 +94,9 @@
 @media (prefers-reduced-motion: reduce) {
     .header-nav a, .menu-chevron { transition: none; }
 }
+
+/* Localized site name alongside the existing brand mark. */
+.brand-name { font-size: 19px; line-height: 1.5; }
+@media (max-width: 540px) {
+    .brand-name { font-size: 16px; }
+}

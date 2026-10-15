@@ -17,7 +17,7 @@
         <link rel="icon" type="image/png" sizes="64x64" href="~/images/brand/favicon-64.png" asp-append-version="true"/>
         <link rel="apple-touch-icon" sizes="180x180" href="~/images/brand/apple-touch-icon.png" asp-append-version="true"/>
         <title>
-            @ViewData["Title"] · hiring.ps
+            @ViewData["Title"] · @T["SiteName"]
         </title>
         <meta name="description" content="@(ViewData["Description"]??T["Subtitle"].Value)"/>
         <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
@@ -26,8 +26,9 @@
     </head>
     <body class="@(adminArea ? "admin-area" : null)">
         <header class="topbar site-header">
-            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="@(ar?"hiring.ps — الرئيسية":"hiring.ps — Home")">
-                <img class="brand-logo" src="~/images/brand/basket-logo.png" asp-append-version="true" width="56" height="56" alt="hiring.ps"/>
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="@(T["SiteName"].Value + (ar ? " — الرئيسية" : " — Home"))">
+                <img class="brand-logo" src="~/images/brand/basket-logo.png" asp-append-version="true" width="56" height="56" alt=""/>
+                <span class="brand-name" dir="auto">@T["SiteName"]</span>
             </a>
             <button class="header-menu-toggle secondary" type="button" aria-expanded="false" aria-controls="header-menu" aria-label="@(adminArea ? T["ControlPanel"] : T["Menu"])">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -113,7 +114,7 @@
         <footer class="site-footer">
             <div class="footer-inner">
                 <div class="footer-description">
-                    <span class="footer-copyright" dir="ltr">© @DateTime.UtcNow.Year hiring.ps
+                    <span class="footer-copyright">© @DateTime.UtcNow.Year <bdi>@T["SiteName"]</bdi>
                     </span>
                     <p>
                         @T["SourceLinkNote"]
