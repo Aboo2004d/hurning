@@ -40,10 +40,21 @@ public static class AutomaticSource
         return (links.ToArray(), next);
     }
 
-    public static string ContentHtml(string html)
+    public static string ContentHtml(string html, bool preserveMetadata = false)
     {
         var doc = new HtmlParser().ParseDocument(html);
         foreach (var e in doc.QuerySelectorAll("script,style,nav,header,footer,noscript,iframe,aside,form")) e.Remove();
+        if (preserveMetadata)
+        {
+            // Keep title, location and closing-date metadata alongside the description.
+            // A description-only element can omit the facts required for publication.
+            foreach (var selector in new[] { "[itemtype*='JobPosting']", "main", "[role='main']", "article" })
+            {
+                var container = doc.QuerySelectorAll(selector).FirstOrDefault(e => e.TextContent.Trim().Length >= 80);
+                if (container is not null) return container.InnerHtml;
+            }
+            throw new ContentNeedsReviewException("Job detail container is uncertain; source needs review.");
+        }
         var candidates = doc.QuerySelectorAll("[itemprop='description'],article,main,[role='main']")
             .Where(e => e.TextContent.Trim().Length >= 80).ToArray();
         var best = candidates.Where(e => !e.QuerySelectorAll("[itemprop='description'],article,main,[role='main']").Any(child => child.TextContent.Trim().Length >= 80))

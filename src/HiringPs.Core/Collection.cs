@@ -157,7 +157,9 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
     public async Task<string> FetchAsync(Source source,string url,CancellationToken ct)=>(await FetchBundleAsync(source,url,ct)).Text;
     public virtual async Task<ContentBundle> FetchBundleAsync(Source source, string url, CancellationToken ct)
     {
-        if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
+        // Jobs.ps RSS supplies discovery snippets, not complete announcements.
+        // Fetch its detail page through the normal browser and URL-policy path.
+        if (source.Connector == ConnectorKind.ReliefWebRss)
         {
             return await CollectorDiagnosticFiles.WithoutPageAsync(source,"Detail","ReadRss",source.Url,configuration,async () =>
             {
@@ -187,11 +189,12 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         diagnostics.Step("WaitDocumentReady", timeoutMs: 25000);
         await page.WaitForFunctionAsync("() => document.readyState !== 'loading'", null, new() { Timeout = 25000 });
         string html;
-        if (source.Connector == ConnectorKind.Automatic)
+        if (source.Connector == ConnectorKind.Automatic ||
+            (source.Connector == ConnectorKind.JobsRss && conf.ContentSelector == "body"))
         {
             diagnostics.Step("WaitAutomaticContent", "body", 25000);
             await WaitForAutomaticContentAsync(page);
-            html = AutomaticSource.ContentHtml(await page.ContentAsync());
+            html = AutomaticSource.ContentHtml(await page.ContentAsync(), preserveMetadata: source.Connector == ConnectorKind.JobsRss);
         }
         else
         {
@@ -203,8 +206,10 @@ public class BrowserCollector(UrlPolicy policy, IConfiguration configuration,Att
         var doc = await new HtmlParser().ParseDocumentAsync(html, ct);
         foreach (var e in doc.QuerySelectorAll("script,style,nav,header,footer,noscript,iframe")) e.Remove();
         var text = Regex.Replace(doc.Body?.TextContent ?? "", "\\s+", " ").Trim();
+        if (source.Connector == ConnectorKind.JobsRss && text.Length < 80)
+            throw new ContentNeedsReviewException("Jobs.ps detail content is incomplete; RSS summary is not a substitute.");
         var hosts=conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).ToArray();
-        var links=new List<string>();
+        var links=new List<string> { url };
         foreach(var anchor in doc.QuerySelectorAll("a[href]"))
         {
             var href=anchor.GetAttribute("href");if(string.IsNullOrWhiteSpace(href)||href.StartsWith('#'))continue;

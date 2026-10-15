@@ -214,13 +214,14 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
     long id,
     CancellationToken ct)
     {
-        var item = await db.SourceItems.FindAsync([id], ct);
+        var item = await db.SourceItems.Include(x => x.Source).SingleOrDefaultAsync(x => x.Id == id, ct);
 
         if (item is null)
             return NotFound();
 
-        // Reprocess using saved content when available
-        item.Status = item.Content.Length > 0
+        // Jobs.ps items may contain only an old RSS snippet; fetch the detail page again.
+        // Other connectors can reprocess their saved content as before.
+        item.Status = item.Content.Length > 0 && item.Source.Connector != ConnectorKind.JobsRss
             ? ProcessingStatus.AwaitingAi
             : ProcessingStatus.Discovered;
 
