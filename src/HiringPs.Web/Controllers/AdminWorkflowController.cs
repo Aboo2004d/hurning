@@ -34,11 +34,13 @@ public partial class AdminController
     private async Task FillPromptAsync(PromptEditor input, CancellationToken ct)
     {
         input.Settings = await db.WorkflowSettings.AsNoTracking().SingleAsync(x => x.Id == 1, ct);
-        input.History = await db
+        int.TryParse(Request.Query["historyPage"], out var historyPage);
+        var history = await db
             .PromptVersions.AsNoTracking()
             .OrderByDescending(x => x.Id)
-            .Take(100)
-            .ToListAsync(ct);
+            .PageAsync(historyPage, ct, "historyPage", "#prompt-history");
+        input.History = history.Items;
+        input.HistoryPager = history.Pager;
     }
 
     [HttpPost]
@@ -138,50 +140,52 @@ public partial class AdminController
     public async Task<IActionResult> AiUsage(
         int days = 30,
         int page = 1,
+        int groupsPage = 1,
         CancellationToken ct = default
     )
     {
         days = Math.Clamp(days, 1, 365);
         var since = DateTimeOffset.UtcNow.AddDays(-days);
         var query = db.AiUsage.AsNoTracking().Where(x => x.StartedAt >= since);
-        var count = await query.CountAsync(ct);
-        page = Math.Clamp(page, 1, Math.Max(1, (count + 49) / 50));
+        var items = await query
+            .OrderByDescending(x => x.Id)
+            .PageAsync(page, ct, "page", "#ai-requests");
+        var groupsQuery = query
+            .GroupBy(x => new { x.PromptVersionId, x.Model })
+            .Select(g => new AiUsageTotals
+            {
+                PromptVersionId = g.Key.PromptVersionId,
+                Model = g.Key.Model,
+                Requests = g.Count(),
+                Succeeded = g.Count(x => x.Success == true),
+                Failed = g.Count(x => x.Success == false),
+                Unfinished = g.Count(x => x.Success == null),
+                UnknownTokenRequests = g.Count(x => x.TotalTokens == null),
+                InputTokens =
+                    g.Count(x => x.InputTokens != null) > 0
+                        ? g.Sum(x => (long?)x.InputTokens)
+                        : null,
+                OutputTokens =
+                    g.Count(x => x.OutputTokens != null) > 0
+                        ? g.Sum(x => (long?)x.OutputTokens)
+                        : null,
+                TotalTokens =
+                    g.Count(x => x.TotalTokens != null) > 0
+                        ? g.Sum(x => (long?)x.TotalTokens)
+                        : null,
+            });
+        var groups = await groupsQuery
+            .OrderByDescending(x => x.PromptVersionId)
+            .ThenBy(x => x.Model)
+            .PageAsync(groupsPage, ct, "groupsPage", "#ai-totals");
         return View(
             new AiUsageDashboard
             {
                 Days = days,
-                Page = page,
-                Count = count,
-                Items = await query
-                    .OrderByDescending(x => x.Id)
-                    .Skip((page - 1) * 50)
-                    .Take(50)
-                    .ToListAsync(ct),
-                Groups = await query
-                    .GroupBy(x => new { x.PromptVersionId, x.Model })
-                    .Select(g => new AiUsageTotals
-                    {
-                        PromptVersionId = g.Key.PromptVersionId,
-                        Model = g.Key.Model,
-                        Requests = g.Count(),
-                        Succeeded = g.Count(x => x.Success == true),
-                        Failed = g.Count(x => x.Success == false),
-                        Unfinished = g.Count(x => x.Success == null),
-                        UnknownTokenRequests = g.Count(x => x.TotalTokens == null),
-                        InputTokens =
-                            g.Count(x => x.InputTokens != null) > 0
-                                ? g.Sum(x => (long?)x.InputTokens)
-                                : null,
-                        OutputTokens =
-                            g.Count(x => x.OutputTokens != null) > 0
-                                ? g.Sum(x => (long?)x.OutputTokens)
-                                : null,
-                        TotalTokens =
-                            g.Count(x => x.TotalTokens != null) > 0
-                                ? g.Sum(x => (long?)x.TotalTokens)
-                                : null,
-                    })
-                    .ToListAsync(ct),
+                Items = items.Items,
+                ItemsPager = items.Pager,
+                Groups = groups.Items,
+                GroupsPager = groups.Pager,
             }
         );
     }
@@ -242,12 +246,16 @@ public partial class AdminController
         return RedirectToAction(nameof(Retention));
     }
 
-    public async Task<IActionResult> Merges(long? opportunityId, CancellationToken ct)
+    public async Task<IActionResult> Merges(
+        long? opportunityId,
+        int page = 1,
+        CancellationToken ct = default
+    )
     {
         var query = db.MergeOperations.AsNoTracking();
         if (opportunityId is { } id)
             query = query.Where(x => x.DuplicateId == id || x.TargetId == id);
-        return View(await query.OrderByDescending(x => x.Id).Take(100).ToListAsync(ct));
+        return View(await query.OrderByDescending(x => x.Id).PageAsync(page, ct));
     }
 
     [HttpPost]

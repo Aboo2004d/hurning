@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--admin-pagination-check"))
+{
+    AdminPaginationChecks.Run();
+    return;
+}
+
 if (args.Contains("--tools-check"))
 {
     await ToolChecks.RunAsync();

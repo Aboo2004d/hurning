@@ -82,7 +82,7 @@
     @(ar ? "سجل النسخ — افتح نسخة سابقة ثم احفظها كنسخة جديدة لاستعادتها" : "Version history — open a version and save a new copy to restore it")
 </h2>
 <div class="table-wrap">
-    <table class="prompt-history">
+    <table id="prompt-history" class="prompt-history">
         <colgroup>
             <col class="prompt-history-id" />
             <col class="prompt-history-date" />
@@ -123,3 +123,5 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_AdminPagination" model="Model.HistoryPager" />

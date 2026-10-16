@@ -32,8 +32,7 @@ public class ContactInbox
     public string Status { get; set; } = "all";
     public int Count { get; set; }
     public int UnreadCount { get; set; }
-    public int Page { get; set; } = 1;
-    public int Pages => Math.Max(1, (Count + 19) / 20);
+    public AdminPager Pager { get; set; } = new();
 }
 
 public static class ContactReplyLinks

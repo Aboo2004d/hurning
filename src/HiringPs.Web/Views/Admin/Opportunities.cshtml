@@ -1,4 +1,4 @@
-@model List<Opportunity>
+@model AdminPage<Opportunity>
 @{
     ViewData["Title"] = T["Opportunities"];
 }
@@ -19,7 +19,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in Model)
+            @foreach (var item in Model.Items)
             {
                 <tr>
                     <td dir="auto">@item.Title</td>
@@ -37,3 +37,5 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_AdminPagination" model="Model.Pager" />

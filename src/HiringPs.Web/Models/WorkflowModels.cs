@@ -23,6 +23,7 @@ public class PromptEditor
     public string Version { get; set; } = "";
     public WorkflowSettings? Settings { get; set; }
     public List<PromptVersion> History { get; set; } = [];
+    public AdminPager HistoryPager { get; set; } = new();
 }
 
 public class RetentionEditor
@@ -43,8 +44,8 @@ public class AiUsageDashboard
     public List<AiUsage> Items { get; set; } = [];
     public List<AiUsageTotals> Groups { get; set; } = [];
     public int Days { get; set; }
-    public int Page { get; set; }
-    public int Count { get; set; }
+    public AdminPager ItemsPager { get; set; } = new();
+    public AdminPager GroupsPager { get; set; } = new();
 }
 
 public class AiUsageTotals

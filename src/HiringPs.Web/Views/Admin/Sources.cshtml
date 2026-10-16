@@ -1,4 +1,4 @@
-@model List<Source>
+@model AdminPage<Source>
 @{
     ViewData["Title"] = T["Sources"];
 }
@@ -10,7 +10,7 @@
 <p class="muted">@T["ScheduleZone"] · @T["CollectWorkerNote"]</p>
 <div
     class="table-wrap"
-    data-collection-pending="@(Model.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")"
+    data-collection-pending="@(Model.Items.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")"
 >
     <table class="table-nowrap">
         <thead>
@@ -27,7 +27,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var source in Model)
+            @foreach (var source in Model.Items)
             {
                 var request = source.CollectionRequests.FirstOrDefault();
                 <tr>
@@ -74,3 +74,5 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_AdminPagination" model="Model.Pager" />

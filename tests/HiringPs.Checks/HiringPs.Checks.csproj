@@ -6,6 +6,7 @@
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="../../src/HiringPs.Core/HiringPs.Core.csproj" />
+        <ProjectReference Include="../../src/HiringPs.Web/HiringPs.Web.csproj" />
     </ItemGroup>
     <ItemGroup>
         <None Update="Fixtures/Pdf/*.pdf" CopyToOutputDirectory="PreserveNewest" />
