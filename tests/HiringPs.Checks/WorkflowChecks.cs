@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using HiringPs.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 public static class WorkflowChecks
 {
@@ -16,7 +17,22 @@ public static class WorkflowChecks
             passed++;
             Console.WriteLine("PASS " + name);
         }
+        using var modelDb = new HiringDb(
+            new DbContextOptionsBuilder<HiringDb>()
+                .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ModelCheck;Trusted_Connection=True")
+                .Options
+        );
+        Check(
+            !modelDb.Database.HasPendingModelChanges(),
+            "current model matches migrations without connecting to SQL Server"
+        );
         var prompt = PromptDefaults.Initial();
+        Check(
+            !prompt.LegacySnapshot.Contains('\r')
+                && !prompt.Template.Contains('\r')
+                && !prompt.FinalText.Contains('\r'),
+            "initial prompt seed uses consistent LF line endings on every platform"
+        );
         Check(
             TextRules.Hash(prompt.LegacySnapshot)
                 == "BB53571E5A8B143C2AEF99C016604110E6C655FC2E480C9B3E9A66F28090F169",
@@ -37,7 +53,7 @@ public static class WorkflowChecks
             "system conditions enter the final prompt"
         );
         Check(
-            prompt.LegacySnapshot == PromptDefaults.Legacy,
+            prompt.LegacySnapshot == PromptDefaults.Legacy.ReplaceLineEndings("\n"),
             "editing conditions cannot rewrite the legacy snapshot"
         );
         Check(

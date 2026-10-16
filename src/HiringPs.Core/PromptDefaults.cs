@@ -60,8 +60,10 @@ DATE CONTRACT: Return publicationDate (yyyy-MM-dd or null), publicationEvidence 
         var initial = new PromptVersion
         {
             Id = 1,
-            Template = Template,
-            LegacySnapshot = Legacy,
+            // Keep migration seed text identical on Windows and Linux.
+            Template = Template.ReplaceLineEndings("\n"),
+            LegacySnapshot = Legacy.ReplaceLineEndings("\n"),
+            DateContract = DateInstructions.ReplaceLineEndings("\n"),
             SummaryLimit = 200,
             GeographicScope = "West Bank, Gaza and Jerusalem",
             AllowedKinds = "Job,Training,Tender,ProcurementNotice",

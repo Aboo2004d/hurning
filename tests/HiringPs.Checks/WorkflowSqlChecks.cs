@@ -38,7 +38,7 @@ public static class WorkflowSqlChecks
             await db.Database.MigrateAsync();
             var initial = await db.PromptVersions.SingleAsync(x => x.Id == 1);
             Check(
-                initial.LegacySnapshot == PromptDefaults.Legacy
+                initial.LegacySnapshot == PromptDefaults.Legacy.ReplaceLineEndings("\n")
                     && initial.Render() == initial.FinalText,
                 "migration preserves original and effective prompt snapshots"
             );
