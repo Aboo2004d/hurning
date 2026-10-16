@@ -1174,3 +1174,64 @@ footer {
     margin-block: 6px 14px;
     color: var(--muted);
 }
+
+/* حالة الأدوات: بطاقات متجاوبة باتجاه الواجهة وألوان هوية الموقع. */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+    gap: 18px;
+    margin-block: 24px;
+}
+.tool-card {
+    min-width: 0;
+    padding: 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow-wrap: anywhere;
+}
+.tool-card h2 {
+    margin-block: 0 12px;
+    font-size: 20px;
+}
+.tool-status {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+.tool-ready {
+    background: var(--soft);
+    color: var(--accent);
+}
+.tool-problem {
+    background: #fff0eb;
+    color: #923f27;
+}
+.tool-neutral {
+    background: #f0f3f2;
+    color: var(--muted);
+}
+.tool-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    font-size: 13px;
+}
+.tool-facts dt {
+    color: var(--muted);
+}
+.tool-facts dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.tools-actions {
+    flex-wrap: wrap;
+}
+.tools-actions form {
+    margin: 0;
+}
+.tool-detail {
+    overflow-wrap: anywhere;
+}

@@ -21,14 +21,8 @@ public sealed class PdfTextReader(IConfiguration configuration)
             await tools.RunAsync("RenderExecutable", "pdftoppm", ["-v"], ct);
             await CheckLanguagesAsync(ct);
         }
+        PdfTextFiles.Prepare(configuration);
         var root = PdfTextFiles.DirectoryPath(configuration);
-        if (OperatingSystem.IsWindows())
-            Directory.CreateDirectory(root);
-        else
-            Directory.CreateDirectory(
-                root,
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
-            );
         var test = Path.Combine(root, ".probe-" + Guid.NewGuid().ToString("N"));
         try
         {
@@ -70,14 +64,16 @@ public sealed class PdfTextReader(IConfiguration configuration)
             throw new ContentNeedsReviewException("Attachment is not a readable PDF.");
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
         budget.CancelAfter(TimeSpan.FromMinutes(3));
-        var work = Path.Combine(Path.GetTempPath(), "hiring-pdf-" + Guid.NewGuid().ToString("N"));
+        PdfTextFiles.Prepare(configuration);
+        var work = Path.Combine(
+            PdfTextFiles.DirectoryPath(configuration),
+            Guid.NewGuid().ToString("N")
+        );
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
         var pages = new List<PdfPageText>();
-        var original = new StringBuilder();
         var readable = new StringBuilder(
             $"[PDF DOCUMENT {hash}; TEXT VERSION {PdfTextFiles.TextVersion}]\n"
         );
-        string? failure = null;
         try
         {
             if (OperatingSystem.IsWindows())
@@ -87,6 +83,12 @@ public sealed class PdfTextReader(IConfiguration configuration)
                     work,
                     UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
                 );
+            using var lease = new FileStream(
+                Path.Combine(work, ".active"),
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.None
+            );
             var input = Path.Combine(work, "source.pdf");
             await File.WriteAllBytesAsync(input, bytes, budget.Token);
             using var document = Open(bytes);
@@ -108,12 +110,6 @@ public sealed class PdfTextReader(IConfiguration configuration)
             {
                 budget.Token.ThrowIfCancellationRequested();
                 var raw = ContentOrderTextExtractor.GetText(page);
-                original
-                    .AppendLine($"[PDF PAGE {page.Number}]\n[PDFPIG RAW]")
-                    .AppendLine(raw)
-                    .AppendLine("[POPPLER RAW]")
-                    .AppendLine(page.Number <= native.Length ? native[page.Number - 1] : "");
-                EnsureBounded(original.ToString());
                 var text = Clean(page.Number <= native.Length ? native[page.Number - 1] : "");
                 var method = "poppler";
                 double? confidence = null;
@@ -189,7 +185,7 @@ public sealed class PdfTextReader(IConfiguration configuration)
                         pages.Add(new(page.Number, method, text, confidence));
                         readable.AppendLine($"[PDF PAGE {page.Number}]").AppendLine(text);
                         throw new ContentNeedsReviewException(
-                            $"PDF page {page.Number} OCR is unreadable or low-confidence; compare the archived original before publishing."
+                            $"PDF page {page.Number} OCR is unreadable or low-confidence; compare the original at its source before publishing."
                         );
                     }
                     File.Delete(image + ".png");
@@ -215,68 +211,28 @@ public sealed class PdfTextReader(IConfiguration configuration)
                 throw new ContentNeedsReviewException(
                     "PDF has insufficient readable content; manual review required."
                 );
-            await PdfTextFiles.ArchiveAsync(
-                configuration,
-                bytes,
-                hash,
-                original.ToString(),
-                readable.ToString(),
-                pages,
-                null,
-                budget.Token
-            );
             return new(hash, readable.ToString(), pages);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            failure = "PDF processing exceeded the 3 minute document budget.";
-            throw new ContentNeedsReviewException($"PDF archive {hash}: {failure}");
+            throw new ContentNeedsReviewException(
+                $"PDF document {hash}: processing exceeded the 3 minute budget."
+            );
         }
         catch (ContentNeedsReviewException ex)
         {
-            failure = ex.Message;
-            throw new ContentNeedsReviewException($"PDF archive {hash}: {ex.Message}");
+            throw new ContentNeedsReviewException($"PDF document {hash}: {ex.Message}");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            failure =
-                "PDF processing failed; check the document, tool installation and archive permissions.";
-            throw new ContentNeedsReviewException($"PDF archive {hash}: {failure}");
+            throw new ContentNeedsReviewException(
+                $"PDF document {hash}: processing failed; check the document, tools and temporary-directory permissions."
+            );
         }
         finally
         {
-            if (failure is not null)
-            {
-                // A failed transcription is diagnostic only, never returned to the extractor.
-                using var archiveBudget = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                try
-                {
-                    await PdfTextFiles.ArchiveAsync(
-                        configuration,
-                        bytes,
-                        hash,
-                        original.ToString(),
-                        readable.ToString(),
-                        pages,
-                        failure,
-                        archiveBudget.Token
-                    );
-                }
-                catch (Exception ex)
-                    when (ex
-                            is IOException
-                                or UnauthorizedAccessException
-                                or OperationCanceledException
-                                or ContentNeedsReviewException
-                    ) { }
-            }
-            try
-            {
-                if (Directory.Exists(work))
-                    Directory.Delete(work, recursive: true);
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            // Tools have exited and document/lock handles are disposed before deleting every intermediate file.
+            await PdfTextFiles.DeleteWorkAsync(work);
         }
     }
 

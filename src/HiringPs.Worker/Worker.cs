@@ -6,7 +6,8 @@ namespace HiringPs.Worker;
 public class Worker(
     IServiceScopeFactory scopes,
     ILogger<Worker> logger,
-    IConfiguration configuration
+    IConfiguration configuration,
+    ToolWorkerRuntime runtime
 ) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -15,10 +16,12 @@ public class Worker(
         {
             try
             {
+                runtime.Begin();
                 await using var scope = scopes.CreateAsyncScope();
                 await scope
                     .ServiceProvider.GetRequiredService<CollectionPipeline>()
                     .TickAsync(stoppingToken);
+                runtime.Succeed();
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -26,6 +29,7 @@ public class Worker(
             }
             catch (Exception ex)
             {
+                runtime.Fail(ex);
                 logger.LogError(
                     "Pipeline failed ({Type}); retry in one minute. Check SQL/service configuration.",
                     ex.GetType().Name

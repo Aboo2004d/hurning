@@ -301,6 +301,7 @@ public static class WorkflowSqlChecks
                 ),
                 "AI usage stores actual reported counts and prompt version"
             );
+            await ToolSqlChecks.RunAsync(db, config, provider);
             Console.WriteLine(
                 $"{passed} workflow SQL checks passed in an isolated temporary database."
             );

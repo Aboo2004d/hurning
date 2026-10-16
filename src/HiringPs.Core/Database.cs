@@ -29,9 +29,25 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     public DbSet<MergeOperation> MergeOperations => Set<MergeOperation>();
     public DbSet<RetentionPolicy> RetentionPolicies => Set<RetentionPolicy>();
 
+    public DbSet<ToolCheckRequest> ToolCheckRequests => Set<ToolCheckRequest>();
+    public DbSet<ToolCheckResult> ToolCheckResults => Set<ToolCheckResult>();
+    public DbSet<ToolWorkerState> ToolWorkers => Set<ToolWorkerState>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<ToolCheckRequest>()
+            .HasIndex(x => x.ActiveSlot)
+            .IsUnique()
+            .HasFilter("[ActiveSlot] IS NOT NULL");
+        b.Entity<ToolCheckRequest>().HasIndex(x => new { x.Kind, x.RequestedAt });
+        b.Entity<ToolCheckResult>().HasIndex(x => new { x.Tool, x.CheckedAt });
+        b.Entity<ToolCheckResult>()
+            .HasOne<ToolCheckRequest>()
+            .WithMany()
+            .HasForeignKey(x => x.RequestId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<ToolWorkerState>().HasIndex(x => x.At);
         b.Entity<PromptVersion>().HasData(PromptDefaults.Initial());
         b.Entity<WorkflowSettings>().Property(x => x.Id).ValueGeneratedNever();
         b.Entity<WorkflowSettings>()

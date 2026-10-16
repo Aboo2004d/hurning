@@ -92,7 +92,7 @@ public class AiExtractor
             usageId = await AiUsageRecorder.StartAsync(
                 scopes,
                 execution,
-                config["Ai:Model"] ?? "gemini-3.5-flash-lite",
+                config["Ai:Model"] ?? "",
                 ct
             );
         string? error = null;
@@ -140,11 +140,13 @@ public class AiExtractor
     )
     {
         var key = config["Ai:ApiKey"];
-        if (string.IsNullOrWhiteSpace(key))
+        if (string.IsNullOrWhiteSpace(key) || key == "***")
             throw new AiUnavailableException("AI key is not configured; item remains queued.");
-        var model = config["Ai:Model"] ?? "gemini-3.5-flash-lite";
+        var model = config["Ai:Model"];
+        if (string.IsNullOrWhiteSpace(model))
+            throw new AiUnavailableException("AI model is not configured; item remains queued.");
         if (!System.Text.RegularExpressions.Regex.IsMatch(model, @"\A[a-zA-Z0-9._-]+\z"))
-            throw new InvalidOperationException("Invalid model name.");
+            throw new AiUnavailableException("AI model is invalid; item remains queued.");
         var prompt = execution?.Version ?? PromptDefaults.Initial();
         var aiInstructions = prompt.Render();
         using var request = new HttpRequestMessage(

@@ -107,6 +107,10 @@ public class BrowserCollector(
             new()
             {
                 Headless = true,
+                ExecutablePath = configuration["Browser:ExecutablePath"]
+                    is { Length: > 0 } executable
+                    ? executable
+                    : null,
                 Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                     ? channel
                     : null,
@@ -733,14 +737,21 @@ public sealed class SqlRunLock : IAsyncDisposable
     private readonly SqlConnection connection;
     public bool Acquired { get; private set; }
 
-    public SqlRunLock(string connectionString) => connection = new(connectionString);
+    private readonly string resource;
+
+    public SqlRunLock(string connectionString, string resource = "HiringPs.Pipeline")
+    {
+        connection = new(connectionString);
+        this.resource = resource;
+    }
 
     public async Task<bool> AcquireAsync(CancellationToken ct)
     {
         await connection.OpenAsync(ct);
         await using var cmd = connection.CreateCommand();
         cmd.CommandText =
-            "DECLARE @r int; EXEC @r=sp_getapplock @Resource='HiringPs.Pipeline', @LockMode='Exclusive', @LockOwner='Session', @LockTimeout=0; SELECT @r;";
+            "DECLARE @r int; EXEC @r=sp_getapplock @Resource=@resource, @LockMode='Exclusive', @LockOwner='Session', @LockTimeout=0; SELECT @r;";
+        cmd.Parameters.AddWithValue("@resource", resource);
         Acquired = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct)) >= 0;
         return Acquired;
     }
@@ -748,7 +759,8 @@ public sealed class SqlRunLock : IAsyncDisposable
     public async Task VerifyAsync(CancellationToken ct)
     {
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT APPLOCK_MODE('public','HiringPs.Pipeline','Session')";
+        cmd.CommandText = "SELECT APPLOCK_MODE('public',@resource,'Session')";
+        cmd.Parameters.AddWithValue("@resource", resource);
         if (
             !Acquired
             || !string.Equals(
@@ -768,7 +780,8 @@ public sealed class SqlRunLock : IAsyncDisposable
             {
                 await using var cmd = connection.CreateCommand();
                 cmd.CommandText =
-                    "EXEC sp_releaseapplock @Resource='HiringPs.Pipeline', @LockOwner='Session';";
+                    "EXEC sp_releaseapplock @Resource=@resource, @LockOwner='Session';";
+                cmd.Parameters.AddWithValue("@resource", resource);
                 await cmd.ExecuteNonQueryAsync();
             }
         }

@@ -29,7 +29,7 @@ if (args.Contains("--pdf-check") || args.Contains("--pdf-read"))
                 CancellationToken.None
             );
             Console.WriteLine(
-                $"PDF read: {result.Hash}; pages={result.Pages.Count}; archive={PdfTextFiles.DirectoryPath(builder.Configuration)}"
+                $"PDF read: {result.Hash}; pages={result.Pages.Count}; temporary files deleted"
             );
             foreach (var page in result.Pages)
                 Console.WriteLine(
@@ -38,7 +38,7 @@ if (args.Contains("--pdf-check") || args.Contains("--pdf-read"))
         }
         else
             Console.WriteLine(
-                "PDF setup passed: tools, OCR languages (when enabled), and archive write access."
+                "PDF setup passed: tools, OCR languages (when enabled), and temporary workspace access; no processed files are retained."
             );
     }
     catch (Exception ex)
@@ -79,13 +79,8 @@ if (!isProbe)
     {
         options.UseSqlServer(connectionString);
     });
-    // Gemini Configuration Validation
-    var aiApiKey = builder.Configuration["Ai:ApiKey"];
-    var aiModel = builder.Configuration["Ai:Model"];
-    if (string.IsNullOrWhiteSpace(aiApiKey))
-        throw new InvalidOperationException("Missing Ai:ApiKey in appsettings.json.");
-    if (string.IsNullOrWhiteSpace(aiModel))
-        throw new InvalidOperationException("Missing Ai:Model in appsettings.json.");
+    // Keep collection queues and tool diagnostics available when AI is not configured.
+    // AiExtractor leaves those items awaiting AI instead of stopping the whole service.
     // Processing Services
     builder.Services.AddScoped<OpportunityService>();
     builder.Services.AddScoped<CollectionPipeline>();
@@ -106,7 +101,9 @@ builder.Services.AddWindowsService(options =>
 // ========================================
 if (!isOnce && !isProbe)
 {
+    builder.Services.AddSingleton<ToolWorkerRuntime>();
     builder.Services.AddHostedService<Worker>();
+    builder.Services.AddHostedService<ToolMonitor>();
 }
 
 // ========================================

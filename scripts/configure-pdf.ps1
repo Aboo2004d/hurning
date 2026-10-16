@@ -3,26 +3,30 @@ param(
     [Parameter(Mandatory)][string]$PopplerDirectory,
     [Parameter(Mandatory)][string]$TesseractDirectory,
     [Parameter(Mandatory)][string]$OcrDataDirectory,
-    [Parameter(Mandatory)][string]$ArchiveDirectory,
+    [string]$WorkDirectory = (Join-Path ([IO.Path]::GetTempPath()) "HiringPs-PdfWork"),
     [string]$WorkerDirectory,
     [string]$ServiceName
 )
 $ErrorActionPreference = 'Stop'
+if ($ServiceName -and -not $PSBoundParameters.ContainsKey('WorkDirectory'))
+{
+    throw 'Specify -WorkDirectory accessible to the service account; do not persist the administrator profile temp path.'
+}
 $poppler = (Resolve-Path -LiteralPath $PopplerDirectory).Path
 $tesseract = (Resolve-Path -LiteralPath $TesseractDirectory).Path
 $data = (Resolve-Path -LiteralPath $OcrDataDirectory).Path
-$archive = [IO.Path]::GetFullPath($ArchiveDirectory)
-$segments = $archive -split '[\\/]'
+$work = [IO.Path]::GetFullPath($WorkDirectory)
+$segments = $work -split '[\\/]'
 if ($segments -contains 'wwwroot')
 {
-    throw 'Use a private archive outside wwwroot.'
+    throw 'Use a private temporary work directory outside wwwroot.'
 }
 $values = [ordered]@{
     Pdf__TextExecutable = Join-Path $poppler 'pdftotext.exe'
     Pdf__RenderExecutable = Join-Path $poppler 'pdftoppm.exe'
     Pdf__OcrExecutable = Join-Path $tesseract 'tesseract.exe'
     Pdf__OcrDataPath = $data
-    Pdf__TextArchivePath = $archive
+    Pdf__WorkDirectory = $work
     Pdf__EnableOcr = 'true'
     Pdf__RequireOcrReview = 'true'
 }
@@ -80,6 +84,6 @@ if ($ServiceName)
         Force = $true
     }
     New-ItemProperty @property | Out-Null
-    Write-Output 'PDF service settings saved. Grant archive/tool permissions to the service account, then restart the service explicitly.'
+    Write-Output 'PDF service settings saved. Grant temporary-directory/tool permissions to the service account, then restart the service explicitly.'
 }
-Write-Output 'PDF configuration and tool probe passed for this console account. Start local processes from this console. IIS settings and service-account permissions must be configured separately; see Docs/PDF-TEXT.md.'
+Write-Output 'PDF configuration and tool probe passed for this console account. Start local processes from this console. Service-account temporary-file permissions must be configured separately; see Docs/PDF-TEXT.md.'

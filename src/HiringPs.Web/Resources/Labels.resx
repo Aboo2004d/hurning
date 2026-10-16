@@ -1119,6 +1119,288 @@
         <value>استُخدمت قراءة OCR لهذا الإعلان؛ قارن بياناته المهمة مع صفحات PDF الأصلية ثم اعتمده يدويًا.</value>
     </data>
     <data name="Error_PdfRead" xml:space="preserve">
-        <value>تعذرت قراءة PDF بثقة. راجع التفاصيل التقنية والنسخة الأصلية المحفوظة، ثم صحح إعداد الأدوات أو أعد المحاولة.</value>
+        <value>تعذرت قراءة PDF بثقة. راجع التفاصيل التقنية والأصل لدى المصدر، ثم صحح إعداد الأدوات أو أعد المحاولة.</value>
+    </data>
+    <data name="Tools" xml:space="preserve">
+        <value>الأدوات</value>
+    </data>
+    <data name="ToolsIntro" xml:space="preserve">
+        <value>حالة الأدوات من بيئة العامل الفعلية. وقت الفحص بتوقيت UTC. النتائج القديمة لا تعني أن الأداة تعمل الآن.</value>
+    </data>
+    <data name="ToolsCheckNow" xml:space="preserve">
+        <value>فحص الأدوات الآن</value>
+    </data>
+    <data name="ToolsCheckAi" xml:space="preserve">
+        <value>اختبار AI فعلي — يستهلك طلبًا</value>
+    </data>
+    <data name="ToolsRefresh" xml:space="preserve">
+        <value>تحديث النتائج</value>
+    </data>
+    <data name="ToolsAiCost" xml:space="preserve">
+        <value>الفحص العادي لا يتصل بـAI. الاختبار الفعلي يستهلك طلبًا حسب حصة حسابك ويظهر في سجل الاستخدام؛ لا يجمع أو ينشر إعلانًا.</value>
+    </data>
+    <data name="ToolsWorkerOffline" xml:space="preserve">
+        <value>لا توجد نبضة حديثة للعامل. شغّل أو أعد تشغيل خدمة العامل، وتحقق من اتصال SQL وتطبيق المهاجرة وسجلات الخدمة. الطلبات تبقى في الانتظار.</value>
+    </data>
+    <data name="ToolsMultipleWorkers" xml:space="preserve">
+        <value>توجد عدة نسخ نشطة من العامل. كل فحص يوضح النسخة المنفذة؛ النتيجة من نسخة أخرى لا تُعد فحصًا حديثًا للنسخة المعروضة.</value>
+    </data>
+    <data name="ToolsCollectorBusy" xml:space="preserve">
+        <value>العامل نشط وينفذ جولة معالجة. النبضة مستقلة عن مدة الجولة.</value>
+    </data>
+    <data name="ToolsCollectorWaiting" xml:space="preserve">
+        <value>العامل نشط؛ ينتظر الجدولة أو يفحص الطوابير.</value>
+    </data>
+    <data name="ToolsHeartbeat" xml:space="preserve">
+        <value>آخر نبضة</value>
+    </data>
+    <data name="ToolsWorker" xml:space="preserve">
+        <value>الجهاز / الحساب</value>
+    </data>
+    <data name="ToolsLastLoop" xml:space="preserve">
+        <value>بداية آخر دورة</value>
+    </data>
+    <data name="ToolsQueue" xml:space="preserve">
+        <value>في الانتظار / تحتاج مراجعة</value>
+    </data>
+    <data name="ToolsEnabledSources" xml:space="preserve">
+        <value>مصادر مفعلة ومعتمدة</value>
+    </data>
+    <data name="ToolsLastRun" xml:space="preserve">
+        <value>آخر جولة مصدر</value>
+    </data>
+    <data name="ToolsLastRunFailed" xml:space="preserve">
+        <value>آخر جولة مصدر فشلت؛ افتح المصادر لمراجعة السبب. هذا لا يعني أن خدمة العامل متوقفة.</value>
+    </data>
+    <data name="ToolsNotChecked" xml:space="preserve">
+        <value>لم يُفحص بعد؛ اطلب الفحص ثم حدّث النتائج.</value>
+    </data>
+    <data name="ToolsStale" xml:space="preserve">
+        <value>هذه نتيجة قديمة أو من تشغيل سابق/مختلف للعامل؛ اطلب فحصًا جديدًا.</value>
+    </data>
+    <data name="ToolsPreviousState" xml:space="preserve">
+        <value>الحالة وقت الفحص السابق</value>
+    </data>
+    <data name="ToolsCheckedBy" xml:space="preserve">
+        <value>معرّف العامل المنفذ</value>
+    </data>
+    <data name="ToolsLastAi" xml:space="preserve">
+        <value>آخر محاولة AI مسجلة</value>
+    </data>
+    <data name="ToolsAiSucceeded" xml:space="preserve">
+        <value>استجابة مقروءة</value>
+    </data>
+    <data name="ToolsAiFailed" xml:space="preserve">
+        <value>فشل</value>
+    </data>
+    <data name="ToolsAiUnfinished" xml:space="preserve">
+        <value>غير مكتملة</value>
+    </data>
+    <data name="ToolsAiTokens" xml:space="preserve">
+        <value>التوكنز الفعلية</value>
+    </data>
+    <data name="ToolsLastAiNote" xml:space="preserve">
+        <value>آخر محاولة في النظام، وقد تكون معالجة إعلان أو اختبار اتصال ومن تشغيل سابق. لا تثبت صلاحية الإعداد الحالي أو جودة النشر.</value>
+    </data>
+    <data name="ToolsRequests" xml:space="preserve">
+        <value>طلبات الفحص الأخيرة</value>
+    </data>
+    <data name="ToolsRequestKind" xml:space="preserve">
+        <value>نوع الفحص</value>
+    </data>
+    <data name="ToolsRequestedAt" xml:space="preserve">
+        <value>وقت الطلب</value>
+    </data>
+    <data name="ToolsFinishedAt" xml:space="preserve">
+        <value>انتهاء الفحص</value>
+    </data>
+    <data name="ToolsCheckQueued" xml:space="preserve">
+        <value>أُضيف الفحص للطابور؛ ينفذه العامل. حدّث النتائج بعد قليل.</value>
+    </data>
+    <data name="ToolsCheckAlreadyQueued" xml:space="preserve">
+        <value>يوجد فحص مماثل في الانتظار أو التنفيذ، أو طُلب خلال الدقيقة الأخيرة.</value>
+    </data>
+    <data name="Tool_Collector" xml:space="preserve">
+        <value>المجمّع والعامل</value>
+    </data>
+    <data name="Tool_AiConfiguration" xml:space="preserve">
+        <value>إعدادات AI</value>
+    </data>
+    <data name="Tool_AiLive" xml:space="preserve">
+        <value>اتصال AI الفعلي</value>
+    </data>
+    <data name="Tool_Chromium" xml:space="preserve">
+        <value>متصفح Chromium</value>
+    </data>
+    <data name="Tool_PdfText" xml:space="preserve">
+        <value>Poppler — قراءة النص</value>
+    </data>
+    <data name="Tool_PdfRender" xml:space="preserve">
+        <value>Poppler — رسم الصفحات</value>
+    </data>
+    <data name="Tool_PdfOcr" xml:space="preserve">
+        <value>Tesseract — OCR</value>
+    </data>
+    <data name="Tool_PdfLanguages" xml:space="preserve">
+        <value>لغتا OCR العربية والإنجليزية</value>
+    </data>
+    <data name="Tool_PdfWorkspace" xml:space="preserve">
+        <value>مجلد PDF المؤقت والحذف</value>
+    </data>
+    <data name="ToolState_Ready" xml:space="preserve">
+        <value>يعمل وقت الفحص</value>
+    </data>
+    <data name="ToolState_Problem" xml:space="preserve">
+        <value>مشكلة</value>
+    </data>
+    <data name="ToolState_NotConfigured" xml:space="preserve">
+        <value>غير مُعدّ بالكامل</value>
+    </data>
+    <data name="ToolState_Configured" xml:space="preserve">
+        <value>الإعداد موجود؛ لم يثبت الاتصال</value>
+    </data>
+    <data name="ToolState_Disabled" xml:space="preserve">
+        <value>معطّل بالإعدادات</value>
+    </data>
+    <data name="ToolState_Unknown" xml:space="preserve">
+        <value>غير معروف / يحتاج فحصًا</value>
+    </data>
+    <data name="ToolCode_AiKeyMissing" xml:space="preserve">
+        <value>مفتاح AI غير مضبوط في إعدادات العامل.</value>
+    </data>
+    <data name="ToolCode_AiModelInvalid" xml:space="preserve">
+        <value>اسم الموديل غير صالح في إعدادات العامل.</value>
+    </data>
+    <data name="ToolCode_AiConfigured" xml:space="preserve">
+        <value>المفتاح واسم الموديل مضبوطَان؛ لم يُرسل طلب إلى المزود.</value>
+    </data>
+    <data name="ToolCode_AiResponded" xml:space="preserve">
+        <value>استجاب المزود بصيغة قابلة للقراءة.</value>
+    </data>
+    <data name="ToolCode_AiInvalidResponse" xml:space="preserve">
+        <value>استجابة AI لا تطابق بنية الاستخراج المتوقعة.</value>
+    </data>
+    <data name="ToolCode_AiUnavailable" xml:space="preserve">
+        <value>تعذر استخدام AI؛ تحقق من المفتاح والحصة واسم الموديل في إعدادات العامل.</value>
+    </data>
+    <data name="ToolCode_AiNetworkFailed" xml:space="preserve">
+        <value>تعذر الاتصال بمزود AI؛ راجع الشبكة أو أعد الفحص لاحقًا.</value>
+    </data>
+    <data name="ToolCode_BrowserReady" xml:space="preserve">
+        <value>نجح تشغيل Chromium وتنفيذ JavaScript في صفحة محلية. لا يثبت ذلك إمكانية الوصول إلى كل مصدر.</value>
+    </data>
+    <data name="ToolCode_BrowserMissing" xml:space="preserve">
+        <value>ملفات المتصفح غير موجودة في المسار الذي يستخدمه العامل.</value>
+    </data>
+    <data name="ToolCode_BrowserLaunchFailed" xml:space="preserve">
+        <value>تعذر تشغيل المتصفح أو تنفيذ الفحص؛ راجع التبعيات وصلاحيات حساب الخدمة.</value>
+    </data>
+    <data name="ToolCode_ToolReady" xml:space="preserve">
+        <value>نجح تشغيل الأداة وقراءة رقم إصدارها.</value>
+    </data>
+    <data name="ToolCode_VersionUnknown" xml:space="preserve">
+        <value>اشتغلت العملية لكن تعذر التحقق من إصدار الأداة المتوقع.</value>
+    </data>
+    <data name="ToolCode_LanguagesReady" xml:space="preserve">
+        <value>بيانات ara وeng متاحة للعامل.</value>
+    </data>
+    <data name="ToolCode_LanguagesMissing" xml:space="preserve">
+        <value>إحدى لغتي ara أوeng غير موجودة في tessdata المستخدم.</value>
+    </data>
+    <data name="ToolCode_OcrDisabled" xml:space="preserve">
+        <value>OCR معطل بواسطة Pdf:EnableOcr.</value>
+    </data>
+    <data name="ToolCode_WorkspaceReady" xml:space="preserve">
+        <value>نجحت كتابة ملف مؤقت وقراءته وحذفه بحساب العامل. لا يحتفظ النظام بملفات الإعلانات.</value>
+    </data>
+    <data name="ToolCode_CheckTimeout" xml:space="preserve">
+        <value>انتهت مهلة الفحص؛ تحقق من الأداة أو الشبكة وأعد المحاولة.</value>
+    </data>
+    <data name="ToolCode_ToolMissing" xml:space="preserve">
+        <value>تعذر العثور على الأداة أو تشغيلها؛ راجع مسارها وصلاحيات التنفيذ.</value>
+    </data>
+    <data name="ToolCode_ToolExecutionFailed" xml:space="preserve">
+        <value>فشل تشغيل الأداة؛ راجع التثبيت والتبعيات والإعدادات.</value>
+    </data>
+    <data name="ToolCode_AccessFailed" xml:space="preserve">
+        <value>تعذرت القراءة أو الكتابة أو الحذف؛ راجع صلاحيات حساب العامل ومسارات الأدوات والملفات المؤقتة.</value>
+    </data>
+    <data name="ToolCode_CheckFailed" xml:space="preserve">
+        <value>تعذر إتمام الفحص. راجع سجل الاستخدام أو سجلات العامل ثم أعد المحاولة.</value>
+    </data>
+    <data name="ToolKind_Standard" xml:space="preserve">
+        <value>فحص الأدوات دون AI فعلي</value>
+    </data>
+    <data name="ToolKind_AiLive" xml:space="preserve">
+        <value>طلب AI فعلي</value>
+    </data>
+    <data name="ToolRequest_Pending" xml:space="preserve">
+        <value>بانتظار العامل</value>
+    </data>
+    <data name="ToolRequest_Running" xml:space="preserve">
+        <value>جارٍ الفحص</value>
+    </data>
+    <data name="ToolRequest_Completed" xml:space="preserve">
+        <value>اكتمل الفحص</value>
+    </data>
+    <data name="ToolRequest_Failed" xml:space="preserve">
+        <value>لم يكتمل</value>
+    </data>
+    <data name="ToolOutcome_Interrupted" xml:space="preserve">
+        <value>توقف التنفيذ؛ لم يُعد اختبار AI تلقائيًا</value>
+    </data>
+    <data name="ToolOutcome_ProblemsFound" xml:space="preserve">
+        <value>توجد أدوات تحتاج معالجة</value>
+    </data>
+    <data name="ToolOutcome_ChecksFinished" xml:space="preserve">
+        <value>انتهت الفحوص المطلوبة</value>
+    </data>
+    <data name="ToolHelp_Collector" xml:space="preserve">
+        <value>راجع خدمة العامل وSQL وسجلات التشغيل، ثم صفحة المصادر لحالة كل مصدر.</value>
+    </data>
+    <data name="ToolHelp_AiConfiguration" xml:space="preserve">
+        <value>الإعداد المقروء هو إعداد العامل، وقد يختلف عن إعداد الموقع. لا تُعرض المفاتيح.</value>
+    </data>
+    <data name="ToolHelp_AiLive" xml:space="preserve">
+        <value>يُشغّل فقط من زر الاختبار الفعلي. نجاح الاتصال لا يقيس جودة الاستخراج أو النشر.</value>
+    </data>
+    <data name="ToolHelp_Chromium" xml:space="preserve">
+        <value>تحقق من PLAYWRIGHT_BROWSERS_PATH وBrowser:Channel. ثبّت المتصفح للعامل باستخدام --install-browser.</value>
+    </data>
+    <data name="ToolHelp_PdfText" xml:space="preserve">
+        <value>تحقق من Pdf:TextExecutable وتوزيعة Poppler وملفات DLL التابعة لها.</value>
+    </data>
+    <data name="ToolHelp_PdfRender" xml:space="preserve">
+        <value>تحقق من Pdf:RenderExecutable؛ تحتاج صفحات OCR إلى pdftoppm.</value>
+    </data>
+    <data name="ToolHelp_PdfOcr" xml:space="preserve">
+        <value>تحقق من Pdf:OcrExecutable وتثبيت Tesseract 5.x.</value>
+    </data>
+    <data name="ToolHelp_PdfLanguages" xml:space="preserve">
+        <value>ضع ara.traineddata وeng.traineddata في Pdf:OcrDataPath، وراجع Pdf:EnableOcr.</value>
+    </data>
+    <data name="ToolHelp_PdfWorkspace" xml:space="preserve">
+        <value>اضبط Pdf:WorkDirectory خارج wwwroot، وامنح العامل إنشاء الملفات وحذفها. لا يلزم مجلد أرشيف مشترك مع IIS.</value>
+    </data>
+    <data name="Tool_PdfPipeline" xml:space="preserve">
+        <value>قراءة PDF وOCR فعلية</value>
+    </data>
+    <data name="ToolCode_PdfPipelineReady" xml:space="preserve">
+        <value>نجحت قراءة عينة محلية من صفحتين: نص إنجليزي وصفحة عربية مصورة، دون جمع أو نشر.</value>
+    </data>
+    <data name="ToolHelp_PdfPipeline" xml:space="preserve">
+        <value>يفحص الرسم وقراءة النص وOCR معًا بعينة مدمجة، ولا يثبت دقة كل مستند فعلي.</value>
+    </data>
+    <data name="ToolCode_AiQuota" xml:space="preserve">
+        <value>المزود أعاد 429: الحصة أو حد الطلبات غير متاح حاليًا.</value>
+    </data>
+    <data name="ToolCode_AiAccessDenied" xml:space="preserve">
+        <value>المزود رفض الوصول: تحقق من المفتاح وصلاحيات الحساب.</value>
+    </data>
+    <data name="ToolCode_AiModelUnavailable" xml:space="preserve">
+        <value>الموديل أو صيغة الطلب غير متاحين؛ راجع اسم الموديل وتوافقه.</value>
+    </data>
+    <data name="PdfFilesDeleted" xml:space="preserve">
+        <value>ملفات PDF وصور الصفحات تُحذف بعد المعالجة. يبقى النص المستخرج وأرقام الصفحات في السجل؛ للمقارنة البصرية افتح الأصل لدى المصدر.</value>
     </data>
 </root>

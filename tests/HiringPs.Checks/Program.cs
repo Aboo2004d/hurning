@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--tools-check"))
+{
+    await ToolChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--pdf-process-fixture"))
 {
     await PdfChecks.ProcessFixtureAsync(args);

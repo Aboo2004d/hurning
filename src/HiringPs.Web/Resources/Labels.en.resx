@@ -1119,6 +1119,288 @@
         <value>This announcement uses OCR. Compare critical fields with the original PDF pages, then approve manually.</value>
     </data>
     <data name="Error_PdfRead" xml:space="preserve">
-        <value>PDF could not be read reliably. Inspect technical details and the archived source, correct tool setup if needed, then retry.</value>
+        <value>PDF could not be read reliably. Inspect technical details and the original source, correct tool setup if needed, then retry.</value>
+    </data>
+    <data name="Tools" xml:space="preserve">
+        <value>Tools</value>
+    </data>
+    <data name="ToolsIntro" xml:space="preserve">
+        <value>Status from the actual worker environment. Timestamps are UTC. Historical results are not proof of current health.</value>
+    </data>
+    <data name="ToolsCheckNow" xml:space="preserve">
+        <value>Check tools now</value>
+    </data>
+    <data name="ToolsCheckAi" xml:space="preserve">
+        <value>Live AI test — uses one request</value>
+    </data>
+    <data name="ToolsRefresh" xml:space="preserve">
+        <value>Refresh results</value>
+    </data>
+    <data name="ToolsAiCost" xml:space="preserve">
+        <value>Standard checks do not call AI. A live test uses your account quota and appears in usage history; it never collects or publishes an opportunity.</value>
+    </data>
+    <data name="ToolsWorkerOffline" xml:space="preserve">
+        <value>No recent worker heartbeat. Start/restart the worker and check SQL, migrations and service logs. Requests stay queued.</value>
+    </data>
+    <data name="ToolsMultipleWorkers" xml:space="preserve">
+        <value>Multiple worker instances are active. Each result identifies its executor; a different instance is not current evidence for the displayed worker.</value>
+    </data>
+    <data name="ToolsCollectorBusy" xml:space="preserve">
+        <value>Worker is active and running a processing round. Its heartbeat is independent of round duration.</value>
+    </data>
+    <data name="ToolsCollectorWaiting" xml:space="preserve">
+        <value>Worker is active, polling queues or waiting for the schedule.</value>
+    </data>
+    <data name="ToolsHeartbeat" xml:space="preserve">
+        <value>Last heartbeat</value>
+    </data>
+    <data name="ToolsWorker" xml:space="preserve">
+        <value>Host / account</value>
+    </data>
+    <data name="ToolsLastLoop" xml:space="preserve">
+        <value>Last loop start</value>
+    </data>
+    <data name="ToolsQueue" xml:space="preserve">
+        <value>Waiting / needs review</value>
+    </data>
+    <data name="ToolsEnabledSources" xml:space="preserve">
+        <value>Enabled approved sources</value>
+    </data>
+    <data name="ToolsLastRun" xml:space="preserve">
+        <value>Last source run</value>
+    </data>
+    <data name="ToolsLastRunFailed" xml:space="preserve">
+        <value>The last source run failed. Open Sources for its error; this does not mean the worker service stopped.</value>
+    </data>
+    <data name="ToolsNotChecked" xml:space="preserve">
+        <value>Not checked yet. Queue a check, then refresh results.</value>
+    </data>
+    <data name="ToolsStale" xml:space="preserve">
+        <value>This result is old or belongs to another worker instance. Request a new check.</value>
+    </data>
+    <data name="ToolsPreviousState" xml:space="preserve">
+        <value>State at the previous check</value>
+    </data>
+    <data name="ToolsCheckedBy" xml:space="preserve">
+        <value>Executing worker ID</value>
+    </data>
+    <data name="ToolsLastAi" xml:space="preserve">
+        <value>Last recorded AI attempt</value>
+    </data>
+    <data name="ToolsAiSucceeded" xml:space="preserve">
+        <value>Response parsed</value>
+    </data>
+    <data name="ToolsAiFailed" xml:space="preserve">
+        <value>Failed</value>
+    </data>
+    <data name="ToolsAiUnfinished" xml:space="preserve">
+        <value>Unfinished</value>
+    </data>
+    <data name="ToolsAiTokens" xml:space="preserve">
+        <value>Reported tokens</value>
+    </data>
+    <data name="ToolsLastAiNote" xml:space="preserve">
+        <value>Last system-wide attempt: collection or a connectivity test, possibly from an earlier worker. It does not prove current configuration or publication quality.</value>
+    </data>
+    <data name="ToolsRequests" xml:space="preserve">
+        <value>Recent check requests</value>
+    </data>
+    <data name="ToolsRequestKind" xml:space="preserve">
+        <value>Check kind</value>
+    </data>
+    <data name="ToolsRequestedAt" xml:space="preserve">
+        <value>Requested at</value>
+    </data>
+    <data name="ToolsFinishedAt" xml:space="preserve">
+        <value>Finished at</value>
+    </data>
+    <data name="ToolsCheckQueued" xml:space="preserve">
+        <value>Check queued for the worker. Refresh shortly.</value>
+    </data>
+    <data name="ToolsCheckAlreadyQueued" xml:space="preserve">
+        <value>A matching check is queued/running, or was requested within the last minute.</value>
+    </data>
+    <data name="Tool_Collector" xml:space="preserve">
+        <value>Collector and worker</value>
+    </data>
+    <data name="Tool_AiConfiguration" xml:space="preserve">
+        <value>AI configuration</value>
+    </data>
+    <data name="Tool_AiLive" xml:space="preserve">
+        <value>Live AI connectivity</value>
+    </data>
+    <data name="Tool_Chromium" xml:space="preserve">
+        <value>Chromium browser</value>
+    </data>
+    <data name="Tool_PdfText" xml:space="preserve">
+        <value>Poppler — text extraction</value>
+    </data>
+    <data name="Tool_PdfRender" xml:space="preserve">
+        <value>Poppler — rendering</value>
+    </data>
+    <data name="Tool_PdfOcr" xml:space="preserve">
+        <value>Tesseract — OCR</value>
+    </data>
+    <data name="Tool_PdfLanguages" xml:space="preserve">
+        <value>Arabic and English OCR data</value>
+    </data>
+    <data name="Tool_PdfWorkspace" xml:space="preserve">
+        <value>PDF temporary workspace and deletion</value>
+    </data>
+    <data name="ToolState_Ready" xml:space="preserve">
+        <value>Working at check time</value>
+    </data>
+    <data name="ToolState_Problem" xml:space="preserve">
+        <value>Problem</value>
+    </data>
+    <data name="ToolState_NotConfigured" xml:space="preserve">
+        <value>Not configured</value>
+    </data>
+    <data name="ToolState_Configured" xml:space="preserve">
+        <value>Configured; connectivity unverified</value>
+    </data>
+    <data name="ToolState_Disabled" xml:space="preserve">
+        <value>Disabled by configuration</value>
+    </data>
+    <data name="ToolState_Unknown" xml:space="preserve">
+        <value>Unknown / needs a check</value>
+    </data>
+    <data name="ToolCode_AiKeyMissing" xml:space="preserve">
+        <value>Worker AI key is not configured.</value>
+    </data>
+    <data name="ToolCode_AiModelInvalid" xml:space="preserve">
+        <value>Worker model name is invalid.</value>
+    </data>
+    <data name="ToolCode_AiConfigured" xml:space="preserve">
+        <value>Key and model are configured; no provider request was sent.</value>
+    </data>
+    <data name="ToolCode_AiResponded" xml:space="preserve">
+        <value>Provider returned a parseable response.</value>
+    </data>
+    <data name="ToolCode_AiInvalidResponse" xml:space="preserve">
+        <value>AI response does not match the expected extraction structure.</value>
+    </data>
+    <data name="ToolCode_AiUnavailable" xml:space="preserve">
+        <value>AI unavailable. Check worker credentials, quota and model.</value>
+    </data>
+    <data name="ToolCode_AiNetworkFailed" xml:space="preserve">
+        <value>AI network request failed. Check connectivity or retry later.</value>
+    </data>
+    <data name="ToolCode_BrowserReady" xml:space="preserve">
+        <value>Chromium launched and ran JavaScript on a local page. Individual source access is not tested.</value>
+    </data>
+    <data name="ToolCode_BrowserMissing" xml:space="preserve">
+        <value>Browser files are missing from the worker browser path.</value>
+    </data>
+    <data name="ToolCode_BrowserLaunchFailed" xml:space="preserve">
+        <value>Browser launch/execution failed. Check dependencies and service-account permissions.</value>
+    </data>
+    <data name="ToolCode_ToolReady" xml:space="preserve">
+        <value>Executable ran and reported its version.</value>
+    </data>
+    <data name="ToolCode_VersionUnknown" xml:space="preserve">
+        <value>Process ran, but the expected tool version could not be verified.</value>
+    </data>
+    <data name="ToolCode_LanguagesReady" xml:space="preserve">
+        <value>ara and eng data are available to the worker.</value>
+    </data>
+    <data name="ToolCode_LanguagesMissing" xml:space="preserve">
+        <value>ara or eng is missing from the configured tessdata.</value>
+    </data>
+    <data name="ToolCode_OcrDisabled" xml:space="preserve">
+        <value>OCR is disabled by Pdf:EnableOcr.</value>
+    </data>
+    <data name="ToolCode_WorkspaceReady" xml:space="preserve">
+        <value>Worker wrote, read and deleted a temporary file. Processed announcement files are not retained.</value>
+    </data>
+    <data name="ToolCode_CheckTimeout" xml:space="preserve">
+        <value>Check timed out. Inspect the tool/network and retry.</value>
+    </data>
+    <data name="ToolCode_ToolMissing" xml:space="preserve">
+        <value>Executable missing or inaccessible. Check path and execute permissions.</value>
+    </data>
+    <data name="ToolCode_ToolExecutionFailed" xml:space="preserve">
+        <value>Tool execution failed. Check installation, dependencies and settings.</value>
+    </data>
+    <data name="ToolCode_AccessFailed" xml:space="preserve">
+        <value>Read, write or deletion failed. Check worker permissions and tool/temporary paths.</value>
+    </data>
+    <data name="ToolCode_CheckFailed" xml:space="preserve">
+        <value>Check could not complete. Review usage/worker logs and retry.</value>
+    </data>
+    <data name="ToolKind_Standard" xml:space="preserve">
+        <value>Standard tools, no AI request</value>
+    </data>
+    <data name="ToolKind_AiLive" xml:space="preserve">
+        <value>Live AI request</value>
+    </data>
+    <data name="ToolRequest_Pending" xml:space="preserve">
+        <value>Waiting for worker</value>
+    </data>
+    <data name="ToolRequest_Running" xml:space="preserve">
+        <value>Running</value>
+    </data>
+    <data name="ToolRequest_Completed" xml:space="preserve">
+        <value>Completed</value>
+    </data>
+    <data name="ToolRequest_Failed" xml:space="preserve">
+        <value>Incomplete</value>
+    </data>
+    <data name="ToolOutcome_Interrupted" xml:space="preserve">
+        <value>Interrupted; live AI is not retried automatically</value>
+    </data>
+    <data name="ToolOutcome_ProblemsFound" xml:space="preserve">
+        <value>Some tools need attention</value>
+    </data>
+    <data name="ToolOutcome_ChecksFinished" xml:space="preserve">
+        <value>Requested checks finished</value>
+    </data>
+    <data name="ToolHelp_Collector" xml:space="preserve">
+        <value>Inspect the worker service, SQL and logs; open Sources for individual source failures.</value>
+    </data>
+    <data name="ToolHelp_AiConfiguration" xml:space="preserve">
+        <value>This is worker configuration, which can differ from the website. Keys are never displayed.</value>
+    </data>
+    <data name="ToolHelp_AiLive" xml:space="preserve">
+        <value>Runs only through the live-test button. Connectivity does not measure extraction/publication quality.</value>
+    </data>
+    <data name="ToolHelp_Chromium" xml:space="preserve">
+        <value>Check PLAYWRIGHT_BROWSERS_PATH and Browser:Channel. Install the worker browser with --install-browser.</value>
+    </data>
+    <data name="ToolHelp_PdfText" xml:space="preserve">
+        <value>Check Pdf:TextExecutable, Poppler installation and its DLL dependencies.</value>
+    </data>
+    <data name="ToolHelp_PdfRender" xml:space="preserve">
+        <value>Check Pdf:RenderExecutable. OCR pages require pdftoppm.</value>
+    </data>
+    <data name="ToolHelp_PdfOcr" xml:space="preserve">
+        <value>Check Pdf:OcrExecutable and Tesseract 5.x installation.</value>
+    </data>
+    <data name="ToolHelp_PdfLanguages" xml:space="preserve">
+        <value>Install ara.traineddata and eng.traineddata in Pdf:OcrDataPath; check Pdf:EnableOcr.</value>
+    </data>
+    <data name="ToolHelp_PdfWorkspace" xml:space="preserve">
+        <value>Set Pdf:WorkDirectory outside wwwroot and grant worker create/delete access. A shared IIS archive is not needed.</value>
+    </data>
+    <data name="Tool_PdfPipeline" xml:space="preserve">
+        <value>Functional PDF and OCR</value>
+    </data>
+    <data name="ToolCode_PdfPipelineReady" xml:space="preserve">
+        <value>Read a local two-page fixture: native English and scanned Arabic. No collection or publication.</value>
+    </data>
+    <data name="ToolHelp_PdfPipeline" xml:space="preserve">
+        <value>Exercises rendering, text extraction and OCR using a bundled fixture; it cannot guarantee every source document.</value>
+    </data>
+    <data name="ToolCode_AiQuota" xml:space="preserve">
+        <value>Provider returned 429: quota or rate limit currently unavailable.</value>
+    </data>
+    <data name="ToolCode_AiAccessDenied" xml:space="preserve">
+        <value>Provider denied access. Check credentials and account permissions.</value>
+    </data>
+    <data name="ToolCode_AiModelUnavailable" xml:space="preserve">
+        <value>Model/request unavailable. Check model name and request compatibility.</value>
+    </data>
+    <data name="PdfFilesDeleted" xml:space="preserve">
+        <value>PDF files and page images are deleted after processing. Extracted text and page references remain in the record; open the original source for visual comparison.</value>
     </data>
 </root>

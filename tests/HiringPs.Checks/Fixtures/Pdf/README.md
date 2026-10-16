@@ -13,4 +13,4 @@ These documents contain test announcements, not real opportunities. No personal 
 
 Created with PyMuPDF and Pillow/RAQM using Noto Naskh Arabic and DejaVu Sans from the test machine. These Python packages and fonts are only fixture-authoring tools; running the application or checks uses the committed PDFs and does not require Python.
 
-Run `dotnet run --project tests/HiringPs.Checks -c Release -- --pdf-check` with Poppler, Tesseract and `ara+eng` installed. This exercises real extraction/OCR locally without SQL, a browser or an AI API call. Archives created by the checks are isolated in a temporary directory and removed afterward.
+Run `dotnet run --project tests/HiringPs.Checks -c Release -- --pdf-check` with Poppler, Tesseract and `ara+eng` installed. This exercises real extraction/OCR locally without SQL, a browser or an AI API call. Processing files are temporary and removed after each operation, including failed/cancelled attempts. The committed synthetic fixtures and language models remain intact.

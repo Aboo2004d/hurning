@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
@@ -13,35 +11,105 @@ public record PdfPageReference(string Hash, int Page);
 
 public static class PdfTextFiles
 {
-    public const int TextVersion = 1;
+    public const int TextVersion = 2;
     public const string ReviewMarker = "[PDF OCR REVIEW REQUIRED]";
     public const int MaxTextBytes = 2 * 1024 * 1024;
 
     public static string DirectoryPath(IConfiguration configuration)
     {
-        var configured = configuration["Pdf:TextArchivePath"] ?? Path.Combine("logs", "pdf-text");
+        var configured =
+            configuration["Pdf:WorkDirectory"]
+            ?? Path.Combine(Path.GetTempPath(), "hiring-pdf-work");
         var path = Path.GetFullPath(configured, AppContext.BaseDirectory);
         if (
             path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 .Any(x => x.Equals("wwwroot", StringComparison.OrdinalIgnoreCase))
         )
-            throw new ContentNeedsReviewException("PDF archive must be outside wwwroot.");
+            throw new ContentNeedsReviewException("PDF work directory must be outside wwwroot.");
         return path;
     }
 
-    public static string FilePath(IConfiguration configuration, string hash, string format)
+    public static void Prepare(IConfiguration configuration)
     {
-        if (!Regex.IsMatch(hash, @"\A[A-Fa-f0-9]{64}\z"))
-            throw new ArgumentException("Invalid PDF hash.");
-        var suffix = format switch
+        var root = DirectoryPath(configuration);
+        if (OperatingSystem.IsWindows())
+            Directory.CreateDirectory(root);
+        else
+            Directory.CreateDirectory(
+                root,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+            );
+        // A crashed process releases the lock; keep live jobs and delete only old, app-owned directories.
+        foreach (var directory in new DirectoryInfo(root).EnumerateDirectories())
         {
-            "source" => ".pdf",
-            "original" => ".original.txt",
-            "readable" => ".readable.txt",
-            "report" => ".json",
-            _ => throw new ArgumentException("Invalid PDF archive format."),
-        };
-        return Path.Combine(DirectoryPath(configuration), hash.ToUpperInvariant() + suffix);
+            if (
+                !Guid.TryParseExact(directory.Name, "N", out _)
+                || directory.LastWriteTimeUtc > DateTime.UtcNow.AddHours(-1)
+                || (directory.Attributes & FileAttributes.ReparsePoint) != 0
+                || !File.Exists(Path.Combine(directory.FullName, ".active"))
+            )
+                continue;
+            try
+            {
+                using (
+                    new FileStream(
+                        Path.Combine(directory.FullName, ".active"),
+                        FileMode.Open,
+                        FileAccess.ReadWrite,
+                        FileShare.None
+                    )
+                ) { }
+                directory.Delete(recursive: true);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+        CleanupLegacyArchives(configuration);
+    }
+
+    public static void CleanupLegacyArchives(IConfiguration configuration)
+    {
+        var oldRoot = Path.GetFullPath(
+            configuration["Pdf:TextArchivePath"] ?? Path.Combine("logs", "pdf-text"),
+            AppContext.BaseDirectory
+        );
+        if (
+            !Directory.Exists(oldRoot)
+            || (File.GetAttributes(oldRoot) & FileAttributes.ReparsePoint) != 0
+        )
+            return;
+        foreach (var file in new DirectoryInfo(oldRoot).EnumerateFiles())
+        {
+            if (
+                (file.Attributes & FileAttributes.ReparsePoint) == 0
+                && Regex.IsMatch(
+                    file.Name,
+                    @"\A[A-Fa-f0-9]{64}(?:\.pdf|\.original\.txt|\.readable\.txt|\.json)(?:\.[A-Fa-f0-9]{32}\.tmp)?\z"
+                )
+            )
+                file.Delete();
+        }
+    }
+
+    public static async Task DeleteWorkAsync(string work)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                if (Directory.Exists(work))
+                    Directory.Delete(work, recursive: true);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (attempt == 2)
+                    throw new ContentNeedsReviewException(
+                        "PDF temporary file deletion failed; check worker permissions before retrying."
+                    );
+                await Task.Delay(100);
+            }
+        }
     }
 
     public static PdfPageReference? FindPage(string text, string evidence)
@@ -69,71 +137,5 @@ public static class PdfTextFiles
                 );
         }
         return null;
-    }
-
-    public static async Task ArchiveAsync(
-        IConfiguration configuration,
-        byte[] bytes,
-        string hash,
-        string original,
-        string readable,
-        IReadOnlyList<PdfPageText> pages,
-        string? error,
-        CancellationToken ct
-    )
-    {
-        if (OperatingSystem.IsWindows())
-            Directory.CreateDirectory(DirectoryPath(configuration));
-        else
-            Directory.CreateDirectory(
-                DirectoryPath(configuration),
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
-            );
-        await WriteAsync(FilePath(configuration, hash, "source"), bytes, ct);
-        await WriteAsync(FilePath(configuration, hash, "original"), DiagnosticBytes(original), ct);
-        await WriteAsync(FilePath(configuration, hash, "readable"), DiagnosticBytes(readable), ct);
-        var report = JsonSerializer.SerializeToUtf8Bytes(
-            new
-            {
-                TextVersion,
-                Hash = hash,
-                At = DateTimeOffset.UtcNow,
-                Complete = error is null,
-                Error = error,
-                RequiresVisualReview = readable.Contains(ReviewMarker, StringComparison.Ordinal),
-                Pages = pages.Select(x => new
-                {
-                    x.Page,
-                    x.Method,
-                    x.Confidence,
-                    Characters = x.Text.Length,
-                }),
-                Notice = "OCR is machine transcription; verify critical values against the archived source PDF.",
-            },
-            new JsonSerializerOptions { WriteIndented = true }
-        );
-        await WriteAsync(FilePath(configuration, hash, "report"), report, ct);
-    }
-
-    private static byte[] DiagnosticBytes(string text)
-    {
-        if (Encoding.UTF8.GetByteCount(text) > MaxTextBytes)
-            text = text[..Math.Min(text.Length, MaxTextBytes / 4)];
-        return Encoding.UTF8.GetBytes(text);
-    }
-
-    private static async Task WriteAsync(string path, byte[] bytes, CancellationToken ct)
-    {
-        var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            await File.WriteAllBytesAsync(temporary, bytes, ct);
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            if (File.Exists(temporary))
-                File.Delete(temporary);
-        }
     }
 }

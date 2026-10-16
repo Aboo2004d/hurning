@@ -14,4 +14,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Diagnostics/PdfProbe.pdf" />
+    </ItemGroup>
 </Project>

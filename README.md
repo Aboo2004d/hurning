@@ -3,6 +3,7 @@
 منصة فرص فلسطينية: وظائف وتدريب وعطاءات ومناقصات. ASP.NET Core 10 MVC وSQL Server وعامل .NET مستقل يستخدم Playwright/Chromium.
 
 - [الخطة](Docs/PROJECT-PLAN.md)
+- [صفحة الأدوات ومراقبة العامل وAI وChromium وPDF](Docs/TOOLS.md)
 - [قراءة PDF وOCR ومتطلبات Windows المحلي والاستضافة](Docs/PDF-TEXT.md)
 - [سجل التنفيذ](Docs/IMPLEMENTATION-LOG.md)
 - [التشغيل والنشر وحدود التحقق](Docs/RUNBOOK.md)

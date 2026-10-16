@@ -197,7 +197,7 @@ public static class UiMessages
 
     private static string? Dynamic(string message, IStringLocalizer<Labels> t)
     {
-        if (message.StartsWith("PDF archive ", StringComparison.Ordinal))
+        if ((message.StartsWith("PDF archive ", StringComparison.Ordinal) || message.StartsWith("PDF document ", StringComparison.Ordinal)))
             return t["Error_PdfRead"];
         if (message.StartsWith("Date validation:", StringComparison.Ordinal))
             return t["Error_DateReview"];

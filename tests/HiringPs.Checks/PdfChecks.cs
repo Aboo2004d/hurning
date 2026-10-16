@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using HiringPs.Core;
 using Microsoft.Extensions.Configuration;
 
@@ -44,7 +43,8 @@ internal static class PdfChecks
         var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Pdf");
         var settings = new Dictionary<string, string?>
         {
-            ["Pdf:TextArchivePath"] = Path.Combine(folder, "archive"),
+            ["Pdf:WorkDirectory"] = Path.Combine(folder, "work"),
+            ["Pdf:TextArchivePath"] = Path.Combine(folder, "old-archive"),
         };
         foreach (
             var name in new[]
@@ -76,7 +76,7 @@ internal static class PdfChecks
             await new PdfTextReader(Config()).CheckSetupAsync(CancellationToken.None);
             Check(
                 true,
-                "real Poppler, Tesseract, Arabic/English language data and archive write access"
+                "real Poppler, Tesseract, Arabic/English language data and temporary workspace access"
             );
             var english = await Read("english-native.pdf");
             Check(
@@ -133,28 +133,86 @@ internal static class PdfChecks
                 PdfTextFiles.FindPage(scan.Text, "invented evidence") is null,
                 "an unsupported quotation receives no page number"
             );
-            foreach (var format in new[] { "source", "original", "readable", "report" })
-                Check(
-                    File.Exists(PdfTextFiles.FilePath(Config(), scan.Hash, format)),
-                    "private archive exists: " + format
-                );
             Check(
-                File.ReadAllBytes(PdfTextFiles.FilePath(Config(), scan.Hash, "source"))
-                    .SequenceEqual(File.ReadAllBytes(Path.Combine(fixture, "arabic-scanned.pdf"))),
-                "archive preserves the original source PDF bytes"
+                !Directory.EnumerateFileSystemEntries(PdfTextFiles.DirectoryPath(Config())).Any(),
+                "successful PDF processing deletes the source, page images and text outputs"
             );
+            Check(
+                !Directory.Exists(settings["Pdf:TextArchivePath"]!),
+                "processing does not create a persistent PDF archive"
+            );
+            var legacy = settings["Pdf:TextArchivePath"]!;
+            Directory.CreateDirectory(legacy);
+            foreach (var suffix in new[] { ".pdf", ".original.txt", ".readable.txt", ".json" })
+                await File.WriteAllTextAsync(
+                    Path.Combine(legacy, scan.Hash + suffix),
+                    "old generated data"
+                );
+            await File.WriteAllTextAsync(Path.Combine(legacy, "ara.traineddata"), "keep model");
+            await File.WriteAllTextAsync(Path.Combine(legacy, "user-notes.txt"), "keep user file");
+            PdfTextFiles.CleanupLegacyArchives(Config());
+            Check(
+                !Directory
+                    .EnumerateFiles(legacy)
+                    .Any(x => Path.GetFileName(x).StartsWith(scan.Hash)),
+                "previous app-generated PDF archives are removed"
+            );
+            Check(
+                File.Exists(Path.Combine(legacy, "ara.traineddata"))
+                    && File.Exists(Path.Combine(legacy, "user-notes.txt")),
+                "cleanup preserves language models and unrelated files"
+            );
+            var abandoned = Path.Combine(
+                PdfTextFiles.DirectoryPath(Config()),
+                Guid.NewGuid().ToString("N")
+            );
+            Directory.CreateDirectory(abandoned);
+            await File.WriteAllTextAsync(Path.Combine(abandoned, "source.pdf"), "abandoned");
+            await File.WriteAllTextAsync(Path.Combine(abandoned, ".active"), "");
+            Directory.SetLastWriteTimeUtc(abandoned, DateTime.UtcNow.AddHours(-2));
+            PdfTextFiles.Prepare(Config());
+            Check(
+                !Directory.Exists(abandoned),
+                "a subsequent run removes old abandoned temporary jobs"
+            );
+            var unrelatedFolder = Path.Combine(
+                PdfTextFiles.DirectoryPath(Config()),
+                Guid.NewGuid().ToString("N")
+            );
+            Directory.CreateDirectory(unrelatedFolder);
+            await File.WriteAllTextAsync(
+                Path.Combine(unrelatedFolder, "keep.txt"),
+                "not a processing job"
+            );
+            Directory.SetLastWriteTimeUtc(unrelatedFolder, DateTime.UtcNow.AddHours(-2));
+            PdfTextFiles.Prepare(Config());
+            Check(
+                File.Exists(Path.Combine(unrelatedFolder, "keep.txt")),
+                "stale cleanup preserves directories without an application job marker"
+            );
+            Directory.Delete(unrelatedFolder, true);
+            var active = Path.Combine(
+                PdfTextFiles.DirectoryPath(Config()),
+                Guid.NewGuid().ToString("N")
+            );
+            Directory.CreateDirectory(active);
             using (
-                var json = JsonDocument.Parse(
-                    await File.ReadAllTextAsync(
-                        PdfTextFiles.FilePath(Config(), scan.Hash, "report")
-                    )
+                var lease = new FileStream(
+                    Path.Combine(active, ".active"),
+                    FileMode.CreateNew,
+                    FileAccess.ReadWrite,
+                    FileShare.None
                 )
             )
+            {
+                Directory.SetLastWriteTimeUtc(active, DateTime.UtcNow.AddHours(-2));
+                PdfTextFiles.Prepare(Config());
                 Check(
-                    json.RootElement.GetProperty("Complete").GetBoolean()
-                        && json.RootElement.GetProperty("RequiresVisualReview").GetBoolean(),
-                    "report separates completed transcription from visual review"
+                    Directory.Exists(active),
+                    "cleanup never removes another live processing job"
                 );
+            }
+            await PdfTextFiles.DeleteWorkAsync(active);
             var automatic = await Read(
                 "arabic-scanned.pdf",
                 Config(new() { ["Pdf:RequireOcrReview"] = "false" })
@@ -243,30 +301,20 @@ internal static class PdfChecks
                 "ara and eng",
                 "missing Arabic language data is detected"
             );
-            using (
-                var report = JsonDocument.Parse(
-                    await File.ReadAllTextAsync(
-                        PdfTextFiles.FilePath(Config(), scan.Hash, "report")
-                    )
-                )
-            )
-                Check(
-                    !report.RootElement.GetProperty("Complete").GetBoolean(),
-                    "failed processing leaves a diagnostic report without returning partial content"
-                );
+            Check(
+                !Directory.EnumerateFileSystemEntries(PdfTextFiles.DirectoryPath(Config())).Any(),
+                "failed processing leaves no PDF, images or report files"
+            );
             await Reject(
                 () =>
                     Read(
                         "english-native.pdf",
                         Config(
-                            new()
-                            {
-                                ["Pdf:TextArchivePath"] = Path.Combine(folder, "wwwroot", "pdf"),
-                            }
+                            new() { ["Pdf:WorkDirectory"] = Path.Combine(folder, "wwwroot", "pdf") }
                         )
                     ),
                 "outside wwwroot",
-                "archives cannot be exposed under wwwroot"
+                "temporary files cannot be placed under wwwroot"
             );
             using (var cancelled = new CancellationTokenSource())
             {
@@ -281,6 +329,10 @@ internal static class PdfChecks
                     Check(true, "document cancellation propagates without a successful result");
                 }
             }
+            Check(
+                !Directory.EnumerateFileSystemEntries(PdfTextFiles.DirectoryPath(Config())).Any(),
+                "cancellation also removes every temporary job file"
+            );
             Check(
                 PdfRetry.NeedsFreshContent(new() { Url = "https://example.com/file.pdf?x=1" }),
                 "retry refreshes PDF URLs even with a query string"

@@ -17,6 +17,10 @@
 {
     <section class="detail-panel">
         <h2>@T["ProposedDates"]</h2>
+        @if (Model.Content.Contains("[PDF DOCUMENT", StringComparison.Ordinal))
+        {
+            <p>@T["PdfFilesDeleted"] <a href="@Model.Url" rel="noopener noreferrer">@T["Source"]</a></p>
+        }
         @foreach (var opportunity in opportunities)
         {
             <h3 dir="auto">@opportunity.Title</h3>
@@ -47,9 +51,7 @@
                 @if (pdfReference is not null)
                 {
                     <p>
-                        <a asp-action="PdfArchive" asp-route-hash="@pdfReference.Hash" asp-route-format="source">
-                            @T["PdfEvidencePage", pdfReference.Page]
-                        </a>
+                        <span>@T["PdfEvidencePage", pdfReference.Page]</span>
                     </p>
                 }
             }
