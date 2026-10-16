@@ -54,6 +54,7 @@ bool isOnce = args.Contains("--once");
 bool installBrowser = args.Contains("--install-browser");
 if (installBrowser)
 {
+    BrowserSettings.Configure(builder.Configuration);
     Environment.ExitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
     return;
 }

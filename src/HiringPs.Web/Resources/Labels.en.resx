@@ -1365,7 +1365,7 @@
         <value>Runs only through the live-test button. Connectivity does not measure extraction/publication quality.</value>
     </data>
     <data name="ToolHelp_Chromium" xml:space="preserve">
-        <value>Check PLAYWRIGHT_BROWSERS_PATH and Browser:Channel. Install the worker browser with --install-browser.</value>
+        <value>Check Browser:BrowsersPath or Browser:ExecutablePath in appsettings.json. Install matching Playwright Chromium using --install-browser and grant the application account access.</value>
     </data>
     <data name="ToolHelp_PdfText" xml:space="preserve">
         <value>Check Pdf:TextExecutable, Poppler installation and its DLL dependencies.</value>
@@ -1438,5 +1438,86 @@
     </data>
     <data name="ToolsLastLoopUtc" xml:space="preserve">
         <value>Last loop started (UTC)</value>
+    </data>
+    <data name="SourceSetupTitle" xml:space="preserve">
+        <value>Source setup assistant</value>
+    </data>
+    <data name="SourceSetupIntro" xml:space="preserve">
+        <value>Enter a website URL to suggest a listing page and collection settings. Review a tested sample before applying the proposal to the fields below.</value>
+    </data>
+    <data name="SourceSetupWebsite" xml:space="preserve">
+        <value>Website or listing URL</value>
+    </data>
+    <data name="SourceSetupSuggest" xml:space="preserve">
+        <value>Suggest and test settings</value>
+    </data>
+    <data name="SourceSetupCost" xml:space="preserve">
+        <value>This sends public page content to AI and uses up to two requests from your quota. It does not queue announcements, publish, save or enable a source automatically.</value>
+    </data>
+    <data name="SourceSetupLoading" xml:space="preserve">
+        <value>Reading the page, analyzing it and testing the proposal… This may take a few minutes.</value>
+    </data>
+    <data name="SourceSetupReady" xml:space="preserve">
+        <value>Link discovery and a content sample passed. Review the result before applying the settings.</value>
+    </data>
+    <data name="SourceSetupApplied" xml:space="preserve">
+        <value>Proposal copied into the fields. Review the settings and usage approval, then save when ready.</value>
+    </data>
+    <data name="SourceSetupNext" xml:space="preserve">
+        <value>Observed next-page URL</value>
+    </data>
+    <data name="SourceSetupSamples" xml:space="preserve">
+        <value>Discovered sample — up to 10 links</value>
+    </data>
+    <data name="SourceSetupSampleText" xml:space="preserve">
+        <value>First announcement content sample</value>
+    </data>
+    <data name="SourceSetupLimit" xml:space="preserve">
+        <value>The test covers a listing page and one content sample only. It does not prove every page or announcement is correct; normal collection applies source and Palestine validation later.</value>
+    </data>
+    <data name="SourceSetupApply" xml:space="preserve">
+        <value>Apply proposal to fields</value>
+    </data>
+    <data name="SourceSetupInvalidUrl" xml:space="preserve">
+        <value>Enter a public HTTPS URL without credentials or a custom port.</value>
+    </data>
+    <data name="SourceSetupSocialDeferred" xml:space="preserve">
+        <value>LinkedIn, Telegram and Facebook support is planned for phase two. Use a direct source website for now.</value>
+    </data>
+    <data name="SourceSetupUnsupported" xml:space="preserve">
+        <value>No testable proposal was found with the current connectors. This website may need a dedicated connector or manual setup.</value>
+    </data>
+    <data name="SourceSetupUnseenUrl" xml:space="preserve">
+        <value>The proposed URL was not observed on the page or was outside the website host; it was rejected.</value>
+    </data>
+    <data name="SourceSetupInvalidReply" xml:space="preserve">
+        <value>AI did not return valid, testable settings. Source settings were not changed.</value>
+    </data>
+    <data name="SourceSetupNoLinks" xml:space="preserve">
+        <value>The proposal did not produce suitable announcement links to test.</value>
+    </data>
+    <data name="SourceSetupPageTooLarge" xml:space="preserve">
+        <value>The page exceeds preview limits. Try a more specific listing URL instead of the homepage.</value>
+    </data>
+    <data name="SourceSetupInteractivePagination" xml:space="preserve">
+        <value>Interactive pagination needs a tested connector. The assistant did not approve a setup that could miss later announcements.</value>
+    </data>
+    <data name="SourceSetupPaginationMissing" xml:space="preserve">
+        <value>A next page was detected but the proposal did not configure navigation to it.</value>
+    </data>
+    <data name="SourceSetupAiMissing" xml:space="preserve">
+        <value>The AI key or model is missing from the web application settings.</value>
+    </data>
+    <data name="SourceSetupAiRejected" xml:space="preserve">
+        <value>The AI provider rejected the request. Check the web application key, model and quota.</value>
+    </data>
+    <data name="SourceSetupBusy" xml:space="preserve">
+        <value>Another source analysis is running. Wait for it to finish and try again.</value>
+    </data>
+    <data name="SourceSetupTimeout" xml:space="preserve">
+        <value>Analysis and testing timed out. Nothing was saved; try a direct listing URL.</value>
+    </data>
+    <data name="SourceSetupFailed" xml:space="preserve">
+        <value>The source could not be read or tested. Check website availability and Chromium for the web account, or try a direct listing URL.</value>
     </data>
 </root>

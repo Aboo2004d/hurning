@@ -71,7 +71,7 @@ public class UrlPolicy
     }
 }
 
-public class BrowserCollector(
+public partial class BrowserCollector(
     UrlPolicy policy,
     IConfiguration configuration,
     AttachmentReader attachmentReader
@@ -102,15 +102,12 @@ public class BrowserCollector(
             )
             .ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
-        playwright ??= await Playwright.CreateAsync();
+        playwright ??= await BrowserSettings.CreateAsync(configuration);
         browser ??= await playwright.Chromium.LaunchAsync(
             new()
             {
                 Headless = true,
-                ExecutablePath = configuration["Browser:ExecutablePath"]
-                    is { Length: > 0 } executable
-                    ? executable
-                    : null,
+                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
                 Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                     ? channel
                     : null,

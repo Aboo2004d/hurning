@@ -55,6 +55,47 @@ internal static class ToolChecks
             PdfToolPaths.Executable(absoluteTool) == absoluteTool,
             "absolute tool paths remain supported"
         );
+        var browserConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["Browser:BrowsersPath"] = ".playwright-browsers",
+                    ["Browser:ExecutablePath"] = "Tools/chromium/chrome.exe",
+                }
+            )
+            .Build();
+        Check(
+            BrowserSettings.BrowsersPath(browserConfig)
+                == Path.Combine(AppContext.BaseDirectory, ".playwright-browsers"),
+            "Chromium cache resolves from JSON beside the application"
+        );
+        Check(
+            BrowserSettings.ExecutablePath(browserConfig)
+                == Path.Combine(AppContext.BaseDirectory, "Tools", "chromium", "chrome.exe"),
+            "custom Chromium executable also supports relative JSON paths"
+        );
+        var oldBrowserEnvironment = Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH");
+        try
+        {
+            Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", "old-script-location");
+            BrowserSettings.Configure(browserConfig);
+            using var configuredDriver = await BrowserSettings.CreateAsync(browserConfig);
+            Check(
+                configuredDriver.Chromium.ExecutablePath.StartsWith(
+                    BrowserSettings.BrowsersPath(browserConfig)! + Path.DirectorySeparatorChar
+                ),
+                "Playwright driver reads its Chromium location from the JSON-backed configuration"
+            );
+            Check(
+                Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH")
+                    == BrowserSettings.BrowsersPath(browserConfig),
+                "JSON browser location takes precedence over the old startup script setting"
+            );
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", oldBrowserEnvironment);
+        }
         var now = DateTimeOffset.UtcNow;
         var worker = new ToolWorkerState { Id = "current", At = now };
         var result = new ToolCheckResult

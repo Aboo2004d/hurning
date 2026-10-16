@@ -1388,3 +1388,46 @@ footer {
         box-shadow: none;
     }
 }
+
+/* مساعد إعداد المصدر: إدخال واضح وعينة قابلة للمراجعة قبل الحفظ. */
+.source-setup {
+    margin-bottom: 24px;
+}
+.source-setup h2 {
+    margin-top: 0;
+}
+.source-setup label {
+    margin-bottom: 6px;
+}
+.source-setup-input {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.source-setup-input input {
+    flex: 1 1 230px;
+    min-width: 0;
+}
+.source-setup-input button {
+    flex: 0 0 auto;
+}
+.source-setup-links {
+    max-height: 250px;
+    overflow: auto;
+    padding-inline-start: 24px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+.source-setup pre {
+    font-size: 13px;
+    max-height: 260px;
+}
+.source-setup [data-setup-status]:empty {
+    display: none;
+}
+.source-setup [data-setup-status] {
+    padding: 10px 12px;
+    background: var(--soft);
+    border-radius: 9px;
+}

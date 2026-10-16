@@ -43,6 +43,9 @@ builder.Services.AddScoped<AttachmentReader>();
 // Gemini HTTP Client
 // ======================================
 builder.Services.AddHttpClient<AiExtractor>();
+builder.Services.AddHttpClient<SourceSetupAssistant>(client =>
+    client.Timeout = TimeSpan.FromSeconds(75)
+);
 
 // ========================================
 // 5. Identity Configuration
