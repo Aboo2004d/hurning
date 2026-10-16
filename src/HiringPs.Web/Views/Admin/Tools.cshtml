@@ -13,7 +13,7 @@
     <form asp-action="CheckAi" method="post">
         <button type="submit" class="button-outline">@T["ToolsCheckAi"]</button>
     </form>
-    <a class="button-outline" asp-action="Tools">@T["ToolsRefresh"]</a>
+    <a class="button button-outline" asp-action="Tools">@T["ToolsRefresh"]</a>
 </div>
 <p class="muted">@T["ToolsAiCost"]</p>
 @if (!workerFresh)
