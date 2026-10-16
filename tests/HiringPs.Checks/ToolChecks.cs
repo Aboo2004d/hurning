@@ -84,11 +84,45 @@ internal static class ToolChecks
             !ToolMonitoringRules.ResultFresh(result, new() { Id = "restarted", At = now }, now),
             "old worker instance result cannot show green after restart"
         );
-        result.CheckedAt = now.AddHours(-3);
+        result.CheckedAt = now.AddHours(-27);
         Check(
             !ToolMonitoringRules.ResultFresh(result, worker, now),
             "old check expires despite a live heartbeat"
         );
+        result.CheckedAt = now.AddHours(-23);
+        Check(
+            ToolMonitoringRules.ResultFresh(result, worker, now),
+            "daily standard result stays usable until the next daily check"
+        );
+        result.Tool = "AiLive";
+        result.CheckedAt = now.AddHours(-3);
+        Check(
+            !ToolMonitoringRules.ResultFresh(result, worker, now),
+            "paid AI connectivity result keeps its shorter freshness window"
+        );
+        foreach (
+            var instant in new[]
+            {
+                new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 10, 23, 12, 0, 0, TimeSpan.Zero),
+            }
+        )
+        {
+            var due = ToolCheckSchedule.NextMidnight(instant);
+            var localDue = TimeZoneInfo.ConvertTime(due, SourceSchedule.Zone);
+            Check(
+                due > instant
+                    && localDue.TimeOfDay == TimeSpan.Zero
+                    && SourceSchedule.LocalDate(due)
+                        == SourceSchedule.LocalDate(instant).AddDays(1),
+                "daily check follows Palestine midnight in winter, summer and transition season"
+            );
+            Check(
+                ToolCheckSchedule.NextMidnight(due) > due,
+                "a handled midnight schedules the following day instead of repeating"
+            );
+        }
         var runtime = new ToolWorkerRuntime();
         runtime.Begin();
         Check(

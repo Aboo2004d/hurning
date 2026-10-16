@@ -1125,7 +1125,7 @@
         <value>الأدوات</value>
     </data>
     <data name="ToolsIntro" xml:space="preserve">
-        <value>حالة الأدوات من بيئة العامل الفعلية. وقت الفحص بتوقيت UTC. النتائج القديمة لا تعني أن الأداة تعمل الآن.</value>
+        <value>حالة الأدوات من بيئة العامل الفعلية. الفحص بطلبك أو يوميًا عند منتصف الليل بتوقيت فلسطين. وقت النتائج بتوقيت UTC؛ النتيجة تصف حالة الأداة وقت الفحص.</value>
     </data>
     <data name="ToolsCheckNow" xml:space="preserve">
         <value>فحص الأدوات الآن</value>

@@ -66,35 +66,28 @@ public sealed class ToolMonitor(
 
     private async Task CheckLoopAsync(CancellationToken ct)
     {
-        var startupCheckQueued = false;
+        // Start with the next midnight; restarting the worker never requests a check.
+        var nextDailyCheck = ToolCheckSchedule.NextMidnight(DateTimeOffset.UtcNow);
         while (!ct.IsCancellationRequested)
         {
             try
             {
                 await using var scope = scopes.CreateAsyncScope();
                 var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
-                var latest = await db
-                    .ToolCheckRequests.Where(x => x.Kind == ToolCheckKind.Standard)
-                    .OrderByDescending(x => x.Id)
-                    .FirstOrDefaultAsync(ct);
                 var now = DateTimeOffset.UtcNow;
-                if (
-                    latest is null
-                    || (
-                        latest.ActiveSlot is null
-                        && (
-                            latest.RequestedAt < now.AddHours(-1)
-                            || (!startupCheckQueued && latest.RequestedAt < now.AddMinutes(-1))
-                        )
-                    )
-                )
-                    startupCheckQueued |= await ToolCheckQueue.EnqueueAsync(
+                if (now >= nextDailyCheck)
+                {
+                    var handled = await ToolCheckQueue.EnqueueAsync(
                         db,
                         configuration,
                         ToolCheckKind.Standard,
-                        "Worker",
-                        ct
+                        "Worker.Midnight",
+                        ct,
+                        scheduledAt: nextDailyCheck
                     );
+                    if (handled)
+                        nextDailyCheck = ToolCheckSchedule.NextMidnight(now);
+                }
                 await ToolCheckQueue.RunNextAsync(
                     db,
                     configuration,

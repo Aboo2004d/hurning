@@ -1125,7 +1125,7 @@
         <value>Tools</value>
     </data>
     <data name="ToolsIntro" xml:space="preserve">
-        <value>Status from the actual worker environment. Timestamps are UTC. Historical results are not proof of current health.</value>
+        <value>Tool status from the worker environment. Checks run on request or daily at midnight Palestine time. Result timestamps are UTC; each result describes the tool at check time.</value>
     </data>
     <data name="ToolsCheckNow" xml:space="preserve">
         <value>Check tools now</value>
