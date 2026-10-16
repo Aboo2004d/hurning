@@ -1,0 +1,119 @@
+@model PromptEditor
+@{
+    ViewData["Title"] = T["AiPrompt"];
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var preview = new PromptVersion
+    {
+        Template = Model.Template ?? "",
+        GeographicScope = Model.GeographicScope ?? "",
+        AllowedKinds = Model.AllowedKinds ?? "",
+        SummaryLimit = Model.SummaryLimit,
+        AllowUnknownDeadline = Model.AllowUnknownDeadline
+    }.Render();
+}
+<h1>@T["AiPrompt"]</h1>
+<p class="notice">
+    @(ar ? "كل حفظ ينشئ نسخة جديدة. يفعّلها العامل عند بداية الجولة التالية، ويعيد معالجة غير المنشور وغير المؤرشف فقط، مع حماية قرارات الأدمن. البيانات المنشورة والمؤرشفة لا تتغير بسبب تبديل البرومبت." : "Each save creates a new version, activated at the next worker round. Unpublished and unarchived items are reprocessed; published records, archived records and manual decisions are protected.")
+</p>
+<p>
+    @(ar ? "النسخة الفعّالة" : "Active version"): @Model.Settings?.ActivePromptVersionId · @(ar ? "بانتظار التفعيل" : "Pending version"): @(Model.Settings?.PendingPromptVersionId?.ToString() ?? "—")
+</p>
+<form method="post" class="edit-form">
+    <div asp-validation-summary="All" class="validation"></div>
+    <input asp-for="Version" type="hidden" />
+    <div class="form-grid">
+        <label>
+            @(ar ? "طول الملخص المطلوب من AI فقط" : "AI summary target only")
+            <input asp-for="SummaryLimit" type="number" min="40" max="2000" />
+        </label>
+        <label>
+            @(ar ? "النطاق داخل فلسطين" : "Scope within Palestine")
+            <input asp-for="GeographicScope" maxlength="500" />
+        </label>
+        <label>
+            @(ar ? "الأنواع المسموحة (مفصولة بفاصلة)" : "Allowed kinds (comma separated)")
+            <input asp-for="AllowedKinds" dir="ltr" />
+            <span>Job = وظائف · Training = تدريب · Tender = عطاءات · ProcurementNotice = مناقصات</span>
+        </label>
+        <label class="checkbox">
+            <input asp-for="AllowUnknownDeadline" />
+            @(ar ? "السماح بموعد انتهاء غير محدد" : "Allow an unspecified closing date")
+        </label>
+    </div>
+    <label>
+        @(ar ? "سبب التعديل" : "Change note")
+        <input asp-for="Note" maxlength="500" />
+    </label>
+    <details>
+        <summary>@(ar ? "إعدادات متقدمة: النص الأساسي" : "Advanced: base prompt text")</summary>
+        <p dir="ltr">
+            <code>{{summaryLimit}}</code>
+            ·
+            <code>{{scope}}</code>
+            ·
+            <code>{{allowedKinds}}</code>
+            ·
+            <code>{{allowUnknownDeadline}}</code>
+        </p>
+        <p>
+            @(ar ? "النطاق الفلسطيني وقواعد الأدلة والتواريخ تبقى مفحوصة في الكود. لا تضف مفاتيح أو أسرارًا إلى التعليمات." : "Palestinian scope and date/evidence validation remain enforced in code. Never put secrets in the prompt.")
+        </p>
+        <label>
+            @(ar ? "النص" : "Template")
+            <textarea asp-for="Template" rows="24" dir="ltr" spellcheck="false"></textarea>
+        </label>
+    </details>
+    <div class="actions">
+        <button type="submit">
+            @(ar ? "حفظ نسخة جديدة وجدولة تفعيلها" : "Save new version and queue activation")
+        </button>
+        <button class="secondary" type="submit" asp-action="PreviewPrompt">
+            @(ar ? "معاينة دون حفظ" : "Preview without saving")
+        </button>
+    </div>
+</form>
+<details class="report-panel">
+    <summary>
+        @(ar ? "معاينة النص النهائي للبيانات المعروضة" : "Final prompt preview for the displayed values")
+    </summary>
+    <pre dir="ltr">@preview</pre>
+</details>
+<h2>
+    @(ar ? "سجل النسخ — افتح نسخة سابقة ثم احفظها كنسخة جديدة لاستعادتها" : "Version history — open a version and save a new copy to restore it")
+</h2>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>@(ar ? "التاريخ" : "Date")</th>
+                <th>@(ar ? "الملاحظة" : "Note")</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var version in Model.History)
+            {
+                <tr>
+                    <td>@version.Id</td>
+                    <td>@version.CreatedAt.ToString("u")</td>
+                    <td>@version.Note</td>
+                    <td>
+                        <a asp-action="AiPrompt" asp-route-inspect="@version.Id">@(ar ? "عرض / نسخ" : "Inspect / copy")</a>
+                        <details>
+                            <summary>@(ar ? "النص النهائي المحفوظ لهذه النسخة" : "Stored final prompt for this version")</summary>
+                            <pre dir="ltr">@version.FinalText</pre>
+                        </details>
+                        @if (version.LegacySnapshot.Length > 0)
+                        {
+                            <details>
+                                <summary>@(ar ? "البرومبت الأصلي المحفوظ بالمهاجرة" : "Original prompt preserved by migration")</summary>
+                                <pre dir="ltr">@version.LegacySnapshot</pre>
+                            </details>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1089,4 +1089,27 @@
     <data name="DismissBeta" xml:space="preserve">
         <value>إغلاق تنبيه النسخة التجريبية</value>
     </data>
+    <data name="AiPrompt" xml:space="preserve"><value>البرومبت وشروط AI</value></data>
+    <data name="AiUsage" xml:space="preserve"><value>إحصاءات AI</value></data>
+    <data name="Retention" xml:space="preserve"><value>الاحتفاظ والتنظيف</value></data>
+    <data name="MergeHistory" xml:space="preserve"><value>سجل الدمج والتراجع</value></data>
+    <data name="PromptQueued" xml:space="preserve"><value>حُفظت نسخة جديدة وستُفعّل عند بداية الجولة التالية للعامل.</value></data>
+    <data name="RetentionSaved" xml:space="preserve"><value>حُفظت سياسة الاحتفاظ وسيطبقها العامل.</value></data>
+    <data name="MergeUndone" xml:space="preserve"><value>تم التراجع عن الدمج واستعادة الروابط والحالة السابقة.</value></data>
+    <data name="MergeUndoConflict" xml:space="preserve"><value>تعذّر التراجع بأمان؛ عدلت البيانات أو الروابط بعد الدمج. راجع الإعلانين قبل التصحيح اليدوي.</value></data>
+    <data name="Error_DateReview" xml:space="preserve"><value>تعذّر إثبات نوع التاريخ أو قيمته من اقتباس المصدر؛ افتح تفاصيل الأدلة.</value></data>
+    <data name="VerifiedSourceDates" xml:space="preserve"><value>المواعيد المثبتة من المصدر</value></data>
+    <data name="DeadlineExtension" xml:space="preserve"><value>موعد ممدد</value></data>
+    <data name="SystemDatesNote" xml:space="preserve"><value>تاريخ الإضافة وآخر تحقق يسجلهما النظام، وهما مختلفان عن تواريخ المصدر.</value></data>
+    <data name="DateKind_Publication" xml:space="preserve"><value>تاريخ النشر الأصلي</value></data>
+    <data name="DateKind_Modification" xml:space="preserve"><value>تاريخ تعديل المصدر</value></data>
+    <data name="DateKind_Deadline" xml:space="preserve"><value>آخر موعد للتقديم</value></data>
+    <data name="DateKind_BookletPurchase" xml:space="preserve"><value>موعد شراء الكراسة</value></data>
+    <data name="DateKind_SiteVisit" xml:space="preserve"><value>موعد زيارة الموقع</value></data>
+    <data name="DateKind_BidOpening" xml:space="preserve"><value>فتح المظاريف / العروض</value></data>
+    <data name="DateKind_Other" xml:space="preserve"><value>موعد آخر</value></data>
+    <data name="DiscoveryProgress" xml:space="preserve"><value>تقدم محفوظ</value></data>
+    <data name="SavedDiscoveryPages" xml:space="preserve"><value>صفحات محفوظة</value></data>
+    <data name="AddedToSite" xml:space="preserve"><value>تاريخ الإضافة للموقع</value></data>
+    <data name="ProposedDates" xml:space="preserve"><value>تواريخ استخرجها النموذج — راجع الأدلة؛ ليست جميعها معتمدة</value></data>
 </root>

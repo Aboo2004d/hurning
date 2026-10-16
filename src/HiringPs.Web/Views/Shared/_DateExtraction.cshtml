@@ -1,0 +1,49 @@
+@model string
+@using System.Text.Json
+@{
+    ExtractionResult? extraction = null;
+    if (!string.IsNullOrWhiteSpace(Model))
+    {
+        try
+        {
+            extraction = JsonSerializer.Deserialize<ExtractionResult>(Model, AiExtractor.JsonOptions);
+        }
+        catch (JsonException)
+        {
+        }
+    }
+}
+@if (extraction?.Opportunities is { } opportunities)
+{
+    <section class="detail-panel">
+        <h2>@T["ProposedDates"]</h2>
+        @foreach (var opportunity in opportunities)
+        {
+            <h3 dir="auto">@opportunity.Title</h3>
+            var dates = new List<ExtractedDate>();
+            if (opportunity.PublicationDate is { } publication)
+            {
+                dates.Add(new() { Kind = OpportunityDateKind.Publication, Date = publication, Evidence = opportunity.PublicationEvidence });
+            }
+            if (opportunity.ModificationDate is { } modification)
+            {
+                dates.Add(new() { Kind = OpportunityDateKind.Modification, Date = modification, Evidence = opportunity.ModificationEvidence });
+            }
+            if (opportunity.Deadline is { } deadline)
+            {
+                dates.Add(new() { Kind = OpportunityDateKind.Deadline, Date = deadline, Evidence = opportunity.DeadlineEvidence });
+            }
+            dates.AddRange(opportunity.OtherDates ?? []);
+            @foreach (var date in dates.Where(x => x is not null))
+            {
+                <p>
+                    <strong>@T["DateKind_" + date.Kind]</strong>
+                    ·
+                    <bdi>@date.Date.ToString("yyyy-MM-dd")</bdi>
+                    · @date.Label
+                </p>
+                <blockquote dir="auto">@date.Evidence</blockquote>
+            }
+        }
+    </section>
+}

@@ -31,6 +31,24 @@
             <dd>@(Model.Deadline?.ToString("yyyy-MM-dd")??T["UnknownDeadline"].Value)</dd>
         </div>
         <div>
+            <dt>@T["AddedToSite"]</dt>
+            <dd>@TimeZoneInfo.ConvertTime(Model.CreatedAt, SourceSchedule.Zone).ToString("yyyy-MM-dd")</dd>
+        </div>
+        @if (Model.SourcePublishedAt is { } published)
+        {
+            <div>
+                <dt>@T["DateKind_Publication"]</dt>
+                <dd>@TimeZoneInfo.ConvertTime(published, SourceSchedule.Zone).ToString("yyyy-MM-dd")</dd>
+            </div>
+        }
+        @if (Model.SourceModifiedAt is { } modified)
+        {
+            <div>
+                <dt>@T["DateKind_Modification"]</dt>
+                <dd>@TimeZoneInfo.ConvertTime(modified, SourceSchedule.Zone).ToString("yyyy-MM-dd")</dd>
+            </div>
+        }
+        <div>
             <dt>@T["Verified"]</dt>
             <dd>@Model.LastVerifiedAt.ToString("yyyy-MM-dd")</dd>
         </div>
@@ -135,3 +153,24 @@
         </form>
     </details>
 </article>
+@if (ViewBag.VerifiedDates is IEnumerable<OpportunityDateRecord> dateRecords)
+{
+    <section class="detail-panel">
+        <h2>@T["VerifiedSourceDates"]</h2>
+        @foreach (var date in dateRecords.GroupBy(x => new { x.Kind, Label = x.Kind is OpportunityDateKind.Publication or OpportunityDateKind.Modification or OpportunityDateKind.Deadline ? "" : x.Label, Date = x.Kind is OpportunityDateKind.Publication or OpportunityDateKind.Modification or OpportunityDateKind.Deadline ? DateOnly.MinValue : x.Date }).Select(g => g.First()))
+        {
+            <p>
+                <strong>@T["DateKind_" + date.Kind]</strong>
+                ·
+                <bdi>@date.Date.ToString("yyyy-MM-dd")</bdi>
+                @if (date.IsExtension)
+                {
+                    <span class="badge">@T["DeadlineExtension"]</span>
+                }
+            </p>
+            <p dir="auto">@date.Label</p>
+            <blockquote dir="auto">@date.Evidence</blockquote>
+        }
+        <p class="muted">@T["SystemDatesNote"]</p>
+    </section>
+}

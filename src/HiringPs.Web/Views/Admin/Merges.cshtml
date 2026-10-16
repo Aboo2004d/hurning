@@ -1,0 +1,48 @@
+@model List<MergeOperation>
+@{
+    ViewData["Title"] = T["MergeHistory"];
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<h1>@T["MergeHistory"]</h1>
+<p class="notice">
+    @(ar ? "التراجع يعيد روابط المصدر والحالة السابقة ويحفظ سجل العملية. إذا عُدّل أحد الإعلانين بعد الدمج، يُمنع التراجع الآلي لحماية التعديلات. عمليات الدمج الأقدم من هذا التحديث لا تملك لقطة استرجاع." : "Undo restores source links and the previous status and records an audit entry. Later edits block automatic undo to protect them. Merges predating this update have no restoration snapshot.")
+</p>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>@(ar ? "المكرر" : "Duplicate")</th>
+                <th>@(ar ? "الأصل" : "Target")</th>
+                <th>@(ar ? "التاريخ" : "Date")</th>
+                <th>@T["Status"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var operation in Model)
+            {
+                <tr>
+                    <td>@operation.Id</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@operation.DuplicateId">@operation.DuplicateId</a>
+                    </td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@operation.TargetId">@operation.TargetId</a>
+                    </td>
+                    <td>@operation.CreatedAt.ToString("u")</td>
+                    <td>@(operation.UndoneAt is null ? (ar ? "مدمج" : "Merged") : (ar ? "تم التراجع" : "Undone"))</td>
+                    <td>
+                        @if (operation.UndoneAt is null)
+                        {
+                            <form asp-action="UndoMerge" method="post">
+                                <input type="hidden" name="id" value="@operation.Id" />
+                                <button class="button-outline" type="submit">@(ar ? "التراجع عن الدمج" : "Undo merge")</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

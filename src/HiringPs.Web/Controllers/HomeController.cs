@@ -49,15 +49,23 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
         if (!string.IsNullOrWhiteSpace(q))
         {
             q = q.Trim().Truncate(200);
-            query = query.Where(x =>
-                x.Title.Contains(q) || x.Organization.Contains(q) || x.Summary.Contains(q)
-            );
+            foreach (
+                var term in LocationSearch
+                    .Normalize(q)
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Distinct()
+                    .Take(12)
+            )
+                query = query.Where(x => x.SearchText.Contains(term));
         }
 
         if (kind is not null)
             query = query.Where(x => x.Kind == kind);
         if (!string.IsNullOrWhiteSpace(city))
-            query = query.Where(x => x.Locations.Contains(city));
+        {
+            var normalizedCity = LocationSearch.Normalize(city);
+            query = query.Where(x => x.LocationSearchText.Contains(normalizedCity));
+        }
         if (!string.IsNullOrWhiteSpace(category))
             query = query.Where(x => x.Category == category);
         if (kind == OpportunityKind.Job)
@@ -145,6 +153,12 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
         if (item is null)
             return NotFound();
         ViewData["ListingKind"] = item.Kind;
+        ViewBag.VerifiedDates = await db
+            .OpportunityDates.AsNoTracking()
+            .Where(x => x.OpportunityId == item.Id)
+            .OrderByDescending(x => x.RecordedAt)
+            .ThenByDescending(x => x.Id)
+            .ToListAsync(ct);
         return View(item);
     }
 

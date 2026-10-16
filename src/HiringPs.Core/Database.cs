@@ -21,9 +21,66 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<SitePage> SitePages => Set<SitePage>();
 
+    public DbSet<PromptVersion> PromptVersions => Set<PromptVersion>();
+    public DbSet<WorkflowSettings> WorkflowSettings => Set<WorkflowSettings>();
+    public DbSet<AiUsage> AiUsage => Set<AiUsage>();
+    public DbSet<DiscoveryCheckpoint> DiscoveryCheckpoints => Set<DiscoveryCheckpoint>();
+    public DbSet<OpportunityDateRecord> OpportunityDates => Set<OpportunityDateRecord>();
+    public DbSet<MergeOperation> MergeOperations => Set<MergeOperation>();
+    public DbSet<RetentionPolicy> RetentionPolicies => Set<RetentionPolicy>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<PromptVersion>().HasData(PromptDefaults.Initial());
+        b.Entity<WorkflowSettings>().Property(x => x.Id).ValueGeneratedNever();
+        b.Entity<WorkflowSettings>()
+            .HasData(new WorkflowSettings { Id = 1, ActivePromptVersionId = 1 });
+        b.Entity<RetentionPolicy>().Property(x => x.Id).ValueGeneratedNever();
+        b.Entity<RetentionPolicy>().HasData(new RetentionPolicy { Id = 1 });
+        b.Entity<WorkflowSettings>()
+            .HasOne<PromptVersion>()
+            .WithMany()
+            .HasForeignKey(x => x.ActivePromptVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<WorkflowSettings>()
+            .HasOne<PromptVersion>()
+            .WithMany()
+            .HasForeignKey(x => x.PendingPromptVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<AiUsage>()
+            .HasOne<PromptVersion>()
+            .WithMany()
+            .HasForeignKey(x => x.PromptVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<AiUsage>()
+            .HasIndex(x => new
+            {
+                x.StartedAt,
+                x.PromptVersionId,
+                x.Model,
+            });
+        b.Entity<OpportunityDateRecord>()
+            .HasOne(x => x.Opportunity)
+            .WithMany()
+            .HasForeignKey(x => x.OpportunityId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<OpportunityDateRecord>()
+            .HasIndex(x => new
+            {
+                x.OpportunityId,
+                x.Kind,
+                x.EvidenceHash,
+            })
+            .IsUnique();
+        b.Entity<MergeOperation>()
+            .HasIndex(x => new
+            {
+                x.DuplicateId,
+                x.TargetId,
+                x.UndoneAt,
+            });
+
         b.Entity<ContactMessage>()
             .HasIndex(x => new
             {
@@ -61,14 +118,29 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
 
     private void NormalizeRecords()
     {
+        if (
+            ChangeTracker
+                .Entries<PromptVersion>()
+                .Any(x => x.State is EntityState.Modified or EntityState.Deleted)
+        )
+            throw new InvalidOperationException(
+                "Prompt versions are immutable; create a new version instead."
+            );
+
         foreach (
             var entry in ChangeTracker
                 .Entries<Opportunity>()
                 .Where(x => x.State is EntityState.Added or EntityState.Modified)
         )
+        {
             entry.Entity.NormalizedOrganization = TextRules.OrganizationKey(
                 entry.Entity.Organization
             );
+            entry.Entity.LocationSearchText = LocationSearch.Index(entry.Entity.Locations);
+            entry.Entity.SearchText = LocationSearch.Normalize(
+                $"{entry.Entity.Title} {entry.Entity.Organization} {entry.Entity.Summary} {entry.Entity.Category} {entry.Entity.LocationSearchText}"
+            );
+        }
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

@@ -194,6 +194,8 @@ public static class UiMessages
 
     private static string? Dynamic(string message, IStringLocalizer<Labels> t)
     {
+        if (message.StartsWith("Date validation:", StringComparison.Ordinal))
+            return t["Error_DateReview"];
         var m = Regex.Match(message, @"^AI field (\w+) exceeds schema limit");
         if (m.Success)
             return t["Error_FieldLength", Field(m.Groups[1].Value, t)];

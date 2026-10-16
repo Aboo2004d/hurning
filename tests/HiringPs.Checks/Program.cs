@@ -9,6 +9,17 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--workflow-check"))
+{
+    await WorkflowChecks.RunAsync();
+    return;
+}
+if (args.Contains("--workflow-sql-check"))
+{
+    await WorkflowSqlChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--unrwa-probe"))
 {
     var policy = new UrlPolicy();
@@ -394,7 +405,10 @@ var valid = new Opportunity
 };
 Check(OpportunityService.Validate(valid).Count == 0, "Valid local opportunity accepted");
 valid.Summary = new string('a', 201);
-Check(OpportunityService.Validate(valid).Any(x => x.Contains("200")), "Overlong summary rejected");
+Check(
+    !OpportunityService.Validate(valid).Any(x => x.Contains("200")),
+    "Summary length remains an AI instruction, not a persistence restriction"
+);
 valid.Summary = "ملخص";
 valid.Kind = OpportunityKind.Tender;
 valid.EmploymentType = "Full time";
@@ -436,7 +450,7 @@ try
     var source = new Source { Name = "Check fixture", Url = "https://example.com" };
     db.Sources.Add(source);
     await db.SaveChangesAsync();
-    var content = "محاسب جهة الاختبار غزة رقم TEST-1 موعد 21/10/2026";
+    var content = "محاسب جهة الاختبار غزة رقم TEST-1 آخر موعد للتقديم 21/10/2026";
     var item = new SourceItem
     {
         SourceId = source.Id,
@@ -459,7 +473,7 @@ try
         OriginalLanguage = "ar",
         ReferenceNumber = "TEST-1",
         Deadline = new DateOnly(2026, 10, 21),
-        DeadlineEvidence = "21/10/2026",
+        DeadlineEvidence = "آخر موعد للتقديم 21/10/2026",
     };
     var service = new OpportunityService(db);
     await service.ApplyExtractionAsync(item, new(true, [e]), CancellationToken.None);
@@ -571,7 +585,7 @@ try
     var registrations = new ServiceCollection();
     registrations.AddSingleton<IConfiguration>(pipelineConfig);
     registrations.AddLogging();
-    registrations.AddHiring(pipelineConfig);
+    CheckServices.Register(registrations, pipelineConfig);
     await using var provider = registrations.BuildServiceProvider();
     await using (var pipelineScope = provider.CreateAsyncScope())
     {
@@ -734,7 +748,7 @@ try
     var mockServices = new ServiceCollection();
     mockServices.AddSingleton<IConfiguration>(pipelineConfig);
     mockServices.AddLogging();
-    mockServices.AddHiring(pipelineConfig);
+    CheckServices.Register(mockServices, pipelineConfig);
     mockServices.AddScoped<BrowserCollector>(sp => new FixtureCollector(
         sp.GetRequiredService<UrlPolicy>(),
         pipelineConfig,

@@ -1,0 +1,30 @@
+@model RetentionEditor
+@{
+    ViewData["Title"] = T["Retention"];
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<h1>@T["Retention"]</h1>
+<p class="notice">
+    @(ar ? "يُحذف النص القديم في سجل نسخ المحتوى وملفات التشخيص فقط. لا تُحذف الإعلانات أو نص المحتوى الحالي أو روابط المصادر أو قرارات الأدمن أو نسخ البرومبت أو سجل استخدام AI. ينفذ العامل التنظيف مرة يوميًا." : "Only old content revisions and diagnostic files are deleted. Opportunities, current source text, source links, admin decisions, prompt versions and AI usage remain intact. Cleanup runs daily in the worker.")
+</p>
+<form method="post" class="edit-form">
+    <div asp-validation-summary="All" class="validation"></div>
+    <input asp-for="Version" type="hidden" />
+    <label class="checkbox">
+        <input asp-for="Enabled" />
+        @(ar ? "تفعيل التنظيف التلقائي" : "Enable automatic cleanup")
+    </label>
+    <label>
+        @(ar ? "مدة الاحتفاظ بنسخ النص السابقة بالأيام" : "Keep old text revisions for days")
+        <input asp-for="RevisionDays" type="number" min="7" max="3650" />
+    </label>
+    <label>
+        @(ar ? "مدة الاحتفاظ بملفات التشخيص بالأيام" : "Keep diagnostic files for days")
+        <input asp-for="DiagnosticDays" type="number" min="7" max="3650" />
+    </label>
+    <button type="submit">@T["Save"]</button>
+</form>
+<p>@(ar ? "آخر تنظيف" : "Last cleanup"): @(Model.Current?.LastCleanupAt?.ToString("u") ?? "—")</p>
+<p>
+    @(ar ? "نسخ نص محذوفة / ملفات تشخيص محذوفة في آخر عملية" : "Deleted revisions / diagnostic files in last run"): @Model.Current?.LastDeletedRevisions / @Model.Current?.LastDeletedDiagnostics
+</p>

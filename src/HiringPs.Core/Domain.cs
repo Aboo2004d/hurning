@@ -130,6 +130,8 @@ public class SourceItem
     [MaxLength(2000)]
     public string Error { get; set; } = "";
     public string ExtractionJson { get; set; } = "";
+    public int? ExtractionPromptVersionId { get; set; }
+    public int? RequestedPromptVersionId { get; set; }
     public string AttachmentsJson { get; set; } = "[]";
 
     [Timestamp]
@@ -168,6 +170,10 @@ public class Opportunity
     public string AttachmentsJson { get; set; } = "[]";
     public DateOnly? Deadline { get; set; }
     public DateTimeOffset? SourcePublishedAt { get; set; }
+    public DateTimeOffset? SourceModifiedAt { get; set; }
+    public int? PromptVersionId { get; set; }
+    public string SearchText { get; set; } = "";
+    public string LocationSearchText { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset LastVerifiedAt { get; set; } = DateTimeOffset.UtcNow;
     public PublicationStatus Status { get; set; } = PublicationStatus.NeedsReview;

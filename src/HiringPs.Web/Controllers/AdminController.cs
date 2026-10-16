@@ -20,7 +20,7 @@ public class AdminDashboard
 }
 
 [Authorize(Roles = "Admin")]
-public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration configuration)
+public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration configuration)
     : Controller
 {
     public async Task<IActionResult> Pages(CancellationToken ct) =>
@@ -486,14 +486,19 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
         return RedirectToAction(nameof(Message), new { id });
     }
 
-    public async Task<IActionResult> Sources(CancellationToken ct) =>
-        View(
+    public async Task<IActionResult> Sources(CancellationToken ct)
+    {
+        ViewBag.DiscoveryProgress = await db
+            .DiscoveryCheckpoints.AsNoTracking()
+            .ToDictionaryAsync(x => x.SourceId, ct);
+        return View(
             await db
                 .Sources.AsNoTracking()
                 .Include(x => x.CollectionRequests)
                 .OrderBy(x => x.Id)
                 .ToListAsync(ct)
         );
+    }
 
     public async Task<IActionResult> Source(int? id, CancellationToken ct)
     {
@@ -733,22 +738,18 @@ public class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfiguration co
     [HttpPost]
     public async Task<IActionResult> Merge(long id, long targetId, CancellationToken ct)
     {
-        if (id == targetId)
-            return BadRequest();
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var duplicate = await db.Opportunities.FindAsync([id], ct);
-        var target = await db.Opportunities.FindAsync([targetId], ct);
-        if (duplicate is null || target is null || duplicate.Kind != target.Kind)
-            return BadRequest();
-        foreach (var link in await db.SourceLinks.Where(x => x.OpportunityId == id).ToListAsync(ct))
-            link.OpportunityId = targetId;
-        duplicate.Status = PublicationStatus.Hidden;
-        duplicate.AdminOverride = true;
-        duplicate.ReviewReason = $"Merged by administrator into {targetId}.";
-        target.AdminOverride = true;
-        Audit("Opportunity.Merge", $"{id} -> {targetId}");
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+        try
+        {
+            if (
+                !await MergeHistory.MergeAsync(db, id, targetId, User.Identity?.Name ?? "Admin", ct)
+            )
+                return BadRequest();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Notice"] = "MergeUndoConflict";
+            return RedirectToAction(nameof(Merges));
+        }
         return RedirectToAction(nameof(Edit), new { id = targetId });
     }
 

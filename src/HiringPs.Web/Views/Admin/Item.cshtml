@@ -16,3 +16,15 @@
 <pre dir="auto">@Model.Content</pre>
 <h2>@T["Extraction"]</h2>
 <pre dir="ltr">@Model.ExtractionJson</pre>
+<p>
+    @T["AiPrompt"]:
+    @if (Model.ExtractionPromptVersionId is { } promptId)
+    {
+        <a asp-action="AiPrompt" asp-route-inspect="@promptId">#@promptId</a>
+    }
+    else
+    {
+        <span>—</span>
+    }
+</p>
+<partial name="_DateExtraction" model="Model.ExtractionJson" />

@@ -146,6 +146,70 @@ public class BrowserCollector(
         return context;
     }
 
+    private DiscoverySession? discovery;
+
+    private sealed class DiscoverySession(
+        DiscoveryCheckpoint checkpoint,
+        Func<DiscoveryBatch, CancellationToken, Task> save
+    )
+    {
+        public DiscoveryCheckpoint Checkpoint { get; } = checkpoint;
+        public Func<DiscoveryBatch, CancellationToken, Task> Save { get; } = save;
+        public bool Saved { get; set; }
+    }
+
+    public virtual async Task DiscoverResumableAsync(
+        Source source,
+        DiscoveryCheckpoint checkpoint,
+        Func<DiscoveryBatch, CancellationToken, Task> save,
+        CancellationToken ct
+    )
+    {
+        if (checkpoint.Completed)
+            return;
+        if (discovery is not null)
+            throw new InvalidOperationException("Discovery session is already active.");
+        discovery = new(checkpoint, save);
+        try
+        {
+            var links = await DiscoverAsync(source, ct);
+            if (!discovery.Saved)
+                await SaveDiscoveryPageAsync(new(links, null, 1), ct);
+        }
+        finally
+        {
+            discovery = null;
+        }
+    }
+
+    private async Task SaveDiscoveryPageAsync(DiscoveryBatch batch, CancellationToken ct)
+    {
+        if (discovery is null)
+            return;
+        await discovery.Save(batch, ct);
+        discovery.Saved = true;
+    }
+
+    private static async Task AdvanceListingAsync(
+        IPage page,
+        string selector,
+        ILocator next,
+        CancellationToken ct
+    )
+    {
+        ct.ThrowIfCancellationRequested();
+        var before = string.Join(
+            '|',
+            await page.Locator(selector).EvaluateAllAsync<string[]>("els => els.map(e=>e.href)")
+        );
+        await next.ClickAsync();
+        await page.WaitForFunctionAsync(
+            "([s,before]) => Array.from(document.querySelectorAll(s)).map(e=>e.href).join('|') !== before",
+            new[] { selector, before },
+            new() { Timeout = 20000 }
+        );
+    }
+
     public virtual async Task<List<(string Id, string Url)>> DiscoverAsync(
         Source source,
         CancellationToken ct
@@ -203,11 +267,19 @@ public class BrowserCollector(
             return await diagnostic.RunAsync(
                 async () =>
                 {
-                    var visited = new HashSet<string>();
+                    var visited = discovery is null
+                        ? new HashSet<string>()
+                        : new HashSet<string>(
+                            JsonSerializer.Deserialize<string[]>(
+                                discovery.Checkpoint.VisitedUrlsJson
+                            ) ?? []
+                        );
                     var automaticLinks = new HashSet<string>();
-                    string? current = source.Url;
+                    string? current = discovery?.Checkpoint.NextUrl is { Length: > 0 } cursor
+                        ? cursor
+                        : source.Url;
                     for (
-                        var n = 0;
+                        var n = discovery?.Checkpoint.CompletedPages ?? 0;
                         current is not null && n < Math.Clamp(conf.MaxPages, 1, 50);
                         n++
                     )
@@ -239,6 +311,16 @@ public class BrowserCollector(
                             automaticLinks.Add(link);
                         }
 
+                        await SaveDiscoveryPageAsync(
+                            new(
+                                discovered
+                                    .Links.Select(link => (TextRules.Hash(link), link))
+                                    .ToList(),
+                                discovered.Next,
+                                n + 1
+                            ),
+                            ct
+                        );
                         current = discovered.Next;
                     }
 
@@ -279,7 +361,9 @@ public class BrowserCollector(
                 diagnostics.Step("NavigateListing", timeoutMs: 45000);
                 await BrowserNavigation.OpenAsync(
                     page,
-                    source.Url,
+                    discovery?.Checkpoint.NextUrl is { Length: > 0 } resumeUrl
+                        ? resumeUrl
+                        : source.Url,
                     source.Connector == ConnectorKind.Gpc
                         ? WaitUntilState.DOMContentLoaded
                         : WaitUntilState.Commit,
@@ -320,7 +404,25 @@ public class BrowserCollector(
                 }
                 else
                 {
-                    for (var n = 0; n < Math.Clamp(conf.MaxPages, 1, 50); n++)
+                    var resumeBase = discovery?.Checkpoint.NextUrl is { Length: > 0 } baseUrl
+                        ? baseUrl
+                        : source.Url;
+                    var replayClicks = discovery?.Checkpoint.ReplayClicks ?? 0;
+                    for (var replay = 0; replay < replayClicks; replay++)
+                    {
+                        await page.Locator(selector).First.WaitForAsync(new() { Timeout = 20000 });
+                        var control = page.Locator(conf.NextSelector).First;
+                        if (await control.CountAsync() == 0 || !await control.IsEnabledAsync())
+                            throw new ContentNeedsReviewException(
+                                "Saved pagination cursor can no longer be restored; review the source before restarting discovery."
+                            );
+                        await AdvanceListingAsync(page, selector, control, ct);
+                    }
+                    for (
+                        var n = discovery?.Checkpoint.CompletedPages ?? 0;
+                        n < Math.Clamp(conf.MaxPages, 1, 50);
+                        n++
+                    )
                     {
                         ct.ThrowIfCancellationRequested();
                         diagnostics.Step("WaitListingSelector", selector, 20000);
@@ -328,6 +430,7 @@ public class BrowserCollector(
                         diagnostics.Step("DiscoverLinks", selector);
                         var links = await page.Locator(selector)
                             .EvaluateAllAsync<string[]>("els => els.map(e => e.href)");
+                        var pageEntries = new List<(string Id, string Url)>();
                         foreach (var link in links.Distinct())
                         {
                             var uri = await policy.ValidateAsync(
@@ -340,29 +443,54 @@ public class BrowserCollector(
                                 ? Uri.UnescapeDataString(match.Groups[1].Value)
                                 : TextRules.Hash(uri.ToString());
                             found[id] = uri.ToString();
+                            pageEntries.Add((id, uri.ToString()));
                         }
 
                         if (conf.NextSelector.Length == 0)
+                        {
+                            await SaveDiscoveryPageAsync(new(pageEntries, null, n + 1), ct);
                             break;
+                        }
                         var next = page.Locator(conf.NextSelector).First;
                         if (
                             await next.CountAsync() == 0
                             || !await next.IsVisibleAsync()
                             || !await next.IsEnabledAsync()
                         )
+                        {
+                            await SaveDiscoveryPageAsync(new(pageEntries, null, n + 1), ct);
                             break;
+                        }
+                        var href = await next.GetAttributeAsync("href");
+                        var directNext =
+                            !string.IsNullOrWhiteSpace(href)
+                            && !href.StartsWith('#')
+                            && Uri.TryCreate(new Uri(page.Url), href, out var nextUri)
+                            && nextUri.ToString() != page.Url
+                                ? nextUri!.ToString()
+                                : null;
+                        if (directNext is not null)
+                        {
+                            await policy.ValidateAsync(
+                                directNext,
+                                conf.AllowedHosts.Append(new Uri(source.Url).IdnHost),
+                                ct
+                            );
+                            resumeBase = directNext;
+                            replayClicks = 0;
+                        }
+                        else
+                            replayClicks++;
+                        await SaveDiscoveryPageAsync(
+                            new(pageEntries, resumeBase, n + 1, replayClicks),
+                            ct
+                        );
                         if (n + 1 >= conf.MaxPages)
                             throw new InvalidOperationException(
                                 "Pagination limit reached; increase the limit after reviewing this source."
                             );
                         diagnostics.Step("Pagination", conf.NextSelector, 20000);
-                        var before = string.Join('|', links);
-                        await next.ClickAsync();
-                        await page.WaitForFunctionAsync(
-                            "([s, before]) => Array.from(document.querySelectorAll(s)).map(e=>e.href).join('|') !== before",
-                            new[] { selector, before },
-                            new() { Timeout = 20000 }
-                        );
+                        await AdvanceListingAsync(page, selector, next, ct);
                     }
                 }
 

@@ -1089,4 +1089,27 @@
     <data name="DismissBeta" xml:space="preserve">
         <value>Dismiss the beta notice</value>
     </data>
+    <data name="AiPrompt" xml:space="preserve"><value>AI prompt and conditions</value></data>
+    <data name="AiUsage" xml:space="preserve"><value>AI usage</value></data>
+    <data name="Retention" xml:space="preserve"><value>Retention and cleanup</value></data>
+    <data name="MergeHistory" xml:space="preserve"><value>Merge history and undo</value></data>
+    <data name="PromptQueued" xml:space="preserve"><value>A new prompt version was saved and will activate at the next worker round.</value></data>
+    <data name="RetentionSaved" xml:space="preserve"><value>The retention policy was saved for the worker.</value></data>
+    <data name="MergeUndone" xml:space="preserve"><value>Merge undone; links and previous status restored.</value></data>
+    <data name="MergeUndoConflict" xml:space="preserve"><value>Undo was blocked because the records or links changed after merging; review both records before a manual correction.</value></data>
+    <data name="Error_DateReview" xml:space="preserve"><value>The date value or event type could not be verified from its source quotation; inspect the evidence.</value></data>
+    <data name="VerifiedSourceDates" xml:space="preserve"><value>Verified source dates</value></data>
+    <data name="DeadlineExtension" xml:space="preserve"><value>Extended deadline</value></data>
+    <data name="SystemDatesNote" xml:space="preserve"><value>Added and last-verified dates are system timestamps, separate from source dates.</value></data>
+    <data name="DateKind_Publication" xml:space="preserve"><value>Original publication date</value></data>
+    <data name="DateKind_Modification" xml:space="preserve"><value>Source modification date</value></data>
+    <data name="DateKind_Deadline" xml:space="preserve"><value>Submission deadline</value></data>
+    <data name="DateKind_BookletPurchase" xml:space="preserve"><value>Booklet purchase</value></data>
+    <data name="DateKind_SiteVisit" xml:space="preserve"><value>Site visit</value></data>
+    <data name="DateKind_BidOpening" xml:space="preserve"><value>Bid opening</value></data>
+    <data name="DateKind_Other" xml:space="preserve"><value>Other event</value></data>
+    <data name="DiscoveryProgress" xml:space="preserve"><value>Saved progress</value></data>
+    <data name="SavedDiscoveryPages" xml:space="preserve"><value>pages saved</value></data>
+    <data name="AddedToSite" xml:space="preserve"><value>Added to this site</value></data>
+    <data name="ProposedDates" xml:space="preserve"><value>Dates proposed by the model — inspect evidence; not all dates are verified</value></data>
 </root>
