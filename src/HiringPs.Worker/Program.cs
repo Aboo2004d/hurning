@@ -10,6 +10,45 @@ var builder = Host.CreateApplicationBuilder(
 // ========================================
 // 1. Command Arguments
 // ========================================
+// PDF diagnostics are independent of SQL, AI credentials and the collection schedule.
+if (args.Contains("--pdf-check") || args.Contains("--pdf-read"))
+{
+    try
+    {
+        var reader = new PdfTextReader(builder.Configuration);
+        await reader.CheckSetupAsync(CancellationToken.None);
+        if (Array.IndexOf(args, "--pdf-read") is var index && index >= 0)
+        {
+            if (index + 1 >= args.Length)
+                throw new ArgumentException("Specify a local PDF path after --pdf-read.");
+            var file = new FileInfo(args[index + 1]);
+            if (!file.Exists || file.Length > AttachmentReader.MaxBytes)
+                throw new ArgumentException("PDF must exist and be at most 8 MB.");
+            var result = await reader.ReadAsync(
+                await File.ReadAllBytesAsync(file.FullName),
+                CancellationToken.None
+            );
+            Console.WriteLine(
+                $"PDF read: {result.Hash}; pages={result.Pages.Count}; archive={PdfTextFiles.DirectoryPath(builder.Configuration)}"
+            );
+            foreach (var page in result.Pages)
+                Console.WriteLine(
+                    $"Page {page.Page}: {page.Method}; confidence={page.Confidence}; characters={page.Text.Length}"
+                );
+        }
+        else
+            Console.WriteLine(
+                "PDF setup passed: tools, OCR languages (when enabled), and archive write access."
+            );
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        Environment.ExitCode = 1;
+    }
+    return;
+}
+
 bool isProbe = args.Contains("--probe");
 bool isOnce = args.Contains("--once");
 bool installBrowser = args.Contains("--install-browser");

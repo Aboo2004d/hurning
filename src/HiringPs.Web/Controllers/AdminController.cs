@@ -711,9 +711,14 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
             .SingleOrDefaultAsync(x => x.Id == id, ct);
         if (item is null)
             return NotFound();
-        // Reprocess using saved content when available.
+        // PDF retries fetch the original again instead of reusing a damaged historical transcription.
+        var refreshPdf = PdfRetry.NeedsFreshContent(item);
         item.Status =
-            item.Content.Length > 0 ? ProcessingStatus.AwaitingAi : ProcessingStatus.Discovered;
+            !refreshPdf && item.Content.Length > 0
+                ? ProcessingStatus.AwaitingAi
+                : ProcessingStatus.Discovered;
+        if (refreshPdf)
+            item.ExtractionJson = "";
         // Reset retry state
         item.RetryAt = null;
         item.Attempts = 0;

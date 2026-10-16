@@ -1,12 +1,12 @@
-@model string
+@model SourceItem
 @using System.Text.Json
 @{
     ExtractionResult? extraction = null;
-    if (!string.IsNullOrWhiteSpace(Model))
+    if (!string.IsNullOrWhiteSpace(Model.ExtractionJson))
     {
         try
         {
-            extraction = JsonSerializer.Deserialize<ExtractionResult>(Model, AiExtractor.JsonOptions);
+            extraction = JsonSerializer.Deserialize<ExtractionResult>(Model.ExtractionJson, AiExtractor.JsonOptions);
         }
         catch (JsonException)
         {
@@ -43,6 +43,15 @@
                     · @date.Label
                 </p>
                 <blockquote dir="auto">@date.Evidence</blockquote>
+                var pdfReference = PdfTextFiles.FindPage(Model.Content, date.Evidence);
+                @if (pdfReference is not null)
+                {
+                    <p>
+                        <a asp-action="PdfArchive" asp-route-hash="@pdfReference.Hash" asp-route-format="source">
+                            @T["PdfEvidencePage", pdfReference.Page]
+                        </a>
+                    </p>
+                }
             }
         }
     </section>

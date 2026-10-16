@@ -1112,4 +1112,13 @@
     <data name="SavedDiscoveryPages" xml:space="preserve"><value>صفحات محفوظة</value></data>
     <data name="AddedToSite" xml:space="preserve"><value>تاريخ الإضافة للموقع</value></data>
     <data name="ProposedDates" xml:space="preserve"><value>تواريخ استخرجها النموذج — راجع الأدلة؛ ليست جميعها معتمدة</value></data>
+    <data name="PdfEvidencePage" xml:space="preserve">
+        <value>صفحة الدليل في PDF: {0}</value>
+    </data>
+    <data name="Error_PdfOcrReview" xml:space="preserve">
+        <value>استُخدمت قراءة OCR لهذا الإعلان؛ قارن بياناته المهمة مع صفحات PDF الأصلية ثم اعتمده يدويًا.</value>
+    </data>
+    <data name="Error_PdfRead" xml:space="preserve">
+        <value>تعذرت قراءة PDF بثقة. راجع التفاصيل التقنية والنسخة الأصلية المحفوظة، ثم صحح إعداد الأدوات أو أعد المحاولة.</value>
+    </data>
 </root>

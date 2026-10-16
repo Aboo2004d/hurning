@@ -33,6 +33,9 @@ public static class UiMessages
         ["Deadline quotation does not independently confirm the date."] = "Error_DeadlineMismatch",
         ["Apply URL not in source text; use original source."] = "Error_ApplyEvidence",
         ["Title required."] = "Error_TitleRequired",
+        [
+            "PDF OCR transcription requires visual verification of the original page before publication."
+        ] = "Error_PdfOcrReview",
         ["Organization required."] = "Error_OrganizationRequired",
         ["Summary required."] = "Error_SummaryRequired",
         ["Title required (250 maximum)."] = "Error_Title",
@@ -194,6 +197,8 @@ public static class UiMessages
 
     private static string? Dynamic(string message, IStringLocalizer<Labels> t)
     {
+        if (message.StartsWith("PDF archive ", StringComparison.Ordinal))
+            return t["Error_PdfRead"];
         if (message.StartsWith("Date validation:", StringComparison.Ordinal))
             return t["Error_DateReview"];
         var m = Regex.Match(message, @"^AI field (\w+) exceeds schema limit");

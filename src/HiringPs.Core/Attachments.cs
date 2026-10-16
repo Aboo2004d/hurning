@@ -1,7 +1,8 @@
-// تنزيل ملفات PDF ضمن الحدود المسموحة واستخراج النص بالطريقة الحالية.
+// تنزيل PDF ضمن الحدود المسموحة ثم قراءة الصفحات وحفظ النصوص بواسطة مسار النص وOCR.
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
@@ -11,11 +12,34 @@ public class ContentNeedsReviewException(string message) : Exception(message);
 
 public record ContentBundle(string Text, string[] Attachments);
 
-public class AttachmentReader(UrlPolicy policy)
+public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = null)
 {
     public const int MaxBytes = 8 * 1024 * 1024;
 
     public async Task<string> ReadPdfAsync(string url, string[] hosts, CancellationToken ct)
+    {
+        using var downloadBudget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        downloadBudget.CancelAfter(TimeSpan.FromSeconds(40));
+        byte[] bytes;
+        try
+        {
+            bytes = await DownloadAsync(url, hosts, downloadBudget.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new ContentNeedsReviewException(
+                "PDF download timed out after 40 seconds; review or retry the original source."
+            );
+        }
+        return (
+            await new PdfTextReader(configuration ?? new ConfigurationBuilder().Build()).ReadAsync(
+                bytes,
+                ct
+            )
+        ).Text;
+    }
+
+    private async Task<byte[]> DownloadAsync(string url, string[] hosts, CancellationToken ct)
     {
         using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false };
         handler.ConnectCallback = async (ctx, cancel) =>
@@ -74,7 +98,7 @@ public class AttachmentReader(UrlPolicy policy)
                 await buffer.WriteAsync(chunk.AsMemory(0, read), ct);
             }
 
-            return ExtractText(buffer.ToArray());
+            return buffer.ToArray();
         }
 
         throw new ContentNeedsReviewException("Attachment redirect limit reached.");

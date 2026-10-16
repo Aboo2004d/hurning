@@ -1,5 +1,5 @@
 # النشر اليدوي على Windows VPS
-التطبيق قابل للتجهيز والنقل يدويًا. تشغيله الفعلي بالكامل على VPS لم يُختبر بعد؛ مفتاح AI لم يُنشأ حتى الآن.
+التطبيق قابل للتجهيز والنقل يدويًا. تشغيله الفعلي بالكامل على VPS لم يُختبر هنا؛ اختار المستخدم نموذج AI وجربه بالفعل.
 
 ## ما سيتم تثبيته على السيرفر
 | المكوّن | الحاجة |
@@ -8,6 +8,7 @@
 | .NET 10 Hosting Bundle x64 | Runtime وASP.NET Core Runtime ووحدة IIS (ANCM)؛ لا يلزم SDK على السيرفر |
 | IIS Application Initialization | بدء الموقع تلقائيًا مع Preload عند تشغيل/إعادة تشغيل IIS |
 | Chromium وملفات Playwright المتوافقة | تشغيل JavaScript وجمع الصفحات بواسطة العامل، داخل مسار متصفح محدد |
+| Poppler وTesseract 5.x مع ara+eng | قراءة PDF العربي والمصور محليًا؛ إعداد الأدوات والأرشيف في [دليل PDF](PDF-TEXT.md) |
 | Windows Service باسم HiringPsCollector | بدء العامل تلقائيًا وإعادة تشغيله عند التعطل |
 | SQL Server / SQL Express إذا لم يكن متوفرًا | قاعدة إنتاجية بصلاحيات وترخيص مناسبين؛ لا نستخدم LocalDB تحت حساب خدمة إنتاجية |
 
@@ -82,3 +83,8 @@ Get-Service HiringPsCollector
 الحزم وخطوات النقل اليدوي قابلة للتجهيز محليًا. اعتماد النشر الإنتاجي يحتاج اختبار المفتاح والمصادر وVPS وHTTPS والنسخ الاحتياطي. لم تُثبّت IIS أو خدمة Windows على جهازك أثناء هذه المهمة، ولم ينشر شيء إلى VPS.
 
 المراجع: [IIS/.NET](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/iis/?view=aspnetcore-10.0)، [Playwright](https://playwright.dev/dotnet/docs/browsers)، [Windows Service](https://learn.microsoft.com/en-us/dotnet/core/extensions/windows-service).
+
+
+## تحديث قراءة PDF وOCR — 16 أكتوبر 2026
+
+قبل تشغيل جمع ملفات PDF، ثبّت Poppler وTesseract واللغتين على VPS، واضبط مسارات الأدوات لخدمة العامل ومجلد أرشيف دائمًا مشتركًا مع IIS. لا تُضمّن الأدوات تلقائيًا في publish. تعليمات Windows المحلي وVPS والسكربت وأوامر الفحص والصلاحيات في [PDF-TEXT.md](PDF-TEXT.md). النص الذي يستخدم OCR يحتاج مراجعة بصرية افتراضيًا قبل النشر. لا يلزم مفتاح OCR مدفوع أو مهاجرة جديدة لهذه الإضافة.

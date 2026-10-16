@@ -475,6 +475,10 @@ public class OpportunityService(HiringDb db)
             )
                 errors.Add("Local geographic scope needs review.");
             errors.AddRange(checkedDates.Errors);
+            if (sourceContent.Contains(PdfTextFiles.ReviewMarker, StringComparison.Ordinal))
+                errors.Add(
+                    "PDF OCR transcription requires visual verification of the original page before publication."
+                );
             var activeRules = result.PromptVersionId is { } versionId
                 ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
                 : null;

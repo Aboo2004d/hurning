@@ -1112,4 +1112,13 @@
     <data name="SavedDiscoveryPages" xml:space="preserve"><value>pages saved</value></data>
     <data name="AddedToSite" xml:space="preserve"><value>Added to this site</value></data>
     <data name="ProposedDates" xml:space="preserve"><value>Dates proposed by the model — inspect evidence; not all dates are verified</value></data>
+    <data name="PdfEvidencePage" xml:space="preserve">
+        <value>PDF evidence page: {0}</value>
+    </data>
+    <data name="Error_PdfOcrReview" xml:space="preserve">
+        <value>This announcement uses OCR. Compare critical fields with the original PDF pages, then approve manually.</value>
+    </data>
+    <data name="Error_PdfRead" xml:space="preserve">
+        <value>PDF could not be read reliably. Inspect technical details and the archived source, correct tool setup if needed, then retry.</value>
+    </data>
 </root>

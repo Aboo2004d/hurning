@@ -7,4 +7,7 @@
     <ItemGroup>
         <ProjectReference Include="../../src/HiringPs.Core/HiringPs.Core.csproj" />
     </ItemGroup>
+    <ItemGroup>
+        <None Update="Fixtures/Pdf/*.pdf" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>

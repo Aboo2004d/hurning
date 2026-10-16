@@ -1,0 +1,35 @@
+@model SourceItem
+@using System.Text.RegularExpressions
+@{
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var hashes = Regex.Matches(Model.Content + "\n" + Model.Error, @"(?:\[PDF DOCUMENT |PDF archive )([A-F0-9]{64})").Select(x => x.Groups[1].Value).Distinct().ToArray();
+}
+@if (hashes.Length > 0)
+{
+    <section class="detail-panel">
+        <h2>@(ar ? "ملفات PDF المحفوظة" : "Archived PDF evidence")</h2>
+        <p>
+            @(ar ? "قراءة OCR آلية وقد تخطئ. قارن الأسماء والتواريخ المهمة مع صورة الصفحة قبل اعتماد الحالات الملتبسة. تحميل الملفات متاح للأدمن فقط، ويتطلب مشاركة مجلد الأرشيف بين العامل والموقع." : "OCR can make mistakes. Compare critical names and dates with the original page. Downloads require admin access and an archive shared by the worker and website.")
+        </p>
+        @foreach (var hash in hashes)
+        {
+            <p>
+                <code>@hash[..12]</code>
+            </p>
+            <div class="actions">
+                <a class="button-outline" asp-action="PdfArchive" asp-route-hash="@hash" asp-route-format="source">
+                    @(ar ? "ملف PDF الأصلي" : "Original PDF")
+                </a>
+                <a class="button-outline" asp-action="PdfArchive" asp-route-hash="@hash" asp-route-format="original">
+                    @(ar ? "النص الخام" : "Raw text")
+                </a>
+                <a class="button-outline" asp-action="PdfArchive" asp-route-hash="@hash" asp-route-format="readable">
+                    @(ar ? "النص المقروء" : "Readable text")
+                </a>
+                <a class="button-outline" asp-action="PdfArchive" asp-route-hash="@hash" asp-route-format="report">
+                    @(ar ? "تقرير الصفحات والثقة" : "Page and confidence report")
+                </a>
+            </div>
+        }
+    </section>
+}
