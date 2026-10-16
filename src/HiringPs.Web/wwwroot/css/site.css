@@ -1235,3 +1235,94 @@ footer {
 .tool-detail {
     overflow-wrap: anywhere;
 }
+
+/* قائمة الإدارة: روابط أساسية ومجموعات صغيرة بدل تكديس جميع الصفحات. */
+.site-header .admin-header-nav {
+    gap: 6px;
+    flex-wrap: nowrap;
+    font-size: 14px;
+}
+.admin-header-nav > a,
+.admin-nav-group > summary {
+    padding: 9px 12px;
+    border-radius: 9px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.admin-header-nav > a:hover,
+.admin-nav-group > summary:hover,
+.admin-nav-group[open] > summary {
+    background: var(--soft);
+    color: var(--accent);
+    text-decoration: none;
+}
+.admin-header-nav > a[aria-current="page"],
+.admin-nav-group.has-current > summary {
+    background: var(--soft);
+    color: var(--accent);
+    font-weight: 700;
+    box-shadow: none;
+}
+.admin-nav-group {
+    position: relative;
+}
+.admin-nav-group > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+}
+.admin-nav-group > summary::-webkit-details-marker {
+    display: none;
+}
+.admin-nav-group > summary svg {
+    flex-shrink: 0;
+}
+.admin-nav-group[open] > summary svg {
+    transform: rotate(180deg);
+}
+.admin-nav-dropdown {
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(100% + 10px);
+    width: 250px;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px #18332b14;
+}
+.site-header .admin-nav-dropdown a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 7px;
+    white-space: normal;
+}
+.admin-nav-dropdown a:hover,
+.admin-nav-dropdown a[aria-current="page"] {
+    background: var(--soft);
+    color: var(--accent);
+    text-decoration: none;
+    box-shadow: none;
+}
+@media (max-width: 1100px) {
+    .site-header .admin-header-nav {
+        gap: 4px;
+        align-items: stretch;
+    }
+    .admin-nav-group > summary {
+        justify-content: space-between;
+        padding: 10px 14px;
+    }
+    .admin-nav-dropdown {
+        position: static;
+        width: auto;
+        margin: 4px 10px 8px;
+        padding: 4px;
+        border: 0;
+        border-inline-start: 2px solid var(--line);
+        border-radius: 0;
+        box-shadow: none;
+    }
+}

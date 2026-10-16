@@ -60,6 +60,33 @@
         document.getElementById("header-menu"),
         true,
     );
+    // Administration groups share native disclosure controls on desktop and mobile.
+    const adminGroups = Array.from(document.querySelectorAll(".admin-nav-group"));
+    const closeAdminGroups = (except = null) => {
+        adminGroups.forEach((group) => {
+            if (group !== except) group.open = false;
+        });
+    };
+    adminGroups.forEach((group) => {
+        group.addEventListener("toggle", () => {
+            if (group.open) closeAdminGroups(group);
+        });
+        group.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && group.open) {
+                event.stopPropagation();
+                group.open = false;
+                group.querySelector("summary").focus();
+            }
+        });
+        group.addEventListener("focusout", (event) => {
+            if (event.relatedTarget && !group.contains(event.relatedTarget)) group.open = false;
+        });
+    });
+    document.addEventListener("click", (event) => {
+        closeAdminGroups(event.target.closest(".admin-nav-group"));
+    });
+    mobileNavigation.addEventListener("change", () => closeAdminGroups());
+    document.querySelector(".header-menu-toggle")?.addEventListener("click", () => closeAdminGroups());
     const connector = document.getElementById("source-connector"),
         connectorHelp = document.getElementById("connector-help");
     if (connector && connectorHelp) {
