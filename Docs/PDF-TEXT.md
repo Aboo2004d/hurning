@@ -28,18 +28,30 @@ Invoke-WebRequest `
 1. ثبّت [توزيعة Poppler لـWindows](https://github.com/oschwartz10612/poppler-windows/releases) مع `pdftotext.exe` و`pdftoppm.exe` وكل DLLs التابعة لها. هذا توزيع Windows مجتمعي؛ [مشروع Poppler](https://poppler.freedesktop.org/) هو المرجع الأصلي.
 2. ثبّت Tesseract 5.x x64 من مصدر موثوق مثل روابط Windows في [دليل التثبيت](https://tesseract-ocr.github.io/tessdoc/Installation.html).
 3. نزّل بيانات اللغتين بالأوامر أعلاه. SHA256 لملف العربية 4.1.0 المختبر هو `e3206d3dc87fd50c24a0fb9f01838615911d25168f4e64415244b67d2bb3e729`.
-4. من PowerShell داخل المشروع، عدّل المسارات حسب تثبيتك:
+4. افتح `src/HiringPs.Worker/appsettings.json` وعدّل قسم `Pdf` بمسارات تثبيتك الفعلية. المسارات المرفقة أمثلة Windows؛ إذا فككت Poppler داخل مجلد بإصدار مختلف فعدّل المسار وفقه.
 
-```powershell
-.\scripts\configure-pdf.ps1 `
-    -PopplerDirectory 'C:\Tools\Poppler\Library\bin' `
-    -TesseractDirectory 'C:\Program Files\Tesseract-OCR' `
-    -OcrDataDirectory 'C:\HiringPsData\Tessdata'
+```json
+"Pdf": {
+    "TextExecutable": "C:\\Tools\\Poppler\\Library\\bin\\pdftotext.exe",
+    "RenderExecutable": "C:\\Tools\\Poppler\\Library\\bin\\pdftoppm.exe",
+    "OcrExecutable": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
+    "OcrDataPath": "C:\\HiringPsData\\Tessdata",
+    "WorkDirectory": "C:\\HiringPsData\\PdfWork",
+    "EnableOcr": true,
+    "RequireOcrReview": true,
+    "ProcessTimeoutSeconds": 45
+}
 ```
 
-السكربت يضبط الجلسة الحالية ويفحص الأدوات واللغتين وإنشاء الملفات المؤقتة وحذفها. اختياريًا استخدم `-WorkDirectory 'C:\HiringPsData\PdfWork'` لتحديد مجلد مؤقت خاص؛ لا تضعه داخل Tessdata أو wwwroot. ليس مطلوبًا إنشاء مجلد أرشيف.
+هذا قسم يضاف داخل كائن الإعدادات الموجود، وليس بديلًا عن الملف كاملًا؛ حافظ على أقسام SQL وAI الموجودة. نفس ملف `src/HiringPs.Worker/appsettings.json` يُستخدم أيضًا أثناء التطوير المحلي، بما فيه التشغيل من Visual Studio أو `dotnet run` في بيئة Development؛ لا تحتاج إلى إنشاء ملف تطوير منفصل لإعدادات PDF. ملفات `appsettings.{Environment}.json` المعتادة يمكنها تخصيص القيم للبيئة عند الحاجة. إعدادات PDF لا تحتاج User Secrets أو جلسة PowerShell مخصصة.
 
-شغّل الموقع والعامل من الجلسة نفسها حتى يرثا الإعدادات، أو ضع مفاتيح PDF المناسبة في إعدادات تشغيل العامل في IDE. جلسة جديدة تحتاج إعادة الضبط. لا تُستبدل إعدادات SQL أو AI.
+من داخل المشروع شغّل:
+
+```powershell
+.\scripts\configure-pdf.ps1
+```
+
+السكربت الآن **فحص فقط**: لا يطلب مسارات، ولا يكتب متغيرات بيئة أو Registry، ولا ينزّل أو يثبت أدوات. يشغّل فحص العامل بالإعدادات المقروءة من JSON ويتحقق من الأدوات واللغتين وإنشاء الملفات المؤقتة وحذفها. لا يشترط تشغيل التطبيق من الجلسة نفسها. الملف ينسخ إلى مخرجات build/publish بالطريقة المعتادة؛ عدّل ملف المصدر ثم أعد البناء، وأعد تشغيل العامل بعد تعديل الإعدادات.
 
 ```powershell
 dotnet run --project src/HiringPs.Worker -c Release -- --pdf-check
@@ -52,36 +64,29 @@ dotnet run --project src/HiringPs.Worker -c Release -- --pdf-read 'C:\Samples\te
 
 ثبّت الأدوات وبيانات اللغات على جهاز العامل نفسه؛ publish لا يتضمن Poppler أو Tesseract أو traineddata. يحتاج حساب خدمة العامل قراءة/تنفيذ الأدوات وDLLs وقراءة Tessdata، وصلاحية إنشاء **وحذف** الملفات في مجلد العمل. لا يلزم مجلد PDF مشترك مع IIS ولا صلاحيات قراءة أرشيف لحساب الموقع.
 
-بعد تحديث Web وWorker معًا وتطبيق المهاجرة من الموقع، شغّل PowerShell كمسؤول واضبط خدمة العامل القائمة:
+بعد تحديث Web وWorker معًا وتطبيق المهاجرة من الموقع، افتح `appsettings.json` الموجود **داخل مجلد Worker المنشور**، وعدّل قسم `Pdf` بمسارات أدوات VPS ومجلد عمل يستطيع حساب الخدمة إنشاء الملفات وحذفها فيه. إعدادات PDF تخص العامل؛ لا يلزم تكرارها في ملف Web. يمكن استخدام `appsettings.Production.json` للتخصيص المعتاد، مع الحفاظ على الإعدادات عند نشر تحديث جديد.
 
 ```powershell
-.\configure-pdf.ps1 `
-    -PopplerDirectory 'C:\Tools\Poppler\Library\bin' `
-    -TesseractDirectory 'C:\Program Files\Tesseract-OCR' `
-    -OcrDataDirectory 'C:\HiringPsData\Tessdata' `
-    -WorkDirectory 'C:\HiringPsData\PdfWork' `
-    -WorkerDirectory 'C:\Apps\HiringPs\Worker' `
-    -ServiceName 'HiringPsCollector'
-
+.\configure-pdf.ps1 -WorkerDirectory 'C:\Apps\HiringPs\Worker'
 Restart-Service HiringPsCollector
 ```
 
-السكربت يحفظ إعدادات PDF في Environment للخدمة الموجودة، دون حذف إعدادات SQL أو AI أو المتصفح. الفحص يجري بحساب PowerShell؛ تحقق أيضًا من صلاحيات حساب الخدمة وافتح صفحة «الأدوات» لرؤية الفحص من ذلك الحساب. الاستضافة المشتركة التي تمنع تشغيل العمليات الخارجية تحتاج عاملًا على جهاز يسمح بتشغيلها.
+السكربت يفحص JSON المنشور ولا يغير إعدادات الخدمة أو حسابها. الفحص يجري بحساب PowerShell؛ تحقق أيضًا من صلاحيات حساب الخدمة وافتح صفحة «الأدوات» لرؤية الفحص من ذلك الحساب. لا تحتاج صلاحية مسؤول للفحص نفسه؛ إعادة تشغيل الخدمة تتبع صلاحيات إدارة Windows المعتادة. الاستضافة المشتركة التي تمنع تشغيل العمليات الخارجية تحتاج عاملًا على جهاز يسمح بتشغيلها.
 
 من Worker المنشور يمكن تشغيل `HiringPs.Worker.exe --pdf-check` أو `--pdf-read` دون SDK. تعليمات IIS والخدمة العامة في [النشر اليدوي](MANUAL-DEPLOYMENT.md).
 
 ## الإعدادات ومسار المعالجة
 
-| المتغير | الوظيفة |
+| المفتاح داخل قسم Pdf | الوظيفة |
 | --- | --- |
-| `Pdf__TextExecutable` | مسار pdftotext، والافتراضي اسمه من PATH |
-| `Pdf__RenderExecutable` | مسار pdftoppm |
-| `Pdf__OcrExecutable` | مسار tesseract |
-| `Pdf__OcrDataPath` | مجلد نماذج اللغات، دائم ولا يُنظَّف |
-| `Pdf__WorkDirectory` | مجلد مؤقت خاص؛ الافتراضي hiring-pdf-work داخل temp الخاص بحساب العامل |
-| `Pdf__EnableOcr` | true افتراضيًا؛ تعطيله يحيل الصفحات المحتاجة إليه للمراجعة |
-| `Pdf__RequireOcrReview` | true افتراضيًا؛ اشتراط مقارنة بصرية مع الأصل لدى المصدر |
-| `Pdf__ProcessTimeoutSeconds` | 45 افتراضيًا، ويمكن تقليله من 1 إلى 45 |
+| `Pdf:TextExecutable` | مسار pdftotext، والافتراضي اسمه من PATH |
+| `Pdf:RenderExecutable` | مسار pdftoppm |
+| `Pdf:OcrExecutable` | مسار tesseract |
+| `Pdf:OcrDataPath` | مجلد نماذج اللغات، دائم ولا يُنظَّف |
+| `Pdf:WorkDirectory` | مجلد مؤقت خاص؛ الافتراضي hiring-pdf-work داخل temp الخاص بحساب العامل |
+| `Pdf:EnableOcr` | true افتراضيًا؛ تعطيله يحيل الصفحات المحتاجة إليه للمراجعة |
+| `Pdf:RequireOcrReview` | true افتراضيًا؛ اشتراط مقارنة بصرية مع الأصل لدى المصدر |
+| `Pdf:ProcessTimeoutSeconds` | 45 افتراضيًا، ويمكن تقليله من 1 إلى 45 |
 
 Poppler يقرأ طبقة النص مع حدود الصفحات. العربية والصور وصفحات النص غير المقروء تُقرأ بصريًا باستخدام ara+eng، دون عكس الأرقام أو تخمين الكلمات. تُعالج كل صفحة؛ لا يُتجاهل محتوى صورة لأن صفحة أخرى لها نص. غياب الأدوات أو اللغة، التالف والمشفر، انخفاض الثقة أو تجاوز الحدود يولّد مراجعة واضحة، ولا يُرسل نص جزئي إلى AI على أنه مستند مكتمل.
 
@@ -93,9 +98,34 @@ OCR قد يخطئ حتى بثقة عالية. لذلك يبقى النص الذ�
 
 ## التخلص من الأرشيف السابق
 
-إذا استُخدم الإصدار الذي يحفظ الأرشيف، اترك قيمة `Pdf__TextArchivePath` القديمة مؤقتًا عند التحديث. تنظيف PDF يزيل فقط الملفات التي أنشأها ذلك المسار: أسماء SHA256 متبوعة بـ.pdf أو .original.txt أو .readable.txt أو .json وملفاتها المؤقتة المعروفة. الإعداد القديم يستخدم للتنظيف فقط، ولا تُكتب ملفات جديدة فيه. إذا لم تضبطه، يفحص الموقع الافتراضي السابق logs/pdf-text تحت مجلد العامل. أوقف النسخة القديمة قبل تشغيل الجديدة؛ وإذا نقلت مجلد النشر فحدد مسار الأرشيف السابق الكامل. لا تُحذف ملفات اللغات أو الملفات غير المطابقة. يلزم أن يملك حساب العامل صلاحية حذف هذه الملفات؛ يمكن لمسؤول الجهاز تنظيف البقية إذا منعته الصلاحيات.
+إذا استُخدم الإصدار الذي يحفظ الأرشيف، اترك قيمة `Pdf:TextArchivePath` القديمة مؤقتًا عند التحديث. تنظيف PDF يزيل فقط الملفات التي أنشأها ذلك المسار: أسماء SHA256 متبوعة بـ.pdf أو .original.txt أو .readable.txt أو .json وملفاتها المؤقتة المعروفة. الإعداد القديم يستخدم للتنظيف فقط، ولا تُكتب ملفات جديدة فيه. إذا لم تضبطه، يفحص الموقع الافتراضي السابق logs/pdf-text تحت مجلد العامل. أوقف النسخة القديمة قبل تشغيل الجديدة؛ وإذا نقلت مجلد النشر فحدد مسار الأرشيف السابق الكامل. لا تُحذف ملفات اللغات أو الملفات غير المطابقة. يلزم أن يملك حساب العامل صلاحية حذف هذه الملفات؛ يمكن لمسؤول الجهاز تنظيف البقية إذا منعته الصلاحيات.
 
 لا يتضمن التنظيف ملف PDF تختبره يدويًا من جهازك، ولا عينات الاختبار الصناعية الموزعة مع التطبيق، ولا أدوات التنفيذ ونماذج اللغات. المطلوب حذفه هو ملفات الإعلانات التي أنشأتها المعالجة ونسخ الأرشيف القديمة التابعة لها.
+
+## إزالة إعدادات PDF القديمة إن استُخدمت
+
+إعدادات .NET تحتفظ بالأولوية المعتادة: متغيرات البيئة/وسائط التشغيل قد تتجاوز JSON. إذا سبق أن شغّلت السكربت القديم بنجاح، أزل متغيرات PDF القديمة فقط من الجلسة أو أغلق تلك الجلسة وافتح جلسة نظيفة:
+
+```powershell
+Get-ChildItem Env: |
+    Where-Object { $_.Name -like 'Pdf__*' } |
+    ForEach-Object { Remove-Item -LiteralPath ('Env:' + $_.Name) }
+```
+
+إذا استخدمت سابقًا خيار ServiceName في السكربت القديم، افتح PowerShell كمسؤول وأزل إدخالات PDF فقط من Environment الخاص بالخدمة، مع إبقاء SQL وAI والمتصفح:
+
+```powershell
+$serviceKey = 'HKLM:\SYSTEM\CurrentControlSet\Services\HiringPsCollector'
+$settings = Get-ItemProperty -LiteralPath $serviceKey -ErrorAction Stop
+$existing = @($settings.Environment)
+$kept = @($existing | Where-Object { $_ -and (($_ -split '=', 2)[0] -notlike 'Pdf__*') })
+if ($settings.PSObject.Properties.Name -contains 'Environment')
+{
+    Set-ItemProperty -LiteralPath $serviceKey -Name Environment -Value ([string[]]$kept)
+}
+```
+
+بعدها أعد تشغيل الخدمة. احتفظ بمسار الأرشيف القديم عند الحاجة للتنظيف داخل `Pdf:TextArchivePath` في JSON. إذا لم تستخدم السكربت القديم بنجاح فلا يلزم تنفيذ تنظيف متغيرات الخدمة.
 
 ## Linux والفحوص
 
@@ -105,7 +135,7 @@ sudo apt-get install poppler-utils tesseract-ocr tesseract-ocr-ara tesseract-ocr
 tesseract --list-langs
 ```
 
-يجب ظهور ara وeng. فحوص التنفيذ:
+يجب ظهور ara وeng. عدّل Pdf في JSON إلى أسماء الأدوات المثبتة أو مسارات Linux الفعلية ومجلد العمل المناسب؛ مسارات Windows المرفقة لا تعمل على Linux. فحوص التنفيذ:
 
 ```powershell
 dotnet build HiringPs.sln -c Release

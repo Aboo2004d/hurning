@@ -1,89 +1,55 @@
-# Configure installed tools for this console, optionally persist PDF settings for an existing service.
-param(
-    [Parameter(Mandatory)][string]$PopplerDirectory,
-    [Parameter(Mandatory)][string]$TesseractDirectory,
-    [Parameter(Mandatory)][string]$OcrDataDirectory,
-    [string]$WorkDirectory = (Join-Path ([IO.Path]::GetTempPath()) "HiringPs-PdfWork"),
-    [string]$WorkerDirectory,
-    [string]$ServiceName
-)
+# فحص إعدادات PDF الموجودة في appsettings.json دون حفظ إعدادات جلسة أو Registry.
+param([string]$WorkerDirectory)
 $ErrorActionPreference = 'Stop'
-if ($ServiceName -and -not $PSBoundParameters.ContainsKey('WorkDirectory'))
-{
-    throw 'Specify -WorkDirectory accessible to the service account; do not persist the administrator profile temp path.'
-}
-$poppler = (Resolve-Path -LiteralPath $PopplerDirectory).Path
-$tesseract = (Resolve-Path -LiteralPath $TesseractDirectory).Path
-$data = (Resolve-Path -LiteralPath $OcrDataDirectory).Path
-$work = [IO.Path]::GetFullPath($WorkDirectory)
-$segments = $work -split '[\\/]'
-if ($segments -contains 'wwwroot')
-{
-    throw 'Use a private temporary work directory outside wwwroot.'
-}
-$values = [ordered]@{
-    Pdf__TextExecutable = Join-Path $poppler 'pdftotext.exe'
-    Pdf__RenderExecutable = Join-Path $poppler 'pdftoppm.exe'
-    Pdf__OcrExecutable = Join-Path $tesseract 'tesseract.exe'
-    Pdf__OcrDataPath = $data
-    Pdf__WorkDirectory = $work
-    Pdf__EnableOcr = 'true'
-    Pdf__RequireOcrReview = 'true'
-}
-foreach ($tool in @('Pdf__TextExecutable', 'Pdf__RenderExecutable', 'Pdf__OcrExecutable'))
-{
-    if (-not (Test-Path -LiteralPath $values[$tool] -PathType Leaf))
-    {
-        throw "Missing executable: $tool. Specify the directory containing the executable and its DLLs."
-    }
-}
-foreach ($language in @('ara', 'eng'))
-{
-    if (-not (Test-Path -LiteralPath (Join-Path $data "$language.traineddata") -PathType Leaf))
-    {
-        throw "Missing traineddata: $language. See Docs/PDF-TEXT.md."
-    }
-}
-foreach ($entry in $values.GetEnumerator())
-{
-    [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process')
-}
+
 if ($WorkerDirectory)
 {
-    $worker = Join-Path (Resolve-Path -LiteralPath $WorkerDirectory).Path 'HiringPs.Worker.exe'
-    & $worker --pdf-check
+    $workerRoot = (Resolve-Path -LiteralPath $WorkerDirectory).Path
+    $settingsFile = Join-Path $workerRoot 'appsettings.json'
 }
 else
 {
     $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-    & dotnet run --project (Join-Path $root 'src/HiringPs.Worker') -c Release -- --pdf-check
+    $project = Join-Path $root 'src/HiringPs.Worker'
+    $settingsFile = Join-Path $project 'appsettings.json'
 }
+
+if (-not (Test-Path -LiteralPath $settingsFile -PathType Leaf))
+{
+    throw "Missing settings file: $settingsFile"
+}
+
+# .NET configuration keeps its standard precedence; warn about overrides from an older setup.
+if (Get-ChildItem Env: | Where-Object { $_.Name -like 'Pdf__*' })
+{
+    Write-Warning 'Existing Pdf__ environment variables override appsettings.json. Remove old PDF overrides before relying on file settings; see Docs/PDF-TEXT.md.'
+}
+
+Write-Output "PDF settings file: $settingsFile"
+if ($WorkerDirectory)
+{
+    $workerExe = Join-Path $workerRoot 'HiringPs.Worker.exe'
+    $workerDll = Join-Path $workerRoot 'HiringPs.Worker.dll'
+    if (Test-Path -LiteralPath $workerExe -PathType Leaf)
+    {
+        & $workerExe --pdf-check
+    }
+    elseif (Test-Path -LiteralPath $workerDll -PathType Leaf)
+    {
+        & dotnet $workerDll --pdf-check
+    }
+    else
+    {
+        throw 'Worker executable or DLL was not found in WorkerDirectory.'
+    }
+}
+else
+{
+    & dotnet run --project $project -c Release -- --pdf-check
+}
+
 if ($LASTEXITCODE -ne 0)
 {
-    throw 'PDF setup probe failed. Service settings were not updated.'
+    throw 'PDF check failed. Correct the Pdf section in the worker appsettings.json and verify installed tools, language data and file permissions.'
 }
-if ($ServiceName)
-{
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
-    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
-    {
-        throw 'Persist service settings from an elevated PowerShell console.'
-    }
-    $service = Get-Service -Name $ServiceName -ErrorAction Stop
-    $serviceKey = "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName"
-    $existing = @((Get-ItemProperty -LiteralPath $serviceKey -Name Environment -ErrorAction SilentlyContinue).Environment)
-    # Keep SQL, AI, browser and all unrelated service settings; never print their values.
-    $preserved = @($existing | Where-Object { $_ -and (($_ -split '=', 2)[0] -notin $values.Keys) })
-    $pdfValues = @($values.GetEnumerator() | ForEach-Object { $_.Key + '=' + $_.Value })
-    $property = @{
-        LiteralPath = $serviceKey
-        Name = 'Environment'
-        PropertyType = 'MultiString'
-        Value = @($preserved + $pdfValues)
-        Force = $true
-    }
-    New-ItemProperty @property | Out-Null
-    Write-Output 'PDF service settings saved. Grant temporary-directory/tool permissions to the service account, then restart the service explicitly.'
-}
-Write-Output 'PDF configuration and tool probe passed for this console account. Start local processes from this console. Service-account temporary-file permissions must be configured separately; see Docs/PDF-TEXT.md.'
+Write-Output 'PDF checks passed. Configuration stays in appsettings.json; restart the worker after editing its settings. No environment variables or service registry settings were written.'
