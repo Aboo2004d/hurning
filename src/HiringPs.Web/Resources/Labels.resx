@@ -1403,4 +1403,40 @@
     <data name="PdfFilesDeleted" xml:space="preserve">
         <value>ملفات PDF وصور الصفحات تُحذف بعد المعالجة. يبقى النص المستخرج وأرقام الصفحات في السجل؛ للمقارنة البصرية افتح الأصل لدى المصدر.</value>
     </data>
+    <data name="ToolsModelName" xml:space="preserve">
+        <value>اسم النموذج</value>
+    </data>
+    <data name="ToolsBrowserVersion" xml:space="preserve">
+        <value>إصدار المتصفح</value>
+    </data>
+    <data name="ToolsToolVersion" xml:space="preserve">
+        <value>إصدار الأداة</value>
+    </data>
+    <data name="ToolsOcrLanguages" xml:space="preserve">
+        <value>لغات OCR</value>
+    </data>
+    <data name="ToolsHttpStatus" xml:space="preserve">
+        <value>رمز استجابة HTTP</value>
+    </data>
+    <data name="ToolsCheckDetails" xml:space="preserve">
+        <value>تفاصيل الفحص</value>
+    </data>
+    <data name="ToolsCheckedAtUtc" xml:space="preserve">
+        <value>وقت الفحص (UTC)</value>
+    </data>
+    <data name="ToolsCheckDuration" xml:space="preserve">
+        <value>مدة الفحص</value>
+    </data>
+    <data name="ToolsMilliseconds" xml:space="preserve">
+        <value>مللي ثانية</value>
+    </data>
+    <data name="ToolsErrorType" xml:space="preserve">
+        <value>نوع الخطأ</value>
+    </data>
+    <data name="ToolsHeartbeatUtc" xml:space="preserve">
+        <value>آخر نبضة (UTC)</value>
+    </data>
+    <data name="ToolsLastLoopUtc" xml:space="preserve">
+        <value>بداية آخر دورة (UTC)</value>
+    </data>
 </root>

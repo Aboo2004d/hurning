@@ -1403,4 +1403,40 @@
     <data name="PdfFilesDeleted" xml:space="preserve">
         <value>PDF files and page images are deleted after processing. Extracted text and page references remain in the record; open the original source for visual comparison.</value>
     </data>
+    <data name="ToolsModelName" xml:space="preserve">
+        <value>Model name</value>
+    </data>
+    <data name="ToolsBrowserVersion" xml:space="preserve">
+        <value>Browser version</value>
+    </data>
+    <data name="ToolsToolVersion" xml:space="preserve">
+        <value>Tool version</value>
+    </data>
+    <data name="ToolsOcrLanguages" xml:space="preserve">
+        <value>OCR languages</value>
+    </data>
+    <data name="ToolsHttpStatus" xml:space="preserve">
+        <value>HTTP response status</value>
+    </data>
+    <data name="ToolsCheckDetails" xml:space="preserve">
+        <value>Check details</value>
+    </data>
+    <data name="ToolsCheckedAtUtc" xml:space="preserve">
+        <value>Checked at (UTC)</value>
+    </data>
+    <data name="ToolsCheckDuration" xml:space="preserve">
+        <value>Check duration</value>
+    </data>
+    <data name="ToolsMilliseconds" xml:space="preserve">
+        <value>milliseconds</value>
+    </data>
+    <data name="ToolsErrorType" xml:space="preserve">
+        <value>Error type</value>
+    </data>
+    <data name="ToolsHeartbeatUtc" xml:space="preserve">
+        <value>Last heartbeat (UTC)</value>
+    </data>
+    <data name="ToolsLastLoopUtc" xml:space="preserve">
+        <value>Last loop started (UTC)</value>
+    </data>
 </root>

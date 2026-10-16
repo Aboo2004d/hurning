@@ -1263,6 +1263,41 @@ footer {
     overflow-wrap: anywhere;
 }
 
+/* فتح نص البرومبت لا يضغط أعمدة التاريخ والملاحظة. */
+.prompt-history th,
+.prompt-history td {
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+.prompt-history pre {
+    max-width: 100%;
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+@media (min-width: 641px) {
+    .prompt-history {
+        table-layout: fixed;
+    }
+    .prompt-history-id {
+        width: 52px;
+    }
+    .prompt-history-date {
+        width: 190px;
+    }
+    .prompt-history-note {
+        width: 25%;
+    }
+    .prompt-history-timestamp {
+        white-space: nowrap;
+    }
+}
+@media (max-width: 640px) {
+    .prompt-history colgroup {
+        display: none;
+    }
+}
+
 /* قائمة الإدارة: روابط أساسية ومجموعات صغيرة بدل تكديس جميع الصفحات. */
 .site-header .admin-header-nav {
     gap: 6px;

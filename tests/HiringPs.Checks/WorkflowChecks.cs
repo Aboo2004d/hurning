@@ -2,8 +2,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using HiringPs.Core;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 public static class WorkflowChecks
 {
@@ -19,7 +19,9 @@ public static class WorkflowChecks
         }
         using var modelDb = new HiringDb(
             new DbContextOptionsBuilder<HiringDb>()
-                .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ModelCheck;Trusted_Connection=True")
+                .UseSqlServer(
+                    "Server=(localdb)\\MSSQLLocalDB;Database=ModelCheck;Trusted_Connection=True"
+                )
                 .Options
         );
         Check(
@@ -89,6 +91,62 @@ public static class WorkflowChecks
         CheckedDates Dates(string content, ExtractedOpportunity value) =>
             DateEvidenceRules.Check(value, content);
         var date = new DateOnly(2026, 8, 16);
+        const string registrationClosing = "نهاية التسجيل تكون نهاية يوم الاثنين 2026/10/19.";
+        var registrationDate = new DateOnly(2026, 10, 19);
+        var registrationCheck = Dates(
+            registrationClosing,
+            new() { Deadline = registrationDate, DeadlineEvidence = registrationClosing }
+        );
+        Check(
+            registrationCheck.Errors.Count == 0 && registrationCheck.Dates.Count == 1,
+            "registration closing quotation with weekday and year-first slash date is verified"
+        );
+        foreach (
+            var label in new[]
+            {
+                "انتهاء التسجيل",
+                "إغلاق التسجيل",
+                "نهاية التقديم",
+                "نهاية استقبال الطلبات",
+            }
+        )
+        {
+            var quote = label + ": 2026/10/19";
+            Check(
+                Dates(
+                    quote,
+                    new() { Deadline = registrationDate, DeadlineEvidence = quote }
+                ).Errors.Count == 0,
+                "explicit application closing wording is recognized: " + label
+            );
+        }
+        Check(
+            Dates(
+                registrationClosing,
+                new()
+                {
+                    Deadline = registrationDate.AddDays(1),
+                    DeadlineEvidence = registrationClosing,
+                }
+            ).Errors.Count > 0,
+            "recognized registration ending still rejects a different extracted date"
+        );
+        Check(
+            Dates(
+                "نص آخر لا يحتوي الاقتباس",
+                new() { Deadline = registrationDate, DeadlineEvidence = registrationClosing }
+            ).Errors.Count > 0,
+            "registration deadline still requires the quotation in the original source"
+        );
+        foreach (var quote in new[] { "نهاية التدريب 2026/10/19", "بداية التسجيل 2026/10/19" })
+            Check(
+                Dates(
+                    quote,
+                    new() { Deadline = registrationDate, DeadlineEvidence = quote }
+                ).Errors.Count > 0,
+                "training ending or registration opening cannot become an application deadline"
+            );
+
         Check(
             OpportunityService.DateEvidenceMatches("لتقديم16/08/2026", date),
             "numeric date adjacent to Arabic is recognized"
