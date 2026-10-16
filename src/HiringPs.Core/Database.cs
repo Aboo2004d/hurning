@@ -48,6 +48,8 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
             .HasForeignKey(x => x.RequestId)
             .OnDelete(DeleteBehavior.Restrict);
         b.Entity<ToolWorkerState>().HasIndex(x => x.At);
+        // A checkpoint is keyed by its existing source, not a generated identity.
+        b.Entity<DiscoveryCheckpoint>().Property(x => x.SourceId).ValueGeneratedNever();
         b.Entity<PromptVersion>().HasData(PromptDefaults.Initial());
         b.Entity<WorkflowSettings>().Property(x => x.Id).ValueGeneratedNever();
         b.Entity<WorkflowSettings>()

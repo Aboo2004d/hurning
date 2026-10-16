@@ -128,9 +128,21 @@ public sealed class ToolProbes(IConfiguration configuration)
             [argument],
             ct
         );
+        return ParseVersion(tool, output);
+    }
+
+    public static ToolProbe ParseVersion(string tool, string output)
+    {
+        var executable = tool switch
+        {
+            "PdfText" => "pdftotext",
+            "PdfRender" => "pdftoppm",
+            "PdfOcr" => "tesseract",
+            _ => throw new ArgumentException("Unknown version diagnostic tool.", nameof(tool)),
+        };
         var version = Regex.Match(
             output,
-            @"(?im)^\s*(?:pdftotext|pdftoppm|tesseract)\s+(?:version\s+)?(?<v>\d[\w.\-]{0,60})"
+            @"(?im)^\s*" + executable + @"\s+(?:version\s+)?v?(?<v>\d[\w.\-]{0,60})(?=\s|$)"
         );
         return version.Success
             ? new(tool, ToolState.Ready, "ToolReady", version.Groups["v"].Value)

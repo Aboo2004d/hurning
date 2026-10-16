@@ -13,6 +13,29 @@ internal static class ToolChecks
             count++;
             Console.WriteLine("PASS " + label);
         }
+        foreach (
+            var output in new[]
+            {
+                "tesseract v5.5.3.20260724\r\n leptonica-1.87.0",
+                "tesseract 5.3.0\n leptonica-1.82.0",
+            }
+        )
+        {
+            var parsed = ToolProbes.ParseVersion("PdfOcr", output);
+            Check(
+                parsed.State == ToolState.Ready && parsed.Detail.StartsWith("5."),
+                "Tesseract Windows and Linux version formats are recognized"
+            );
+        }
+        Check(
+            ToolProbes.ParseVersion("PdfOcr", "leptonica 1.87.0").State == ToolState.Problem,
+            "a dependency version cannot be mistaken for Tesseract"
+        );
+        Check(
+            ToolProbes.ParseVersion("PdfOcr", "pdftotext version 26.09.0").State
+                == ToolState.Problem,
+            "another executable cannot satisfy the OCR version check"
+        );
         var now = DateTimeOffset.UtcNow;
         var worker = new ToolWorkerState { Id = "current", At = now };
         var result = new ToolCheckResult

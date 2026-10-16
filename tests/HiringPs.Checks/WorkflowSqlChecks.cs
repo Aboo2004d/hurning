@@ -3,6 +3,8 @@ using System.Text;
 using HiringPs.Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,7 +37,42 @@ public static class WorkflowSqlChecks
         }
         try
         {
+            var migrator = db.GetService<IMigrator>();
+            await migrator.MigrateAsync("20261016103948_ToolMonitoring");
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                SET IDENTITY_INSERT [DiscoveryCheckpoints] ON;
+                INSERT INTO [DiscoveryCheckpoints]
+                    ([SourceId], [ConfigurationHash], [NextUrl], [CompletedPages],
+                     [ReplayClicks], [Completed], [Found], [VisitedUrlsJson], [UpdatedAt])
+                VALUES (123, N'preserve', N'https://example.com/page-two', 1,
+                        2, 0, 7, N'["https://example.com/page-one"]', '2026-10-16T00:00:00+00:00');
+                SET IDENTITY_INSERT [DiscoveryCheckpoints] OFF;
+                """
+            );
             await db.Database.MigrateAsync();
+            var preserved = await db.DiscoveryCheckpoints.AsNoTracking().SingleAsync();
+            Check(
+                preserved.SourceId == 123
+                    && preserved.CompletedPages == 1
+                    && preserved.ReplayClicks == 2
+                    && preserved.Found == 7
+                    && preserved.ConfigurationHash == "preserve"
+                    && preserved.NextUrl == "https://example.com/page-two"
+                    && preserved.VisitedUrlsJson == "[\"https://example.com/page-one\"]"
+                    && !preserved.Completed
+                    && preserved.UpdatedAt
+                        == new DateTimeOffset(2026, 10, 16, 0, 0, 0, TimeSpan.Zero),
+                "identity repair preserves existing checkpoint progress"
+            );
+            db.DiscoveryCheckpoints.Add(new() { SourceId = 456 });
+            await db.SaveChangesAsync();
+            Check(
+                await db.DiscoveryCheckpoints.AnyAsync(x => x.SourceId == 456),
+                "checkpoint accepts the actual source ID without IDENTITY_INSERT"
+            );
+            await db.DiscoveryCheckpoints.ExecuteDeleteAsync();
+            db.ChangeTracker.Clear();
             var initial = await db.PromptVersions.SingleAsync(x => x.Id == 1);
             Check(
                 initial.LegacySnapshot == PromptDefaults.Legacy.ReplaceLineEndings("\n")

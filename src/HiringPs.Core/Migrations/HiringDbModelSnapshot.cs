@@ -166,10 +166,7 @@ namespace HiringPs.Core.Migrations
             modelBuilder.Entity("HiringPs.Core.DiscoveryCheckpoint", b =>
                 {
                     b.Property<int>("SourceId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SourceId"));
 
                     b.Property<bool>("Completed")
                         .HasColumnType("bit");
