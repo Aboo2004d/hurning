@@ -1433,3 +1433,8 @@ footer {
     background: var(--soft);
     border-radius: 9px;
 }
+
+.source-setup [data-setup-status][data-state="manual"] {
+    background: #fff4e1;
+    color: #815800;
+}

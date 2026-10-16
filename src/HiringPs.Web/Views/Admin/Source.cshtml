@@ -15,7 +15,7 @@
         <p class="muted">@T["SourceSetupCost"]</p>
     </form>
     <p role="status" aria-live="polite" data-setup-status
-       data-loading="@T["SourceSetupLoading"]" data-ready="@T["SourceSetupReady"]"
+       data-manual="@T["SourceSetupManual"]" data-loading="@T["SourceSetupLoading"]" data-ready="@T["SourceSetupReady"]"
        data-applied="@T["SourceSetupApplied"]" data-failed="@T["SourceSetupFailed"]"></p>
     <div hidden data-setup-result>
         <p data-setup-explanation></p>
@@ -24,17 +24,19 @@
             <dt>@T["Connector"]</dt><dd data-setup-connector></dd>
             <dt>@T["SourceSetupNext"]</dt><dd><bdi data-setup-next></bdi></dd>
         </dl>
+        <div data-setup-verified>
         <h3>@T["SourceSetupSamples"]</h3>
         <ul class="source-setup-links" data-setup-links></ul>
         <details>
             <summary>@T["SourceSetupSampleText"]</summary>
             <pre dir="auto" data-setup-text></pre>
         </details>
+        </div>
         <details>
             <summary>@T["Config"]</summary>
             <pre dir="ltr" data-setup-config></pre>
         </details>
-        <p class="muted">@T["SourceSetupLimit"]</p>
+        <p class="muted" data-setup-limit>@T["SourceSetupLimit"]</p>
         <button class="button-outline" type="button" data-setup-apply>@T["SourceSetupApply"]</button>
     </div>
     <div hidden data-setup-errors>

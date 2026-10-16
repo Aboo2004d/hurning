@@ -52,7 +52,11 @@
             panel.querySelector("[data-setup-text]").textContent = data.preview.sampleText;
             panel.querySelector("[data-setup-config]").textContent = JSON.stringify(JSON.parse(data.configurationJson), null, 4);
             result.hidden = false;
-            status.textContent = status.dataset.ready;
+            const verified = data.verified !== false;
+            panel.querySelector("[data-setup-verified]").hidden = !verified;
+            panel.querySelector("[data-setup-limit]").hidden = !verified;
+            status.dataset.state = verified ? "ready" : "manual";
+            status.textContent = verified ? status.dataset.ready : status.dataset.manual;
         } catch (error) {
             status.textContent = error instanceof SyntaxError ? status.dataset.failed : (error.message || status.dataset.failed);
         } finally {
@@ -70,7 +74,7 @@
         connector.value = String(proposal.connector);
         connector.dispatchEvent(new Event("change", { bubbles: true }));
         editor.querySelector('[name="ConfigurationJson"]').value = JSON.stringify(JSON.parse(proposal.configurationJson), null, 4);
-        status.textContent = status.dataset.applied;
+        status.textContent = status.dataset.applied + (proposal.verified === false ? " " + status.dataset.manual : "");
         editor.scrollIntoView({ behavior: "smooth", block: "start" });
         name.focus({ preventScroll: true });
     });

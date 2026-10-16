@@ -1520,4 +1520,7 @@
     <data name="SourceSetupFailed" xml:space="preserve">
         <value>The source could not be read or tested. Check website availability and Chromium for the web account, or try a direct listing URL.</value>
     </data>
+    <data name="SourceSetupManual" xml:space="preserve">
+        <value>Untested proposal: the URL was not observed or uses another host. The system did not open it. Review the URL and settings; you can apply them and explicitly approve and save the source.</value>
+    </data>
 </root>

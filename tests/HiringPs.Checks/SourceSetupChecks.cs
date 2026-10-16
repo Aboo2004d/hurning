@@ -151,26 +151,31 @@ public static class SourceSetupChecks
             "untrusted page data never replaces assistant system instructions"
         );
 
-        using var inventedHttp = new HttpClient(
-            new FixtureAi(Proposal("https://example.ps/made-up"))
-        );
-        try
+        foreach (
+            var proposedUrl in new[] { "https://example.ps/made-up", "https://other.ps/careers" }
+        )
         {
-            await new SourceSetupAssistant(inventedHttp, browser, configuration).SuggestAsync(
-                homeUrl,
-                "ar",
-                default
-            );
-            throw new Exception("Invented URL was accepted");
-        }
-        catch (InvalidOperationException ex)
-        {
+            using var manualHttp = new HttpClient(new FixtureAi(Proposal(proposedUrl)));
+            var before = browser.Inspections.Count;
+            var manual = await new SourceSetupAssistant(
+                manualHttp,
+                browser,
+                configuration
+            ).SuggestAsync(homeUrl, "ar", default);
             Check(
-                ex.Message == "SourceSetupUnseenUrl",
-                "invented AI URL is rejected before preview"
+                !manual.Verified && manual.Url == proposedUrl && manual.Preview.Links.Length == 0,
+                "unobserved or cross-host proposal remains available for explicit manual approval"
+            );
+            Check(
+                browser.Inspections.Count == before + 1 && browser.Previews == 1,
+                "manual proposal is neither fetched nor reported as tested"
+            );
+            var conf = JsonSerializer.Deserialize<SourceConfiguration>(manual.ConfigurationJson)!;
+            Check(
+                conf.AllowedHosts.SequenceEqual(new[] { new Uri(proposedUrl).IdnHost }),
+                "manual configuration targets the proposed source host without expanding the original crawl"
             );
         }
-        Check(browser.Previews == 1, "invalid AI output never reaches preview or persistence");
         using var singleHttp = new HttpClient(new FixtureAi(Proposal(listingUrl)));
         var single = await new SourceSetupAssistant(
             singleHttp,

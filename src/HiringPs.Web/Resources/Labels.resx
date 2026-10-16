@@ -1520,4 +1520,7 @@
     <data name="SourceSetupFailed" xml:space="preserve">
         <value>تعذر فتح المصدر أو اختبار الإعدادات. تحقق من إتاحة الموقع وChromium لحساب الويب، أو جرّب صفحة إعلانات مباشرة.</value>
     </data>
+    <data name="SourceSetupManual" xml:space="preserve">
+        <value>اقتراح غير مختبر: الرابط لم يظهر ضمن الروابط المرصودة أو يختلف نطاقه. لم يفتحه النظام. راجع الرابط والإعدادات؛ يمكنك تطبيقها ثم اعتماد المصدر وحفظه بنفسك.</value>
+    </data>
 </root>

@@ -27,7 +27,10 @@ public partial class AdminController
                 CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
                 budget.Token
             );
-            Audit("Source.SetupPreview", new Uri(result.Url).IdnHost);
+            Audit(
+                result.Verified ? "Source.SetupPreview" : "Source.SetupProposed",
+                new Uri(result.Url).IdnHost
+            );
             await db.SaveChangesAsync(budget.Token);
             return Json(result);
         }

@@ -34,7 +34,8 @@ public sealed record SourceSetupResult(
     int Connector,
     string ConfigurationJson,
     string Explanation,
-    SourceSetupPreview Preview
+    SourceSetupPreview Preview,
+    bool Verified = true
 );
 
 public static class SourceSetupRules
@@ -77,21 +78,29 @@ public static class SourceSetupRules
         return uri;
     }
 
-    public static Source Candidate(SourceSetupSuggestion suggestion, SourceSetupSnapshot observed)
+    public static bool IsObserved(string url, SourceSetupSnapshot observed)
     {
-        if (!suggestion.Supported)
-            throw new InvalidOperationException("SourceSetupUnsupported");
+        var listing = Website(url);
         var origin = Website(observed.Url);
-        var listing = Website(suggestion.ListingUrl);
-        if (
-            listing.IdnHost != origin.IdnHost
-            || !(
+        return listing.IdnHost == origin.IdnHost
+            && (
                 listing == origin
                 || observed.Links.Any(x =>
                     Uri.TryCreate(x.Url, UriKind.Absolute, out var uri) && uri == listing
                 )
-            )
-        )
+            );
+    }
+
+    public static Source Candidate(
+        SourceSetupSuggestion suggestion,
+        SourceSetupSnapshot observed,
+        bool allowManualProposal = false
+    )
+    {
+        if (!suggestion.Supported)
+            throw new InvalidOperationException("SourceSetupUnsupported");
+        var listing = Website(suggestion.ListingUrl);
+        if (!allowManualProposal && !IsObserved(suggestion.ListingUrl, observed))
             throw new InvalidOperationException("SourceSetupUnseenUrl");
         var connector = suggestion.Connector switch
         {
@@ -126,7 +135,7 @@ public static class SourceSetupRules
             ConfigurationJson = JsonSerializer.Serialize(
                 new SourceConfiguration
                 {
-                    AllowedHosts = [origin.IdnHost],
+                    AllowedHosts = [listing.IdnHost],
                     ListingLinkSelector = suggestion.ListingLinkSelector,
                     ContentSelector = string.IsNullOrWhiteSpace(suggestion.ContentSelector)
                         ? "body"
