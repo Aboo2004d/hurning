@@ -973,8 +973,10 @@ footer {
 
 /* Shared header dropdown for public pages and administration. */
 .site-header {
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 30;
+    box-shadow: 0 4px 16px #18332b0a;
 }
 .site-header .brand {
     flex-shrink: 0;
