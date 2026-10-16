@@ -1232,6 +1232,33 @@ footer {
 .tools-actions form {
     margin: 0;
 }
+.ai-usage-filter {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 22px 0;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+}
+.ai-usage-filter label {
+    flex: 0 1 150px;
+    min-width: 110px;
+    margin: 0;
+}
+.ai-usage-filter input {
+    height: 44px;
+    text-align: center;
+}
+.ai-usage-filter button {
+    min-height: 44px;
+    padding: 8px 20px;
+    white-space: nowrap;
+}
 .tool-detail {
     overflow-wrap: anywhere;
 }
