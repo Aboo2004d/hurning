@@ -54,7 +54,9 @@ public sealed class PdfTextReader(IConfiguration configuration)
     }
 
     private List<string> DataArguments() =>
-        configuration["Pdf:OcrDataPath"] is { Length: > 0 } path ? ["--tessdata-dir", path] : [];
+        configuration["Pdf:OcrDataPath"] is { Length: > 0 } path
+            ? ["--tessdata-dir", PdfToolPaths.Directory(path)]
+            : [];
 
     public async Task<PdfTextResult> ReadAsync(byte[] bytes, CancellationToken ct)
     {

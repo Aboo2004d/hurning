@@ -161,7 +161,7 @@ public sealed class ToolProbes(IConfiguration configuration)
             return new("PdfLanguages", ToolState.Disabled, "OcrDisabled");
         var args = new List<string>();
         if (configuration["Pdf:OcrDataPath"] is { Length: > 0 } path)
-            args.AddRange(["--tessdata-dir", path]);
+            args.AddRange(["--tessdata-dir", PdfToolPaths.Directory(path)]);
         args.Add("--list-langs");
         var output = await new PdfTools(configuration).RunAsync(
             "OcrExecutable",

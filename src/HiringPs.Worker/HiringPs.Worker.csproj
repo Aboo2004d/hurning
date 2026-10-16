@@ -12,4 +12,12 @@
     <ItemGroup>
         <ProjectReference Include="..\HiringPs.Core\HiringPs.Core.csproj" />
     </ItemGroup>
+    <ItemGroup>
+        <!-- Keep the complete native distributions, including DLLs and licenses. -->
+        <None Remove="Tools/**/*;tessdata/**/*" />
+        <Content Remove="Tools/**/*;tessdata/**/*" />
+        <Content Include="Tools/**/*;tessdata/**/*"
+                 CopyToOutputDirectory="PreserveNewest"
+                 CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>

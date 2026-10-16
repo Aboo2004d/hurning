@@ -36,6 +36,25 @@ internal static class ToolChecks
                 == ToolState.Problem,
             "another executable cannot satisfy the OCR version check"
         );
+        Check(
+            PdfToolPaths.Executable("Tools/poppler/pdftotext.exe")
+                == Path.Combine(AppContext.BaseDirectory, "Tools", "poppler", "pdftotext.exe"),
+            "bundled executable resolves beside the application, independently of current directory"
+        );
+        Check(
+            PdfToolPaths.Directory("tessdata")
+                == Path.Combine(AppContext.BaseDirectory, "tessdata"),
+            "relative OCR models resolve beside the application"
+        );
+        Check(
+            PdfToolPaths.Executable("pdftotext") == "pdftotext",
+            "bare executable names preserve PATH lookup"
+        );
+        var absoluteTool = Path.Combine(Path.GetTempPath(), "custom-tools", "pdftotext");
+        Check(
+            PdfToolPaths.Executable(absoluteTool) == absoluteTool,
+            "absolute tool paths remain supported"
+        );
         var now = DateTimeOffset.UtcNow;
         var worker = new ToolWorkerState { Id = "current", At = now };
         var result = new ToolCheckResult
