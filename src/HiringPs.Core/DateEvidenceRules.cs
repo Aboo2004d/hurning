@@ -13,6 +13,10 @@ public static class DateEvidenceRules
     private const string Roles =
         @"(?<Publication>تاريخ\s+النشر|نشر\s+بتاريخ|publication\s+date|date\s+posted|posted\s+on|published(?:\s+on)?)|(?<Modification>اخر\s+تحديث|تاريخ\s+(?:التعديل|التحديث)|تم\s+(?:التحديث|التعديل)|last\s+(?:updated|modified)|updated\s+on|modified\s+on)|(?<BookletPurchase>شراء\s+(?:كراس[ةه]|وثائق)|(?:كراس[ةه]|وثائق)\s+العطاء|booklet\s+purchase|purchase\s+(?:the\s+)?(?:documents|tender))|(?<SiteVisit>زيار[ةه]\s+(?:الموقع|ميداني[ةه])|site\s+visit)|(?<BidOpening>فتح\s+(?:المظاريف|العروض)|فض\s+العروض|bid\s+opening|opening\s+of\s+(?:bids|tenders))|(?<Deadline>(?:نهاي[ةه]|انتهاء|اغلاق|اقفال)\s+(?:التسجيل|التقديم|استقبال\s+الطلبات)|اخر\s+موعد|الموعد\s+النهائي|موعد\s+(?:الاغلاق|انتهاء|اقفال|التقديم|تقديم\s+العروض)|موعد.{0,30}لتقديم|deadline|closing\s+date|close[sd]?\s+on|apply\s+(?:by|before)|submit.{0,25}(?:by|before)|تمديد\s+موعد|extended\s+(?:to|until))";
 
+    // These are conflicting events, not an allowlist of closing expressions.
+    private const string NonClosingEvents =
+        @"(?<NonClosing>نهاي[ةه]\s+(?:التدريب|الدور[ةه]|المشروع|العقد)|بداي[ةه]\s+(?:التسجيل|التقديم|التدريب)|(?:training|course|project|contract)\s+(?:end|ends|ending)|(?:registration|applications?)\s+(?:open|opens|opening))";
+
     public static CheckedDates Check(ExtractedOpportunity opportunity, string source)
     {
         var entries = new List<ExtractedDate>();
@@ -135,9 +139,23 @@ public static class DateEvidenceRules
                 continue;
             var preceding = quote[..date.Index];
             var role = Regex
-                .Matches(preceding, Roles, RegexOptions.IgnoreCase)
+                .Matches(
+                    preceding,
+                    entry.Kind == OpportunityDateKind.Deadline
+                        ? Roles + "|" + NonClosingEvents
+                        : Roles,
+                    RegexOptions.IgnoreCase
+                )
                 .Cast<Match>()
                 .LastOrDefault();
+            // The model classifies closing meaning semantically. Source quotation
+            // and exact date still have to match; reject explicit conflicting events.
+            if (entry.Kind == OpportunityDateKind.Deadline)
+            {
+                if (role is null || role.Groups[nameof(OpportunityDateKind.Deadline)].Success)
+                    return true;
+                continue;
+            }
             if (entry.Kind == OpportunityDateKind.Other)
             {
                 if (

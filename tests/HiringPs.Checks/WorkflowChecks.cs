@@ -40,6 +40,7 @@ public static class WorkflowChecks
                 == "BB53571E5A8B143C2AEF99C016604110E6C655FC2E480C9B3E9A66F28090F169",
             "initial prompt keeps its complete historical snapshot"
         );
+        prompt.DateContract = PromptDatePolicy.CurrentDateContract;
         prompt.FinalText = ""; // Editing a copy creates a new snapshot, never mutates a saved version.
         prompt.SummaryLimit = 150;
         prompt.AllowedKinds = "Job,Training";
@@ -90,7 +91,34 @@ public static class WorkflowChecks
 
         CheckedDates Dates(string content, ExtractedOpportunity value) =>
             DateEvidenceRules.Check(value, content);
+        Check(
+            new PromptVersion().DateContract.Contains("SEMANTIC DEADLINE POLICY v1"),
+            "new prompt versions include semantic closing-date instructions"
+        );
+        Check(
+            !PromptDefaults.Initial().DateContract.Contains("SEMANTIC DEADLINE POLICY v1"),
+            "historical migration prompt remains unchanged"
+        );
         var date = new DateOnly(2026, 8, 16);
+        foreach (
+            var quote in new[]
+            {
+                "لن تقبل طلبات الالتحاق بعد يوم 2026/10/19.",
+                "تستمر فرصة إرسال طلبك حتى 19 أكتوبر 2026.",
+                "Applications will no longer be accepted after October 19, 2026.",
+                "La réception des candidatures prend fin le 2026/10/19.",
+            }
+        )
+        {
+            var checkedDate = Dates(
+                quote,
+                new() { Deadline = new(2026, 10, 19), DeadlineEvidence = quote }
+            );
+            Check(
+                checkedDate.Errors.Count == 0 && checkedDate.Dates.Count == 1,
+                "semantic closing classification is not restricted to known keywords: " + quote
+            );
+        }
         const string registrationClosing = "نهاية التسجيل تكون نهاية يوم الاثنين 2026/10/19.";
         var registrationDate = new DateOnly(2026, 10, 19);
         var registrationCheck = Dates(
@@ -383,7 +411,8 @@ public static class WorkflowChecks
         );
         Check(
             handler.Instructions.Contains("at most 150 characters")
-                && handler.Instructions.Contains("DATE CONTRACT"),
+                && handler.Instructions.Contains("DATE CONTRACT")
+                && handler.Instructions.Contains("SEMANTIC DEADLINE POLICY v1"),
             "HTTP payload uses the rendered version and typed date instructions"
         );
         Console.WriteLine(
