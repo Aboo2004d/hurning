@@ -73,6 +73,17 @@ public static class WorkflowSqlChecks
             );
             await db.DiscoveryCheckpoints.ExecuteDeleteAsync();
             db.ChangeTracker.Clear();
+            var upgradedSettings = await db.WorkflowSettings.AsNoTracking().SingleAsync();
+            var upgradedPrompt = await db
+                .PromptVersions.AsNoTracking()
+                .SingleAsync(x => x.Id == upgradedSettings.PendingPromptVersionId);
+            Check(
+                upgradedSettings.ActivePromptVersionId == 1
+                    && upgradedPrompt.Id != 1
+                    && upgradedPrompt.DateContract.Contains(PromptDatePolicy.SemanticDeadline)
+                    && upgradedPrompt.FinalText.Contains(PromptDatePolicy.SemanticDeadline),
+                "semantic deadline migration creates a pending version without replacing the active snapshot"
+            );
             var initial = await db.PromptVersions.SingleAsync(x => x.Id == 1);
             Check(
                 initial.LegacySnapshot == PromptDefaults.Legacy.ReplaceLineEndings("\n")

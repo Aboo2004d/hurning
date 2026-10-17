@@ -2,8 +2,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using HiringPs.Core;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 public static class WorkflowChecks
 {
@@ -19,7 +19,9 @@ public static class WorkflowChecks
         }
         using var modelDb = new HiringDb(
             new DbContextOptionsBuilder<HiringDb>()
-                .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ModelCheck;Trusted_Connection=True")
+                .UseSqlServer(
+                    "Server=(localdb)\\MSSQLLocalDB;Database=ModelCheck;Trusted_Connection=True"
+                )
                 .Options
         );
         Check(
@@ -38,6 +40,7 @@ public static class WorkflowChecks
                 == "BB53571E5A8B143C2AEF99C016604110E6C655FC2E480C9B3E9A66F28090F169",
             "initial prompt keeps its complete historical snapshot"
         );
+        prompt.DateContract = PromptDatePolicy.CurrentDateContract;
         prompt.FinalText = ""; // Editing a copy creates a new snapshot, never mutates a saved version.
         prompt.SummaryLimit = 150;
         prompt.AllowedKinds = "Job,Training";
@@ -88,7 +91,90 @@ public static class WorkflowChecks
 
         CheckedDates Dates(string content, ExtractedOpportunity value) =>
             DateEvidenceRules.Check(value, content);
+        Check(
+            new PromptVersion().DateContract.Contains("SEMANTIC DEADLINE POLICY v1"),
+            "new prompt versions include semantic closing-date instructions"
+        );
+        Check(
+            !PromptDefaults.Initial().DateContract.Contains("SEMANTIC DEADLINE POLICY v1"),
+            "historical migration prompt remains unchanged"
+        );
         var date = new DateOnly(2026, 8, 16);
+        foreach (
+            var quote in new[]
+            {
+                "لن تقبل طلبات الالتحاق بعد يوم 2026/10/19.",
+                "تستمر فرصة إرسال طلبك حتى 19 أكتوبر 2026.",
+                "Applications will no longer be accepted after October 19, 2026.",
+                "La réception des candidatures prend fin le 2026/10/19.",
+            }
+        )
+        {
+            var checkedDate = Dates(
+                quote,
+                new() { Deadline = new(2026, 10, 19), DeadlineEvidence = quote }
+            );
+            Check(
+                checkedDate.Errors.Count == 0 && checkedDate.Dates.Count == 1,
+                "semantic closing classification is not restricted to known keywords: " + quote
+            );
+        }
+        const string registrationClosing = "نهاية التسجيل تكون نهاية يوم الاثنين 2026/10/19.";
+        var registrationDate = new DateOnly(2026, 10, 19);
+        var registrationCheck = Dates(
+            registrationClosing,
+            new() { Deadline = registrationDate, DeadlineEvidence = registrationClosing }
+        );
+        Check(
+            registrationCheck.Errors.Count == 0 && registrationCheck.Dates.Count == 1,
+            "registration closing quotation with weekday and year-first slash date is verified"
+        );
+        foreach (
+            var label in new[]
+            {
+                "انتهاء التسجيل",
+                "إغلاق التسجيل",
+                "نهاية التقديم",
+                "نهاية استقبال الطلبات",
+            }
+        )
+        {
+            var quote = label + ": 2026/10/19";
+            Check(
+                Dates(
+                    quote,
+                    new() { Deadline = registrationDate, DeadlineEvidence = quote }
+                ).Errors.Count == 0,
+                "explicit application closing wording is recognized: " + label
+            );
+        }
+        Check(
+            Dates(
+                registrationClosing,
+                new()
+                {
+                    Deadline = registrationDate.AddDays(1),
+                    DeadlineEvidence = registrationClosing,
+                }
+            ).Errors.Count > 0,
+            "recognized registration ending still rejects a different extracted date"
+        );
+        Check(
+            Dates(
+                "نص آخر لا يحتوي الاقتباس",
+                new() { Deadline = registrationDate, DeadlineEvidence = registrationClosing }
+            ).Errors.Count > 0,
+            "registration deadline still requires the quotation in the original source"
+        );
+        foreach (var quote in new[] { "نهاية التدريب 2026/10/19", "بداية التسجيل 2026/10/19" })
+            Check(
+                Dates(
+                    quote,
+                    new() { Deadline = registrationDate, DeadlineEvidence = quote }
+                ).Errors.Count > 0,
+                "training ending or registration opening cannot become an application deadline"
+            );
+
         Check(
             OpportunityService.DateEvidenceMatches("لتقديم16/08/2026", date),
             "numeric date adjacent to Arabic is recognized"
@@ -325,7 +411,8 @@ public static class WorkflowChecks
         );
         Check(
             handler.Instructions.Contains("at most 150 characters")
-                && handler.Instructions.Contains("DATE CONTRACT"),
+                && handler.Instructions.Contains("DATE CONTRACT")
+                && handler.Instructions.Contains("SEMANTIC DEADLINE POLICY v1"),
             "HTTP payload uses the rendered version and typed date instructions"
         );
         Console.WriteLine(

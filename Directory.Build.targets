@@ -1,0 +1,13 @@
+<Project>
+    <!-- The existing project-root browser cache travels with Web and Worker.
+         Keep its revision folders intact so Playwright selects its matching build. -->
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'HiringPs.Web' Or '$(MSBuildProjectName)' == 'HiringPs.Worker'">
+        <Content Include="$(MSBuildThisFileDirectory).playwright-browsers/**/*"
+                 Exclude="$(MSBuildThisFileDirectory).playwright-browsers/.links/**/*">
+            <Link>.playwright-browsers/%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <Visible>false</Visible>
+        </Content>
+    </ItemGroup>
+</Project>

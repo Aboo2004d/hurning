@@ -46,17 +46,16 @@ C:\Apps\HiringPs\Keys
 5. ابدأ الموقع، وتحقق من تطبيق المهاجرات والبيانات الأولية ونجاح /Admin قبل تشغيل العامل.
 
 ## 4. تثبيت متصفح العامل
-على VPS، من Worker:
+اضبط `Browser:BrowsersPath` في appsettings.json أولًا. القيمة النسبية `.playwright-browsers` تُحسب من مجلد تشغيل التطبيق. إذا أردت مجلدًا مشتركًا بين Web وWorker، اكتب المسار الكامل نفسه في ملفيهما. على VPS، من Worker:
 ```powershell
-$env:PLAYWRIGHT_BROWSERS_PATH="C:\Apps\HiringPs\Browsers"
 .\HiringPs.Worker.exe --install-browser
 ```
-التحميل قد يتطلب مئات MB. هذا ينشئ Chromium ومتطلباته، وليس تثبيت Chrome مرئي يدويًا. امنح حساب العامل صلاحية قراءة/تنفيذ ملفات المتصفح وكتابة المجلدات اللازمة فقط.
+إذا كانت حزمة النشر تتضمن المتصفح الموافق لنظام VPS وإصدار Playwright فلا يلزم تنزيله مرة أخرى. التحميل قد يتطلب مئات MB. هذا ينشئ Chromium ومتطلباته، وليس تثبيت Chrome مرئي يدويًا. امنح حساب العامل صلاحية قراءة/تنفيذ ملفات المتصفح وكتابة المجلدات اللازمة فقط.
 
 ## 5. تثبيت العامل وتشغيله تلقائيًا
 انسخ سكربت install-worker.ps1 إلى مكان إداري وشغله من PowerShell مرتفع الصلاحيات على VPS:
 ```powershell
-.\install-worker.ps1 -WorkerDirectory "C:\Apps\HiringPs\Worker" -BrowserDirectory "C:\Apps\HiringPs\Browsers" -ServiceAccount ".\HiringCollector"
+.\install-worker.ps1 -WorkerDirectory "C:\Apps\HiringPs\Worker" -ServiceAccount ".\HiringCollector"
 ```
 
 الحساب المخصص ينشئه مسؤول السيرفر؛ لا نشغّل Chromium تحت LocalSystem. السكربت يطلب اعتماد الحساب واتصال SQL والمفتاح بشكل آمن، ويقيد قراءة إعدادات الخدمة، ويضبط Automatic وRecovery. لا يبدأ الخدمة قبل اكتمال الإعداد.
@@ -87,7 +86,7 @@ Get-Service HiringPsCollector
 
 ## تحديث قراءة PDF وOCR — 16 أكتوبر 2026
 
-قبل تشغيل جمع ملفات PDF، ثبّت Poppler وTesseract واللغتين على VPS، واضبط مسارات الأدوات لخدمة العامل ومجلد عمل مؤقت بصلاحيات إنشاء وحذف لحساب العامل. لا تُضمّن الأدوات تلقائيًا في publish. تعليمات Windows المحلي وVPS والسكربت وأوامر الفحص والصلاحيات في [PDF-TEXT.md](PDF-TEXT.md). النص الذي يستخدم OCR يحتاج مراجعة بصرية افتراضيًا قبل النشر. لا يلزم مفتاح OCR مدفوع أو مهاجرة جديدة لهذه الإضافة.
+قبل تشغيل جمع ملفات PDF، ثبّت Poppler وTesseract واللغتين على VPS، واضبط مسارات الأدوات لخدمة العامل ومجلد عمل مؤقت بصلاحيات إنشاء وحذف لحساب العامل. إذا وضعت توزيعات الأدوات واللغات داخل مجلدي Tools وtessdata في مشروع العامل، تُنسخ تلقائيًا عند build وpublish، وتعمل المسارات النسبية من مجلد التشغيل. تعليمات Windows المحلي وVPS والسكربت وأوامر الفحص والصلاحيات في [PDF-TEXT.md](PDF-TEXT.md). النص الذي يستخدم OCR يحتاج مراجعة بصرية افتراضيًا قبل النشر. لا يلزم مفتاح OCR مدفوع أو مهاجرة جديدة لهذه الإضافة.
 
 
 ## تحديث صفحة الأدوات

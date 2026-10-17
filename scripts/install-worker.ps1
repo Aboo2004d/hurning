@@ -2,7 +2,6 @@
 param(
     [Parameter(Mandatory)][string]$WorkerDirectory,
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ServiceAccount,
-    [string]$BrowserDirectory,
     [string]$ServiceName = 'HiringPsCollector'
 )
 $ErrorActionPreference = 'Stop'
@@ -20,14 +19,6 @@ if ($ServiceAccount -in @('LocalSystem', 'NT AUTHORITY\SYSTEM'))
 {
     throw 'Use a dedicated limited service account, not LocalSystem.'
 }
-if ($BrowserDirectory)
-{
-    $browserRoot = (Resolve-Path -LiteralPath $BrowserDirectory).Path
-}
-else
-{
-    throw 'Specify a Chromium directory accessible to the service account.'
-}
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 {
@@ -44,7 +35,7 @@ try
 {
     New-Service -Name $ServiceName -DisplayName 'Hiring.ps Collector' -BinaryPathName ('"' + $workerExe + '"') -Credential $credential -StartupType Automatic -Description 'Hiring.ps opportunity collection and processing, independent of IIS.' | Out-Null
     $serviceKey = "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName"
-    $serviceEnv = @('DOTNET_ENVIRONMENT=Production', ('Service__Name=' + $ServiceName), 'Logging__LogLevel__Microsoft.EntityFrameworkCore=Warning', ('ConnectionStrings__Hiring=' + (Get-PlainText $connection)), ('Ai__ApiKey=' + (Get-PlainText $modelKey)), ('PLAYWRIGHT_BROWSERS_PATH=' + $browserRoot))
+    $serviceEnv = @('DOTNET_ENVIRONMENT=Production', ('Service__Name=' + $ServiceName), 'Logging__LogLevel__Microsoft.EntityFrameworkCore=Warning', ('ConnectionStrings__Hiring=' + (Get-PlainText $connection)), ('Ai__ApiKey=' + (Get-PlainText $modelKey)))
     $acl = Get-Acl -LiteralPath $serviceKey
     $acl.SetAccessRuleProtection($true, $false)
     foreach ($rule in @($acl.Access))

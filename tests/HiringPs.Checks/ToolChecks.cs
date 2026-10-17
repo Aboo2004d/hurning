@@ -36,6 +36,66 @@ internal static class ToolChecks
                 == ToolState.Problem,
             "another executable cannot satisfy the OCR version check"
         );
+        Check(
+            PdfToolPaths.Executable("Tools/poppler/pdftotext.exe")
+                == Path.Combine(AppContext.BaseDirectory, "Tools", "poppler", "pdftotext.exe"),
+            "bundled executable resolves beside the application, independently of current directory"
+        );
+        Check(
+            PdfToolPaths.Directory("tessdata")
+                == Path.Combine(AppContext.BaseDirectory, "tessdata"),
+            "relative OCR models resolve beside the application"
+        );
+        Check(
+            PdfToolPaths.Executable("pdftotext") == "pdftotext",
+            "bare executable names preserve PATH lookup"
+        );
+        var absoluteTool = Path.Combine(Path.GetTempPath(), "custom-tools", "pdftotext");
+        Check(
+            PdfToolPaths.Executable(absoluteTool) == absoluteTool,
+            "absolute tool paths remain supported"
+        );
+        var browserConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["Browser:BrowsersPath"] = ".playwright-browsers",
+                    ["Browser:ExecutablePath"] = "Tools/chromium/chrome.exe",
+                }
+            )
+            .Build();
+        Check(
+            BrowserSettings.BrowsersPath(browserConfig)
+                == Path.Combine(AppContext.BaseDirectory, ".playwright-browsers"),
+            "Chromium cache resolves from JSON beside the application"
+        );
+        Check(
+            BrowserSettings.ExecutablePath(browserConfig)
+                == Path.Combine(AppContext.BaseDirectory, "Tools", "chromium", "chrome.exe"),
+            "custom Chromium executable also supports relative JSON paths"
+        );
+        var oldBrowserEnvironment = Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH");
+        try
+        {
+            Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", "old-script-location");
+            BrowserSettings.Configure(browserConfig);
+            using var configuredDriver = await BrowserSettings.CreateAsync(browserConfig);
+            Check(
+                configuredDriver.Chromium.ExecutablePath.StartsWith(
+                    BrowserSettings.BrowsersPath(browserConfig)! + Path.DirectorySeparatorChar
+                ),
+                "Playwright driver reads its Chromium location from the JSON-backed configuration"
+            );
+            Check(
+                Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH")
+                    == BrowserSettings.BrowsersPath(browserConfig),
+                "JSON browser location takes precedence over the old startup script setting"
+            );
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", oldBrowserEnvironment);
+        }
         var now = DateTimeOffset.UtcNow;
         var worker = new ToolWorkerState { Id = "current", At = now };
         var result = new ToolCheckResult
@@ -65,11 +125,45 @@ internal static class ToolChecks
             !ToolMonitoringRules.ResultFresh(result, new() { Id = "restarted", At = now }, now),
             "old worker instance result cannot show green after restart"
         );
-        result.CheckedAt = now.AddHours(-3);
+        result.CheckedAt = now.AddHours(-27);
         Check(
             !ToolMonitoringRules.ResultFresh(result, worker, now),
             "old check expires despite a live heartbeat"
         );
+        result.CheckedAt = now.AddHours(-23);
+        Check(
+            ToolMonitoringRules.ResultFresh(result, worker, now),
+            "daily standard result stays usable until the next daily check"
+        );
+        result.Tool = "AiLive";
+        result.CheckedAt = now.AddHours(-3);
+        Check(
+            !ToolMonitoringRules.ResultFresh(result, worker, now),
+            "paid AI connectivity result keeps its shorter freshness window"
+        );
+        foreach (
+            var instant in new[]
+            {
+                new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 10, 23, 12, 0, 0, TimeSpan.Zero),
+            }
+        )
+        {
+            var due = ToolCheckSchedule.NextMidnight(instant);
+            var localDue = TimeZoneInfo.ConvertTime(due, SourceSchedule.Zone);
+            Check(
+                due > instant
+                    && localDue.TimeOfDay == TimeSpan.Zero
+                    && SourceSchedule.LocalDate(due)
+                        == SourceSchedule.LocalDate(instant).AddDays(1),
+                "daily check follows Palestine midnight in winter, summer and transition season"
+            );
+            Check(
+                ToolCheckSchedule.NextMidnight(due) > due,
+                "a handled midnight schedules the following day instead of repeating"
+            );
+        }
         var runtime = new ToolWorkerRuntime();
         runtime.Begin();
         Check(

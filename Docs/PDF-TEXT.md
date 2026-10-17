@@ -9,7 +9,7 @@
 `ara.traineddata` و`eng.traineddata` هما نموذجا التعرف على العربية والإنجليزية في Tesseract. ينزّلان مرة واحدة ويُستخدمان في كل عملية OCR. ليسا إعلانات ولا ملفات PDF نزلها المجمّع، ولا يُحذفان بعد المعالجة.
 
 ```powershell
-$ocrData = 'C:\HiringPsData\Tessdata'
+$ocrData = Join-Path (Get-Location) 'src\HiringPs.Worker\tessdata'
 New-Item -ItemType Directory -Path $ocrData -Force | Out-Null
 
 Invoke-WebRequest `
@@ -28,15 +28,15 @@ Invoke-WebRequest `
 1. ثبّت [توزيعة Poppler لـWindows](https://github.com/oschwartz10612/poppler-windows/releases) مع `pdftotext.exe` و`pdftoppm.exe` وكل DLLs التابعة لها. هذا توزيع Windows مجتمعي؛ [مشروع Poppler](https://poppler.freedesktop.org/) هو المرجع الأصلي.
 2. ثبّت Tesseract 5.x x64 من مصدر موثوق مثل روابط Windows في [دليل التثبيت](https://tesseract-ocr.github.io/tessdoc/Installation.html).
 3. نزّل بيانات اللغتين بالأوامر أعلاه. SHA256 لملف العربية 4.1.0 المختبر هو `e3206d3dc87fd50c24a0fb9f01838615911d25168f4e64415244b67d2bb3e729`.
-4. افتح `src/HiringPs.Worker/appsettings.json` وعدّل قسم `Pdf` بمسارات تثبيتك الفعلية. المسارات المرفقة أمثلة Windows؛ إذا فككت Poppler داخل مجلد بإصدار مختلف فعدّل المسار وفقه.
+4. ضع توزيعة Poppler كاملة في `src/HiringPs.Worker/Tools/poppler-26.09.0` وتوزيعة Tesseract كاملة في `src/HiringPs.Worker/Tools/Tesseract-OCR`، وملفي اللغات في `src/HiringPs.Worker/tessdata`. احتفظ بملفات DLL والتراخيص. قسم `Pdf` التالي يستخدم نفس ترتيب مجلداتك؛ غيّر اسم مجلد الإصدار فقط إن اختلف.
 
 ```json
 "Pdf": {
-    "TextExecutable": "C:\\Tools\\Poppler\\Library\\bin\\pdftotext.exe",
-    "RenderExecutable": "C:\\Tools\\Poppler\\Library\\bin\\pdftoppm.exe",
-    "OcrExecutable": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
-    "OcrDataPath": "C:\\HiringPsData\\Tessdata",
-    "WorkDirectory": "C:\\HiringPsData\\PdfWork",
+    "TextExecutable": "Tools/poppler-26.09.0/Library/bin/pdftotext.exe",
+    "RenderExecutable": "Tools/poppler-26.09.0/Library/bin/pdftoppm.exe",
+    "OcrExecutable": "Tools/Tesseract-OCR/tesseract.exe",
+    "OcrDataPath": "tessdata",
+    "WorkDirectory": "data/pdf-work",
     "EnableOcr": true,
     "RequireOcrReview": true,
     "ProcessTimeoutSeconds": 45
@@ -62,9 +62,9 @@ dotnet run --project src/HiringPs.Worker -c Release -- --pdf-read 'C:\Samples\te
 
 ## الاستضافة على Windows VPS
 
-ثبّت الأدوات وبيانات اللغات على جهاز العامل نفسه؛ publish لا يتضمن Poppler أو Tesseract أو traineddata. يحتاج حساب خدمة العامل قراءة/تنفيذ الأدوات وDLLs وقراءة Tessdata، وصلاحية إنشاء **وحذف** الملفات في مجلد العمل. لا يلزم مجلد PDF مشترك مع IIS ولا صلاحيات قراءة أرشيف لحساب الموقع.
+عند وضع الأدوات واللغات بالمجلدات السابقة، ينسخها build وpublish تلقائيًا إلى مجلد العامل مع الحفاظ على ترتيبها. ارفع مخرجات Worker كاملة إلى Windows VPS بنفس المعمارية المناسبة للأدوات؛ لا يلزم تثبيت منفصل إذا كانت التوزيعات مكتملة واعتمادياتها متاحة. لا يقوم publish بتنزيل الأدوات أو نماذج اللغات نيابةً عنك. يحتاج حساب خدمة العامل قراءة/تنفيذ الأدوات وDLLs وقراءة Tessdata، وصلاحية إنشاء **وحذف** الملفات في مجلد العمل. لا يلزم مجلد PDF مشترك مع IIS ولا صلاحيات قراءة أرشيف لحساب الموقع.
 
-بعد تحديث Web وWorker معًا وتطبيق المهاجرة من الموقع، افتح `appsettings.json` الموجود **داخل مجلد Worker المنشور**، وعدّل قسم `Pdf` بمسارات أدوات VPS ومجلد عمل يستطيع حساب الخدمة إنشاء الملفات وحذفها فيه. إعدادات PDF تخص العامل؛ لا يلزم تكرارها في ملف Web. يمكن استخدام `appsettings.Production.json` للتخصيص المعتاد، مع الحفاظ على الإعدادات عند نشر تحديث جديد.
+بعد تحديث Web وWorker معًا وتطبيق المهاجرة من الموقع، افتح `appsettings.json` الموجود **داخل مجلد Worker المنشور**، واحتفظ بقسم `Pdf` ذي المسارات النسبية؛ لا يلزم تغيير حرف القرص أو مسار النشر. تأكد أن حساب الخدمة يستطيع إنشاء الملفات وحذفها في مجلد العمل. إعدادات PDF تخص العامل؛ لا يلزم تكرارها في ملف Web. يمكن استخدام `appsettings.Production.json` للتخصيص المعتاد، مع الحفاظ على الإعدادات عند نشر تحديث جديد.
 
 ```powershell
 .\configure-pdf.ps1 -WorkerDirectory 'C:\Apps\HiringPs\Worker'
@@ -148,3 +148,9 @@ dotnet run --project tests/HiringPs.Checks -c Release -- --workflow-check
 
 
 نتيجة التحقق من سياسة الحذف: نجح بناء Release و43 فحص PDF فعليًا، إضافة إلى 29 فحص أدوات و39 فحص معالجة سابقًا (111 فحصًا إجمالًا). شملت الفحوص حذف ملفات النجاح والفشل والإلغاء، وحماية العمل النشط وبيانات اللغات والملفات غير التابعة للنظام. فُحصت صياغة سكربت PowerShell؛ تشغيل Windows وحساب الخدمة وواجهة SQL يحتاج بيئتك.
+
+### أساس المسارات النسبية وحزمة النشر
+
+جميع مسارات أدوات PDF التي تتضمن مجلدًا، ومسار `OcrDataPath`، ومسار العمل النسبي تُحسب من `AppContext.BaseDirectory`، أي مجلد ملفات تشغيل العامل. لا تعتمد على مجلد PowerShell أو مجلد Windows Service. الأسماء المفردة مثل `pdftotext` تبقى مدعومة للبحث في PATH، والمسارات الكاملة تبقى مدعومة. إعدادات Windows المرفقة لا تشغّل أدوات Windows على Linux.
+
+في التطوير تُنسخ `Tools` و`tessdata` إلى `bin/Release/net10.0` أو مخرجات Debug. وعند `dotnet publish` تُنسخان إلى مجلد النشر. `data/pdf-work` مجلد عمل مؤقت ينشأ أثناء التشغيل، ولا يضاف إلى الحزمة أو المستودع. بعد نقل الحزمة نفّذ `--pdf-check` ثم فحص الأدوات من لوحة الإدارة بحساب العامل. تضمين Chromium مستقل عن هذه الإضافة.
