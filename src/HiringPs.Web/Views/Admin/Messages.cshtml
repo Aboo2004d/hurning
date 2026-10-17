@@ -67,14 +67,4 @@ else
         </table>
     </div>
 }
-<nav class="pagination" aria-label="@T["Pagination"]">
-    @if (Model.Page > 1)
-    {
-        <a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page-1)">@T["Previous"]</a>
-    }
-    <span>@Model.Page / @Model.Pages</span>
-    @if (Model.Page < Model.Pages)
-    {
-        <a asp-action="Messages" asp-route-status="@Model.Status" asp-route-page="@(Model.Page+1)">@T["Next"]</a>
-    }
-</nav>
+<partial name="_AdminPagination" model="Model.Pager" />

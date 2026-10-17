@@ -1,6 +1,7 @@
 // إجراءات لوحة الإدارة: مراجعة الفرص وإدارة المصادر والرسائل ومحتوى الصفحات.
 using System.Text.Json;
 using HiringPs.Core;
+using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,9 @@ public class AdminDashboard
     public int Reports { get; set; }
     public WorkerHeartbeat? Heartbeat { get; set; }
     public List<ScrapeRun> Runs { get; set; } = [];
+    public AdminPager RunsPager { get; set; } = new();
     public List<SourceItem> Items { get; set; } = [];
+    public AdminPager ItemsPager { get; set; } = new();
 }
 
 [Authorize(Roles = "Admin")]
@@ -107,7 +110,11 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
     }
 
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> Diagnostic(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Diagnostic(
+        Guid id,
+        int page = 1,
+        CancellationToken ct = default
+    )
     {
         var audit = await db
             .Audit.AsNoTracking()
@@ -124,7 +131,19 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
                 await System.IO.File.ReadAllTextAsync(file, ct),
                 CollectorDiagnosticFiles.Json
             );
-            return report is null || report.Id != id ? NotFound() : View(report);
+            if (report is null || report.Id != id)
+                return NotFound();
+            page = AdminPager.Normalize(page, report.Network.Count);
+            ViewData["NetworkPager"] = new AdminPager
+            {
+                Page = page,
+                TotalRecords = report.Network.Count,
+            };
+            report.Network = report
+                .Network.Skip((page - 1) * AdminPager.PageSize)
+                .Take(AdminPager.PageSize)
+                .ToList();
+            return View(report);
         }
 
         using var metadata = JsonDocument.Parse(audit.Detail);
@@ -166,8 +185,23 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
         return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
     }
 
-    public async Task<IActionResult> Index(CancellationToken ct) =>
-        View(
+    public async Task<IActionResult> Index(
+        int runsPage = 1,
+        int itemsPage = 1,
+        CancellationToken ct = default
+    )
+    {
+        var runs = await db
+            .Runs.AsNoTracking()
+            .OrderByDescending(x => x.Id)
+            .PageAsync(runsPage, ct, "runsPage", "#runs");
+        var items = await db
+            .SourceItems.AsNoTracking()
+            .Include(x => x.Source)
+            .Where(x => x.Status != ProcessingStatus.Published)
+            .OrderByDescending(x => x.Id)
+            .PageAsync(itemsPage, ct, "itemsPage", "#queue");
+        return View(
             new AdminDashboard
             {
                 Published = await db.Opportunities.CountAsync(
@@ -190,22 +224,19 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
                     .Heartbeats.AsNoTracking()
                     .OrderBy(x => x.Id)
                     .FirstOrDefaultAsync(ct),
-                Runs = await db
-                    .Runs.AsNoTracking()
-                    .OrderByDescending(x => x.Id)
-                    .Take(20)
-                    .ToListAsync(ct),
-                Items = await db
-                    .SourceItems.AsNoTracking()
-                    .Include(x => x.Source)
-                    .Where(x => x.Status != ProcessingStatus.Published)
-                    .OrderByDescending(x => x.Id)
-                    .Take(50)
-                    .ToListAsync(ct),
+                Runs = runs.Items,
+                RunsPager = runs.Pager,
+                Items = items.Items,
+                ItemsPager = items.Pager,
             }
         );
+    }
 
-    public async Task<IActionResult> Opportunities(PublicationStatus? status, CancellationToken ct)
+    public async Task<IActionResult> Opportunities(
+        PublicationStatus? status,
+        int page = 1,
+        CancellationToken ct = default
+    )
     {
         ViewBag.Status = status;
         return View(
@@ -213,8 +244,7 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
                 .Opportunities.AsNoTracking()
                 .Where(x => status == null || x.Status == status)
                 .OrderByDescending(x => x.Id)
-                .Take(100)
-                .ToListAsync(ct)
+                .PageAsync(page, ct)
         );
     }
 
@@ -429,19 +459,19 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
             _ => query,
         };
         var count = await query.CountAsync(ct);
-        page = Math.Clamp(page, 1, Math.Max(1, (count + 19) / 20));
+        page = AdminPager.Normalize(page, count);
         return View(
             new HiringPs.Web.Models.ContactInbox
             {
                 Items = await query
                     .OrderByDescending(x => x.CreatedAt)
                     .ThenByDescending(x => x.Id)
-                    .Skip((page - 1) * 20)
-                    .Take(20)
+                    .Skip((page - 1) * AdminPager.PageSize)
+                    .Take(AdminPager.PageSize)
                     .ToListAsync(ct),
                 Status = status,
                 Count = count,
-                Page = page,
+                Pager = new() { Page = page, TotalRecords = count },
                 UnreadCount = await db.ContactMessages.CountAsync(
                     x => !x.IsRead && !x.IsHandled,
                     ct
@@ -486,18 +516,19 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
         return RedirectToAction(nameof(Message), new { id });
     }
 
-    public async Task<IActionResult> Sources(CancellationToken ct)
+    public async Task<IActionResult> Sources(int page = 1, CancellationToken ct = default)
     {
+        var sources = await db
+            .Sources.AsNoTracking()
+            .Include(x => x.CollectionRequests)
+            .OrderBy(x => x.Id)
+            .PageAsync(page, ct);
+        var ids = sources.Items.Select(x => x.Id).ToArray();
         ViewBag.DiscoveryProgress = await db
             .DiscoveryCheckpoints.AsNoTracking()
+            .Where(x => ids.Contains(x.SourceId))
             .ToDictionaryAsync(x => x.SourceId, ct);
-        return View(
-            await db
-                .Sources.AsNoTracking()
-                .Include(x => x.CollectionRequests)
-                .OrderBy(x => x.Id)
-                .ToListAsync(ct)
-        );
+        return View(sources);
     }
 
     public async Task<IActionResult> Source(int? id, CancellationToken ct)
@@ -524,6 +555,12 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
                 : await db.Sources.AsNoTracking().FirstOrDefaultAsync(x => x.Id == input.Id, ct);
         if (input.Id > 0 && previous is null)
             return NotFound();
+        var duplicateSource = await ExistingSourceAsync(input.Url, input.Id, ct);
+        if (duplicateSource is not null)
+        {
+            ViewData["DuplicateSourceName"] = duplicateSource.Name;
+            return View(input);
+        }
         if (!Enum.IsDefined(input.Connector))
             ModelState.AddModelError("", "Invalid connector.");
         if (input.IntervalHours is < 1 or > 168)
@@ -613,7 +650,8 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
             || (!entity.Enabled && input.Enabled)
             || input.Id == 0;
         var reconfigured =
-            entity.Url != input.Url || entity.ConfigurationJson != input.ConfigurationJson;
+            entity.Url != input.Url || entity.ConfigurationJson != input.ConfigurationJson
+            || entity.Connector != input.Connector;
         entity.Name = input.Name;
         entity.Url = input.Url;
         entity.Connector = input.Connector;
@@ -729,15 +767,14 @@ public partial class AdminController(HiringDb db, UrlPolicy urlPolicy, IConfigur
         return RedirectToAction(nameof(Item), new { id });
     }
 
-    public async Task<IActionResult> Reports(CancellationToken ct) =>
+    public async Task<IActionResult> Reports(int page = 1, CancellationToken ct = default) =>
         View(
             await db
                 .Reports.AsNoTracking()
                 .Include(x => x.Opportunity)
                 .OrderBy(x => x.Resolved)
                 .ThenByDescending(x => x.Id)
-                .Take(100)
-                .ToListAsync(ct)
+                .PageAsync(page, ct)
         );
 
     [HttpPost]

@@ -1125,7 +1125,7 @@
         <value>الأدوات</value>
     </data>
     <data name="ToolsIntro" xml:space="preserve">
-        <value>حالة الأدوات من بيئة العامل الفعلية. وقت الفحص بتوقيت UTC. النتائج القديمة لا تعني أن الأداة تعمل الآن.</value>
+        <value>حالة الأدوات من بيئة العامل الفعلية. الفحص بطلبك أو يوميًا عند منتصف الليل بتوقيت فلسطين. وقت النتائج بتوقيت UTC؛ النتيجة تصف حالة الأداة وقت الفحص.</value>
     </data>
     <data name="ToolsCheckNow" xml:space="preserve">
         <value>فحص الأدوات الآن</value>
@@ -1365,7 +1365,7 @@
         <value>يُشغّل فقط من زر الاختبار الفعلي. نجاح الاتصال لا يقيس جودة الاستخراج أو النشر.</value>
     </data>
     <data name="ToolHelp_Chromium" xml:space="preserve">
-        <value>تحقق من PLAYWRIGHT_BROWSERS_PATH وBrowser:Channel. ثبّت المتصفح للعامل باستخدام --install-browser.</value>
+        <value>راجع Browser:BrowsersPath أو Browser:ExecutablePath في appsettings.json. ثبّت Chromium الموافق لإصدار Playwright باستخدام --install-browser وامنح حساب التطبيق صلاحية تشغيله.</value>
     </data>
     <data name="ToolHelp_PdfText" xml:space="preserve">
         <value>تحقق من Pdf:TextExecutable وتوزيعة Poppler وملفات DLL التابعة لها.</value>
@@ -1403,4 +1403,147 @@
     <data name="PdfFilesDeleted" xml:space="preserve">
         <value>ملفات PDF وصور الصفحات تُحذف بعد المعالجة. يبقى النص المستخرج وأرقام الصفحات في السجل؛ للمقارنة البصرية افتح الأصل لدى المصدر.</value>
     </data>
+    <data name="ToolsModelName" xml:space="preserve">
+        <value>اسم النموذج</value>
+    </data>
+    <data name="ToolsBrowserVersion" xml:space="preserve">
+        <value>إصدار المتصفح</value>
+    </data>
+    <data name="ToolsToolVersion" xml:space="preserve">
+        <value>إصدار الأداة</value>
+    </data>
+    <data name="ToolsOcrLanguages" xml:space="preserve">
+        <value>لغات OCR</value>
+    </data>
+    <data name="ToolsHttpStatus" xml:space="preserve">
+        <value>رمز استجابة HTTP</value>
+    </data>
+    <data name="ToolsCheckDetails" xml:space="preserve">
+        <value>تفاصيل الفحص</value>
+    </data>
+    <data name="ToolsCheckedAtUtc" xml:space="preserve">
+        <value>وقت الفحص (UTC)</value>
+    </data>
+    <data name="ToolsCheckDuration" xml:space="preserve">
+        <value>مدة الفحص</value>
+    </data>
+    <data name="ToolsMilliseconds" xml:space="preserve">
+        <value>مللي ثانية</value>
+    </data>
+    <data name="ToolsErrorType" xml:space="preserve">
+        <value>نوع الخطأ</value>
+    </data>
+    <data name="ToolsHeartbeatUtc" xml:space="preserve">
+        <value>آخر نبضة (UTC)</value>
+    </data>
+    <data name="ToolsLastLoopUtc" xml:space="preserve">
+        <value>بداية آخر دورة (UTC)</value>
+    </data>
+    <data name="SourceSetupTitle" xml:space="preserve">
+        <value>مساعد إعداد المصدر</value>
+    </data>
+    <data name="SourceSetupIntro" xml:space="preserve">
+        <value>ضع رابط الموقع ليقترح النموذج صفحة الإعلانات وإعدادات جمعها. يعرض النظام عينة اختبار قبل تطبيق الاقتراح على الحقول أدناه.</value>
+    </data>
+    <data name="SourceSetupWebsite" xml:space="preserve">
+        <value>رابط الموقع أو صفحة الإعلانات</value>
+    </data>
+    <data name="SourceSetupSuggest" xml:space="preserve">
+        <value>اقتراح الإعدادات واختبارها</value>
+    </data>
+    <data name="SourceSetupCost" xml:space="preserve">
+        <value>يرسل هذا الطلب محتوى الصفحات العامة إلى AI ويستهلك حتى طلبين من حصتك. لا يجمع إعلانات للنشر ولا يحفظ أو يفعّل المصدر تلقائيًا.</value>
+    </data>
+    <data name="SourceSetupLoading" xml:space="preserve">
+        <value>جارٍ قراءة الصفحة وتحليلها واختبار الاقتراح… قد يستغرق ذلك بضع دقائق.</value>
+    </data>
+    <data name="SourceSetupReady" xml:space="preserve">
+        <value>نجح اختبار الروابط وقراءة عينة. راجع النتيجة ثم طبّق الإعدادات إن كانت مناسبة.</value>
+    </data>
+    <data name="SourceSetupApplied" xml:space="preserve">
+        <value>تم ملء الحقول بالاقتراح. راجع الإعدادات والموافقة على الاستخدام، ثم اضغط حفظ بنفسك.</value>
+    </data>
+    <data name="SourceSetupNext" xml:space="preserve">
+        <value>رابط الصفحة التالية المكتشف</value>
+    </data>
+    <data name="SourceSetupSamples" xml:space="preserve">
+        <value>عينة الروابط المكتشفة — حتى 10 روابط</value>
+    </data>
+    <data name="SourceSetupSampleText" xml:space="preserve">
+        <value>معاينة نص أول إعلان</value>
+    </data>
+    <data name="SourceSetupLimit" xml:space="preserve">
+        <value>الاختبار يراجع صفحة القوائم وعينة محتوى واحدة فقط. لا يضمن اكتمال جميع الصفحات أو دقة كل إعلان؛ الجمع المعتاد يطبق قواعد المصدر والتحقق من فلسطين لاحقًا.</value>
+    </data>
+    <data name="SourceSetupApply" xml:space="preserve">
+        <value>تطبيق الاقتراح على الحقول</value>
+    </data>
+    <data name="SourceSetupInvalidUrl" xml:space="preserve">
+        <value>أدخل رابط HTTPS عامًا دون بيانات دخول أو منفذ مخصص.</value>
+    </data>
+    <data name="SourceSetupSocialDeferred" xml:space="preserve">
+        <value>دعم LinkedIn وTelegram وFacebook محفوظ للمرحلة الثانية؛ استخدم موقع مصدر مباشر حاليًا.</value>
+    </data>
+    <data name="SourceSetupUnsupported" xml:space="preserve">
+        <value>لم نجد اقتراحًا قابلًا للاختبار بالموصلات الحالية. قد يحتاج الموقع موصلًا خاصًا أو إعدادًا يدويًا.</value>
+    </data>
+    <data name="SourceSetupUnseenUrl" xml:space="preserve">
+        <value>اقترح النموذج رابطًا خارج الروابط المرصودة أو نطاق الموقع، فلم يُعتمد.</value>
+    </data>
+    <data name="SourceSetupInvalidReply" xml:space="preserve">
+        <value>لم يُرجع AI إعدادات سليمة وقابلة للاختبار. لم تتغير إعدادات المصدر.</value>
+    </data>
+    <data name="SourceSetupNoLinks" xml:space="preserve">
+        <value>لم ينجح الاقتراح في استخراج روابط إعلانات مناسبة للاختبار.</value>
+    </data>
+    <data name="SourceSetupPageTooLarge" xml:space="preserve">
+        <value>حجم الصفحة يتجاوز حدود المعاينة. جرّب رابط صفحة إعلانات أقرب بدل الرئيسية.</value>
+    </data>
+    <data name="SourceSetupInteractivePagination" xml:space="preserve">
+        <value>التنقل بين الصفحات تفاعلي ويحتاج موصلًا مجرّبًا؛ لم يعتمد المساعد إعدادًا قد يترك بقية الإعلانات.</value>
+    </data>
+    <data name="SourceSetupPaginationMissing" xml:space="preserve">
+        <value>ظهرت صفحة تالية لكن الاقتراح لم يحدد طريقة التنقل إليها. يلزم ضبط التنقل قبل اعتماد الإعدادات.</value>
+    </data>
+    <data name="SourceSetupAiMissing" xml:space="preserve">
+        <value>مفتاح AI أو اسم النموذج غير مضبوط في إعدادات تطبيق الويب.</value>
+    </data>
+    <data name="SourceSetupAiRejected" xml:space="preserve">
+        <value>رفض مزود AI الطلب. راجع المفتاح واسم النموذج والحصة في إعدادات تطبيق الويب.</value>
+    </data>
+    <data name="SourceSetupBusy" xml:space="preserve">
+        <value>يوجد تحليل مصدر جارٍ. انتظر انتهاءه ثم أعد المحاولة.</value>
+    </data>
+    <data name="SourceSetupTimeout" xml:space="preserve">
+        <value>انتهت مهلة التحليل والاختبار. لم تُحفظ إعدادات؛ جرّب صفحة إعلانات مباشرة.</value>
+    </data>
+    <data name="SourceSetupFailed" xml:space="preserve">
+        <value>تعذر فتح المصدر أو اختبار الإعدادات. تحقق من إتاحة الموقع وChromium لحساب الويب، أو جرّب صفحة إعلانات مباشرة.</value>
+    </data>
+  <data name="ManageSiteQuestions" xml:space="preserve"><value>إدارة قسم الأسئلة</value></data>
+  <data name="ManageSiteQuestionsHelp" xml:space="preserve"><value>تعديل عنوان القسم والأسئلة والأجوبة وترتيبها في صفحة من نحن.</value></data>
+  <data name="SiteQuestionsEditorHelp" xml:space="preserve"><value>الإضافة والحذف والترتيب تعدّل المسودة فقط؛ اضغط حفظ لنشر التغييرات. يمكنك ترك لغة كاملة فارغة لإخفاء السؤال فيها. حذف جميع الأسئلة ثم الحفظ يخفي القسم.</value></data>
+  <data name="QuestionsHeadingAr" xml:space="preserve"><value>عنوان القسم بالعربية</value></data>
+  <data name="QuestionsHeadingEn" xml:space="preserve"><value>عنوان القسم بالإنجليزية</value></data>
+  <data name="SiteQuestionLabel" xml:space="preserve"><value>السؤال</value></data>
+  <data name="QuestionAr" xml:space="preserve"><value>السؤال بالعربية</value></data>
+  <data name="AnswerAr" xml:space="preserve"><value>الإجابة بالعربية</value></data>
+  <data name="QuestionEn" xml:space="preserve"><value>السؤال بالإنجليزية</value></data>
+  <data name="AnswerEn" xml:space="preserve"><value>الإجابة بالإنجليزية</value></data>
+  <data name="QuestionMoveUp" xml:space="preserve"><value>نقل للأعلى</value></data>
+  <data name="QuestionMoveDown" xml:space="preserve"><value>نقل للأسفل</value></data>
+  <data name="QuestionRemove" xml:space="preserve"><value>حذف السؤال</value></data>
+  <data name="QuestionAdd" xml:space="preserve"><value>إضافة سؤال</value></data>
+  <data name="QuestionsPairRequired" xml:space="preserve"><value>أدخل السؤال وإجابته معًا لكل لغة، أو اترك الحقلين فارغين.</value></data>
+  <data name="SourceSetupDuplicate" xml:space="preserve"><value>الرابط موجود مسبقًا تحت اسم «{0}».</value></data>
+  <data name="SourceSetupStageConfiguration" xml:space="preserve"><value>المرحلة: التحقق من الإعدادات</value></data>
+  <data name="SourceSetupStageRead" xml:space="preserve"><value>المرحلة: قراءة صفحة الموقع</value></data>
+  <data name="SourceSetupStageAi" xml:space="preserve"><value>المرحلة: تحليل اقتراح النموذج</value></data>
+  <data name="SourceSetupStageListing" xml:space="preserve"><value>المرحلة: قراءة قائمة الإعلانات المقترحة</value></data>
+  <data name="SourceSetupStagePreview" xml:space="preserve"><value>المرحلة: اختبار الروابط ومحتوى الإعلان</value></data>
+  <data name="SourceSetupRequestReference" xml:space="preserve"><value>رقم الطلب: {0}</value></data>
+  <data name="SourceSetupHttpFailed" xml:space="preserve"><value>لم يُرجع الخادم استجابة المساعد المتوقعة (HTTP {0})؛ راجع سجل تطبيق الويب.</value></data>
+  <data name="SourceSetupNetworkFailed" xml:space="preserve"><value>فشل اتصال أثناء اختبار المصدر؛ راجع سجل الطلب لتحديد الوجهة والسبب.</value></data>
+  <data name="SourceSetupSampleInvalid" xml:space="preserve"><value>فُتحت الصفحة لكن عينة الإعلان لم تجتز التحقق من اكتمال المحتوى؛ راجع إعدادات محتوى الإعلان.</value></data>
+  <data name="SourceSetupBrowserFailed" xml:space="preserve"><value>تعذر تنفيذ خطوة داخل المتصفح؛ نجاح فحص Chromium وحده لا يثبت صحة الرابط أو المحددات. راجع سجل الطلب.</value></data>
 </root>

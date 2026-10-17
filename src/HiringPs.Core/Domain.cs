@@ -1,6 +1,7 @@
 // نماذج قاعدة البيانات والحالات الأساسية للمصادر والإعلانات ونتائج المعالجة.
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Linq;
 
 namespace HiringPs.Core;
 
@@ -291,13 +292,35 @@ public static class TextRules
                 .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
         );
 
-    public static DateOnly PalestineToday() =>
-        DateOnly.FromDateTime(
-            TimeZoneInfo
-                .ConvertTime(
-                    DateTimeOffset.UtcNow,
-                    TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")
-                )
-                .DateTime
-        );
+    public static DateOnly PalestineToday()
+    {
+        // Try known IANA and Windows time zone identifiers, then fall back to any matching zone.
+        string[] candidates = new[] { "Asia/Hebron", "Israel Standard Time", "Palestine Standard Time", "Jerusalem", "Middle East Standard Time" };
+        TimeZoneInfo? tz = null;
+        foreach (var id in candidates)
+        {
+            try
+            {
+                tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+                if (tz != null) break;
+            }
+            catch (TimeZoneNotFoundException) { }
+            catch (InvalidTimeZoneException) { }
+        }
+
+        if (tz == null)
+        {
+            tz = TimeZoneInfo.GetSystemTimeZones()
+                .FirstOrDefault(z =>
+                    z.Id.Contains("Jerusalem", System.StringComparison.OrdinalIgnoreCase) ||
+                    z.Id.Contains("Israel", System.StringComparison.OrdinalIgnoreCase) ||
+                    z.DisplayName.Contains("Jerusalem", System.StringComparison.OrdinalIgnoreCase) ||
+                    z.DisplayName.Contains("Israel", System.StringComparison.OrdinalIgnoreCase)
+                );
+        }
+
+        if (tz == null) tz = TimeZoneInfo.Utc;
+        var local = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz);
+        return DateOnly.FromDateTime(local.DateTime);
+    }
 }

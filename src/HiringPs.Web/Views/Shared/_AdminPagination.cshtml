@@ -1,0 +1,15 @@
+@model AdminPager
+@if (Model.Pages > 1)
+{
+    <nav class="pagination" aria-label="@T["Pagination"]">
+        @if (Model.Page > 1)
+        {
+            <a class="button button-outline" href="@Model.Link(Context.Request, Model.Page - 1)">@T["Previous"]</a>
+        }
+        <span><bdi>@Model.Page / @Model.Pages</bdi></span>
+        @if (Model.Page < Model.Pages)
+        {
+            <a class="button button-outline" href="@Model.Link(Context.Request, Model.Page + 1)">@T["Next"]</a>
+        }
+    </nav>
+}

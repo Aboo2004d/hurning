@@ -24,7 +24,7 @@
 <p class="notice">
     @T["Worker"]: @(Model.Heartbeat is null?T["Never"].Value:$"{UiMessages.State(Model.Heartbeat.State,T)} · {Model.Heartbeat.At:yyyy-MM-dd HH:mm} UTC")
 </p>
-<h2>@T["Runs"]</h2>
+<h2 id="runs">@T["Runs"]</h2>
 <div class="table-wrap">
     <table class="table-nowrap">
         <thead>
@@ -56,7 +56,8 @@
         </tbody>
     </table>
 </div>
-<h2>@T["Queue"]</h2>
+<partial name="_AdminPagination" model="Model.RunsPager" />
+<h2 id="queue">@T["Queue"]</h2>
 <div class="table-wrap">
     <table class="table-nowrap">
         <thead>
@@ -84,3 +85,5 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_AdminPagination" model="Model.ItemsPager" />

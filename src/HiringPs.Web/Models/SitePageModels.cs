@@ -19,7 +19,11 @@ public class SitePageInput
     public byte[] Version { get; set; } = [];
 }
 
-public record SitePageViewModel(string Title, string Body);
+public record SitePageViewModel(string Title, string Body)
+{
+    public IReadOnlyList<SiteQuestion> Questions { get; init; } = [];
+    public string QuestionsTitle { get; init; } = "";
+}
 
 public static class SitePageDefaults
 {

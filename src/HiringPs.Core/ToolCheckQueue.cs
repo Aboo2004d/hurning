@@ -10,7 +10,8 @@ public static class ToolCheckQueue
         IConfiguration config,
         ToolCheckKind kind,
         string actor,
-        CancellationToken ct
+        CancellationToken ct,
+        DateTimeOffset? scheduledAt = null
     )
     {
         if (!Enum.IsDefined(kind))
@@ -21,6 +22,20 @@ public static class ToolCheckQueue
         );
         if (!await gate.AcquireAsync(ct))
             return false;
+        // Under the queue lock, an existing check after this midnight also
+        // satisfies today's automatic request, including one from another worker.
+        if (scheduledAt is { } due)
+        {
+            if (kind != ToolCheckKind.Standard)
+                throw new ArgumentException("Only standard checks can be scheduled.");
+            if (
+                await db.ToolCheckRequests.AnyAsync(
+                    x => x.Kind == ToolCheckKind.Standard && x.RequestedAt >= due,
+                    ct
+                )
+            )
+                return true;
+        }
         var cutoff = DateTimeOffset.UtcNow.AddMinutes(-1);
         if (
             await db.ToolCheckRequests.AnyAsync(

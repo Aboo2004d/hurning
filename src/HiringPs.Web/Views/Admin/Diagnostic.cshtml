@@ -124,3 +124,8 @@ else
         </table>
     </div>
 }
+
+@if (ViewData["NetworkPager"] is AdminPager pager)
+{
+    <partial name="_AdminPagination" model="pager" />
+}

@@ -42,4 +42,12 @@
             </div>
         </article>
     }
+    <article class="detail-panel">
+        <h2>@T["ManageSiteQuestions"]</h2>
+        <p class="muted">@T["ManageSiteQuestionsHelp"]</p>
+        <div class="actions">
+            <a class="button" asp-action="SiteQuestions">@T["Edit"]</a>
+            <a class="textlink" asp-controller="Home" asp-action="About" asp-fragment="common-questions" target="_blank" rel="noopener noreferrer">@T["PreviewPage"]</a>
+        </div>
+    </article>
 </div>

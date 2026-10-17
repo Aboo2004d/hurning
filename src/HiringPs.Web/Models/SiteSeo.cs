@@ -244,14 +244,13 @@ public sealed class SiteSeo
                 };
             }
 
-            if (model is SitePageViewModel && action == "About")
+            if (model is SitePageViewModel about && action == "About" && about.Questions.Count > 0)
             {
                 webpage["hasPart"] = new Dictionary<string, object?>
                 {
                     ["@type"] = "FAQPage",
                     ["@id"] = canonical + "#common-questions",
-                    ["mainEntity"] = SiteFacts
-                        .Questions(english)
+                    ["mainEntity"] = about.Questions
                         .Select(item => new Dictionary<string, object?>
                         {
                             ["@type"] = "Question",

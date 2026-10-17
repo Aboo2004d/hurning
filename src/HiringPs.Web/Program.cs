@@ -43,6 +43,9 @@ builder.Services.AddScoped<AttachmentReader>();
 // Gemini HTTP Client
 // ======================================
 builder.Services.AddHttpClient<AiExtractor>();
+builder.Services.AddHttpClient<SourceSetupAssistant>(client =>
+    client.Timeout = TimeSpan.FromSeconds(75)
+);
 
 // ========================================
 // 5. Identity Configuration
@@ -50,9 +53,10 @@ builder.Services.AddHttpClient<AiExtractor>();
 builder
     .Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     {
-        options.Password.RequiredLength = 12;
+        options.Password.RequiredLength = 8;
         options.Lockout.MaxFailedAccessAttempts = 5;
-        options.User.RequireUniqueEmail = true;
+        options.User.RequireUniqueEmail = false;
+        options.Password.RequireUppercase = false;
     })
     .AddEntityFrameworkStores<HiringDb>()
     .AddDefaultTokenProviders();

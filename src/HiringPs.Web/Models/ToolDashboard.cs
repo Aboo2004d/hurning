@@ -8,6 +8,7 @@ public sealed class ToolDashboard
     public int FreshWorkers { get; set; }
     public List<ToolCheckResult> Results { get; set; } = [];
     public List<ToolCheckRequest> Requests { get; set; } = [];
+    public AdminPager RequestsPager { get; set; } = new();
     public AiUsage? LastAi { get; set; }
     public ScrapeRun? LastRun { get; set; }
     public int Waiting { get; set; }

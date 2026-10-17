@@ -138,7 +138,7 @@
             <div id="header-menu" class="header-menu">
                 <nav
                     id="primary-navigation"
-                    class="header-nav"
+                    class="header-nav @(adminArea ? "admin-header-nav" : null)"
                     aria-label="@(adminArea ? T["ControlPanel"] : T["MainNavigation"])"
                 >
                     @if (adminArea)

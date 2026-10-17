@@ -87,15 +87,12 @@ public sealed class ToolProbes(IConfiguration configuration)
 
     private async Task<ToolProbe> ChromiumAsync()
     {
-        using var runtime = await Playwright.CreateAsync();
+        using var runtime = await BrowserSettings.CreateAsync(configuration);
         await using var browser = await runtime.Chromium.LaunchAsync(
             new()
             {
                 Headless = true,
-                ExecutablePath = configuration["Browser:ExecutablePath"]
-                    is { Length: > 0 } executable
-                    ? executable
-                    : null,
+                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
                 Timeout = 20000,
                 Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                     ? channel
@@ -161,7 +158,7 @@ public sealed class ToolProbes(IConfiguration configuration)
             return new("PdfLanguages", ToolState.Disabled, "OcrDisabled");
         var args = new List<string>();
         if (configuration["Pdf:OcrDataPath"] is { Length: > 0 } path)
-            args.AddRange(["--tessdata-dir", path]);
+            args.AddRange(["--tessdata-dir", PdfToolPaths.Directory(path)]);
         args.Add("--list-langs");
         var output = await new PdfTools(configuration).RunAsync(
             "OcrExecutable",

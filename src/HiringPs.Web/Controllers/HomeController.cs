@@ -402,8 +402,18 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
         );
     }
 
-    public async Task<IActionResult> About(CancellationToken ct) =>
-        View(await ReadSitePageAsync("about", ct));
+    public async Task<IActionResult> About(CancellationToken ct)
+    {
+        var model = await ReadSitePageAsync("about", ct);
+        var questions = SiteQuestionsContent.Read(await db.SitePages.AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Key == SiteQuestionsContent.Key, ct));
+        var english = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+        return View(model with
+        {
+            Questions = SiteQuestionsContent.Localize(questions, english),
+            QuestionsTitle = english ? questions.TitleEn : questions.TitleAr,
+        });
+    }
 
     [HttpGet]
     public IActionResult Contact() => View(new ContactInput());

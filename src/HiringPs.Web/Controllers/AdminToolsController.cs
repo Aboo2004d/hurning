@@ -7,8 +7,12 @@ namespace HiringPs.Web.Controllers;
 
 public partial class AdminController
 {
-    public async Task<IActionResult> Tools(CancellationToken ct)
+    public async Task<IActionResult> Tools(int page = 1, CancellationToken ct = default)
     {
+        var requests = await db
+            .ToolCheckRequests.AsNoTracking()
+            .OrderByDescending(x => x.Id)
+            .PageAsync(page, ct);
         var now = DateTimeOffset.UtcNow;
         var model = new ToolDashboard
         {
@@ -18,11 +22,8 @@ public partial class AdminController
                 .OrderByDescending(x => x.At)
                 .FirstOrDefaultAsync(ct),
             FreshWorkers = await db.ToolWorkers.CountAsync(x => x.At >= now.AddSeconds(-60), ct),
-            Requests = await db
-                .ToolCheckRequests.AsNoTracking()
-                .OrderByDescending(x => x.Id)
-                .Take(20)
-                .ToListAsync(ct),
+            Requests = requests.Items,
+            RequestsPager = requests.Pager,
             LastAi = await db
                 .AiUsage.AsNoTracking()
                 .OrderByDescending(x => x.Id)

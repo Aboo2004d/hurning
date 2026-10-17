@@ -13,7 +13,7 @@
     <form asp-action="CheckAi" method="post">
         <button type="submit" class="button-outline">@T["ToolsCheckAi"]</button>
     </form>
-    <a class="button-outline" asp-action="Tools">@T["ToolsRefresh"]</a>
+    <a class="button button-outline" asp-action="Tools">@T["ToolsRefresh"]</a>
 </div>
 <p class="muted">@T["ToolsAiCost"]</p>
 @if (!workerFresh)
@@ -34,7 +34,7 @@
             @(workerFresh ? (Model.Worker!.Collecting ? T["ToolsCollectorBusy"] : T["ToolsCollectorWaiting"]) : T["ToolsWorkerOffline"])
         </p>
         <dl class="tool-facts">
-            <dt>@T["ToolsHeartbeat"]</dt>
+            <dt>@T["ToolsHeartbeatUtc"]</dt>
             <dd>
                 <bdi>@(Model.Worker?.At.ToString("u") ?? "—")</bdi>
             </dd>
@@ -42,7 +42,7 @@
             <dd>
                 <bdi>@(Model.Worker is null ? "—" : Model.Worker.Host + " / " + Model.Worker.Account)</bdi>
             </dd>
-            <dt>@T["ToolsLastLoop"]</dt>
+            <dt>@T["ToolsLastLoopUtc"]</dt>
             <dd>
                 <bdi>@(Model.Worker?.LastLoopAt?.ToString("u") ?? "—")</bdi>
             </dd>
@@ -53,19 +53,8 @@
         </dl>
         @if (collectorFailed)
         {
-            <p dir="ltr">@Model.Worker!.ErrorType</p>
+            <p>@T["ToolsErrorType"]: <bdi>@Model.Worker!.ErrorType</bdi></p>
             <p>@T["ToolHelp_Collector"]</p>
-        }
-        @if (Model.LastRun is { } run)
-        {
-            <p>
-                @T["ToolsLastRun"]: #@run.Id · @UiMessages.State(run.Status,T) ·
-                <bdi>@run.StartedAt.ToString("u")</bdi>
-            </p>
-        }
-        @if (Model.LastRun?.Status == "Failed")
-        {
-            <p class="notice">@T["ToolsLastRunFailed"]</p>
         }
         <a asp-action="Sources">@T["Sources"]</a>
     </section>
@@ -94,20 +83,27 @@
                 {
                     <p>@T["ToolsPreviousState"]: @T["ToolState_" + result.State]</p>
                 }
-                @if (result.Detail.Length > 0)
-                {
-                    <p dir="auto" class="tool-detail">@result.Detail</p>
-                }
-                <p class="muted">
-                    <bdi>@result.CheckedAt.ToString("u")</bdi>
-                    · @result.DurationMs ms
-                </p>
-                <p class="muted">
-                    @T["ToolsCheckedBy"]:
-                    <bdi>@result.WorkerId[..Math.Min(8,result.WorkerId.Length)]</bdi>
-                </p>
+                <dl class="tool-facts">
+                    @if (result.Detail.Length > 0)
+                    {
+                        var detailLabel = key switch
+                        {
+                            "AiConfiguration" => "ToolsModelName",
+                            "Chromium" => "ToolsBrowserVersion",
+                            "PdfText" or "PdfRender" or "PdfOcr" => "ToolsToolVersion",
+                            "PdfLanguages" => "ToolsOcrLanguages",
+                            "AiLive" => "ToolsHttpStatus",
+                            _ => "ToolsCheckDetails"
+                        };
+                        <dt>@T[detailLabel]</dt>
+                        <dd><bdi class="tool-detail">@result.Detail</bdi></dd>
+                    }
+                    <dt>@T["ToolsCheckedAtUtc"]</dt>
+                    <dd><bdi>@result.CheckedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</bdi></dd>
+                    <dt>@T["ToolsCheckDuration"]</dt>
+                    <dd><bdi>@result.DurationMs</bdi> @T["ToolsMilliseconds"]</dd>
+                </dl>
             }
-            <p>@T["ToolHelp_" + key]</p>
             @if (key == "AiConfiguration" || key == "AiLive")
             {
                 <a asp-action="AiUsage">@T["AiUsage"]</a>
@@ -119,17 +115,23 @@
 {
     <section class="detail-panel">
         <h2>@T["ToolsLastAi"]</h2>
-        <p>
-            <bdi>@ai.Model</bdi>
-            ·
-            <bdi>@ai.StartedAt.ToString("u")</bdi>
-            · @(ai.Success == true ? T["ToolsAiSucceeded"] : ai.Success == false ? T["ToolsAiFailed"] : T["ToolsAiUnfinished"])
-        </p>
-        <p>HTTP: @(ai.HttpStatus?.ToString() ?? "—") · @T["ToolsAiTokens"]: @(ai.TotalTokens?.ToString() ?? "—")</p>
-        @if (ai.ErrorType.Length > 0)
-        {
-            <p dir="ltr">@ai.ErrorType</p>
-        }
+        <dl class="tool-facts">
+            <dt>@T["ToolsModelName"]</dt>
+            <dd><bdi>@ai.Model</bdi></dd>
+            <dt>@T["ToolsCheckedAtUtc"]</dt>
+            <dd><bdi>@ai.StartedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</bdi></dd>
+            <dt>@T["Status"]</dt>
+            <dd>@(ai.Success == true ? T["ToolsAiSucceeded"] : ai.Success == false ? T["ToolsAiFailed"] : T["ToolsAiUnfinished"])</dd>
+            <dt>@T["ToolsHttpStatus"]</dt>
+            <dd>@(ai.HttpStatus?.ToString() ?? "—")</dd>
+            <dt>@T["ToolsAiTokens"]</dt>
+            <dd>@(ai.TotalTokens?.ToString() ?? "—")</dd>
+            @if (ai.ErrorType.Length > 0)
+            {
+                <dt>@T["ToolsErrorType"]</dt>
+                <dd><bdi>@ai.ErrorType</bdi></dd>
+            }
+        </dl>
         <p class="muted">@T["ToolsLastAiNote"]</p>
     </section>
 }
@@ -171,3 +173,5 @@
         </table>
     </div>
 </section>
+
+<partial name="_AdminPagination" model="Model.RequestsPager" />

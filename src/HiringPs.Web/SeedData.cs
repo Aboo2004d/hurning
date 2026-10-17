@@ -22,13 +22,20 @@ public static class SeedData
             }
         }
 
-        string AdminEmail = "admin@hiring.ps";
+        string deleteAdminEmail = "admin@hiring.ps";
+        if(await userManager.FindByEmailAsync(deleteAdminEmail) is IdentityUser oldAdmin)
+        {
+            var result = await userManager.DeleteAsync(oldAdmin);
+            EnsureSuccess(result);
+        }
+
+        string AdminEmail = "khalil@developers.ps";
         // 2. Seed Main Admin
         var admin = await userManager.FindByEmailAsync(AdminEmail);
         if (admin == null)
         {
             // Initial password is supplied only during first setup.
-            var password = "Admin2026@123";
+            var password = "min2026@1";
             admin = new IdentityUser
             {
                 UserName = AdminEmail,

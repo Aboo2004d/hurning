@@ -15,7 +15,7 @@ public sealed class PdfTools(IConfiguration configuration)
         CancellationToken ct
     )
     {
-        var executable = configuration["Pdf:" + setting] ?? fallback;
+        var executable = PdfToolPaths.Executable(configuration["Pdf:" + setting] ?? fallback);
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo(executable)

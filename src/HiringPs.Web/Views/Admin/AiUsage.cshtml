@@ -7,14 +7,14 @@
 <p class="notice">
     @(ar ? "النجاح يعني قراءة استجابة AI، وليس اعتماد الإعلان للنشر. علامة — تعني أن المزود لم يعِد العدد؛ المجاميع تشمل الأعداد المعروفة فقط. الطلب غير المكتمل قد يكون توقف معه العامل." : "Success means the AI response was parsed, not that publication was approved. — means no token count was reported; totals cover known counts only. Unfinished requests may reflect an interrupted worker.")
 </p>
-<form method="get" class="searchbar">
+<form method="get" class="ai-usage-filter">
     <label>
         @(ar ? "آخر عدد أيام" : "Last days")
-        <input name="days" value="@Model.Days" type="number" min="1" max="365" />
+        <input name="days" value="@Model.Days" type="number" min="1" max="365" required dir="ltr" />
     </label>
     <button type="submit">@T["Filters"]</button>
 </form>
-<div class="table-wrap">
+<div id="ai-totals" class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -44,7 +44,8 @@
         </tbody>
     </table>
 </div>
-<div class="table-wrap">
+<partial name="_AdminPagination" model="Model.GroupsPager" />
+<div id="ai-requests" class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -80,14 +81,4 @@
         </tbody>
     </table>
 </div>
-<nav class="pagination">
-    @if (Model.Page > 1)
-    {
-        <a asp-route-days="@Model.Days" asp-route-page="@(Model.Page - 1)">@T["Previous"]</a>
-    }
-    <span>@Model.Page / @Math.Max(1, (Model.Count + 49) / 50)</span>
-    @if (Model.Page * 50 < Model.Count)
-    {
-        <a asp-route-days="@Model.Days" asp-route-page="@(Model.Page + 1)">@T["Next"]</a>
-    }
-</nav>
+<partial name="_AdminPagination" model="Model.ItemsPager" />

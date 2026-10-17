@@ -71,7 +71,7 @@ public class UrlPolicy
     }
 }
 
-public class BrowserCollector(
+public partial class BrowserCollector(
     UrlPolicy policy,
     IConfiguration configuration,
     AttachmentReader attachmentReader
@@ -80,18 +80,18 @@ public class BrowserCollector(
     private IPlaywright? playwright;
     private IBrowser? browser;
 
-    private async Task<IBrowserContext> ContextAsync(Source source, CancellationToken ct) =>
+    private async Task<IBrowserContext> ContextAsync(Source source, CancellationToken ct, bool setup = false) =>
         await CollectorDiagnosticFiles.WithoutPageAsync(
             source,
             "Browser",
             "BrowserSetup",
             source.Url,
             configuration,
-            () => CreateContextAsync(source, ct),
+            () => CreateContextAsync(source, ct, setup),
             ct
         );
 
-    private async Task<IBrowserContext> CreateContextAsync(Source source, CancellationToken ct)
+    private async Task<IBrowserContext> CreateContextAsync(Source source, CancellationToken ct, bool setup)
     {
         var conf =
             JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
@@ -102,15 +102,12 @@ public class BrowserCollector(
             )
             .ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
-        playwright ??= await Playwright.CreateAsync();
+        playwright ??= await BrowserSettings.CreateAsync(configuration);
         browser ??= await playwright.Chromium.LaunchAsync(
             new()
             {
                 Headless = true,
-                ExecutablePath = configuration["Browser:ExecutablePath"]
-                    is { Length: > 0 } executable
-                    ? executable
-                    : null,
+                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
                 Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                     ? channel
                     : null,
@@ -138,6 +135,19 @@ public class BrowserCollector(
                     }
 
                     await policy.ValidateAsync(route.Request.Url, hosts, ct);
+                    if (setup && route.Request.ResourceType is "script" or "stylesheet")
+                    {
+                        // Bound parser-blocking dependencies during setup only. Each redirect
+                        // returns to the browser and passes the route policy again.
+                        try
+                        {
+                            var response = await route.FetchAsync(new() { Timeout = 10000, MaxRedirects = 0 });
+                            try { await route.FulfillAsync(new() { Response = response }); }
+                            finally { await response.DisposeAsync(); }
+                        }
+                        catch (TimeoutException) { await route.AbortAsync("timedout"); }
+                        return;
+                    }
                     await route.ContinueAsync();
                 }
                 catch
@@ -493,8 +503,30 @@ public class BrowserCollector(
                             throw new InvalidOperationException(
                                 "Pagination limit reached; increase the limit after reviewing this source."
                             );
-                        diagnostics.Step("Pagination", conf.NextSelector, 20000);
-                        await AdvanceListingAsync(page, selector, next, ct);
+                        if (directNext is not null)
+                        {
+                            // A real href is authoritative. Navigate without running click handlers;
+                            // the next loop waits for the listing content in the new document.
+                            diagnostics.Step("Pagination", conf.NextSelector, 45000);
+                            await BrowserNavigation.OpenAsync(
+                                page,
+                                directNext,
+                                WaitUntilState.DOMContentLoaded,
+                                conf.ForbiddenWaitSeconds,
+                                ct
+                            );
+                            if (conf.WaitSelector.Length > 0)
+                            {
+                                diagnostics.Step("WaitSourceSelector", conf.WaitSelector, 25000);
+                                await page.Locator(conf.WaitSelector)
+                                    .First.WaitForAsync(new() { Timeout = 25000 });
+                            }
+                        }
+                        else
+                        {
+                            diagnostics.Step("Pagination", conf.NextSelector, 20000);
+                            await AdvanceListingAsync(page, selector, next, ct);
+                        }
                     }
                 }
 
@@ -609,9 +641,11 @@ public class BrowserCollector(
                 else
                 {
                     diagnostics.Step("WaitContentSelector", conf.ContentSelector, 20000);
-                    await page.Locator(conf.ContentSelector).First.WaitForAsync();
+                    var content = page.Locator(conf.ContentSelector)
+                        .Filter(new() { Visible = true }).First;
+                    await content.WaitForAsync(new() { Timeout = 20000 });
                     diagnostics.Step("ReadContent", conf.ContentSelector);
-                    html = await page.Locator(conf.ContentSelector).First.InnerHTMLAsync();
+                    html = await content.InnerHTMLAsync();
                 }
 
                 var doc = await new HtmlParser().ParseDocumentAsync(html, ct);

@@ -4,6 +4,8 @@
 *.csproj.user
 artifacts/
 .playwright-browsers/
+src/HiringPs.Worker/Tools/
+src/HiringPs.Worker/tessdata/
 **/appsettings.Local.json
 **/secrets.json
 **/DataProtectionKeys/

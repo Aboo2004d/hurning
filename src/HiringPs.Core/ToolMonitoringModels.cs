@@ -163,6 +163,6 @@ public static class ToolMonitoringRules
     ) =>
         WorkerFresh(worker, now)
         && result.WorkerId == worker!.Id
-        && result.CheckedAt >= now.AddHours(-2)
+        && result.CheckedAt >= now.AddHours(result.Tool == "AiLive" ? -2 : -26)
         && result.CheckedAt <= now.AddSeconds(30);
 }

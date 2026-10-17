@@ -3,10 +3,63 @@
     ViewData["Title"] = T["Source"];
 }
 <h1>@T["Source"]</h1>
-<form method="post" class="edit-form">
+<section class="edit-form source-setup" data-source-setup>
+    <h2>@T["SourceSetupTitle"]</h2>
+    <p class="muted">@T["SourceSetupIntro"]</p>
+    <form asp-action="SuggestSource" method="post" data-setup-form>
+        <input type="hidden" name="sourceId" value="@Model.Id" />
+        <label for="source-setup-url">@T["SourceSetupWebsite"]</label>
+        <div class="source-setup-input">
+            <input id="source-setup-url" name="url" type="url" value="@Model.Url" dir="ltr" maxlength="1000" required placeholder="https://example.ps" />
+            <button type="submit" data-setup-submit>@T["SourceSetupSuggest"]</button>
+        </div>
+        <p class="muted">@T["SourceSetupCost"]</p>
+    </form>
+    <p role="status" aria-live="polite" data-setup-status
+       data-loading="@T["SourceSetupLoading"]" data-ready="@T["SourceSetupReady"]"
+       data-applied="@T["SourceSetupApplied"]" data-failed="@T["SourceSetupFailed"]"></p>
+    <div hidden data-setup-result>
+        <p data-setup-explanation></p>
+        <dl class="tool-facts">
+            <dt>@T["Url"]</dt><dd><bdi data-setup-listing></bdi></dd>
+            <dt>@T["Connector"]</dt><dd data-setup-connector></dd>
+            <dt>@T["SourceSetupNext"]</dt><dd><bdi data-setup-next></bdi></dd>
+        </dl>
+        <h3>@T["SourceSetupSamples"]</h3>
+        <ul class="source-setup-links" data-setup-links></ul>
+        <details>
+            <summary>@T["SourceSetupSampleText"]</summary>
+            <pre dir="auto" data-setup-text></pre>
+        </details>
+        <details>
+            <summary>@T["Config"]</summary>
+            <pre dir="ltr" data-setup-config></pre>
+        </details>
+        <p class="muted">@T["SourceSetupLimit"]</p>
+        <button class="button-outline" type="button" data-setup-apply>@T["SourceSetupApply"]</button>
+    </div>
+    <div hidden data-setup-errors>
+        @foreach (var key in new[]
+        {
+            "SourceSetupStageConfiguration", "SourceSetupStageRead", "SourceSetupStageAi", "SourceSetupStageListing", "SourceSetupStagePreview",
+            "SourceSetupHttpFailed", "SourceSetupRequestReference", "SourceSetupNetworkFailed", "SourceSetupSampleInvalid", "SourceSetupBrowserFailed",
+            "SourceSetupDuplicate", "SourceSetupInvalidUrl", "SourceSetupSocialDeferred", "SourceSetupUnsupported", "SourceSetupUnseenUrl",
+            "SourceSetupInvalidReply", "SourceSetupNoLinks", "SourceSetupPageTooLarge", "SourceSetupInteractivePagination",
+            "SourceSetupPaginationMissing", "SourceSetupAiMissing", "SourceSetupAiRejected", "SourceSetupBusy", "SourceSetupTimeout"
+        })
+        {
+            <span data-code="@key">@T[key]</span>
+        }
+    </div>
+</section>
+<form method="post" class="edit-form" id="source-editor">
     <input asp-for="Id" type="hidden"/>
     <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version)"/>
     <partial name="_LocalizedValidation"/>
+    @if (ViewData["DuplicateSourceName"] is string duplicateName)
+    {
+        <p class="validation" role="alert">@T["SourceSetupDuplicate", duplicateName]</p>
+    }
     <div class="form-grid">
         <label>
             @T["Name"]
@@ -63,3 +116,6 @@
     </details>
     <button class="button-outline" type="submit">@T["Save"]</button>
 </form>
+@section Scripts {
+    <script src="~/js/source-setup.js" asp-append-version="true" defer></script>
+}

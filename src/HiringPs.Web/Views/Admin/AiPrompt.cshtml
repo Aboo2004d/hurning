@@ -82,13 +82,19 @@
     @(ar ? "سجل النسخ — افتح نسخة سابقة ثم احفظها كنسخة جديدة لاستعادتها" : "Version history — open a version and save a new copy to restore it")
 </h2>
 <div class="table-wrap">
-    <table>
+    <table id="prompt-history" class="prompt-history">
+        <colgroup>
+            <col class="prompt-history-id" />
+            <col class="prompt-history-date" />
+            <col class="prompt-history-note" />
+            <col />
+        </colgroup>
         <thead>
             <tr>
                 <th>#</th>
                 <th>@(ar ? "التاريخ" : "Date")</th>
                 <th>@(ar ? "الملاحظة" : "Note")</th>
-                <th></th>
+                <th>@(ar ? "نص النسخة" : "Version text")</th>
             </tr>
         </thead>
         <tbody>
@@ -96,7 +102,7 @@
             {
                 <tr>
                     <td>@version.Id</td>
-                    <td>@version.CreatedAt.ToString("u")</td>
+                    <td class="prompt-history-timestamp"><bdi>@version.CreatedAt.ToString("u")</bdi></td>
                     <td>@version.Note</td>
                     <td>
                         <a asp-action="AiPrompt" asp-route-inspect="@version.Id">@(ar ? "عرض / نسخ" : "Inspect / copy")</a>
@@ -117,3 +123,5 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_AdminPagination" model="Model.HistoryPager" />

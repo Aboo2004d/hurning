@@ -932,8 +932,20 @@ footer {
 }
 .managed-pages {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
+}
+.managed-pages > .detail-panel {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+.managed-pages > .detail-panel > .actions {
+    margin-top: auto;
+    padding-top: 16px;
 }
 .page-language-grid {
     display: grid;
@@ -973,8 +985,10 @@ footer {
 
 /* Shared header dropdown for public pages and administration. */
 .site-header {
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 30;
+    box-shadow: 0 4px 16px #18332b0a;
 }
 .site-header .brand {
     flex-shrink: 0;
@@ -1232,6 +1246,204 @@ footer {
 .tools-actions form {
     margin: 0;
 }
+.ai-usage-filter {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 22px 0;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+}
+.ai-usage-filter label {
+    flex: 0 1 150px;
+    min-width: 110px;
+    margin: 0;
+}
+.ai-usage-filter input {
+    height: 44px;
+    text-align: center;
+}
+.ai-usage-filter button {
+    min-height: 44px;
+    padding: 8px 20px;
+    white-space: nowrap;
+}
 .tool-detail {
     overflow-wrap: anywhere;
 }
+
+/* فتح نص البرومبت لا يضغط أعمدة التاريخ والملاحظة. */
+.prompt-history th,
+.prompt-history td {
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+.prompt-history pre {
+    max-width: 100%;
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+@media (min-width: 641px) {
+    .prompt-history {
+        table-layout: fixed;
+    }
+    .prompt-history-id {
+        width: 52px;
+    }
+    .prompt-history-date {
+        width: 190px;
+    }
+    .prompt-history-note {
+        width: 25%;
+    }
+    .prompt-history-timestamp {
+        white-space: nowrap;
+    }
+}
+@media (max-width: 640px) {
+    .prompt-history colgroup {
+        display: none;
+    }
+}
+
+/* قائمة الإدارة: روابط أساسية ومجموعات صغيرة بدل تكديس جميع الصفحات. */
+.site-header .admin-header-nav {
+    gap: 6px;
+    flex-wrap: nowrap;
+    font-size: 14px;
+}
+.admin-header-nav > a,
+.admin-nav-group > summary {
+    padding: 9px 12px;
+    border-radius: 9px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.admin-header-nav > a:hover,
+.admin-nav-group > summary:hover,
+.admin-nav-group[open] > summary {
+    background: var(--soft);
+    color: var(--accent);
+    text-decoration: none;
+}
+.admin-header-nav > a[aria-current="page"],
+.admin-nav-group.has-current > summary {
+    background: var(--soft);
+    color: var(--accent);
+    font-weight: 700;
+    box-shadow: none;
+}
+.admin-nav-group {
+    position: relative;
+}
+.admin-nav-group > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+}
+.admin-nav-group > summary::-webkit-details-marker {
+    display: none;
+}
+.admin-nav-group > summary svg {
+    flex-shrink: 0;
+}
+.admin-nav-group[open] > summary svg {
+    transform: rotate(180deg);
+}
+.admin-nav-dropdown {
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(100% + 10px);
+    width: 250px;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px #18332b14;
+}
+.site-header .admin-nav-dropdown a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 7px;
+    white-space: normal;
+}
+.admin-nav-dropdown a:hover,
+.admin-nav-dropdown a[aria-current="page"] {
+    background: var(--soft);
+    color: var(--accent);
+    text-decoration: none;
+    box-shadow: none;
+}
+@media (max-width: 1100px) {
+    .site-header .admin-header-nav {
+        gap: 4px;
+        align-items: stretch;
+    }
+    .admin-nav-group > summary {
+        justify-content: space-between;
+        padding: 10px 14px;
+    }
+    .admin-nav-dropdown {
+        position: static;
+        width: auto;
+        margin: 4px 10px 8px;
+        padding: 4px;
+        border: 0;
+        border-inline-start: 2px solid var(--line);
+        border-radius: 0;
+        box-shadow: none;
+    }
+}
+
+/* مساعد إعداد المصدر: إدخال واضح وعينة قابلة للمراجعة قبل الحفظ. */
+.source-setup {
+    margin-bottom: 24px;
+}
+.source-setup h2 {
+    margin-top: 0;
+}
+.source-setup label {
+    margin-bottom: 6px;
+}
+.source-setup-input {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.source-setup-input input {
+    flex: 1 1 230px;
+    min-width: 0;
+}
+.source-setup-input button {
+    flex: 0 0 auto;
+}
+.source-setup-links {
+    max-height: 250px;
+    overflow: auto;
+    padding-inline-start: 24px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+.source-setup pre {
+    font-size: 13px;
+    max-height: 260px;
+}
+.source-setup [data-setup-status]:empty {
+    display: none;
+}
+.source-setup [data-setup-status] {
+    padding: 10px 12px;
+    background: var(--soft);
+    border-radius: 9px;
+}
+
+.source-setup [data-setup-status] { white-space: pre-wrap; overflow-wrap: anywhere; }

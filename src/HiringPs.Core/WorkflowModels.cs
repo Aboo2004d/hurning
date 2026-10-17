@@ -9,7 +9,7 @@ public class PromptVersion
     public string Template { get; set; } = "";
     public string LegacySnapshot { get; set; } = "";
     public string FinalText { get; set; } = "";
-    public string DateContract { get; set; } = PromptDefaults.DateInstructions;
+    public string DateContract { get; set; } = PromptDatePolicy.CurrentDateContract;
 
     [Range(40, 2000)]
     public int SummaryLimit { get; set; } = 200;
