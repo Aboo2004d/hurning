@@ -88,6 +88,9 @@ public class TimeoutShellFixtureController : Controller
 [Area("Member"), Authorize]
 public sealed class WalletShellFixtureController(PaymentEnvironment environment) : Controller
 {
+    public IActionResult PaymentList() =>
+        View("/Areas/Member/Views/Payments/Index.cshtml", PaymentListingFixtureData.Page());
+
     public IActionResult Details(bool paid = false)
     {
         ViewBag.Ready = false;
@@ -183,6 +186,9 @@ public class SessionShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminFormShellFixtureController : Controller
 {
+    public IActionResult PaymentList() =>
+        View("/Areas/Admin/Views/Payments/Index.cshtml", PaymentListingFixtureData.Page());
+
     public IActionResult PaymentTrace()
     {
         ViewBag.PaymentTraces = new List<AuditEntry>
@@ -190,6 +196,10 @@ public class AdminFormShellFixtureController : Controller
             new()
             {
                 Action = "Payment.VerifyTrace",
+                At = DateTimeOffset.Parse(
+                    "2026-10-18T14:34:30Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 Detail =
                     "{\"Stage\":\"ProviderFailure\",\"Code\":\"AmountMismatch\",\"HttpStatus\":200}",
             },
@@ -246,4 +256,37 @@ public class AdminFormShellFixtureController : Controller
             _ => BadRequest(),
         };
     }
+}
+
+public static class PaymentListingFixtureData
+{
+    public static AdminPage<PaymentOrder> Page() =>
+        new()
+        {
+            Pager = new AdminPager { TotalRecords = 2 },
+            Items = new List<PaymentOrder>
+            {
+                Order("Lahza", "2026-10-18T14:34:30Z"),
+                Order("JawwalPay", "2026-10-18T13:22:00Z"),
+            },
+        };
+
+    private static PaymentOrder Order(string gateway, string timestamp) =>
+        new()
+        {
+            AmountIls = 5,
+            Gateway = gateway,
+            GatewayEnvironment = "Sandbox",
+            CreatedAt = DateTimeOffset.Parse(
+                timestamp,
+                System.Globalization.CultureInfo.InvariantCulture
+            ),
+            PlanVersion = new MembershipPlanVersion
+            {
+                PlanId = 1,
+                NameAr = "باقة",
+                NameEn = "Plan",
+                Days = 30,
+            },
+        };
 }

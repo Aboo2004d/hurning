@@ -43,7 +43,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>@T["CreatedUtc"]</th>
+                            <th>@T["CreatedPalestineTime"]</th>
                             <th>@T["Administrator"]</th>
                             <th>@T["Details"]</th>
                         </tr>
@@ -53,7 +53,7 @@
                         {
                             <tr>
                                 <td>
-                                    <bdi>@entry.At.ToString("yyyy-MM-dd HH:mm")</bdi>
+                                    <bdi>@PaymentDisplay.Time(entry.At)</bdi>
                                 </td>
                                 <td>@entry.Actor</td>
                                 <td dir="auto">@entry.Action · @entry.Detail</td>

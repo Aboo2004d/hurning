@@ -182,11 +182,8 @@ public sealed class TelegramCommands(
                             active is null
                                 ? ""
                                 : "\n"
-                                    + (en ? "Ends (UTC): " : "تنتهي (UTC): ")
-                                    + active.EndsAt.ToString(
-                                        "yyyy-MM-dd HH:mm",
-                                        System.Globalization.CultureInfo.InvariantCulture
-                                    )
+                                    + (en ? "Ends (Palestine time): " : "تنتهي (توقيت فلسطين): ")
+                                    + SourceSchedule.Display(active.EndsAt)
                         )
                         + "\n"
                         + (en ? "Alerts: " : "التنبيهات: ")

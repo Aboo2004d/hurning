@@ -30,7 +30,10 @@ public sealed record WalletReceipt(
     decimal JawwalFee,
     decimal PlatformFee,
     decimal NetCredited
-);
+)
+{
+    public bool IsSandboxSimulation { get; init; }
+}
 
 // Whitelisted diagnostic facts for administrators, never the original provider body.
 public sealed record WalletReceiptValidationFacts(
@@ -197,13 +200,14 @@ public sealed class JawwalPayGateway(
         );
         // The direct response belongs to the previously persisted, server-held session.
         // external_ref is nullable in this particular response according to the contract.
-        return ParseReceipt(json.RootElement, order, transactionList: false);
+        return ParseReceipt(json.RootElement, order, transactionList: false, sandbox: Sandbox);
     }
 
     public static WalletReceipt ParseReceipt(
         JsonElement item,
         PaymentOrder order,
-        bool transactionList
+        bool transactionList,
+        bool sandbox = false
     )
     {
         try
@@ -251,9 +255,21 @@ public sealed class JawwalPayGateway(
                 throw Reject("WalletPlatformFeeInvalid");
             if (net < 0 || net > amount)
                 throw Reject("WalletNetAmountInvalid");
-            if (Math.Abs(fee + platformFee + net - amount) > .01m)
+            // The supplied Sandbox response reports success without crediting a balance:
+            // gross=5, wallet fee=.30, net=0. Preserve those values as a test receipt.
+            // The live adapter and transaction-list recovery never use this exception.
+            var sandboxSimulation =
+                sandbox
+                && !transactionList
+                && order.GatewayEnvironment == "Sandbox"
+                && net == 0
+                && fee + platformFee <= amount;
+            if (Math.Abs(fee + platformFee + net - amount) > .01m && !sandboxSimulation)
                 throw Reject("WalletFeeSumMismatch");
-            return new(id, reference, amount, fee, platformFee, net);
+            return new(id, reference, amount, fee, platformFee, net)
+            {
+                IsSandboxSimulation = sandboxSimulation,
+            };
         }
         catch (Exception ex)
             when (ex

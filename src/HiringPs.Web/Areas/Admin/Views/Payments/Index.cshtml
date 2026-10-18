@@ -42,6 +42,8 @@
             <tr>
                 <th>@T["OrderId"]</th>
                 <th>@T["Amount"]</th>
+                <th>@T["PaymentGateway"]</th>
+                <th>@T["CreatedPalestineTime"]</th>
                 <th>@T["PaymentEnvironment"]</th>
                 <th>@T["Status"]</th>
                 <th>@T["Reference"]</th>
@@ -53,7 +55,9 @@
             {
                 <tr>
                     <td><bdi>@order.Id</bdi></td>
-                    <td>@MembershipRules.Money(order.AmountIls)</td>
+                    <td><bdi dir="ltr">@MembershipRules.Money(order.AmountIls)</bdi></td>
+                    <td>@T[order.Gateway == "discount" ? "DiscountPayment" : order.Gateway]</td>
+                    <td><bdi dir="ltr">@PaymentDisplay.Time(order.CreatedAt)</bdi></td>
                     <td>@T["PaymentEnvironment" + order.GatewayEnvironment]</td>
                     <td>@T["Payment" + order.State]</td>
                     <td dir="auto">@order.ProviderReference</td>

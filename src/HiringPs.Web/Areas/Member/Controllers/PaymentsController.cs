@@ -23,7 +23,7 @@ public class PaymentsController(
                     x.UserId == MemberId && x.GatewayEnvironment == Db.ActivePaymentEnvironment
                 )
                 .OrderByDescending(x => x.CreatedAt)
-                .ThenBy(x => x.Id)
+                .ThenByDescending(x => x.Id)
                 .PageAsync(page, ct)
         );
 

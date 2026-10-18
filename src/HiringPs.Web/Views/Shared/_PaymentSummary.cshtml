@@ -26,9 +26,9 @@
         <dd dir="auto">@Model.ProviderReference</dd>
     </div>
     <div>
-        <dt>@T["CreatedUtc"]</dt>
+        <dt>@T["CreatedPalestineTime"]</dt>
         <dd>
-            <bdi>@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+            <bdi>@PaymentDisplay.Time(Model.CreatedAt)</bdi>
         </dd>
     </div>
 </dl>

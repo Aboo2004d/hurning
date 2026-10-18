@@ -76,7 +76,7 @@
         foreach (var trace in traces)
         {
             <details>
-                <summary><bdi dir="ltr">@trace.At.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) UTC</bdi></summary>
+                <summary><bdi dir="ltr">@PaymentDisplay.Time(trace.At, seconds: true)</bdi> @T["PalestineTime"]</summary>
                 <pre dir="ltr">@trace.Detail</pre>
             </details>
         }

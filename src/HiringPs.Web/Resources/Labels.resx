@@ -1826,4 +1826,10 @@
     <data name="PaymentTraceBuild" xml:space="preserve"><value>إصدار التتبع وبيئة الموقع</value></data>
     <data name="PaymentTraceAdvice" xml:space="preserve"><value>آخر 10 محاولات تحقق. يعرض السجل التطبيق والبيئة والمرحلة ورمز السبب وحالة HTTP عند توفرها، وقد يعرض أرقام الإيصال لتفسير الرفض. لا يعرض مفاتيح أو تفاصيل بطاقات أو هواتف أو رموز تحقق.</value></data>
     <data name="PaymentTraceEmpty" xml:space="preserve"><value>لا توجد محاولات مسجلة بعد. اضغط التحقق من الدفع. إذا لم يظهر سجل فراجع سجلات Web وWorker وابحث عن PaymentTrace.</value></data>
+    <data name="PalestineTime" xml:space="preserve"><value>توقيت فلسطين</value></data>
+    <data name="CreatedPalestineTime" xml:space="preserve"><value>التاريخ (توقيت فلسطين)</value></data>
+    <data name="StartsPalestineTime" xml:space="preserve"><value>البداية (توقيت فلسطين)</value></data>
+    <data name="EndsPalestineTime" xml:space="preserve"><value>النهاية (توقيت فلسطين)</value></data>
+    <data name="WalletCodeExpiresPalestineTime" xml:space="preserve"><value>صلاحية الرمز حتى (توقيت فلسطين)</value></data>
+    <data name="WalletBalanceFetchedPalestineTime" xml:space="preserve"><value>آخر استعلام عن الرصيد (توقيت فلسطين)</value></data>
 </root>

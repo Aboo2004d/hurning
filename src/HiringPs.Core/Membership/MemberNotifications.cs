@@ -410,16 +410,10 @@ public sealed class MemberNotifications(
                     + order.PlanVersion.Name(member.Language)
                     + " · "
                     + MembershipRules.Money(order.AmountIls)
-                    + (en ? " · Starts (UTC): " : " · البداية (UTC): ")
-                    + subscription.StartsAt.ToString(
-                        "yyyy-MM-dd HH:mm",
-                        System.Globalization.CultureInfo.InvariantCulture
-                    )
-                    + (en ? " · Ends (UTC): " : " · النهاية (UTC): ")
-                    + subscription.EndsAt.ToString(
-                        "yyyy-MM-dd HH:mm",
-                        System.Globalization.CultureInfo.InvariantCulture
-                    );
+                    + (en ? " · Starts (Palestine time): " : " · البداية (توقيت فلسطين): ")
+                    + SourceSchedule.Display(subscription.StartsAt)
+                    + (en ? " · Ends (Palestine time): " : " · النهاية (توقيت فلسطين): ")
+                    + SourceSchedule.Display(subscription.EndsAt);
             }
             else if (
                 message.Kind == MemberMessageKind.Review

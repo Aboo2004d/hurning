@@ -29,7 +29,7 @@
     else if (Model.CanConfirm)
     {
         <p>@T["WalletCodeSentTo"] <bdi>@Model.PhoneHint</bdi></p>
-        <p>@T["WalletCodeExpiresUtc"] <bdi>@Model.ExpiresAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</bdi></p>
+        <p>@T["WalletCodeExpiresPalestineTime"] <bdi>@PaymentDisplay.Time(Model.ExpiresAt)</bdi></p>
         <form asp-controller="WalletPayments" asp-action="Confirm" method="post" autocomplete="off">
             <input name="id" type="hidden" value="@Model.Order.Id" />
             <label for="wallet-otp">@T["WalletOtpLabel"]</label>

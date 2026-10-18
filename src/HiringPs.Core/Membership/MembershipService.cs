@@ -163,18 +163,10 @@ public sealed class MembershipService(HiringDb db)
                     + order.PlanVersion.Name(member.Language)
                     + " · "
                     + MembershipRules.Money(order.AmountIls)
-                    + (en ? " · Starts (UTC): " : " · البداية (UTC): ")
-                    + start.ToString(
-                        "yyyy-MM-dd HH:mm",
-                        System.Globalization.CultureInfo.InvariantCulture
-                    )
-                    + (en ? " · Ends (UTC): " : " · النهاية (UTC): ")
-                    + start
-                        .AddDays(order.PlanVersion.Days)
-                        .ToString(
-                            "yyyy-MM-dd HH:mm",
-                            System.Globalization.CultureInfo.InvariantCulture
-                        ),
+                    + (en ? " · Starts (Palestine time): " : " · البداية (توقيت فلسطين): ")
+                    + SourceSchedule.Display(start)
+                    + (en ? " · Ends (Palestine time): " : " · النهاية (توقيت فلسطين): ")
+                    + SourceSchedule.Display(start.AddDays(order.PlanVersion.Days)),
             }
         );
         await db.SaveChangesAsync(ct);

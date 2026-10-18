@@ -292,35 +292,43 @@ public static class TextRules
                 .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
         );
 
-    public static DateOnly PalestineToday()
+    private static readonly Lazy<TimeZoneInfo> PalestineZone = new(ResolvePalestineTimeZone);
+
+    public static TimeZoneInfo PalestineTimeZone => PalestineZone.Value;
+
+    public static DateOnly PalestineToday() =>
+        DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, PalestineTimeZone).DateTime
+        );
+
+    private static TimeZoneInfo ResolvePalestineTimeZone()
     {
-        // Try known IANA and Windows time zone identifiers, then fall back to any matching zone.
-        string[] candidates = new[] { "Asia/Hebron", "Israel Standard Time", "Palestine Standard Time", "Jerusalem", "Middle East Standard Time" };
-        TimeZoneInfo? tz = null;
+        // Keep the project's existing IANA/Windows resolution order in one place.
+        string[] candidates =
+        [
+            "Asia/Hebron",
+            "Israel Standard Time",
+            "Palestine Standard Time",
+            "Jerusalem",
+            "Middle East Standard Time",
+        ];
         foreach (var id in candidates)
         {
             try
             {
-                tz = TimeZoneInfo.FindSystemTimeZoneById(id);
-                if (tz != null) break;
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
             }
             catch (TimeZoneNotFoundException) { }
             catch (InvalidTimeZoneException) { }
         }
-
-        if (tz == null)
-        {
-            tz = TimeZoneInfo.GetSystemTimeZones()
-                .FirstOrDefault(z =>
-                    z.Id.Contains("Jerusalem", System.StringComparison.OrdinalIgnoreCase) ||
-                    z.Id.Contains("Israel", System.StringComparison.OrdinalIgnoreCase) ||
-                    z.DisplayName.Contains("Jerusalem", System.StringComparison.OrdinalIgnoreCase) ||
-                    z.DisplayName.Contains("Israel", System.StringComparison.OrdinalIgnoreCase)
-                );
-        }
-
-        if (tz == null) tz = TimeZoneInfo.Utc;
-        var local = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz);
-        return DateOnly.FromDateTime(local.DateTime);
+        return TimeZoneInfo
+                .GetSystemTimeZones()
+                .FirstOrDefault(zone =>
+                    zone.Id.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                    || zone.Id.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+                    || zone.DisplayName.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                    || zone.DisplayName.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+                )
+            ?? TimeZoneInfo.Utc;
     }
 }

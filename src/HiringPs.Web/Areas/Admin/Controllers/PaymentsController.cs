@@ -52,7 +52,10 @@ public class PaymentsController(
                 db.PaymentReviews.Any(r => r.OrderId == x.Id && r.ResolvedAt == null)
             );
         return View(
-            await query.OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id).PageAsync(page, ct)
+            await query
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id)
+                .PageAsync(page, ct)
         );
     }
 

@@ -27,7 +27,7 @@
             <dt>@T["WalletPendingWithdrawals"]</dt><dd>@MembershipRules.Money(balance.PendingWithdrawals)</dd>
             <dt>@T["PaymentOperations"]</dt><dd>@balance.TransactionsCount</dd>
         </dl>
-        <p>@T["WalletBalanceFetchedUtc"] <bdi>@Model.BalanceFetchedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</bdi></p>
+        <p>@T["WalletBalanceFetchedPalestineTime"] <bdi>@PaymentDisplay.Time(Model.BalanceFetchedAt)</bdi></p>
     }
 </section>
 <section class="membership-card">

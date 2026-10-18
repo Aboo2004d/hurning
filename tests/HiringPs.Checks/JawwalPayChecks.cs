@@ -197,6 +197,124 @@ public static class JawwalPayChecks
                     );
             }
         }
+        var sandboxResponse = System.Text.Json.Nodes.JsonNode.Parse(Receipt(amount: 5, id: 10))!;
+        sandboxResponse["jawwal_fee"] = .3m;
+        sandboxResponse["platform_fee"] = 0;
+        sandboxResponse["net_credited"] = 0;
+        var simulationOrder = new PaymentOrder
+        {
+            Id = order.Id,
+            AmountIls = 5,
+            Gateway = "JawwalPay",
+            GatewayEnvironment = "Sandbox",
+        };
+        using (var simulationJson = JsonDocument.Parse(sandboxResponse.ToJsonString()))
+        {
+            var simulated = JawwalPayGateway.ParseReceipt(
+                simulationJson.RootElement,
+                simulationOrder,
+                transactionList: false,
+                sandbox: true
+            );
+            Check(
+                simulated.IsSandboxSimulation
+                    && simulated.TransactionId == 10
+                    && simulated.Amount == 5m
+                    && simulated.JawwalFee == .3m
+                    && simulated.NetCredited == 0,
+                "Observed Sandbox zero-net receipt is accepted without inventing credit or changing fees"
+            );
+            foreach (var runtimeSandbox in new[] { false, true })
+            {
+                simulationOrder.GatewayEnvironment = "Production";
+                try
+                {
+                    JawwalPayGateway.ParseReceipt(
+                        simulationJson.RootElement,
+                        simulationOrder,
+                        false,
+                        runtimeSandbox
+                    );
+                    Check(false, "Production cannot accept zero-net simulation");
+                }
+                catch (PaymentProviderException ex)
+                {
+                    Check(
+                        ex.ReasonCode == "WalletFeeSumMismatch",
+                        "Production rejects a nonbalancing zero-net receipt regardless of sandbox flag"
+                    );
+                }
+            }
+        }
+        simulationOrder.GatewayEnvironment = "Sandbox";
+        foreach (
+            var failure in new[]
+            {
+                ("amount", "6", "WalletAmountMismatch"),
+                ("transaction_id", "0", "WalletTransactionIdInvalid"),
+                ("jawwal_fee", "-1", "WalletJawwalFeeInvalid"),
+                ("net_credited", "1", "WalletFeeSumMismatch"),
+            }
+        )
+        {
+            var bad = sandboxResponse.DeepClone();
+            bad[failure.Item1] = System.Text.Json.Nodes.JsonNode.Parse(failure.Item2);
+            using var badJson = JsonDocument.Parse(bad.ToJsonString());
+            try
+            {
+                JawwalPayGateway.ParseReceipt(badJson.RootElement, simulationOrder, false, true);
+                Check(false, "Invalid simulation must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == failure.Item3,
+                    "Sandbox retains required receipt validation: " + failure.Item3
+                );
+            }
+        }
+        var excessiveFees = sandboxResponse.DeepClone();
+        excessiveFees["jawwal_fee"] = 3;
+        excessiveFees["platform_fee"] = 3;
+        using (var invalidJson = JsonDocument.Parse(excessiveFees.ToJsonString()))
+        {
+            try
+            {
+                JawwalPayGateway.ParseReceipt(
+                    invalidJson.RootElement,
+                    simulationOrder,
+                    false,
+                    true
+                );
+                Check(false, "Excess combined fees must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == "WalletFeeSumMismatch",
+                    "Zero-net simulation cannot hide combined fees exceeding the gross payment"
+                );
+            }
+        }
+        var listed = sandboxResponse.DeepClone();
+        listed["id"] = 10;
+        listed["status"] = "success";
+        listed["net_amount"] = 0;
+        using (var listedJson = JsonDocument.Parse(listed.ToJsonString()))
+        {
+            try
+            {
+                JawwalPayGateway.ParseReceipt(listedJson.RootElement, simulationOrder, true, true);
+                Check(false, "Transaction-list recovery cannot use simulation exception");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == "WalletFeeSumMismatch",
+                    "Transaction-list receipts always require balancing even with sandbox flag"
+                );
+            }
+        }
         var numericStrings = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
         foreach (
             var field in new[]

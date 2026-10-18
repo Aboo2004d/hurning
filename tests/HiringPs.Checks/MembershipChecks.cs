@@ -162,6 +162,7 @@ public static class MembershipChecks
                 "Database prevents sharing a Telegram identity"
             );
         }
+        PaymentDisplayChecks.Run();
         await ShellAsync();
         Console.WriteLine(
             $"Membership checks passed: {count}. No SQL connection, Telegram request or real payment was made."
@@ -446,6 +447,27 @@ public static class MembershipChecks
             }
             client.DefaultRequestHeaders.Add("X-Fixture-Role", "Admin");
             await AdminFormChecks.RunAsync(client, origin);
+            foreach (var language in new[] { "ar", "en" })
+            {
+                var list = WebUtility.HtmlDecode(
+                    await client.GetStringAsync(
+                        origin + "/" + language + "/Admin/AdminFormShellFixture/PaymentList"
+                    )
+                );
+                Check(
+                    list.Contains("2026-10-18 17:34")
+                        && list.Contains("2026-10-18 16:22")
+                        && list.IndexOf("2026-10-18 17:34", StringComparison.Ordinal)
+                            < list.IndexOf("2026-10-18 16:22", StringComparison.Ordinal),
+                    "Admin payment list shows local date columns in supplied newest-first order: "
+                        + language
+                );
+                Check(
+                    list.Contains(language == "ar" ? "لحظة" : "Lahza")
+                        && list.Contains(language == "ar" ? "جوال باي" : "Jawwal"),
+                    "Admin payment rows label both gateways: " + language
+                );
+            }
             response = await client.GetAsync(
                 origin + "/ar/Admin/AdminFormShellFixture/PaymentTrace"
             );
@@ -454,7 +476,8 @@ public static class MembershipChecks
                 response.IsSuccessStatusCode
                     && html.Contains(PaymentTraceWriter.BuildMarker)
                     && html.Contains("AmountMismatch")
-                    && html.Contains("payment-diagnostics"),
+                    && html.Contains("payment-diagnostics")
+                    && html.Contains("2026-10-18 17:34:30"),
                 "Admin payment page renders protected diagnostic history and current build marker"
             );
             response = await client.GetAsync(origin + "/en/Admin/AdminShellFixture");
@@ -484,6 +507,17 @@ public static class MembershipChecks
             );
             foreach (var language in new[] { "ar", "en" })
             {
+                var list = await client.GetStringAsync(
+                    origin + "/" + language + "/Member/WalletShellFixture/PaymentList"
+                );
+                list = WebUtility.HtmlDecode(list);
+                Check(
+                    list.Contains("2026-10-18 17:34")
+                        && list.Contains("2026-10-18 16:22")
+                        && list.Contains(language == "ar" ? "لحظة" : "Lahza")
+                        && list.Contains(language == "ar" ? "جوال باي" : "Jawwal"),
+                    "Member payment rows show both providers and Palestine dates: " + language
+                );
                 var payment = await client.GetStringAsync(
                     origin + "/" + language + "/Member/WalletShellFixture/Details"
                 );

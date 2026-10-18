@@ -19,8 +19,9 @@
                 <tr>
                     <th>@T["MemberId"]</th>
                     <th>@T["Plan"]</th>
-                    <th>@T["StartsUtc"]</th>
-                    <th>@T["EndsUtc"]</th>
+                    <th>@T["CreatedPalestineTime"]</th>
+                    <th>@T["StartsPalestineTime"]</th>
+                    <th>@T["EndsPalestineTime"]</th>
                     <th>@T["Status"]</th>
                     <th>
                     </th>
@@ -34,11 +35,12 @@
                             <a asp-controller="Members" asp-action="Details" asp-route-id="@sub.UserId">@sub.UserId</a>
                         </td>
                         <td>@sub.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
+                        <td><bdi dir="ltr">@PaymentDisplay.Time(sub.CreatedAt)</bdi></td>
                         <td>
-                            <bdi>@sub.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                            <bdi>@PaymentDisplay.Time(sub.StartsAt)</bdi>
                         </td>
                         <td>
-                            <bdi>@sub.EndsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                            <bdi>@PaymentDisplay.Time(sub.EndsAt)</bdi>
                         </td>
                         <td>@T[sub.Cancelled ? "Subscriptioncancelled" : sub.StartsAt > DateTimeOffset.UtcNow ? "Subscriptionscheduled" : sub.EndsAt > DateTimeOffset.UtcNow ? "Subscriptioncurrent" : "Subscriptionexpired"]</td>
                         <td>

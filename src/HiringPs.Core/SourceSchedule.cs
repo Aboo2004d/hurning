@@ -2,7 +2,7 @@ namespace HiringPs.Core;
 
 public static class SourceSchedule
 {
-    public static TimeZoneInfo Zone => TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron");
+    public static TimeZoneInfo Zone => TextRules.PalestineTimeZone;
 
     public static DateOnly LocalDate(DateTimeOffset instant) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, Zone).DateTime);
@@ -30,6 +30,13 @@ public static class SourceSchedule
         throw new InvalidOperationException("Unable to compute next local collection slot.");
     }
 
-    public static string Display(DateTimeOffset instant) =>
-        TimeZoneInfo.ConvertTime(instant, Zone).ToString("yyyy-MM-dd HH:mm");
+    public static string Display(DateTimeOffset instant) => Display(instant, seconds: false);
+
+    public static string Display(DateTimeOffset instant, bool seconds) =>
+        TimeZoneInfo
+            .ConvertTime(instant, Zone)
+            .ToString(
+                seconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm",
+                System.Globalization.CultureInfo.InvariantCulture
+            );
 }

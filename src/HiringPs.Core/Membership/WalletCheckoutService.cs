@@ -261,6 +261,8 @@ public sealed class WalletCheckoutService(
                     receipt.NetCredited
                 );
             trace?.Step("ProviderConfirm", "ResponseParsed");
+            if (receipt.IsSandboxSimulation)
+                trace?.Step("Sandbox", "ZeroNetSimulation");
         }
         catch (WalletRequestRejectedException)
         {

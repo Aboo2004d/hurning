@@ -63,7 +63,8 @@ public class MembersController(
         ViewBag.Audit = await db
             .Audit.AsNoTracking()
             .Where(x => x.Detail.Contains(id))
-            .OrderByDescending(x => x.Id)
+            .OrderByDescending(x => x.At)
+            .ThenByDescending(x => x.Id)
             .PageAsync(int.TryParse(Request.Query["page"], out var page) ? page : 1, ct);
         return View(member);
     }

@@ -12,15 +12,15 @@
             <p>@(subscription.StartsAt > DateTimeOffset.UtcNow ? T["Scheduled"] : T["CurrentPlan"])</p>
             <dl class="detail-grid">
                 <div>
-                    <dt>@T["StartsUtc"]</dt>
+                    <dt>@T["StartsPalestineTime"]</dt>
                     <dd>
-                        <bdi>@subscription.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                        <bdi>@PaymentDisplay.Time(subscription.StartsAt)</bdi>
                     </dd>
                 </div>
                 <div>
-                    <dt>@T["EndsUtc"]</dt>
+                    <dt>@T["EndsPalestineTime"]</dt>
                     <dd>
-                        <bdi>@subscription.EndsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                        <bdi>@PaymentDisplay.Time(subscription.EndsAt)</bdi>
                     </dd>
                 </div>
                 <div>

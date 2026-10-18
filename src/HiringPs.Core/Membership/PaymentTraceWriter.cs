@@ -13,7 +13,7 @@ public sealed class PaymentTraceWriter(
     ILogger<PaymentTraceWriter> logger
 )
 {
-    public const string BuildMarker = "payment-trace-wallet-receipt-v4";
+    public const string BuildMarker = "payment-trace-sandbox-net-v5";
     public string? LastTraceId { get; private set; }
 
     public PaymentTraceSession Start(Guid orderId)

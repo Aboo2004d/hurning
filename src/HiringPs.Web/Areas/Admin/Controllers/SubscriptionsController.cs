@@ -37,7 +37,12 @@ public class SubscriptionsController(HiringDb db, MembershipService membership) 
             .MembershipPlanVersions.AsNoTracking()
             .Where(x => db.MembershipPlans.Any(p => p.CurrentVersionId == x.Id))
             .ToListAsync(ct);
-        return View(await query.OrderByDescending(x => x.Id).PageAsync(page, ct));
+        return View(
+            await query
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id)
+                .PageAsync(page, ct)
+        );
     }
 
     [HttpPost]
