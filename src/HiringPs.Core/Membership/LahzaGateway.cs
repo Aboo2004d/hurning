@@ -158,7 +158,7 @@ public sealed class LahzaGateway(
             reference != Reference(order.Id)
             || amount != order.AmountIls
             || currency != "ILS"
-            || data.GetProperty("domain").GetString() != (testMode ? "test" : "live")
+            || !MatchesOptionalDomain(data, testMode)
         )
             throw new PaymentProviderException();
         var status = data.GetProperty("status").GetString();
@@ -172,6 +172,21 @@ public sealed class LahzaGateway(
                 : status == "failed" ? PaymentState.Failed
                 : PaymentState.Pending
         );
+    }
+
+    private static bool MatchesOptionalDomain(JsonElement data, bool testMode)
+    {
+        // Lahza can omit domain from verify responses. The request still uses the
+        // selected environment's authenticated secret; a supplied domain must agree.
+        if (
+            !data.TryGetProperty("domain", out var domain)
+            || domain.ValueKind == JsonValueKind.Null
+        )
+            return true;
+        if (domain.ValueKind != JsonValueKind.String)
+            return false;
+        var value = domain.GetString();
+        return string.IsNullOrWhiteSpace(value) || value == (testMode ? "test" : "live");
     }
 
     public async Task ProbeAsync(CancellationToken ct)

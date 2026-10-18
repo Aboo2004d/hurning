@@ -57,7 +57,7 @@ public static class LahzaChecks
             string status = "success",
             int amount = 500,
             string currency = "ILS",
-            string domain = "test",
+            string? domain = "test",
             string? reference = null
         ) =>
             JsonSerializer.Serialize(
@@ -92,6 +92,50 @@ public static class LahzaChecks
                 && handler.Authorization == "Bearer " + secret,
             "verification uses pinned server endpoint and bearer key"
         );
+        var missingDomain = System.Text.Json.Nodes.JsonNode.Parse(Payload())!;
+        missingDomain["data"]!.AsObject().Remove("domain");
+        foreach (
+            var payload in new[]
+            {
+                missingDomain.ToJsonString(),
+                Payload(domain: null),
+                Payload(domain: ""),
+                Payload(domain: " "),
+            }
+        )
+        {
+            handler.Body = payload;
+            Check(
+                (await gateway.CheckAsync(order, default)).Confirmed,
+                "Authenticated Sandbox verification accepts an omitted or empty optional domain"
+            );
+        }
+        config["Payments:Lahza:Production:SecretKey"] = "sk_live_local_fixture_secret_do_not_use";
+        config["Payments:Lahza:Production:PublicOrigin"] = "https://test.example";
+        var production = new LahzaGateway(
+            new HttpClient(handler),
+            config,
+            db,
+            PaymentTestEnvironment.Production
+        );
+        order.GatewayEnvironment = "Production";
+        handler.Body = missingDomain.ToJsonString();
+        Check(
+            (await production.CheckAsync(order, default)).Confirmed
+                && handler.Authorization == "Bearer sk_live_local_fixture_secret_do_not_use",
+            "Missing domain in Production still uses the selected live key"
+        );
+        handler.Body = Payload(domain: "test");
+        try
+        {
+            await production.CheckAsync(order, default);
+            Check(false, "Explicit test domain cannot confirm a Production payment");
+        }
+        catch (PaymentProviderException)
+        {
+            Check(true, "Explicit test domain is rejected in Production");
+        }
+        order.GatewayEnvironment = "Sandbox";
         foreach (var status in new[] { "pending", "failed", "abandoned", "unknown" })
         {
             handler.Body = Payload(status);
@@ -106,6 +150,8 @@ public static class LahzaChecks
                 Payload(amount: 499),
                 Payload(currency: "USD"),
                 Payload(domain: "live"),
+                Payload(domain: "unrecognized"),
+                Payload().Replace("\"domain\":\"test\"", "\"domain\":42"),
                 Payload(reference: "another-order"),
                 "{\"status\":false}",
                 "{\"status\":true,\"data\":{}}",
