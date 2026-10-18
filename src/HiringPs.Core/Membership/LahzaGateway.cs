@@ -171,10 +171,16 @@ public sealed class LahzaGateway(
 
     public static GatewayCheck ParseCheck(JsonElement response, PaymentOrder order, bool testMode)
     {
-        var data = response.GetProperty("data");
-        var reference = data.GetProperty("reference").GetString();
-        var amount = data.GetProperty("amount").GetDecimal() / 100m;
-        var currency = data.GetProperty("currency").GetString();
+        if (
+            response.ValueKind != JsonValueKind.Object
+            || !response.TryGetProperty("data", out var data)
+        )
+            throw new PaymentProviderException("DataMissing", 200);
+        if (data.ValueKind != JsonValueKind.Object)
+            throw new PaymentProviderException("DataType" + data.ValueKind, 200);
+        var reference = ReadVerificationString(data, "reference", "Reference");
+        var amount = ReadAgora(data) / 100m;
+        var currency = ReadVerificationString(data, "currency", "Currency");
         if (reference != Reference(order.Id))
             throw new PaymentProviderException("ReferenceMismatch", 200);
         if (amount != order.AmountIls)
@@ -183,7 +189,7 @@ public sealed class LahzaGateway(
             throw new PaymentProviderException("CurrencyMismatch", 200);
         if (!MatchesOptionalDomain(data, testMode))
             throw new PaymentProviderException("ResponseEnvironmentMismatch", 200);
-        var status = data.GetProperty("status").GetString();
+        var status = ReadVerificationString(data, "status", "Status");
         return new(
             status == "success",
             order.Id,
@@ -194,6 +200,45 @@ public sealed class LahzaGateway(
                 : status == "failed" ? PaymentState.Failed
                 : PaymentState.Pending
         );
+    }
+
+    private static string ReadVerificationString(JsonElement data, string field, string code)
+    {
+        if (!data.TryGetProperty(field, out var value))
+            throw new PaymentProviderException(code + "Missing", 200);
+        if (value.ValueKind != JsonValueKind.String)
+            throw new PaymentProviderException(code + "Type" + value.ValueKind, 200);
+        return value.GetString()!;
+    }
+
+    private static decimal ReadAgora(JsonElement data)
+    {
+        if (!data.TryGetProperty("amount", out var value))
+            throw new PaymentProviderException("AmountMissing", 200);
+        decimal agora;
+        if (value.ValueKind == JsonValueKind.Number)
+        {
+            if (!value.TryGetDecimal(out agora))
+                throw new PaymentProviderException("AmountInvalidNumber", 200);
+        }
+        else if (value.ValueKind == JsonValueKind.String)
+        {
+            if (
+                !decimal.TryParse(
+                    value.GetString(),
+                    System.Globalization.NumberStyles.AllowLeadingSign
+                        | System.Globalization.NumberStyles.AllowDecimalPoint,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out agora
+                )
+            )
+                throw new PaymentProviderException("AmountInvalidString", 200);
+        }
+        else
+            throw new PaymentProviderException("AmountType" + value.ValueKind, 200);
+        if (agora < 0 || agora != decimal.Truncate(agora))
+            throw new PaymentProviderException("AmountInvalidAgora", 200);
+        return agora;
     }
 
     private static bool MatchesOptionalDomain(JsonElement data, bool testMode)

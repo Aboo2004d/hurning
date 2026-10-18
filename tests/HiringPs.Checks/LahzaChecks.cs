@@ -92,6 +92,73 @@ public static class LahzaChecks
                 && handler.Authorization == "Bearer " + secret,
             "verification uses pinned server endpoint and bearer key"
         );
+        string WithField(string field, string jsonValue)
+        {
+            var response = System.Text.Json.Nodes.JsonNode.Parse(Payload())!;
+            response["data"]!.AsObject().Remove("domain");
+            response["data"]![field] = System.Text.Json.Nodes.JsonNode.Parse(jsonValue);
+            return response.ToJsonString();
+        }
+        foreach (var amount in new[] { "500", "500.00", "\"500\"", "\"500.00\"" })
+        {
+            handler.Body = WithField("amount", amount);
+            var checkedPayment = await gateway.CheckAsync(order, default);
+            Check(
+                checkedPayment.Confirmed && checkedPayment.Amount == 5m,
+                "Numeric and invariant string agora amounts verify exactly: " + amount
+            );
+        }
+        foreach (
+            var failure in new[]
+            {
+                ("amount", "\"5.00\"", "AmountMismatch"),
+                ("amount", "\"499\"", "AmountMismatch"),
+                ("amount", "\"500,00\"", "AmountInvalidString"),
+                ("amount", "\"5e2\"", "AmountInvalidString"),
+                ("amount", "\"500 ILS\"", "AmountInvalidString"),
+                ("amount", "500.5", "AmountInvalidAgora"),
+                ("amount", "-500", "AmountInvalidAgora"),
+                ("amount", "null", "AmountTypeNull"),
+                ("amount", "{}", "AmountTypeObject"),
+                ("amount", "1e100", "AmountInvalidNumber"),
+                ("reference", "500", "ReferenceTypeNumber"),
+                ("currency", "null", "CurrencyTypeNull"),
+                ("status", "true", "StatusTypeTrue"),
+            }
+        )
+        {
+            handler.Body = WithField(failure.Item1, failure.Item2);
+            try
+            {
+                await gateway.CheckAsync(order, default);
+                Check(false, "Malformed verification must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == failure.Item3 && ex.HttpStatus == 200,
+                    "Field-level diagnosis without accepting bad payment data: " + failure.Item3
+                );
+            }
+        }
+        foreach (var field in new[] { "reference", "amount", "currency", "status" })
+        {
+            var response = System.Text.Json.Nodes.JsonNode.Parse(Payload())!;
+            response["data"]!.AsObject().Remove(field);
+            handler.Body = response.ToJsonString();
+            try
+            {
+                await gateway.CheckAsync(order, default);
+                Check(false, "Missing field must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == char.ToUpperInvariant(field[0]) + field[1..] + "Missing",
+                    "Missing verification field is named safely: " + field
+                );
+            }
+        }
         var missingDomain = System.Text.Json.Nodes.JsonNode.Parse(Payload())!;
         missingDomain["data"]!.AsObject().Remove("domain");
         foreach (
