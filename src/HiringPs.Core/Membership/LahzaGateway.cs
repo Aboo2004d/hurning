@@ -23,6 +23,7 @@ public sealed class PaymentProviderException : Exception
 
     public string ReasonCode { get; }
     public int? HttpStatus { get; }
+    public WalletReceiptValidationFacts? ReceiptFacts { get; init; }
 }
 
 // Hosted checkout: card data never enters this application.

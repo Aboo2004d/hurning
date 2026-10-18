@@ -144,6 +144,8 @@ public sealed class PaymentReconciliation(
             }
             catch (PaymentProviderException ex)
             {
+                if (trace is not null)
+                    trace.ReceiptFacts = ex.ReceiptFacts;
                 trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
                 return "GatewayUnavailable";
             }

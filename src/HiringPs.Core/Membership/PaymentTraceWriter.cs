@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-// Only fixed diagnostic codes and order identifiers are stored. Never provider bodies,
+// Store diagnostic codes, order IDs and whitelisted receipt numbers only. Never provider bodies,
 // authorization headers, tokens, OTPs, phone numbers or exception messages.
 public sealed class PaymentTraceWriter(
     IServiceScopeFactory scopes,
@@ -13,7 +13,7 @@ public sealed class PaymentTraceWriter(
     ILogger<PaymentTraceWriter> logger
 )
 {
-    public const string BuildMarker = "payment-trace-wallet-confirm-v3";
+    public const string BuildMarker = "payment-trace-wallet-receipt-v4";
     public string? LastTraceId { get; private set; }
 
     public PaymentTraceSession Start(Guid orderId)
@@ -64,6 +64,7 @@ public sealed class PaymentTraceWriter(
                                 session.RuntimeEnvironment,
                                 session.Gateway,
                                 session.AdapterEnvironment,
+                                session.ReceiptFacts,
                                 Steps = session.Steps,
                             }
                         )
@@ -91,6 +92,7 @@ public sealed class PaymentTraceSession(PaymentTraceWriter writer, Guid orderId)
     public string? RuntimeEnvironment { get; set; }
     public string? Gateway { get; set; }
     public string? AdapterEnvironment { get; set; }
+    public WalletReceiptValidationFacts? ReceiptFacts { get; set; }
     public bool Persist { get; set; } = true;
     public List<PaymentTraceStep> Steps { get; } = [];
 

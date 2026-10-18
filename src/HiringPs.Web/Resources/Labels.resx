@@ -1824,6 +1824,6 @@
     <data name="PaymentTraceReference" xml:space="preserve"><value>رقم تتبع فحص الدفع</value></data>
     <data name="PaymentDiagnostics" xml:space="preserve"><value>تتبّع التحقق من الدفع</value></data>
     <data name="PaymentTraceBuild" xml:space="preserve"><value>إصدار التتبع وبيئة الموقع</value></data>
-    <data name="PaymentTraceAdvice" xml:space="preserve"><value>آخر 10 محاولات تحقق. يعرض السجل التطبيق والبيئة والمرحلة ورمز السبب وحالة HTTP عند توفرها، دون مفاتيح أو بيانات دفع حساسة.</value></data>
+    <data name="PaymentTraceAdvice" xml:space="preserve"><value>آخر 10 محاولات تحقق. يعرض السجل التطبيق والبيئة والمرحلة ورمز السبب وحالة HTTP عند توفرها، وقد يعرض أرقام الإيصال لتفسير الرفض. لا يعرض مفاتيح أو تفاصيل بطاقات أو هواتف أو رموز تحقق.</value></data>
     <data name="PaymentTraceEmpty" xml:space="preserve"><value>لا توجد محاولات مسجلة بعد. اضغط التحقق من الدفع. إذا لم يظهر سجل فراجع سجلات Web وWorker وابحث عن PaymentTrace.</value></data>
 </root>

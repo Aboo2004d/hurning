@@ -161,6 +161,42 @@ public static class JawwalPayChecks
                     && body.RootElement.GetProperty("otp").GetString() == "123456",
                 "confirm sends only session_key and otp"
             );
+        foreach (
+            var failure in new[]
+            {
+                ("transaction_id", "0", "WalletTransactionIdInvalid"),
+                ("amount", "24", "WalletAmountMismatch"),
+                ("jawwal_fee", "-1", "WalletJawwalFeeInvalid"),
+                ("platform_fee", "26", "WalletPlatformFeeInvalid"),
+                ("net_credited", "26", "WalletNetAmountInvalid"),
+                ("net_credited", "22", "WalletFeeSumMismatch"),
+            }
+        )
+        {
+            var invalidReceipt = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
+            invalidReceipt[failure.Item1] = System.Text.Json.Nodes.JsonNode.Parse(failure.Item2);
+            handler.Body = invalidReceipt.ToJsonString();
+            try
+            {
+                await gateway.ConfirmAsync(order, session.SessionKey, "123456", default);
+                Check(false, "Financial mismatch must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == failure.Item3
+                        && ex.HttpStatus == 200
+                        && ex.ReceiptFacts?.ExpectedAmountIls == 25m
+                        && !ex.ToString().Contains(session.SessionKey),
+                    "Exact receipt rejection preserves safe numeric facts: " + failure.Item3
+                );
+                if (failure.Item1 == "amount")
+                    Check(
+                        ex.ReceiptFacts?.ReceivedAmountIls == 24m,
+                        "Diagnostic reports actual received gross amount without altering it"
+                    );
+            }
+        }
         var numericStrings = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
         foreach (
             var field in new[]

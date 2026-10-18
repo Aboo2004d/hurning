@@ -32,6 +32,16 @@ public sealed record WalletReceipt(
     decimal NetCredited
 );
 
+// Whitelisted diagnostic facts for administrators, never the original provider body.
+public sealed record WalletReceiptValidationFacts(
+    long TransactionId,
+    decimal ExpectedAmountIls,
+    decimal ReceivedAmountIls,
+    decimal JawwalFeeIls,
+    decimal PlatformFeeIls,
+    decimal NetAmountIls
+);
+
 public sealed record WalletBalance(
     decimal Balance,
     decimal Available,
@@ -218,20 +228,31 @@ public sealed class JawwalPayGateway(
             var fee = ReadMoney(item, "jawwal_fee");
             var platformFee = ReadMoney(item, "platform_fee");
             var net = ReadMoney(item, transactionList ? "net_amount" : "net_credited");
-            if (
-                id <= 0
-                || amount != order.AmountIls
-                || order.Currency != "ILS"
-                || reference?.Length > 200
-                || fee < 0
-                || platformFee < 0
-                || net < 0
-                || fee > amount
-                || platformFee > amount
-                || net > amount
-                || Math.Abs(fee + platformFee + net - amount) > .01m
-            )
-                throw new PaymentProviderException("WalletReceiptMismatch", 200);
+            var facts = new WalletReceiptValidationFacts(
+                id,
+                order.AmountIls,
+                amount,
+                fee,
+                platformFee,
+                net
+            );
+            PaymentProviderException Reject(string code) => new(code, 200) { ReceiptFacts = facts };
+            if (id <= 0)
+                throw Reject("WalletTransactionIdInvalid");
+            if (amount != order.AmountIls)
+                throw Reject("WalletAmountMismatch");
+            if (order.Currency != "ILS")
+                throw Reject("WalletCurrencyMismatch");
+            if (reference?.Length > 200)
+                throw Reject("WalletReferenceTooLong");
+            if (fee < 0 || fee > amount)
+                throw Reject("WalletJawwalFeeInvalid");
+            if (platformFee < 0 || platformFee > amount)
+                throw Reject("WalletPlatformFeeInvalid");
+            if (net < 0 || net > amount)
+                throw Reject("WalletNetAmountInvalid");
+            if (Math.Abs(fee + platformFee + net - amount) > .01m)
+                throw Reject("WalletFeeSumMismatch");
             return new(id, reference, amount, fee, platformFee, net);
         }
         catch (Exception ex)

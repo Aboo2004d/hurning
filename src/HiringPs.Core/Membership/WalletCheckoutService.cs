@@ -171,6 +171,8 @@ public sealed class WalletCheckoutService(
         }
         catch (PaymentProviderException ex)
         {
+            if (trace is not null)
+                trace.ReceiptFacts = ex.ReceiptFacts;
             trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
             return "WalletInitiationUnknown";
         }
@@ -249,6 +251,15 @@ public sealed class WalletCheckoutService(
         {
             trace?.Step("ProviderConfirm", "RequestSent");
             receipt = await gateway.ConfirmAsync(order, sessionKey, otp!, CancellationToken.None);
+            if (trace is not null)
+                trace.ReceiptFacts = new WalletReceiptValidationFacts(
+                    receipt.TransactionId,
+                    order.AmountIls,
+                    receipt.Amount,
+                    receipt.JawwalFee,
+                    receipt.PlatformFee,
+                    receipt.NetCredited
+                );
             trace?.Step("ProviderConfirm", "ResponseParsed");
         }
         catch (WalletRequestRejectedException)
@@ -265,6 +276,8 @@ public sealed class WalletCheckoutService(
         }
         catch (PaymentProviderException ex)
         {
+            if (trace is not null)
+                trace.ReceiptFacts = ex.ReceiptFacts;
             trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
             return "PaymentUncertain";
         }
