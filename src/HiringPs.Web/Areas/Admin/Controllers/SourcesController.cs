@@ -32,22 +32,54 @@ public class SourcesController : AdminControllerBase
         return View(sources);
     }
 
-    public async Task<IActionResult> Source(int? id, CancellationToken ct)
+    [HttpGet]
+    public IActionResult Create() =>
+        View("SourceForm", new Source { Connector = ConnectorKind.Automatic });
+
+    // Preserve old source links while new forms use explicit Create/Edit actions.
+    [HttpGet]
+    public IActionResult Source(int? id) =>
+        id is null ? RedirectToAction(nameof(Create)) : RedirectToAction(nameof(Edit), new { id });
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int? id, CancellationToken ct)
     {
-        var source = id is null
-            ? new Source { Connector = ConnectorKind.Automatic }
-            : await db.Sources.FindAsync([id.Value], ct);
-        return source is null ? NotFound() : View(source);
+        if (id is null)
+            return RedirectToAction(nameof(Create));
+        var source = await db.Sources.FindAsync([id.Value], ct);
+        return source is null ? NotFound() : View("SourceForm", source);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Source(
+    public Task<IActionResult> Create(
         [Bind(
             "Id,Name,Url,Connector,Enabled,UsageApproved,ApprovalNote,ConfigurationJson,IntervalHours,CollectionStartTime,Version"
         )]
             Source input,
         CancellationToken ct
     )
+    {
+        if (input.Id != 0)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, ct);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> Edit(
+        [FromRoute] int id,
+        [Bind(
+            "Id,Name,Url,Connector,Enabled,UsageApproved,ApprovalNote,ConfigurationJson,IntervalHours,CollectionStartTime,Version"
+        )]
+            Source input,
+        CancellationToken ct
+    )
+    {
+        if (id <= 0 || input.Id != id)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, ct);
+    }
+
+    private async Task<IActionResult> SaveAsync(Source input, CancellationToken ct)
     {
         NormalizeStrings(input);
         var previous =
@@ -60,7 +92,7 @@ public class SourcesController : AdminControllerBase
         if (duplicateSource is not null)
         {
             ViewData["DuplicateSourceName"] = duplicateSource.Name;
-            return View(input);
+            return View("SourceForm", input);
         }
         if (!Enum.IsDefined(input.Connector))
             ModelState.AddModelError("", "Invalid connector.");
@@ -139,7 +171,7 @@ public class SourcesController : AdminControllerBase
         }
 
         if (!ModelState.IsValid)
-            return View(input);
+            return View("SourceForm", input);
         var entity = input.Id == 0 ? new Source() : await db.Sources.FindAsync([input.Id], ct);
         if (entity is null)
             return NotFound();
@@ -180,7 +212,7 @@ public class SourcesController : AdminControllerBase
         catch (DbUpdateConcurrencyException)
         {
             ModelState.AddModelError("", "Source changed; reload before saving.");
-            return View(input);
+            return View("SourceForm", input);
         }
 
         return RedirectToAction(nameof(Sources));

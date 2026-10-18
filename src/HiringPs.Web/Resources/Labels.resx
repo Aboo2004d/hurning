@@ -1820,4 +1820,5 @@
   <data name="ToolCode_PaymentProviderResponded" xml:space="preserve"><value>نجح فحص اتصال آمن للقراءة فقط، دون دفع أو إرسال رمز.</value></data>
   <data name="ToolCode_PaymentProviderUnavailable" xml:space="preserve"><value>تعذر التحقق من الاتصال؛ راجع مفتاح البيئة الحالية وصلاحياته والشبكة.</value></data>
   <data name="DiscountPayment" xml:space="preserve"><value>خصم كامل</value></data>
+    <data name="InvalidNumber" xml:space="preserve"><value>أدخل رقمًا صحيحًا باستخدام النقطة للفاصل العشري.</value></data>
 </root>

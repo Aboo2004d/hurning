@@ -1820,4 +1820,5 @@
   <data name="ToolCode_PaymentProviderResponded" xml:space="preserve"><value>A read-only connectivity check succeeded; no payment or code was sent.</value></data>
   <data name="ToolCode_PaymentProviderUnavailable" xml:space="preserve"><value>Connectivity could not be verified; check the current environment key, permissions, and network.</value></data>
   <data name="DiscountPayment" xml:space="preserve"><value>Full discount</value></data>
+    <data name="InvalidNumber" xml:space="preserve"><value>Enter a valid number using a decimal point.</value></data>
 </root>

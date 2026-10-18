@@ -101,7 +101,16 @@ public sealed class PlanInput
     [StringLength(80)]
     public string BadgeEn { get; set; } = "";
 
-    [Range(typeof(decimal), "0.01", "100000")]
+    [Range(
+        typeof(decimal),
+        "0.01",
+        "100000",
+        ParseLimitsInInvariantCulture = true,
+        ConvertValueInInvariantCulture = true
+    )]
+    [Microsoft.AspNetCore.Mvc.ModelBinder(
+        BinderType = typeof(HiringPs.Web.Infrastructure.InvariantDecimalModelBinder)
+    )]
     public decimal PriceIls { get; set; } = 5;
 
     [Range(1, 3650)]

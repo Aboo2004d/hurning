@@ -190,6 +190,7 @@ public static class MembershipChecks
             )
         );
         builder.Services.AddSingleton<SiteSeo>();
+        builder.Services.AddSingleton<UrlPolicy>();
         builder.Services.AddScoped<MembershipService>();
         builder.Services.AddScoped<MemberVerification>();
         builder.Services.AddScoped<PendingVerificationCookie>();
@@ -245,6 +246,19 @@ public static class MembershipChecks
             }
         );
         app.UseRequestLocalization(SiteLocalization.Options());
+        app.Use(
+            async (context, next) =>
+            {
+                if (context.Request.Headers["X-Fixture-Windows-Arabic"] == "true")
+                {
+                    var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+                    culture.NumberFormat.NumberDecimalSeparator = "٫";
+                    culture.NumberFormat.NumberGroupSeparator = "٬";
+                    CultureInfo.CurrentCulture = culture;
+                }
+                await next();
+            }
+        );
         app.UseStatusCodePagesWithReExecute("/Errors/Status", "?code={0}");
         app.UseStaticFiles();
         app.UseRouting();
@@ -430,6 +444,7 @@ public static class MembershipChecks
                 );
             }
             client.DefaultRequestHeaders.Add("X-Fixture-Role", "Admin");
+            await AdminFormChecks.RunAsync(client, origin);
             response = await client.GetAsync(origin + "/en/Admin/AdminShellFixture");
             html = await response.Content.ReadAsStringAsync();
             Check(

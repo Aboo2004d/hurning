@@ -4,7 +4,7 @@
 }
 <div class="heading-row">
     <h1>@T["Sources"]</h1>
-    <a class="button button-outline" asp-controller="Sources" asp-action="Source">@T["Add"]</a>
+    <a class="button button-outline" asp-controller="Sources" asp-action="Create">@T["Add"]</a>
 </div>
 <p class="notice">@T["SourcesNote"]</p>
 <p class="muted">@T["ScheduleZone"] · @T["CollectWorkerNote"]</p>
@@ -56,7 +56,7 @@
                     </td>
                     <td>
                         <div class="source-actions">
-                            <a class="button button-outline" asp-controller="Sources" asp-action="Source" asp-route-id="@source.Id">@T["Edit"]</a>
+                            <a class="button button-outline" asp-controller="Sources" asp-action="Edit" asp-route-id="@source.Id">@T["Edit"]</a>
                             <form asp-controller="Sources" asp-action="CollectNow" method="post">
                                 <input type="hidden" name="id" value="@source.Id"/>
                                 <button

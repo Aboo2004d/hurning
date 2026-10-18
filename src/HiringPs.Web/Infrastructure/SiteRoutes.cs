@@ -17,6 +17,19 @@ public static class SiteRoutes
                 action = "Index",
             }
         );
+        // Explicit form routes precede the legacy /Admin/Sources/{id?} patterns.
+        foreach (var controller in new[] { "Plans", "Discounts", "Sources", "Opportunities" })
+        foreach (var action in new[] { "Create", "Edit" })
+            app.MapControllerRoute(
+                "admin-form-" + controller + "-" + action,
+                "Admin/" + controller + "/" + action + "/{id?}",
+                new
+                {
+                    area = "Admin",
+                    controller,
+                    action,
+                }
+            );
         foreach (var pair in AdminActionRoutes.Controllers)
             app.MapControllerRoute(
                 "admin-" + pair.Key,

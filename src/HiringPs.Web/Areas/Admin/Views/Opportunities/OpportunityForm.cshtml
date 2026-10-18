@@ -23,7 +23,7 @@
         <partial name="_Diagnostic" model="Model.ReviewReason"/>
     </div>
 }
-<form method="post" class="edit-form">
+<form asp-area="Admin" asp-controller="Opportunities" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? (long?)null : Model.Id)" method="post" class="edit-form">
     <input asp-for="Id" type="hidden" />
     <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version)" />
     <partial name="_LocalizedValidation"/>

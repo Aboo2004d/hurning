@@ -24,10 +24,14 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
         return View(result);
     }
 
+    [HttpGet]
+    public IActionResult Create() => View("PlanForm", new PlanInput());
+
+    [HttpGet]
     public async Task<IActionResult> Edit(int? id, CancellationToken ct)
     {
         if (id is null)
-            return View(new PlanInput());
+            return RedirectToAction(nameof(Create));
         var plan = await db
             .MembershipPlans.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == id, ct);
@@ -37,6 +41,7 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
             .MembershipPlanVersions.AsNoTracking()
             .SingleAsync(x => x.Id == plan.CurrentVersionId, ct);
         return View(
+            "PlanForm",
             new PlanInput
             {
                 Id = id,
@@ -62,16 +67,33 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
     }
 
     [HttpPost]
-    public async Task<IActionResult> Edit(PlanInput input, CancellationToken ct)
+    public Task<IActionResult> Create(PlanInput input, CancellationToken ct)
+    {
+        if (input.Id is not null)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, ct);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> Edit([FromRoute] int id, PlanInput input, CancellationToken ct)
+    {
+        if (id <= 0 || input.Id != id)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, ct);
+    }
+
+    private async Task<IActionResult> SaveAsync(PlanInput input, CancellationToken ct)
     {
         if (input.Details.Concat(input.Alerts).Any(x => !Enum.IsDefined(x)))
             return BadRequest();
         if (!ModelState.IsValid)
-            return View(input);
+            return View("PlanForm", input);
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var plan = input.Id is null
             ? new MembershipPlan()
-            : await db.MembershipPlans.SingleAsync(x => x.Id == input.Id, ct);
+            : await db.MembershipPlans.SingleOrDefaultAsync(x => x.Id == input.Id, ct);
+        if (plan is null)
+            return NotFound();
         if (input.Id is null)
             db.MembershipPlans.Add(plan);
         else

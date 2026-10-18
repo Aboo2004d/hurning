@@ -1,6 +1,6 @@
 @model DiscountCode
 <h1>@T["DiscountCode"]</h1>
-<form method="post" class="membership-card">
+<form asp-area="Admin" asp-controller="Discounts" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? (int?)null : Model.Id)" method="post" class="membership-card">
     <input asp-for="Id" type="hidden" />
     <label>@T["DiscountCode"]<input asp-for="Code" required dir="ltr" maxlength="50" />
     </label>

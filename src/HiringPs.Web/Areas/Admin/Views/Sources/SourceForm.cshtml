@@ -52,7 +52,7 @@
         }
     </div>
 </section>
-<form method="post" class="edit-form" id="source-editor">
+<form asp-area="Admin" asp-controller="Sources" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? (int?)null : Model.Id)" method="post" class="edit-form" id="source-editor">
     <input asp-for="Id" type="hidden"/>
     <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version)"/>
     <partial name="_LocalizedValidation"/>

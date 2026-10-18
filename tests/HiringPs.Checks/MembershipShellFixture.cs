@@ -119,6 +119,16 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
 // This controller exists only in the checks assembly; production never loads it.
 public class SessionShellFixtureController : Controller
 {
+    [HttpPost, Authorize(Roles = "Admin")]
+    public IActionResult PlanPrice(PlanInput input) =>
+        Json(
+            new
+            {
+                amount = input.PriceIls,
+                errors = ModelState[nameof(PlanInput.PriceIls)]?.Errors.Count ?? 0,
+            }
+        );
+
     [HttpPost, Authorize]
     public async Task<IActionResult> Issue(
         [FromServices]
@@ -143,5 +153,43 @@ public class SessionShellFixtureController : Controller
             );
         }
         return NoContent();
+    }
+}
+
+[Area("Admin"), Authorize(Roles = "Admin")]
+public class AdminFormShellFixtureController : Controller
+{
+    public IActionResult EditPreview(string kind)
+    {
+        ViewBag.OriginalSources = Array.Empty<string>();
+        ViewBag.Plans = new List<MembershipPlanVersion>
+        {
+            new()
+            {
+                PlanId = 42,
+                NameAr = "باقة تجريبية",
+                NameEn = "Test plan",
+            },
+        };
+        return kind switch
+        {
+            "Plans" => View(
+                "/Areas/Admin/Views/Plans/PlanForm.cshtml",
+                new PlanInput { Id = 42, PriceIls = 5.75m }
+            ),
+            "Discounts" => View(
+                "/Areas/Admin/Views/Discounts/DiscountForm.cshtml",
+                new DiscountCode { Id = 42, PlanId = 42 }
+            ),
+            "Sources" => View(
+                "/Areas/Admin/Views/Sources/SourceForm.cshtml",
+                new Source { Id = 42 }
+            ),
+            "Opportunities" => View(
+                "/Areas/Admin/Views/Opportunities/OpportunityForm.cshtml",
+                new Opportunity { Id = 42 }
+            ),
+            _ => BadRequest(),
+        };
     }
 }

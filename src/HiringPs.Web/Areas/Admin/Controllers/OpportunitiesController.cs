@@ -31,23 +31,58 @@ public class OpportunitiesController : AdminControllerBase
         );
     }
 
+    [HttpGet]
+    public IActionResult Create()
+    {
+        ViewBag.OriginalSources = Array.Empty<string>();
+        return View("OpportunityForm", new Opportunity { Status = PublicationStatus.Draft });
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Edit(long? id, CancellationToken ct)
     {
-        var o = id is null
-            ? new Opportunity { Status = PublicationStatus.Draft }
-            : await db.Opportunities.FindAsync([id.Value], ct);
-        if (o is null)
+        if (id is null)
+            return RedirectToAction(nameof(Create));
+        var opportunity = await db.Opportunities.FindAsync([id.Value], ct);
+        if (opportunity is null)
             return NotFound();
-        await SetOriginalSourcesAsync(o.Id, ct);
-        return View(o);
+        await SetOriginalSourcesAsync(opportunity.Id, ct);
+        return View("OpportunityForm", opportunity);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Edit(
+    public Task<IActionResult> Create(
         [Bind(
             "Id,Kind,Title,Organization,OriginalLanguage,Summary,Locations,Category,EmploymentType,ExperienceLevel,WorkMode,ReferenceNumber,Duration,Eligibility,Cost,ApplyUrl,Deadline,Status,ClosureEvidence,Version"
         )]
             Opportunity input,
+        string? sourceUrl,
+        CancellationToken ct
+    )
+    {
+        if (input.Id != 0)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, sourceUrl, ct);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> Edit(
+        [FromRoute] long id,
+        [Bind(
+            "Id,Kind,Title,Organization,OriginalLanguage,Summary,Locations,Category,EmploymentType,ExperienceLevel,WorkMode,ReferenceNumber,Duration,Eligibility,Cost,ApplyUrl,Deadline,Status,ClosureEvidence,Version"
+        )]
+            Opportunity input,
+        string? sourceUrl,
+        CancellationToken ct
+    )
+    {
+        if (id <= 0 || input.Id != id)
+            return Task.FromResult<IActionResult>(BadRequest());
+        return SaveAsync(input, sourceUrl, ct);
+    }
+
+    private async Task<IActionResult> SaveAsync(
+        Opportunity input,
         string? sourceUrl,
         CancellationToken ct
     )
@@ -80,7 +115,7 @@ public class OpportunitiesController : AdminControllerBase
         if (!ModelState.IsValid)
         {
             ViewBag.SourceUrl = sourceUrl;
-            return View(input);
+            return View("OpportunityForm", input);
         }
 
         var entity =
@@ -210,7 +245,7 @@ public class OpportunitiesController : AdminControllerBase
         catch (DbUpdateConcurrencyException)
         {
             ModelState.AddModelError("", "The record changed; reload before saving.");
-            return View(input);
+            return View("OpportunityForm", input);
         }
 
         return RedirectToAction(nameof(Opportunities));
