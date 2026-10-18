@@ -1,0 +1,8 @@
+@model VerificationInput
+<h1>@T["ChangeTelegram"]</h1>
+<form method="post" class="membership-card">
+    <partial name="_MemberValidation" />
+    <label>@T["TelegramMobile"]<input asp-for="NewMobile" type="tel" dir="ltr" required />
+    </label>
+    <button type="submit">@T["Continue"]</button>
+</form>

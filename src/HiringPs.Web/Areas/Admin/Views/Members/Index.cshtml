@@ -1,0 +1,50 @@
+@model AdminPage<MemberProfile>
+    <h1>@T["Members"]</h1>
+    <form method="get" class="membership-card">
+        <label>@T["Search"]<input name="q" value="@Context.Request.Query["q"]" />
+        </label>
+        <label>@T["AccountState"]<select name="suspended">
+                <option value="">@T["All"]</option>
+                <option value="true" selected="@(Context.Request.Query["suspended"] == "true")">@T["Suspended"]</option>
+                <option value="false" selected="@(Context.Request.Query["suspended"] == "false")">@T["Active"]</option>
+            </select>
+        </label>
+        <label>@T["TelegramLinked"]<select name="linked">
+                <option value="">@T["All"]</option>
+                <option value="true" selected="@(Context.Request.Query["linked"] == "true")">@T["Yes"]</option>
+                <option value="false" selected="@(Context.Request.Query["linked"] == "false")">@T["No"]</option>
+            </select>
+        </label>
+        <label>@T["PlanId"]<input name="planId" type="number" min="1" value="@Context.Request.Query["planId"]" />
+        </label>
+        <button type="submit">@T["Filter"]</button>
+    </form>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>@T["Name"]</th>
+                    <th>@T["Mobile"]</th>
+                    <th>@T["Status"]</th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var member in Model.Items)
+                {
+                    <tr>
+                        <td>@member.Name</td>
+                        <td>
+                            <bdi>@member.Mobile</bdi>
+                        </td>
+                        <td>@T[member.Suspended ? "Suspended" : member.Activated ? "Active" : "AwaitingVerification"]</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@member.UserId">@T["Details"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />

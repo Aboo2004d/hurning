@@ -84,6 +84,13 @@ if (!isProbe)
     // AiExtractor leaves those items awaiting AI instead of stopping the whole service.
     // Processing Services
     builder.Services.AddScoped<OpportunityService>();
+    builder.Services.AddScoped<MembershipService>();
+    builder.Services.AddScoped<MemberVerification>();
+    builder.Services.AddScoped<PaymentReconciliation>();
+    builder.Services.AddScoped<PaymentGatewayRegistry>();
+    builder.Services.AddScoped<TelegramCommands>();
+    builder.Services.AddScoped<MemberNotifications>();
+    builder.Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20)).RemoveAllLoggers();
     builder.Services.AddScoped<CollectionPipeline>();
     // Gemini HTTP Client
     builder.Services.AddHttpClient<AiExtractor>();
@@ -105,6 +112,7 @@ if (!isOnce && !isProbe)
     builder.Services.AddSingleton<ToolWorkerRuntime>();
     builder.Services.AddHostedService<Worker>();
     builder.Services.AddHostedService<ToolMonitor>();
+    builder.Services.AddHostedService<MembershipWorker>();
 }
 
 // ========================================

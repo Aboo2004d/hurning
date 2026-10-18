@@ -1,0 +1,15 @@
+@model AdminPage<SavedOpportunity>
+    @{ ViewData["Title"] = T["Saved"]; }
+    <h1>@T["Saved"]</h1>
+    @foreach (var saved in Model.Items)
+    {
+        <article class="membership-card">
+            <h2 dir="auto">@saved.Opportunity.Title</h2>
+            <a asp-area="" asp-controller="Opportunities" asp-action="Details" asp-route-id="@saved.OpportunityId">@T["Details"]</a>
+            <form asp-action="Remove" method="post">
+                <input name="id" type="hidden" value="@saved.Id" />
+                <button class="secondary" type="submit">@T["Remove"]</button>
+            </form>
+        </article>
+    }
+    <partial name="_AdminPagination" model="Model.Pager" />

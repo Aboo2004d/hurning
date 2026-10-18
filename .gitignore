@@ -11,3 +11,4 @@ src/HiringPs.Worker/tessdata/
 **/DataProtectionKeys/
 **/logs/
 **/appsettings.Development.json
+**/data/payment-evidence/

@@ -1,0 +1,36 @@
+@model AdminPage<MembershipPlan>
+    @{ var versions = (List<MembershipPlanVersion>)ViewBag.Versions; }
+        <h1>@T["Plans"]</h1>
+        <div class="actions">
+            <a class="button" asp-action="Edit">@T["AddPlan"]</a>
+            <a asp-action="Access">@T["TypeAccess"]</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>@T["PlanId"]</th>
+                        <th>@T["Plan"]</th>
+                        <th>@T["Amount"]</th>
+                        <th>@T["Visible"]</th>
+                        <th>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in Model.Items)
+                    { var version = versions.Single(x => x.Id == plan.CurrentVersionId);
+                    <tr>
+                        <td>@plan.Id</td>
+                        <td>@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
+                        <td>@MembershipRules.Money(version.PriceIls)</td>
+                        <td>@T[plan.Visible ? "Yes" : "No"]</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@plan.Id">@T["Edit"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />

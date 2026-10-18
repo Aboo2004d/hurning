@@ -163,6 +163,44 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("ContactMessages");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.DiscountCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("MaximumUses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Percent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("DiscountCodes");
+                });
+
             modelBuilder.Entity("HiringPs.Core.DiscoveryCheckpoint", b =>
                 {
                     b.Property<int>("SourceId")
@@ -206,6 +244,414 @@ namespace HiringPs.Core.Migrations
                     b.HasKey("SourceId");
 
                     b.ToTable("DiscoveryCheckpoints");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberChallenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("ChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("CodeSentAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ConsumedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ExpectedMobile")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LinkHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MemberChallenges");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AvailableAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("EventAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastError")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("OpportunityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "EventKey")
+                        .IsUnique();
+
+                    b.HasIndex("SentAt", "CancelledAt", "AvailableAt");
+
+                    b.ToTable("MemberMessages");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberPreference", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CategoriesJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Kinds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LocationsJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("MemberPreferences");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberProfile", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("Activated")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("FreezeSubscription")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Mobile")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<bool>("NotificationsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("NotificationsSince")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("SavedRemindersEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("Suspended")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("SuspendedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SuspensionReason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<long?>("TelegramChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Mobile");
+
+                    b.HasIndex("TelegramUserId")
+                        .IsUnique()
+                        .HasFilter("[TelegramUserId] IS NOT NULL");
+
+                    b.ToTable("MemberProfiles");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberSubscription", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Cancelled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("EndsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PlanVersionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasFilter("[OrderId] IS NOT NULL");
+
+                    b.HasIndex("PlanVersionId");
+
+                    b.HasIndex("UserId", "EndsAt");
+
+                    b.ToTable("MemberSubscriptions");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MembershipPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CurrentVersionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<bool>("Visible")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrentVersionId");
+
+                    b.ToTable("MembershipPlans");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MembershipPlanVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlertKinds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BadgeAr")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("BadgeEn")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Days")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DescriptionAr")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DescriptionEn")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("DetailKinds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PriceIls")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("MembershipPlanVersions");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MembershipRuntimeState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("ReminderAfterSaved")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ReminderAfterSubscription")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MembershipRuntimeStates");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ReminderAfterSaved = 0L,
+                            ReminderAfterSubscription = 0L
+                        });
                 });
 
             modelBuilder.Entity("HiringPs.Core.MergeOperation", b =>
@@ -420,6 +866,41 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("Opportunities");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.OpportunityAccessRule", b =>
+                {
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("PublicDetails")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Kind");
+
+                    b.ToTable("OpportunityAccessRules");
+
+                    b.HasData(
+                        new
+                        {
+                            Kind = 0,
+                            PublicDetails = true
+                        },
+                        new
+                        {
+                            Kind = 1,
+                            PublicDetails = true
+                        },
+                        new
+                        {
+                            Kind = 2,
+                            PublicDetails = true
+                        },
+                        new
+                        {
+                            Kind = 3,
+                            PublicDetails = true
+                        });
+                });
+
             modelBuilder.Entity("HiringPs.Core.OpportunityDateRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -471,6 +952,26 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("OpportunityDates");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.OpportunityPublication", b =>
+                {
+                    b.Property<long>("OpportunityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("AfterUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("OpportunityId");
+
+                    b.ToTable("OpportunityPublications");
+                });
+
             modelBuilder.Entity("HiringPs.Core.OpportunitySourceLink", b =>
                 {
                     b.Property<long>("Id")
@@ -498,6 +999,174 @@ namespace HiringPs.Core.Migrations
                         .IsUnique();
 
                     b.ToTable("SourceLinks");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.PaymentGatewaySetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("PaymentGatewaySettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Key = "Lahza",
+                            Enabled = false
+                        },
+                        new
+                        {
+                            Key = "JawwalPay",
+                            Enabled = false
+                        });
+                });
+
+            modelBuilder.Entity("HiringPs.Core.PaymentOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AmountIls")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("DecisionReason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("DiscountCodeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DiscountPercent")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Gateway")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTimeOffset?>("LastCheckedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PaymentEvidence")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PlanVersionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProviderReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("TermsAcceptedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TermsVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscountCodeId");
+
+                    b.HasIndex("PlanVersionId");
+
+                    b.HasIndex("Gateway", "ProviderReference")
+                        .IsUnique()
+                        .HasFilter("[ProviderReference] IS NOT NULL");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("PaymentOrders");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.PaymentReview", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AttachmentName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Resolution")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("PaymentReviews");
                 });
 
             modelBuilder.Entity("HiringPs.Core.PromptVersion", b =>
@@ -619,6 +1288,35 @@ namespace HiringPs.Core.Migrations
                             RevisionDays = 90,
                             Version = new byte[0]
                         });
+                });
+
+            modelBuilder.Entity("HiringPs.Core.SavedOpportunity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("OpportunityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("SavedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("UserId", "OpportunityId")
+                        .IsUnique();
+
+                    b.ToTable("SavedOpportunities");
                 });
 
             modelBuilder.Entity("HiringPs.Core.ScrapeRun", b =>
@@ -916,6 +1614,35 @@ namespace HiringPs.Core.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Revisions");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.TelegramInbox", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Json")
+                        .IsRequired()
+                        .HasMaxLength(32000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedAt", "LockedUntil");
+
+                    b.ToTable("TelegramInbox");
                 });
 
             modelBuilder.Entity("HiringPs.Core.ToolCheckRequest", b =>
@@ -1360,11 +2087,106 @@ namespace HiringPs.Core.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HiringPs.Core.DiscountCode", b =>
+                {
+                    b.HasOne("HiringPs.Core.MembershipPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberChallenge", b =>
+                {
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberMessage", b =>
+                {
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberPreference", b =>
+                {
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithOne()
+                        .HasForeignKey("HiringPs.Core.MemberPreference", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberProfile", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithOne()
+                        .HasForeignKey("HiringPs.Core.MemberProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MemberSubscription", b =>
+                {
+                    b.HasOne("HiringPs.Core.PaymentOrder", null)
+                        .WithOne()
+                        .HasForeignKey("HiringPs.Core.MemberSubscription", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HiringPs.Core.MembershipPlanVersion", "PlanVersion")
+                        .WithMany()
+                        .HasForeignKey("PlanVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PlanVersion");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MembershipPlan", b =>
+                {
+                    b.HasOne("HiringPs.Core.MembershipPlanVersion", null)
+                        .WithMany()
+                        .HasForeignKey("CurrentVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("HiringPs.Core.MembershipPlanVersion", b =>
+                {
+                    b.HasOne("HiringPs.Core.MembershipPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HiringPs.Core.OpportunityDateRecord", b =>
                 {
                     b.HasOne("HiringPs.Core.Opportunity", "Opportunity")
                         .WithMany()
                         .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.OpportunityPublication", b =>
+                {
+                    b.HasOne("HiringPs.Core.Opportunity", "Opportunity")
+                        .WithOne()
+                        .HasForeignKey("HiringPs.Core.OpportunityPublication", "OpportunityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1388,6 +2210,54 @@ namespace HiringPs.Core.Migrations
                     b.Navigation("Opportunity");
 
                     b.Navigation("SourceItem");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.PaymentOrder", b =>
+                {
+                    b.HasOne("HiringPs.Core.DiscountCode", null)
+                        .WithMany()
+                        .HasForeignKey("DiscountCodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HiringPs.Core.MembershipPlanVersion", "PlanVersion")
+                        .WithMany()
+                        .HasForeignKey("PlanVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PlanVersion");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.PaymentReview", b =>
+                {
+                    b.HasOne("HiringPs.Core.PaymentOrder", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.SavedOpportunity", b =>
+                {
+                    b.HasOne("HiringPs.Core.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HiringPs.Core.MemberProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("HiringPs.Core.SourceCollectionRequest", b =>

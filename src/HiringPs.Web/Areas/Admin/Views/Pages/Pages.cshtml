@@ -1,0 +1,52 @@
+@model List<SitePage>
+@{
+    ViewData["Title"] = T["PageContents"];
+}
+<h1>@T["PageContents"]</h1>
+<p class="muted">@T["PageContentsHelp"]</p>
+<div class="managed-pages">
+    @foreach (var key in new[]
+    {
+        "about",
+        "privacy"
+    }
+    )
+    {
+        var page = Model.SingleOrDefault(x => x.Key == key);
+        <article class="detail-panel">
+            <h2>@T[key=="about"?"About":"Privacy"]</h2>
+            <p class="muted">
+                @if (page is null)
+                {
+                    @T["PageUsingDefault"]
+                }
+                else
+                {
+                    @T["PageLastUpdated"]
+                    <span>
+                        @TimeZoneInfo.ConvertTime(page.UpdatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")
+                    </span>
+                }
+            </p>
+            <div class="actions">
+                <a class="button" asp-controller="Pages" asp-action="PageContent" asp-route-key="@key">@T["Edit"]</a>
+                <a
+                    class="textlink"
+                    asp-area="" asp-controller="@(key=="about"?"About":"Privacy")" asp-action="Index"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    @T["PreviewPage"]
+                </a>
+            </div>
+        </article>
+    }
+    <article class="detail-panel">
+        <h2>@T["ManageSiteQuestions"]</h2>
+        <p class="muted">@T["ManageSiteQuestionsHelp"]</p>
+        <div class="actions">
+            <a class="button" asp-controller="SiteQuestions" asp-action="SiteQuestions">@T["Edit"]</a>
+            <a class="textlink" asp-area="" asp-controller="About" asp-action="Index" asp-fragment="common-questions" target="_blank" rel="noopener noreferrer">@T["PreviewPage"]</a>
+        </div>
+    </article>
+</div>

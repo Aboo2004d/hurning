@@ -1,0 +1,88 @@
+@model AdminPage<MemberMessage>
+    <h1>@T["NotificationDelivery"]</h1>
+    <form method="get" class="membership-card">
+        <label>@T["MemberId"]<input name="userId" value="@Context.Request.Query["userId"]" />
+        </label>
+        <label>@T["Status"]<select name="state">
+                <option value="">@T["All"]</option>
+                @foreach (var state in new[] { "pending", "failed", "sent", "cancelled" })
+                {
+                    <option value="@state" selected="@(Context.Request.Query["state"] == state)">@T["Delivery" + state]</option>
+                }
+            </select>
+        </label>
+        <button type="submit">@T["Filter"]</button>
+    </form>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>@T["MemberId"]</th>
+                    <th>@T["Message"]</th>
+                    <th>@T["Status"]</th>
+                    <th>@T["Attempts"]</th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var message in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <a asp-controller="Members" asp-action="Details" asp-route-id="@message.UserId">@message.UserId</a>
+                        </td>
+                        <td dir="auto">@message.Text</td>
+                        <td>@T[message.SentAt != null ? "Deliverysent" : message.CancelledAt != null ? "Deliverycancelled" : message.LastError.Length > 0 ? "Deliveryfailed" : "Deliverypending"]<br />@T[message.LastError]</td>
+                        <td>@message.Attempts</td>
+                        <td>
+                            @if (message.SentAt is null && message.CancelledAt is null)
+                            {
+                                <form asp-action="Retry" method="post">
+                                    <input name="id" value="@message.Id" type="hidden" />
+                                    <button class="secondary" type="submit">@T["Retry"]</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />
+    @if (ViewBag.Inbox is AdminPage<TelegramInbox> inbox)
+        {
+            <h2 id="bot-inbox">@T["BotInbox"]</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>@T["CreatedUtc"]</th>
+                            <th>@T["Attempts"]</th>
+                            <th>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var update in inbox.Items)
+                        {
+                            <tr>
+                                <td>@update.Id</td>
+                                <td>
+                                    <bdi>@update.ReceivedAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                                </td>
+                                <td>@update.Attempts</td>
+                                <td>
+                                    <form asp-action="RetryInbox" method="post">
+                                        <input name="id" value="@update.Id" type="hidden" />
+                                        <button class="secondary" type="submit">@T["Retry"]</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <partial name="_AdminPagination" model="inbox.Pager" />
+        }

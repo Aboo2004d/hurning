@@ -33,9 +33,28 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     public DbSet<ToolCheckResult> ToolCheckResults => Set<ToolCheckResult>();
     public DbSet<ToolWorkerState> ToolWorkers => Set<ToolWorkerState>();
 
+    public DbSet<MemberProfile> MemberProfiles => Set<MemberProfile>();
+    public DbSet<MemberPreference> MemberPreferences => Set<MemberPreference>();
+    public DbSet<SavedOpportunity> SavedOpportunities => Set<SavedOpportunity>();
+    public DbSet<OpportunityAccessRule> OpportunityAccessRules => Set<OpportunityAccessRule>();
+    public DbSet<MembershipPlan> MembershipPlans => Set<MembershipPlan>();
+    public DbSet<MembershipPlanVersion> MembershipPlanVersions => Set<MembershipPlanVersion>();
+    public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
+    public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
+    public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
+    public DbSet<PaymentReview> PaymentReviews => Set<PaymentReview>();
+    public DbSet<MemberChallenge> MemberChallenges => Set<MemberChallenge>();
+    public DbSet<MemberMessage> MemberMessages => Set<MemberMessage>();
+    public DbSet<OpportunityPublication> OpportunityPublications => Set<OpportunityPublication>();
+
+    public DbSet<MembershipRuntimeState> MembershipRuntimeStates => Set<MembershipRuntimeState>();
+    public DbSet<PaymentGatewaySetting> PaymentGatewaySettings => Set<PaymentGatewaySetting>();
+    public DbSet<TelegramInbox> TelegramInbox => Set<TelegramInbox>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        MembershipSchema.Configure(b);
         b.Entity<ToolCheckRequest>()
             .HasIndex(x => x.ActiveSlot)
             .IsUnique()
@@ -144,6 +163,52 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
             throw new InvalidOperationException(
                 "Prompt versions are immutable; create a new version instead."
             );
+
+        if (
+            ChangeTracker
+                .Entries<MembershipPlanVersion>()
+                .Any(x => x.State is EntityState.Modified or EntityState.Deleted)
+        )
+            throw new InvalidOperationException(
+                "Purchased plan versions are immutable; create a new version."
+            );
+
+        // Capture only a first publication. Existing records are not backfilled on deployment.
+        foreach (
+            var entry in ChangeTracker
+                .Entries<Opportunity>()
+                .Where(x =>
+                    x.Entity.Status == PublicationStatus.Published
+                    && (
+                        x.State == EntityState.Added
+                        || (
+                            x.State == EntityState.Modified
+                            && x.Property(y => y.Status).OriginalValue
+                                != PublicationStatus.Published
+                        )
+                    )
+                )
+                .ToList()
+        )
+        {
+            if (
+                (
+                    entry.Entity.Id == 0
+                    || !OpportunityPublications.Local.Any(x => x.OpportunityId == entry.Entity.Id)
+                )
+                && (
+                    entry.Entity.Id == 0
+                    || !OpportunityPublications.Any(x => x.OpportunityId == entry.Entity.Id)
+                )
+            )
+                OpportunityPublications.Add(
+                    new OpportunityPublication
+                    {
+                        Opportunity = entry.Entity,
+                        PublishedAt = DateTimeOffset.UtcNow,
+                    }
+                );
+        }
 
         foreach (
             var entry in ChangeTracker

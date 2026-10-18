@@ -1,0 +1,131 @@
+@model CollectorDiagnostic
+@{
+    ViewData["Title"] = T["AttemptDiagnostic"];
+}
+<h1>@T["AttemptDiagnostic"]</h1>
+<p class="notice">@T["DiagnosticScope"]</p>
+<dl class="detail-grid">
+    <div>
+        <dt>@T["Source"]</dt>
+        <dd>@Model.SourceId</dd>
+    </div>
+    <div>
+        <dt>@T["DiagnosticAt"]</dt>
+        <dd>@SourceSchedule.Display(Model.At)</dd>
+    </div>
+    <div>
+        <dt>@T["DiagnosticOperation"]</dt>
+        <dd>@T["DiagOp_"+Model.Operation]</dd>
+    </div>
+    <div>
+        <dt>@T["DiagnosticStage"]</dt>
+        <dd>@T["DiagStage_"+Model.Stage]</dd>
+    </div>
+    <div>
+        <dt>HTTP</dt>
+        <dd>@(Model.HttpStatus?.ToString()??T["DiagnosticUnknown"].Value)</dd>
+    </div>
+    <div>
+        <dt>@T["PageTitle"]</dt>
+        <dd dir="auto">@(Model.Title.Length>0?Model.Title:T["DiagnosticUnknown"].Value)</dd>
+    </div>
+    <div>
+        <dt>@T["RequestedUrl"]</dt>
+        <dd dir="ltr">@Model.RequestedUrl</dd>
+    </div>
+    <div>
+        <dt>@T["FinalUrl"]</dt>
+        <dd dir="ltr">@Model.FinalUrl</dd>
+    </div>
+    <div>
+        <dt>@T["WaitSelector"]</dt>
+        <dd dir="ltr">@(Model.Selector.Length>0?Model.Selector:T["DiagnosticNotApplicable"].Value)</dd>
+    </div>
+    <div>
+        <dt>@T["SelectorMatches"]</dt>
+        <dd>@(Model.SelectorMatches?.ToString()??T["DiagnosticUnknown"].Value)</dd>
+    </div>
+    <div>
+        <dt>@T["SelectorVisible"]</dt>
+        <dd>@(Model.SelectorVisible is {} visible?T[visible?"Yes":"No"].Value:T["DiagnosticUnknown"].Value)</dd>
+    </div>
+    <div>
+        <dt>@T["DocumentReady"]</dt>
+        <dd>@T["DiagReady_"+(Model.ReadyState.Length>0?Model.ReadyState:"Unknown")]</dd>
+    </div>
+    <div>
+        <dt>@T["ConfiguredTimeout"]</dt>
+        <dd>
+            @if (Model.TimeoutMs > 0)
+            {
+                <span>@(Model.TimeoutMs/1000.0) @T["Seconds"]</span>
+            }
+            else
+            {
+                @T["DiagnosticNotApplicable"]
+            }
+        </dd>
+    </div>
+    <div>
+        <dt>@T["StageElapsed"]</dt>
+        <dd>@(Model.StageElapsedMs/1000.0) @T["Seconds"]</dd>
+    </div>
+    <div>
+        <dt>@T["TotalElapsed"]</dt>
+        <dd>@(Model.ElapsedMs/1000.0) @T["Seconds"]</dd>
+    </div>
+    <div>
+        <dt>@T["ExceptionType"]</dt>
+        <dd dir="ltr">@Model.ExceptionType</dd>
+    </div>
+</dl>
+@if (Model.CaptureNote.Length > 0)
+{
+    <p class="notice">@T["CaptureIncomplete"]</p>
+}
+@if (Model.Screenshot)
+{
+    <h2>@T["FailureScreenshot"]</h2>
+    <img
+        class="diagnostic-image"
+        src="@Url.Action("DiagnosticImage", "Diagnostics", new{id=Model.Id})"
+        alt="@T["FailureScreenshot"]"
+    />
+}
+<h2>@T["FailedRequests"]</h2>
+<p class="muted">@T["NetworkDiagnosticNote"]</p>
+@if (Model.Network.Count == 0)
+{
+    <p>@T["NoFailedRequests"]</p>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-nowrap">
+            <thead>
+                <tr>
+                    <th>@T["Url"]</th>
+                    <th>@T["Kind"]</th>
+                    <th>HTTP</th>
+                    <th>@T["Error"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var request in Model.Network)
+                {
+                    <tr>
+                        <td dir="ltr">@request.Url</td>
+                        <td>@T["DiagType_"+request.Type]</td>
+                        <td>@request.Status</td>
+                        <td>@(request.Reason.StartsWith("net::")?request.Reason:T["DiagReason_"+request.Reason].Value)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (ViewData["NetworkPager"] is AdminPager pager)
+{
+    <partial name="_AdminPagination" model="pager" />
+}

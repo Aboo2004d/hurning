@@ -88,7 +88,7 @@
                 }
                 @foreach (var item in Model.Items)
                 {
-                    <a class="opportunity-card" asp-action="Details" asp-route-id="@item.Id">
+                    <article class="opportunity-card">
                         <div class="card-top">
                             <span class="organization" dir="auto">@item.Organization</span>
                             <span class="badge">@T[item.Kind.ToString()]</span>
@@ -118,9 +118,16 @@
                             <span>
                                 @(Model.Archive?T["Expired"]:item.Deadline is {} deadline?T["Deadline"]+": "+deadline.ToString("yyyy-MM-dd"):T["UnknownDeadline"])
                             </span>
-                            <strong>@T["Details"] ←</strong>
+                            @if (Model.AllowedDetails.Contains(item.Kind))
+                            {
+                                <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.Id">@T["Details"] ←</a>
+                            }
+                            @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+                            {
+                                <button class="secondary" type="submit" form="save-@item.Id">@T["SaveOpportunity"]</button>
+                            }
                         </div>
-                    </a>
+                    </article>
                 }
             </div>
             <nav class="pagination" aria-label="Pagination">
@@ -159,3 +166,13 @@
         </section>
     </div>
 </form>
+
+@if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+{
+    @foreach (var item in Model.Items)
+    {
+        <form id="save-@item.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post">
+            <input type="hidden" name="id" value="@item.Id" />
+        </form>
+    }
+}

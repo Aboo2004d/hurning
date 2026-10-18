@@ -9,6 +9,24 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--membership-preview"))
+{
+    await MembershipChecks.ShellAsync(preview: true);
+    return;
+}
+
+if (args.Contains("--membership-sql-check"))
+{
+    await MembershipSqlChecks.RunAsync();
+    return;
+}
+
+if (args.Contains("--membership-check"))
+{
+    await MembershipChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--source-setup-check"))
 {
     await SourceSetupChecks.RunAsync();

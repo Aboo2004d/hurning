@@ -1,0 +1,38 @@
+@model PurchaseInput
+@{ ViewData["Title"] = T["ReviewOrder"]; }
+<h1>@T["ReviewOrder"]</h1>
+<section class="membership-card">
+    <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
+    <p>@Model.Plan.Days @T["Days"] · @T["StartsUtc"]: <bdi>@Model.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+    </p>
+    <partial name="_PlanBenefits" model="Model.Plan" />
+    <p>@T["OriginalAmount"]: @MembershipRules.Money(Model.Plan.PriceIls)</p>
+    <p>
+        <strong>@T["FinalAmount"]: @MembershipRules.Money(Model.FinalAmount)</strong>
+    </p>
+    <form method="post">
+        <partial name="_MemberValidation" />
+        <input asp-for="PlanId" type="hidden" />
+        <input asp-for="PresentedAmount" type="hidden" />
+        <input asp-for="PresentedVersionId" type="hidden" />
+        <input asp-for="RequestId" type="hidden" />
+        <label>@T["DiscountCode"]<input asp-for="DiscountCode" dir="ltr" maxlength="50" />
+        </label>
+        <button class="secondary" type="submit" name="checkout" value="false">@T["ApplyDiscount"]</button>
+        <label>@T["PaymentGateway"]<select asp-for="Gateway">
+                @foreach (var gateway in Model.Gateways)
+                {
+                    <option value="@gateway">@gateway</option>
+                }
+            </select>
+        </label>
+        <p class="notice">@T["NoRefundNotice"]</p>
+        <label class="check">
+            <input asp-for="AcceptTerms" />@T["AcceptTerms"]</label>
+        <button type="submit" name="checkout" value="true" disabled="@(Model.FinalAmount > 0 && Model.Gateways.Length == 0)">@T["CompletePayment"]</button>
+        @if (Model.FinalAmount > 0 && Model.Gateways.Length == 0)
+        {
+            <p>@T["GatewayUnavailable"]</p>
+        }
+    </form>
+</section>

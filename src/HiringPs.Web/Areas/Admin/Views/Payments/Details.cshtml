@@ -1,0 +1,54 @@
+@model PaymentOrder
+@{ var review = ViewBag.Review as PaymentReview; }
+<h1>@T["PaymentDetails"]</h1>
+<section class="membership-card">
+    <partial name="_PaymentSummary" model="Model" />
+    @if (Model.DecisionReason.Length > 0)
+    {
+        <dl class="detail-grid">
+            <div><dt>@T["Reason"]</dt><dd dir="auto">@Model.DecisionReason</dd></div>
+            <div><dt>@T["PaymentEvidence"]</dt><dd dir="auto">@Model.PaymentEvidence</dd></div>
+        </dl>
+    }
+    <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.UserId">@T["MemberAccount"]</a>
+    <form asp-action="Check" method="post">
+        <input name="id" value="@Model.Id" type="hidden" />
+        <button class="secondary" type="submit">@T["CheckPayment"]</button>
+    </form>
+    @if (!MembershipRules.Paid(Model.State))
+    {
+        <form asp-action="Approve" method="post">
+            <h2>@T["ManualApproval"]</h2>
+            <input name="id" value="@Model.Id" type="hidden" />
+            <label>@T["Reason"]<textarea name="reason" required maxlength="1500">
+                </textarea>
+            </label>
+            <label>@T["PaymentEvidence"]<textarea name="evidence" required maxlength="1500">
+                </textarea>
+            </label>
+            <button type="submit">@T["ApproveSubscription"]</button>
+        </form>
+    }
+    @if (review is not null)
+    {
+        <h2>@T["Review"]</h2>
+        <p dir="auto">@review.Note</p>
+        @if (review.AttachmentName is not null)
+        {
+            <a asp-action="Evidence" asp-route-id="@Model.Id">@T["ViewEvidence"]</a>
+        }
+        @if (review.ResolvedAt is null)
+        {
+            <form asp-action="Resolve" method="post">
+                <input name="id" value="@Model.Id" type="hidden" />
+                <label>@T["ReviewResult"]<textarea name="result" required maxlength="1500">
+                    </textarea>
+                </label>
+                <button type="submit">@T["ResolveReview"]</button>
+            </form>
+        }
+        else {
+        <p dir="auto">@review.Resolution</p>
+    }
+}
+</section>

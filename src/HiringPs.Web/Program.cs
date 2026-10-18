@@ -1,6 +1,8 @@
 using System.Threading.RateLimiting;
 using HiringPs.Core;
 using HiringPs.Web;
+using HiringPs.Web.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -34,6 +36,15 @@ if (string.IsNullOrWhiteSpace(aiModel))
 // Application Services
 // ======================================
 builder.Services.AddScoped<OpportunityService>();
+builder.Services.AddScoped<MembershipService>();
+builder.Services.AddScoped<MemberVerification>();
+builder.Services.AddScoped<PendingVerificationCookie>();
+builder.Services.AddScoped<PaymentEvidenceStore>();
+builder.Services.AddScoped<PaymentReconciliation>();
+builder.Services.AddScoped<PaymentGatewayRegistry>();
+builder
+    .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
+    .RemoveAllLoggers();
 builder.Services.AddScoped<CollectionPipeline>();
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<BrowserCollector>();
@@ -55,7 +66,7 @@ builder
     {
         options.Password.RequiredLength = 8;
         options.Lockout.MaxFailedAccessAttempts = 5;
-        options.User.RequireUniqueEmail = false;
+        options.User.RequireUniqueEmail = true;
         options.Password.RequireUppercase = false;
     })
     .AddEntityFrameworkStores<HiringDb>()
@@ -63,8 +74,30 @@ builder
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/Login";
+    options.AccessDeniedPath = "/Errors/Status?code=403";
     options.Cookie.Name = "HiringPs.Admin";
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        await SecurityStampValidator.ValidatePrincipalAsync(context);
+        if (
+            context.Principal?.Identity?.IsAuthenticated != true
+            || context.Principal.IsInRole("Admin")
+        )
+            return;
+        var id = context
+            .Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?.Value;
+        var db = context.HttpContext.RequestServices.GetRequiredService<HiringDb>();
+        var eligible = await db.MemberProfiles.AnyAsync(
+            x => x.UserId == id && x.Activated && !x.Suspended,
+            context.HttpContext.RequestAborted
+        );
+        if (!eligible)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        }
+    };
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
@@ -152,7 +185,6 @@ await using (var scope = app.Services.CreateAsyncScope())
 // ========================================
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
     app.UseHttpsRedirection();
 }
@@ -181,46 +213,77 @@ app.Use(
 // ========================================
 // 14. Middleware
 // ========================================
-app.UseRequestLocalization(
-    new RequestLocalizationOptions()
-        .SetDefaultCulture("ar")
-        .AddSupportedCultures("ar", "en")
-        .AddSupportedUICultures("ar", "en")
+app.UseMiddleware<LanguagePathMiddleware>();
+app.UseExceptionHandler(
+    new ExceptionHandlerOptions
+    {
+        ExceptionHandlingPath = "/Errors/Status",
+        StatusCodeSelector = exception => exception is TimeoutException ? 504 : 500,
+    }
 );
+app.UseRequestLocalization(SiteLocalization.Options());
 
-// Private and error responses must not enter search indexes, including redirects.
+// Capture privacy before LanguagePathMiddleware restores the external request path.
 app.Use(
     async (context, next) =>
     {
+        var privatePage = new[]
+        {
+            "/Admin",
+            "/Account",
+            "/Member",
+            "/Registration",
+            "/PasswordReset",
+            "/integrations",
+        }.Any(prefix =>
+            context.Request.Path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase)
+        );
         context.Response.OnStarting(() =>
         {
-            if (
-                context.Request.Path.StartsWithSegments(
-                    "/Admin",
-                    StringComparison.OrdinalIgnoreCase
-                )
-                || context.Request.Path.StartsWithSegments(
-                    "/Account",
-                    StringComparison.OrdinalIgnoreCase
-                )
-                || context.Response.StatusCode >= 400
-            )
+            if (privatePage || context.Response.StatusCode >= 400)
                 context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            if (privatePage)
+                context.Response.Headers.CacheControl = "no-store";
             return Task.CompletedTask;
         });
         await next();
     }
 );
+app.UseStatusCodePagesWithReExecute("/Errors/Status", "?code={0}");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.Use(
+    async (context, next) =>
+    {
+        if (
+            context.User.Identity?.IsAuthenticated == true
+            && !context.User.IsInRole("Admin")
+            && context.Items["Language"] is string language
+            && !LanguageUrls.IsInfrastructure(context.Request.Path)
+        )
+        {
+            var id = context
+                .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                ?.Value;
+            var db = context.RequestServices.GetRequiredService<HiringDb>();
+            await db
+                .MemberProfiles.Where(x => x.UserId == id && x.Language != language)
+                .ExecuteUpdateAsync(
+                    x => x.SetProperty(y => y.Language, language),
+                    context.RequestAborted
+                );
+        }
+        await next();
+    }
+);
 app.UseAuthorization();
 
 // ========================================
 // 15. Routes
 // ========================================
-app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapSiteRoutes();
 app.Run();
 
 public partial class Program;

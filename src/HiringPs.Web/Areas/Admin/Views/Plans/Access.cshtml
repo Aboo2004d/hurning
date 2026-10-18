@@ -1,0 +1,11 @@
+@model List<OpportunityAccessRule>
+    <h1>@T["TypeAccess"]</h1>
+    <p class="notice">@T["TypeAccessAdvice"]</p>
+    <form method="post" class="membership-card">
+        @foreach (var rule in Model)
+        {
+            <label class="check">
+                <input name="publicKinds" type="checkbox" value="@rule.Kind" checked="@rule.PublicDetails" />@T[rule.Kind.ToString()] — @T["PublicDetails"]</label>
+        }
+        <button type="submit">@T["Save"]</button>
+    </form>

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public class HomeController(HiringDb db, SiteSeo seo) : Controller
+public class HomeController(HiringDb db, SiteSeo seo, MembershipService membership) : Controller
 {
     public async Task<IActionResult> Index(
         string? q,
@@ -78,6 +78,11 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
 
         var count = await query.CountAsync(ct);
         page = Math.Clamp(page, 1, Math.Max(1, (count + 11) / 12));
+        var allowed = await membership.DetailKindsAsync(
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            User.IsInRole("Admin"),
+            ct
+        );
         var model = new ListingModel
         {
             Items = await query
@@ -85,6 +90,7 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
                 .Skip((page - 1) * 12)
                 .Take(12)
                 .ToListAsync(ct),
+            AllowedDetails = allowed,
             Count = count,
             Page = page,
             Query = q ?? "",
@@ -134,39 +140,11 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
         return View(model);
     }
 
-    public async Task<IActionResult> Details(long id, CancellationToken ct)
-    {
-        var item = await db
-            .Opportunities.AsNoTracking()
-            .Include(x => x.SourceLinks)
-                .ThenInclude(x => x.SourceItem)
-                    .ThenInclude(x => x.Source)
-            .FirstOrDefaultAsync(
-                x =>
-                    x.Id == id
-                    && (
-                        x.Status == PublicationStatus.Published
-                        || x.Status == PublicationStatus.Archived
-                    ),
-                ct
-            );
-        if (item is null)
-            return NotFound();
-        ViewData["ListingKind"] = item.Kind;
-        ViewBag.VerifiedDates = await db
-            .OpportunityDates.AsNoTracking()
-            .Where(x => x.OpportunityId == item.Id)
-            .OrderByDescending(x => x.RecordedAt)
-            .ThenByDescending(x => x.Id)
-            .ToListAsync(ct);
-        return View(item);
-    }
-
     [HttpGet("llms.txt")]
     public IActionResult LanguageModelGuide()
     {
         var text = new System.Text.StringBuilder();
-        text.AppendLine("# فرص فلسطين | Palestine Opportunities");
+        text.AppendLine("# التوظيف في فلسطين | Employment in Palestine");
         text.AppendLine();
         text.AppendLine(
             "> hiring.ps aggregates jobs, training opportunities, tenders and procurement notices related to Palestine. It is not the recruiting employer and does not receive CVs or tender bids."
@@ -174,16 +152,14 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
         text.AppendLine();
         text.AppendLine("## Public reference pages");
         text.AppendLine(
-            $"- [About and how it works (Arabic)]({seo.Url("/Home/About", false)}): identity, sources, application process and limitations."
+            $"- [About and how it works (Arabic)]({seo.Url("/About", false)}): identity, sources, application process and limitations."
         );
         text.AppendLine(
-            $"- [About and how it works (English)]({seo.Url("/Home/About", true)}): the same public facts in English."
+            $"- [About and how it works (English)]({seo.Url("/About", true)}): the same public facts in English."
         );
+        text.AppendLine($"- [Contact]({seo.Url("/Contact", false)}): contact and corrections.");
         text.AppendLine(
-            $"- [Contact]({seo.Url("/Home/Contact", false)}): contact and corrections."
-        );
-        text.AppendLine(
-            $"- [Privacy]({seo.Url("/Home/Privacy", false)}): published privacy information."
+            $"- [Privacy]({seo.Url("/Privacy", false)}): published privacy information."
         );
         text.AppendLine();
         text.AppendLine("## Opportunity categories");
@@ -209,11 +185,25 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
     }
 
     [HttpGet("robots.txt")]
-    public IActionResult Robots() =>
-        Content(
-            $"User-agent: *\nAllow: /\nDisallow: /Admin\nDisallow: /Account\nSitemap: {seo.Origin}/sitemap.xml\n",
-            "text/plain"
-        );
+    public IActionResult Robots()
+    {
+        var rules = new System.Text.StringBuilder("User-agent: *\nAllow: /\n");
+        foreach (var prefix in new[] { "", "/ar", "/en" })
+        foreach (
+            var path in new[]
+            {
+                "/Admin",
+                "/Account",
+                "/Member",
+                "/Registration",
+                "/PasswordReset",
+                "/integrations",
+            }
+        )
+            rules.AppendLine("Disallow: " + prefix + path);
+        rules.AppendLine("Sitemap: " + seo.Origin + "/sitemap.xml");
+        return Content(rules.ToString(), "text/plain");
+    }
 
     [HttpGet("sitemap.xml")]
     public async Task<IActionResult> Sitemap(CancellationToken ct)
@@ -263,7 +253,7 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
             .Select(x => x.Kind)
             .Distinct()
             .ToListAsync(ct);
-        var paths = new List<string> { "/Home/About", "/Home/Contact", "/Home/Privacy" };
+        var paths = new List<string> { "/About", "/Contact", "/Privacy" };
         if (activeKinds.Count > 0)
             paths.Insert(0, "/");
         foreach (var path in paths)
@@ -287,6 +277,7 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
             .Opportunities.AsNoTracking()
             .Where(x =>
                 x.Status == PublicationStatus.Published
+                && db.OpportunityAccessRules.Any(rule => rule.Kind == x.Kind && rule.PublicDetails)
                 && (x.Deadline == null || x.Deadline >= today)
             )
             .OrderBy(x => x.Id)
@@ -298,7 +289,10 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
             return NotFound();
         return SitemapDocument(
             ids.Select(id =>
-                (seo.Url("/Home/Details/" + id, false), seo.Url("/Home/Details/" + id, true))
+                (
+                    seo.Url("/Opportunities/Details/" + id, false),
+                    seo.Url("/Opportunities/Details/" + id, true)
+                )
             )
         );
     }
@@ -335,133 +329,6 @@ public class HomeController(HiringDb db, SiteSeo seo) : Controller
                 )
             );
         return Content(new XDocument(root).ToString(), "application/xml; charset=utf-8");
-    }
-
-    [HttpPost, EnableRateLimiting("public")]
-    public async Task<IActionResult> Report(
-        long id,
-        string reason,
-        string? details,
-        CancellationToken ct
-    )
-    {
-        if (
-            reason is not ("expired" or "duplicate" or "incorrect" or "broken" or "other")
-            || (details?.Length ?? 0) > 1000
-        )
-            return BadRequest();
-        if (
-            !await db.Opportunities.AnyAsync(
-                x =>
-                    x.Id == id
-                    && (
-                        x.Status == PublicationStatus.Published
-                        || x.Status == PublicationStatus.Archived
-                    ),
-                ct
-            )
-        )
-            return NotFound();
-        db.Reports.Add(
-            new()
-            {
-                OpportunityId = id,
-                Reason = reason,
-                Details = details ?? "",
-            }
-        );
-        await db.SaveChangesAsync(ct);
-        TempData["Notice"] = "ReportReceived";
-        return RedirectToAction(nameof(Details), new { id });
-    }
-
-    [HttpPost]
-    public IActionResult Language(string culture, string? returnUrl)
-    {
-        if (culture is not ("ar" or "en"))
-            return BadRequest();
-        Response.Cookies.Append(
-            CookieRequestCultureProvider.DefaultCookieName,
-            CookieRequestCultureProvider.MakeCookieValue(new(culture)),
-            new()
-            {
-                Expires = DateTimeOffset.UtcNow.AddYears(1),
-                HttpOnly = true,
-                SameSite = SameSiteMode.Lax,
-                Secure = Request.IsHttps,
-            }
-        );
-        var destination = Url.IsLocalUrl(returnUrl) ? Url.Content(returnUrl!) : "/";
-        var uri = new Uri(new Uri("https://local.invalid"), destination);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        query.Remove("ui-culture");
-        query["culture"] = culture;
-        return LocalRedirect(
-            Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(uri.AbsolutePath, query)
-                + uri.Fragment
-        );
-    }
-
-    public async Task<IActionResult> About(CancellationToken ct)
-    {
-        var model = await ReadSitePageAsync("about", ct);
-        var questions = SiteQuestionsContent.Read(await db.SitePages.AsNoTracking()
-            .SingleOrDefaultAsync(p => p.Key == SiteQuestionsContent.Key, ct));
-        var english = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
-        return View(model with
-        {
-            Questions = SiteQuestionsContent.Localize(questions, english),
-            QuestionsTitle = english ? questions.TitleEn : questions.TitleAr,
-        });
-    }
-
-    [HttpGet]
-    public IActionResult Contact() => View(new ContactInput());
-
-    [HttpPost, EnableRateLimiting("contact")]
-    public async Task<IActionResult> Contact(ContactInput input, CancellationToken ct)
-    {
-        if (!string.IsNullOrWhiteSpace(input.Website))
-        {
-            TempData["Notice"] = "ContactReceived";
-            return RedirectToAction(nameof(Contact));
-        }
-
-        input.Name = input.Name?.Trim() ?? "";
-        input.Email = input.Email?.Trim() ?? "";
-        input.Message = input.Message?.Trim() ?? "";
-        if (
-            input.Email.Any(char.IsControl)
-            || !System.Net.Mail.MailAddress.TryCreate(input.Email, out var address)
-            || !string.Equals(address.Address, input.Email, StringComparison.OrdinalIgnoreCase)
-        )
-            ModelState.AddModelError(nameof(input.Email), "ContactEmailInvalid");
-        if (!ModelState.IsValid)
-            return View(input);
-        db.ContactMessages.Add(
-            new ContactMessage
-            {
-                Name = input.Name,
-                Email = input.Email,
-                Message = input.Message,
-            }
-        );
-        await db.SaveChangesAsync(ct);
-        TempData["Notice"] = "ContactReceived";
-        return RedirectToAction(nameof(Contact));
-    }
-
-    public async Task<IActionResult> Privacy(CancellationToken ct) =>
-        View(await ReadSitePageAsync("privacy", ct));
-
-    private async Task<SitePageViewModel> ReadSitePageAsync(string key, CancellationToken ct)
-    {
-        var page = await db.SitePages.AsNoTracking().SingleOrDefaultAsync(x => x.Key == key, ct);
-        var language =
-            System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
-                ? "en"
-                : "ar";
-        return SitePageDefaults.Resolve(key, page, language);
     }
 
     public IActionResult Error() =>

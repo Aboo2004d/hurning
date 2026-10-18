@@ -1,0 +1,21 @@
+@model DiscountCode
+<h1>@T["DiscountCode"]</h1>
+<form method="post" class="membership-card">
+    <input asp-for="Id" type="hidden" />
+    <label>@T["DiscountCode"]<input asp-for="Code" required dir="ltr" maxlength="50" />
+    </label>
+    <label>@T["Plan"]<select asp-for="PlanId">@foreach (var plan in (List<MembershipPlanVersion>)ViewBag.Plans)
+                {
+                    <option value="@plan.PlanId">@plan.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
+                    }</select>
+            </label>
+            <label>@T["DiscountPercent"]<input asp-for="Percent" type="number" min="0" max="100" required />
+            </label>
+            <label>@T["MaximumUses"]<input asp-for="MaximumUses" type="number" min="1" required />
+            </label>
+            <label>@T["EndsUtc"]<input asp-for="ExpiresAt" type="datetime-local" required />
+            </label>
+            <label class="check">
+                <input asp-for="Enabled" />@T["Enabled"]</label>
+            <button type="submit">@T["Save"]</button>
+        </form>

@@ -1,0 +1,13 @@
+@model ResetPasswordInput
+@{ ViewData["Title"] = T["ResetPassword"]; }
+<section class="login-panel">
+    <h1>@T["ResetPassword"]</h1>
+    <form method="post">
+        <partial name="_MemberValidation" />
+        <label>@T["Password"]<input asp-for="Password" autocomplete="new-password" required />
+        </label>
+        <label>@T["ConfirmPassword"]<input asp-for="ConfirmPassword" autocomplete="new-password" required />
+        </label>
+        <button type="submit">@T["Save"]</button>
+    </form>
+</section>

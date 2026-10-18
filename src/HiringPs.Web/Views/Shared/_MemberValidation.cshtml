@@ -1,0 +1,4 @@
+@foreach (var error in ViewData.ModelState.Values.SelectMany(x => x.Errors))
+{
+    <p class="validation" role="alert">@T[error.ErrorMessage]</p>
+}

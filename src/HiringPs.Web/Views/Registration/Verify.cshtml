@@ -1,0 +1,19 @@
+@model VerificationInput
+@{ ViewData["Title"] = T["VerifyAccount"]; }
+<section class="login-panel">
+    <h1>@T["VerifyAccount"]</h1>
+    @if (Model.BotLink is not null)
+    {
+        <a class="button" href="@Model.BotLink" target="_blank" rel="noopener">@T["OpenTelegram"]</a>
+    }
+    <p>@T["VerificationAdvice"]</p>
+    <form method="post">
+        <partial name="_MemberValidation" />
+        <label>@T["VerificationCode"]<input asp-for="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" dir="ltr" required />
+        </label>
+        <button type="submit">@T["Confirm"]</button>
+    </form>
+    <form asp-action="Resend" method="post">
+        <button class="secondary" type="submit">@T["ResendCode"]</button>
+    </form>
+</section>

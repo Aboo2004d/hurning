@@ -1,0 +1,96 @@
+@inject IConfiguration Configuration
+@* روابط مختصرة في الهيدر، وبقية الصفحات داخل ثلاث مجموعات مشتركة مع قائمة الهاتف. *@
+@{
+    var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var needsReview = Context.Request.Query["status"] == "NeedsReview";
+    var groups = new[]
+    {
+        (
+            Label: T["Opportunities"].Value,
+            Links: new[]
+            {
+                (Controller: "Opportunities", Action: "Opportunities", Status: "", Label: T["Opportunities"].Value),
+                (Controller: "Opportunities", Action: "Opportunities", Status: "NeedsReview", Label: T["Review"].Value),
+                (Controller: "Sources", Action: "Sources", Status: "", Label: T["Sources"].Value),
+                (Controller: "Merges", Action: "Merges", Status: "", Label: T["MergeHistory"].Value)
+            }
+        ),
+        (
+            Label: isArabic ? "النظام وAI" : "System & AI",
+            Links: new[]
+            {
+                (Controller: "Tools", Action: "Tools", Status: "", Label: T["Tools"].Value),
+                (Controller: "AiPrompt", Action: "AiPrompt", Status: "", Label: T["AiPrompt"].Value),
+                (Controller: "AiUsage", Action: "AiUsage", Status: "", Label: T["AiUsage"].Value),
+                (Controller: "Retention", Action: "Retention", Status: "", Label: T["Retention"].Value),
+                (Controller: "Account", Action: "ChangePassword", Status: "", Label: isArabic ? "كلمة المرور" : "Password")
+            }
+        ),
+        (
+            Label: T["Members"].Value,
+            Links: new[]
+            {
+                (Controller: "Members", Action: "Index", Status: "", Label: T["Members"].Value),
+                (Controller: "Plans", Action: "Index", Status: "", Label: T["Plans"].Value),
+                (Controller: "Plans", Action: "Access", Status: "", Label: T["TypeAccess"].Value),
+                (Controller: "Subscriptions", Action: "Index", Status: "", Label: T["Subscriptions"].Value),
+                (Controller: "Notifications", Action: "Index", Status: "", Label: T["NotificationDelivery"].Value),
+                (Controller: "Discounts", Action: "Index", Status: "", Label: T["Discounts"].Value),
+                (Controller: "Gateways", Action: "Index", Status: "", Label: T["PaymentGateways"].Value)
+            }
+        ),
+        (
+            Label: isArabic ? "المحتوى والتواصل" : "Content & messages",
+            Links: new[]
+            {
+                (Controller: "Pages", Action: "Pages", Status: "", Label: T["PageContents"].Value),
+                (Controller: "Messages", Action: "Messages", Status: "", Label: T["ContactInbox"].Value),
+                (Controller: "Reports", Action: "Reports", Status: "", Label: T["Reports"].Value)
+            }
+        )
+    };
+}
+<a asp-area="" asp-controller="Home" asp-action="Index">
+    @(isArabic ? "الموقع الرئيسي" : "Main website")
+</a>
+<a asp-area="Admin" asp-controller="Admin" asp-action="Index"
+   aria-current="@(currentController == "Admin" && currentAction == "Index" ? "page" : null)">
+    @T["Dashboard"]
+</a>
+@foreach (var group in groups)
+{
+    var groupIsCurrent = group.Links.Any(link => link.Controller == currentController && link.Action == currentAction);
+    <details class="admin-nav-group @(groupIsCurrent ? "has-current" : null)">
+        <summary>
+            <span>@group.Label</span>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <path d="m4 6 4 4 4-4" />
+            </svg>
+        </summary>
+        <div class="admin-nav-dropdown">
+            @foreach (var link in group.Links)
+            {
+                var isCurrent = currentController == link.Controller && currentAction == link.Action
+                    && (link.Action != "Opportunities" || needsReview == (link.Status == "NeedsReview"));
+                <a asp-area="@(link.Controller == "Account" ? "" : "Admin")" asp-controller="@link.Controller" asp-action="@link.Action"
+                   asp-route-status="@(link.Status.Length > 0 ? link.Status : null)"
+                   aria-current="@(isCurrent ? "page" : null)">
+                    @link.Label
+                </a>
+            }
+        </div>
+    </details>
+}
+
+<details class="admin-nav-group">
+    <summary><span>@T["Payments"]</span><span aria-hidden="true">⌄</span></summary>
+    <div class="admin-nav-dropdown">
+        <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="Lahza">@T["Lahza"]</a>
+        @if (Configuration.GetValue<bool>("Payments:JawwalPay:Enabled"))
+        {
+            <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="JawwalPay">@T["JawwalPay"]</a>
+        }
+    </div>
+</details>

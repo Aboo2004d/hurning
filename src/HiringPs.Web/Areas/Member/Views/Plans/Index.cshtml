@@ -1,0 +1,24 @@
+@model PlanCatalog
+@{ ViewData["Title"] = T["MyPlan"]; var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"; }
+<h1>@T["MyPlan"]</h1>
+<partial name="_SubscriptionList" model="Model.Subscriptions" />
+<h2>@T["ViewPlans"]</h2>
+<div class="membership-grid">
+    @foreach (var plan in Model.Plans)
+    {
+        var version = Model.Versions.Single(x => x.Id == plan.CurrentVersionId);
+        <article class="membership-card">
+            <span class="badge">@(ar ? version.BadgeAr : version.BadgeEn)</span>
+            <h2>@version.Name(ar ? "ar" : "en")</h2>
+            <p>@(ar ? version.DescriptionAr : version.DescriptionEn)</p>
+            <p>
+                <strong>@MembershipRules.Money(version.PriceIls)</strong> / @version.Days @T["Days"]</p>
+            <partial name="_PlanBenefits" model="version" />
+            <a class="button" asp-action="Review" asp-route-id="@plan.Id">@T["ChoosePlan"]</a>
+        </article>
+    }
+</div>
+@if (Model.Plans.Count == 0)
+{
+    <p class="notice">@T["NoPlans"]</p>
+}

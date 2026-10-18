@@ -988,7 +988,7 @@
         <value>تم استلام رسالتك بنجاح. شكرًا لتواصلك معنا.</value>
     </data>
     <data name="AboutIntro" xml:space="preserve">
-        <value>فرص فلسطين يجمع فرص العمل والتدريب والعطاءات والمناقصات المرتبطة بفلسطين في مكان واحد.</value>
+        <value>التوظيف في فلسطين يجمع فرص العمل والتدريب والعطاءات والمناقصات المرتبطة بفلسطين في مكان واحد.</value>
     </data>
     <data name="ReopenMessage" xml:space="preserve">
         <value>إعادة فتح الرسالة</value>
@@ -997,7 +997,7 @@
         <value>نعرض معلومات مختصرة وروابط الإعلانات الأصلية. شروط التقديم والمواعيد والتحديثات تُراجع لدى الجهة الناشرة، ويكون التقديم عبر المصدر.</value>
     </data>
     <data name="ContactReplySubject" xml:space="preserve">
-        <value>رد على رسالتك إلى فرص فلسطين</value>
+        <value>رد على رسالتك إلى التوظيف في فلسطين</value>
     </data>
     <data name="ContactPrivacyNote" xml:space="preserve">
         <value>يظهر اسمك وبريدك ورسالتك لإدارة الموقع فقط بغرض متابعة استفسارك.</value>
@@ -1078,13 +1078,13 @@
         <value>مناقصات في الضفة وغزة والقدس.</value>
     </data>
     <data name="SiteName" xml:space="preserve">
-        <value>فرص فلسطين</value>
+        <value>التوظيف في فلسطين</value>
     </data>
     <data name="BetaBadge" xml:space="preserve">
         <value>نسخة تجريبية</value>
     </data>
     <data name="BetaMessage" xml:space="preserve">
-        <value>نطوّر فرص فلسطين لأجلكم — هذه نسخة تجريبية، والإطلاق الرسمي قريبًا.</value>
+        <value>نطوّر التوظيف في فلسطين لأجلكم — هذه نسخة تجريبية، والإطلاق الرسمي قريبًا.</value>
     </data>
     <data name="DismissBeta" xml:space="preserve">
         <value>إغلاق تنبيه النسخة التجريبية</value>
@@ -1546,4 +1546,199 @@
   <data name="SourceSetupNetworkFailed" xml:space="preserve"><value>فشل اتصال أثناء اختبار المصدر؛ راجع سجل الطلب لتحديد الوجهة والسبب.</value></data>
   <data name="SourceSetupSampleInvalid" xml:space="preserve"><value>فُتحت الصفحة لكن عينة الإعلان لم تجتز التحقق من اكتمال المحتوى؛ راجع إعدادات محتوى الإعلان.</value></data>
   <data name="SourceSetupBrowserFailed" xml:space="preserve"><value>تعذر تنفيذ خطوة داخل المتصفح؛ نجاح فحص Chromium وحده لا يثبت صحة الرابط أو المحددات. راجع سجل الطلب.</value></data>
+    <data name="MyAccount" xml:space="preserve"><value>حسابي</value></data>
+    <data name="Loading" xml:space="preserve"><value>جارٍ التحميل…</value></data>
+    <data name="BackHome" xml:space="preserve"><value>الرئيسية</value></data>
+    <data name="SupportReference" xml:space="preserve"><value>رقم المتابعة</value></data>
+    <data name="ErrorAdvice" xml:space="preserve"><value>يمكنك العودة للرئيسية أو المحاولة لاحقًا.</value></data>
+    <data name="Error400" xml:space="preserve"><value>الطلب غير صحيح</value></data>
+    <data name="Error401" xml:space="preserve"><value>يرجى تسجيل الدخول</value></data>
+    <data name="Error403" xml:space="preserve"><value>لا تملك صلاحية الوصول</value></data>
+    <data name="Error404" xml:space="preserve"><value>الصفحة غير موجودة</value></data>
+    <data name="Error408" xml:space="preserve"><value>انتهت مهلة الانتظار</value></data>
+    <data name="Error429" xml:space="preserve"><value>طلبات كثيرة، حاول بعد قليل</value></data>
+    <data name="Error500" xml:space="preserve"><value>تعذّر إكمال الطلب</value></data>
+    <data name="Error502" xml:space="preserve"><value>الخدمة غير متاحة مؤقتًا</value></data>
+    <data name="Error503" xml:space="preserve"><value>الخدمة غير متاحة مؤقتًا</value></data>
+    <data name="Error504" xml:space="preserve"><value>انتهت مهلة الانتظار</value></data>
+    <data name="MyPlan" xml:space="preserve"><value>باقتي</value></data>
+    <data name="MyPayments" xml:space="preserve"><value>مدفوعاتي</value></data>
+    <data name="Preferences" xml:space="preserve"><value>تفضيلاتي</value></data>
+    <data name="Saved" xml:space="preserve"><value>المحفوظات</value></data>
+    <data name="AccountSettings" xml:space="preserve"><value>إعدادات الحساب</value></data>
+    <data name="Register" xml:space="preserve"><value>إنشاء حساب</value></data>
+    <data name="FreeRegistration" xml:space="preserve"><value>أنشئ حسابًا مجانيًا، ويمكنك الاشتراك بباقة لاحقًا من «باقتي».</value></data>
+    <data name="TelegramMobile" xml:space="preserve"><value>رقم تليجرام بصيغة دولية</value></data>
+    <data name="MobileInternational" xml:space="preserve"><value>أدخل الرقم بالصيغة الدولية مثل ‎+970… دون الصفر المحلي.</value></data>
+    <data name="ConfirmPassword" xml:space="preserve"><value>تأكيد كلمة المرور</value></data>
+    <data name="TelegramSignupNote" xml:space="preserve"><value>لتفعيل الحساب افتح البوت وشارك رقمك الخاص ثم أدخل رمز التحقق هنا.</value></data>
+    <data name="TelegramUnavailable" xml:space="preserve"><value>خدمة تليجرام غير مهيأة حاليًا. يرجى المحاولة بعد تفعيلها من الإدارة.</value></data>
+    <data name="VerifyAccount" xml:space="preserve"><value>التحقق من الحساب</value></data>
+    <data name="VerificationAdvice" xml:space="preserve"><value>رمز التحقق 6 أرقام وصالح لخمس دقائق. إعادة الإرسال بعد دقيقة.</value></data>
+    <data name="VerificationCode" xml:space="preserve"><value>رمز التحقق</value></data>
+    <data name="VerificationInvalid" xml:space="preserve"><value>الرمز غير صحيح أو انتهت صلاحيته أو تجاوز عدد المحاولات.</value></data>
+    <data name="VerificationWait" xml:space="preserve"><value>انتظر دقيقة قبل طلب رمز جديد.</value></data>
+    <data name="OpenTelegram" xml:space="preserve"><value>فتح بوت تليجرام</value></data>
+    <data name="ResendCode" xml:space="preserve"><value>إرسال رمز جديد</value></data>
+    <data name="SendCode" xml:space="preserve"><value>إرسال الرمز</value></data>
+    <data name="Confirm" xml:space="preserve"><value>تأكيد</value></data>
+    <data name="ResetPassword" xml:space="preserve"><value>استعادة كلمة المرور</value></data>
+    <data name="ResetRequested" xml:space="preserve"><value>إذا كان الحساب مؤهلًا، أُرسل رمز إلى تليجرام المرتبط به.</value></data>
+    <data name="PasswordUpdated" xml:space="preserve"><value>تم تحديث كلمة المرور. سجّل الدخول بكلمتك الجديدة.</value></data>
+    <data name="PasswordInvalid" xml:space="preserve"><value>لم تُقبل كلمة المرور. استخدم كلمة مرور أقوى ومتطابقة.</value></data>
+    <data name="RegistrationFailed" xml:space="preserve"><value>تعذّر إنشاء الحساب. تحقق من البيانات أو جرّب تسجيل الدخول.</value></data>
+    <data name="AccountSuspended" xml:space="preserve"><value>الحساب معلّق</value></data>
+    <data name="Welcome" xml:space="preserve"><value>مرحبًا</value></data>
+    <data name="TelegramDeliveryProblem" xml:space="preserve"><value>تعذّر تسليم بعض رسائل تليجرام. تأكد أنك لم تحظر البوت وأن الربط ما زال صالحًا.</value></data>
+    <data name="FreePlan" xml:space="preserve"><value>مجانية</value></data>
+    <data name="CurrentPlan" xml:space="preserve"><value>الباقة الحالية</value></data>
+    <data name="Scheduled" xml:space="preserve"><value>مجدولة</value></data>
+    <data name="StartsUtc" xml:space="preserve"><value>البداية (UTC)</value></data>
+    <data name="EndsUtc" xml:space="preserve"><value>النهاية (UTC)</value></data>
+    <data name="CreatedUtc" xml:space="preserve"><value>التاريخ (UTC)</value></data>
+    <data name="RemainingDays" xml:space="preserve"><value>الأيام المتبقية</value></data>
+    <data name="ViewPlans" xml:space="preserve"><value>عرض الباقات</value></data>
+    <data name="ChoosePlan" xml:space="preserve"><value>اختيار الباقة</value></data>
+    <data name="NoPlans" xml:space="preserve"><value>لا توجد باقات متاحة للشراء حاليًا.</value></data>
+    <data name="Days" xml:space="preserve"><value>يوم</value></data>
+    <data name="Notifications" xml:space="preserve"><value>تنبيهات الفرص</value></data>
+    <data name="ReviewOrder" xml:space="preserve"><value>مراجعة طلب الاشتراك</value></data>
+    <data name="OriginalAmount" xml:space="preserve"><value>السعر قبل الخصم</value></data>
+    <data name="FinalAmount" xml:space="preserve"><value>المبلغ النهائي</value></data>
+    <data name="DiscountCode" xml:space="preserve"><value>كود الخصم</value></data>
+    <data name="ApplyDiscount" xml:space="preserve"><value>تطبيق الخصم</value></data>
+    <data name="PaymentGateway" xml:space="preserve"><value>بوابة الدفع</value></data>
+    <data name="NoRefundNotice" xml:space="preserve"><value>الاشتراك مدفوع ولا يمكن استرداد المبلغ بعد الدفع. راجع المزايا والمدة وموعد البداية قبل المتابعة.</value></data>
+    <data name="AcceptTerms" xml:space="preserve"><value>أوافق على شروط الاشتراك وسياسة عدم الاسترداد الموضحة أعلاه.</value></data>
+    <data name="AcceptTermsRequired" xml:space="preserve"><value>الموافقة على شروط الاشتراك وسياسة عدم الاسترداد مطلوبة.</value></data>
+    <data name="CompletePayment" xml:space="preserve"><value>إتمام الدفع</value></data>
+    <data name="GatewayUnavailable" xml:space="preserve"><value>بوابة الدفع غير جاهزة حاليًا. لا تُرسل أي مبالغ قبل إتاحتها.</value></data>
+    <data name="PlanChanged" xml:space="preserve"><value>تغيرت الباقة. راجع البيانات الجديدة ثم أكد الطلب مجددًا.</value></data>
+    <data name="DiscountInvalid" xml:space="preserve"><value>كود الخصم غير صالح لهذا الطلب أو استُخدم أو نفدت استخداماته.</value></data>
+    <data name="PreferencesAdvice" xml:space="preserve"><value>التنبيهات للمشتركين حسب صلاحيات الباقة. ترك المجال أو الموقع فارغًا يعني الجميع. تسري التغييرات على الفرص الجديدة فقط.</value></data>
+    <data name="OpportunityTypes" xml:space="preserve"><value>أنواع الفرص</value></data>
+    <data name="SavedReminders" xml:space="preserve"><value>تذكيري قبل انتهاء التقديم للفرص المحفوظة بيوم</value></data>
+    <data name="SaveOpportunity" xml:space="preserve"><value>حفظ الفرصة</value></data>
+    <data name="Remove" xml:space="preserve"><value>إزالة</value></data>
+    <data name="Disabled" xml:space="preserve"><value>متوقف</value></data>
+    <data name="StopNotifications" xml:space="preserve"><value>إيقاف تنبيهات الفرص</value></data>
+    <data name="EnableNotifications" xml:space="preserve"><value>تفعيل التنبيهات برمز جديد</value></data>
+    <data name="ChangeTelegram" xml:space="preserve"><value>تغيير حساب تليجرام</value></data>
+    <data name="ChangePassword" xml:space="preserve"><value>تغيير كلمة المرور</value></data>
+    <data name="Continue" xml:space="preserve"><value>متابعة</value></data>
+    <data name="OrderId" xml:space="preserve"><value>رقم الطلب</value></data>
+    <data name="Plan" xml:space="preserve"><value>الباقة</value></data>
+    <data name="Amount" xml:space="preserve"><value>المبلغ</value></data>
+    <data name="PaymentDetails" xml:space="preserve"><value>تفاصيل الدفع</value></data>
+    <data name="CheckPayment" xml:space="preserve"><value>التحقق من الدفع</value></data>
+    <data name="RetryPayment" xml:space="preserve"><value>إنشاء محاولة دفع جديدة</value></data>
+    <data name="ChargedNotActivated" xml:space="preserve"><value>تم الخصم ولم يتفعّل اشتراكي</value></data>
+    <data name="OptionalNote" xml:space="preserve"><value>ملاحظة (اختياري)</value></data>
+    <data name="OptionalEvidence" xml:space="preserve"><value>صورة إثبات (اختياري، PNG أو JPEG حتى 5 ميجابايت)</value></data>
+    <data name="RequestReview" xml:space="preserve"><value>طلب مراجعة الدفع</value></data>
+    <data name="ReviewPending" xml:space="preserve"><value>بانتظار مراجعة الدفع</value></data>
+    <data name="ReviewResolved" xml:space="preserve"><value>تمت معالجة المراجعة</value></data>
+    <data name="ViewEvidence" xml:space="preserve"><value>عرض إثبات الدفع</value></data>
+    <data name="ReviewRequested" xml:space="preserve"><value>تم تسجيل طلب مراجعة الدفع.</value></data>
+    <data name="EvidenceInvalid" xml:space="preserve"><value>الإثبات يجب أن يكون صورة PNG أو JPEG بحجم لا يتجاوز 5 ميجابايت.</value></data>
+    <data name="PaymentExpired" xml:space="preserve"><value>الطلب مؤكد أو انتهت مهلة بدء الدفع. يمكنك التحقق من حالته أو إنشاء محاولة جديدة.</value></data>
+    <data name="PaymentNotFound" xml:space="preserve"><value>لم نجد هذا الطلب ضمن حسابك.</value></data>
+    <data name="PaymentConfirmed" xml:space="preserve"><value>تم تأكيد الدفع واعتماد الاشتراك.</value></data>
+    <data name="PaymentCheckWait" xml:space="preserve"><value>انتظر 30 ثانية قبل التحقق مرة أخرى.</value></data>
+    <data name="PaymentNotConfirmed" xml:space="preserve"><value>لم يتم تأكيد الدفع بعد. يمكنك التحقق لاحقًا أو طلب مراجعة.</value></data>
+    <data name="PaymentAwaitingPayment" xml:space="preserve"><value>بانتظار الدفع</value></data>
+    <data name="PaymentPending" xml:space="preserve"><value>بانتظار تأكيد البوابة</value></data>
+    <data name="PaymentFailed" xml:space="preserve"><value>لم تنجح العملية</value></data>
+    <data name="PaymentCancelled" xml:space="preserve"><value>ملغاة</value></data>
+    <data name="PaymentPaid" xml:space="preserve"><value>مدفوعة ومؤكدة</value></data>
+    <data name="PaymentManuallyApproved" xml:space="preserve"><value>معتمدة يدويًا</value></data>
+    <data name="Members" xml:space="preserve"><value>المستخدمون</value></data>
+    <data name="AccountState" xml:space="preserve"><value>حالة الحساب</value></data>
+    <data name="Suspended" xml:space="preserve"><value>معلّق</value></data>
+    <data name="Active" xml:space="preserve"><value>فعّال</value></data>
+    <data name="AwaitingVerification" xml:space="preserve"><value>بانتظار التحقق</value></data>
+    <data name="TelegramLinked" xml:space="preserve"><value>مرتبط بتليجرام</value></data>
+    <data name="PlanId" xml:space="preserve"><value>معرّف الباقة</value></data>
+    <data name="Filter" xml:space="preserve"><value>تصفية</value></data>
+    <data name="Mobile" xml:space="preserve"><value>رقم الجوال</value></data>
+    <data name="SuspensionReason" xml:space="preserve"><value>سبب التعليق</value></data>
+    <data name="Subscriptions" xml:space="preserve"><value>اشتراكات المستخدمين</value></data>
+    <data name="Payments" xml:space="preserve"><value>المدفوعات</value></data>
+    <data name="Reason" xml:space="preserve"><value>السبب</value></data>
+    <data name="FreezeSubscription" xml:space="preserve"><value>تجميد مدة الاشتراك والباقات المجدولة؛ دون تحديده يستمر العد</value></data>
+    <data name="ResumeAccount" xml:space="preserve"><value>رفع التعليق</value></data>
+    <data name="SuspendAccount" xml:space="preserve"><value>تعليق الحساب</value></data>
+    <data name="RecoverAccount" xml:space="preserve"><value>استعادة ربط الحساب</value></data>
+    <data name="RecoveryAdvice" xml:space="preserve"><value>تحقق من هوية المستخدم أولًا. سيُلغى ربط تليجرام الحالي ويُطلب التحقق من الرقم الجديد عند الدخول.</value></data>
+    <data name="ConfirmRecovery" xml:space="preserve"><value>اعتماد الاستعادة</value></data>
+    <data name="AuditLog" xml:space="preserve"><value>سجل التدقيق</value></data>
+    <data name="Administrator" xml:space="preserve"><value>المسؤول</value></data>
+    <data name="Plans" xml:space="preserve"><value>الباقات</value></data>
+    <data name="AddPlan" xml:space="preserve"><value>إضافة باقة</value></data>
+    <data name="EditPlan" xml:space="preserve"><value>تحرير الباقة</value></data>
+    <data name="Visible" xml:space="preserve"><value>متاحة للشراء</value></data>
+    <data name="TypeAccess" xml:space="preserve"><value>إتاحة أنواع الفرص</value></data>
+    <data name="PlanVersionAdvice" xml:space="preserve"><value>الحفظ ينشئ نسخة جديدة. الاشتراكات المشتراة تحتفظ بمزايا نسختها الأصلية.</value></data>
+    <data name="NameAr" xml:space="preserve"><value>الاسم بالعربية</value></data>
+    <data name="NameEn" xml:space="preserve"><value>الاسم بالإنجليزية</value></data>
+    <data name="DescriptionAr" xml:space="preserve"><value>الوصف بالعربية</value></data>
+    <data name="DescriptionEn" xml:space="preserve"><value>الوصف بالإنجليزية</value></data>
+    <data name="BadgeAr" xml:space="preserve"><value>عبارة التمييز بالعربية</value></data>
+    <data name="BadgeEn" xml:space="preserve"><value>عبارة التمييز بالإنجليزية</value></data>
+    <data name="PriceIls" xml:space="preserve"><value>السعر بالشيكل</value></data>
+    <data name="SortOrder" xml:space="preserve"><value>ترتيب العرض</value></data>
+    <data name="TypeAccessAdvice" xml:space="preserve"><value>تحديد النوع يتيح تفاصيله للعامة. الأنواع الأخرى تعتمد على مزايا الباقة. العناوين تظهر للجميع.</value></data>
+    <data name="PublicDetails" xml:space="preserve"><value>تفاصيل متاحة للعامة</value></data>
+    <data name="MemberId" xml:space="preserve"><value>معرّف المستخدم</value></data>
+    <data name="Subscriptioncurrent" xml:space="preserve"><value>حالية</value></data>
+    <data name="Subscriptionscheduled" xml:space="preserve"><value>مجدولة</value></data>
+    <data name="Subscriptionexpired" xml:space="preserve"><value>منتهية</value></data>
+    <data name="Subscriptioncancelled" xml:space="preserve"><value>موقوفة</value></data>
+    <data name="StopSubscription" xml:space="preserve"><value>إيقاف الاشتراك</value></data>
+    <data name="GrantSubscription" xml:space="preserve"><value>منح اشتراك أو إضافة مدة</value></data>
+    <data name="CustomDays" xml:space="preserve"><value>مدة مخصصة بالأيام (اختياري)</value></data>
+    <data name="ReferenceOrOrder" xml:space="preserve"><value>رقم الطلب أو مرجع الدفع أو معرّف المستخدم</value></data>
+    <data name="MemberAccount" xml:space="preserve"><value>حساب المستخدم</value></data>
+    <data name="ManualApproval" xml:space="preserve"><value>اعتماد يدوي بعد التحقق من الإثبات</value></data>
+    <data name="PaymentEvidence" xml:space="preserve"><value>إثبات الدفع أو مرجع التحقق (إلزامي)</value></data>
+    <data name="ApproveSubscription" xml:space="preserve"><value>اعتماد الاشتراك</value></data>
+    <data name="ReviewResult" xml:space="preserve"><value>نتيجة المراجعة وسبب القرار للمستخدم</value></data>
+    <data name="ResolveReview" xml:space="preserve"><value>إنهاء المراجعة وإشعار المستخدم</value></data>
+    <data name="Discounts" xml:space="preserve"><value>أكواد الخصم</value></data>
+    <data name="DiscountPercent" xml:space="preserve"><value>نسبة الخصم من 100</value></data>
+    <data name="MaximumUses" xml:space="preserve"><value>الحد الإجمالي للاستخدام</value></data>
+    <data name="DiscountUsedImmutable" xml:space="preserve"><value>هذا الكود مرتبط بطلبات محفوظة؛ أنشئ كودًا جديدًا لتغيير النسبة أو الباقة.</value></data>
+    <data name="SubscriberContent" xml:space="preserve"><value>تفاصيل للمشتركين</value></data>
+    <data name="RestrictedAdvice" xml:space="preserve"><value>باقتك الحالية لا تشمل تفاصيل هذا النوع. اختر باقة تتيحها.</value></data>
+    <data name="SavedChanges" xml:space="preserve"><value>تم حفظ التغييرات.</value></data>
+    <data name="ManualEvidenceRequired" xml:space="preserve"><value>السبب وإثبات الدفع مطلوبان للاعتماد اليدوي.</value></data>
+    <data name="ReasonRequired" xml:space="preserve"><value>السبب مطلوب.</value></data>
+    <data name="InvalidDays" xml:space="preserve"><value>المدة يجب أن تكون بين يوم و3650 يومًا.</value></data>
+    <data name="PaymentMismatch" xml:space="preserve"><value>بيانات الدفع لا تطابق الطلب؛ لم يُفعّل الاشتراك.</value></data>
+    <data name="PaymentGateways" xml:space="preserve"><value>بوابات الدفع</value></data>
+    <data name="GatewayConfigurationAdvice" xml:space="preserve"><value>التفعيل يحتاج مفتاحًا صحيحًا وموصل API مكتملًا. وضع المفاتيح وحده لا يكفي قبل استكمال التكامل.</value></data>
+    <data name="Lahza" xml:space="preserve"><value>بوابة لحظة</value></data>
+    <data name="JawwalPay" xml:space="preserve"><value>جوال باي</value></data>
+    <data name="GatewayAvailable" xml:space="preserve"><value>متاحة للدفع</value></data>
+    <data name="GatewayDisabled" xml:space="preserve"><value>التكامل جاهز لكن البوابة متوقفة</value></data>
+    <data name="GatewayAdapterMissing" xml:space="preserve"><value>تكامل API بانتظار المواصفات والاختبار؛ لا دفع فعلي الآن</value></data>
+    <data name="PaymentOperations" xml:space="preserve"><value>عرض عمليات البوابة</value></data>
+    <data name="RecoveryLinkAdvice" xml:space="preserve"><value>رابط استعادة سري صالح لمدة محدودة. سلّمه للمستخدم بعد التحقق من هويته ولا تنشره.</value></data>
+    <data name="NotificationDelivery" xml:space="preserve"><value>متابعة تسليم التنبيهات</value></data>
+    <data name="Deliverypending" xml:space="preserve"><value>بانتظار الإرسال</value></data>
+    <data name="Deliveryfailed" xml:space="preserve"><value>تعذّر الإرسال</value></data>
+    <data name="Deliverysent" xml:space="preserve"><value>أُرسلت</value></data>
+    <data name="Deliverycancelled" xml:space="preserve"><value>أُلغي إرسالها</value></data>
+    <data name="Attempts" xml:space="preserve"><value>المحاولات</value></data>
+    <data name="BotInbox" xml:space="preserve"><value>طلبات البوت غير المكتملة</value></data>
+    <data name="TelegramBlocked" xml:space="preserve"><value>المستخدم حظر البوت أو تعذر الوصول للمحادثة</value></data>
+    <data name="TelegramDeliveryFailed" xml:space="preserve"><value>تعذّر التسليم عبر تليجرام</value></data>
+    <data name="TelegramNetworkFailed" xml:space="preserve"><value>تعذّر الاتصال بتليجرام</value></data>
+    <data name="TelegramNotLinked" xml:space="preserve"><value>حساب تليجرام غير مرتبط</value></data>
+    <data name="Message" xml:space="preserve"><value>الرسالة</value></data>
+    <data name="FieldRequired" xml:space="preserve"><value>هذا الحقل مطلوب.</value></data>
+    <data name="EmailInvalid" xml:space="preserve"><value>أدخل بريدًا إلكترونيًا صحيحًا.</value></data>
+    <data name="PasswordMinLength" xml:space="preserve"><value>كلمة المرور يجب ألا تقل عن 8 أحرف.</value></data>
+    <data name="PasswordMismatch" xml:space="preserve"><value>كلمتا المرور غير متطابقتين.</value></data>
+    <data name="TextTooLong" xml:space="preserve"><value>النص أطول من الحد المسموح.</value></data>
 </root>

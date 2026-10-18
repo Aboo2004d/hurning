@@ -1,0 +1,33 @@
+@model AdminPage<PaymentOrder>
+    <h1>@T["MyPayments"]</h1>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>@T["OrderId"]</th>
+                    <th>@T["Plan"]</th>
+                    <th>@T["Amount"]</th>
+                    <th>@T["Status"]</th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <bdi>@order.Id</bdi>
+                        </td>
+                        <td>@order.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
+                        <td>@MembershipRules.Money(order.AmountIls)</td>
+                        <td>@T["Payment" + order.State]</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@order.Id">@T["Details"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />

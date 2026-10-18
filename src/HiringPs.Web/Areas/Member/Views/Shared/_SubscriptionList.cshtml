@@ -1,0 +1,32 @@
+@model List<MemberSubscription>
+    @{ var language = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName; }
+    @if (Model.Count == 0)
+    {
+        <p class="notice">@T["CurrentPlan"]: @T["FreePlan"]</p>
+    }
+    @foreach (var subscription in MembershipRules.DisplayPeriods(Model))
+    {
+        <article class="membership-card">
+            <h3>@subscription.PlanVersion.Name(language)</h3>
+        <partial name="_PlanBenefits" model="subscription.PlanVersion" />
+            <p>@(subscription.StartsAt > DateTimeOffset.UtcNow ? T["Scheduled"] : T["CurrentPlan"])</p>
+            <dl class="detail-grid">
+                <div>
+                    <dt>@T["StartsUtc"]</dt>
+                    <dd>
+                        <bdi>@subscription.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                    </dd>
+                </div>
+                <div>
+                    <dt>@T["EndsUtc"]</dt>
+                    <dd>
+                        <bdi>@subscription.EndsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                    </dd>
+                </div>
+                <div>
+                    <dt>@T["RemainingDays"]</dt>
+                    <dd>@Math.Max(0, Math.Ceiling((subscription.EndsAt - (subscription.StartsAt > DateTimeOffset.UtcNow ? subscription.StartsAt : DateTimeOffset.UtcNow)).TotalDays))</dd>
+                </div>
+            </dl>
+        </article>
+    }

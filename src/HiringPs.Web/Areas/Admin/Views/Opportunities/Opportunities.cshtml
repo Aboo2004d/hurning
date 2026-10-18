@@ -1,0 +1,41 @@
+@model AdminPage<Opportunity>
+@{
+    ViewData["Title"] = T["Opportunities"];
+}
+<div class="heading-row">
+    <h1>@T["Opportunities"]</h1>
+    <a class="button button-outline" asp-controller="Opportunities" asp-action="Edit">@T["Add"]</a>
+</div>
+<div class="table-wrap">
+    <table class="table-nowrap">
+        <thead>
+            <tr>
+                <th>@T["Title"]</th>
+                <th>@T["Kind"]</th>
+                <th>@T["Organization"]</th>
+                <th>@T["Status"]</th>
+                <th>@T["Error"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td dir="auto">@item.Title</td>
+                    <td>@T[item.Kind.ToString()]</td>
+                    <td dir="auto">@item.Organization</td>
+                    <td>@T[item.Status.ToString()]</td>
+                    <td>
+                        <partial name="_Diagnostic" model="item.ReviewReason"/>
+                    </td>
+                    <td>
+                        <a class="button button-outline" asp-controller="Opportunities" asp-action="Edit" asp-route-id="@item.Id">@T["Edit"]</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_AdminPagination" model="Model.Pager" />

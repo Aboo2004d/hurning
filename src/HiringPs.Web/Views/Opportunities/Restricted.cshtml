@@ -1,0 +1,14 @@
+@model OpportunityKind
+@{ ViewData["Title"] = T["SubscriberContent"]; }
+<section class="error-panel">
+    <h1>@T["SubscriberContent"]</h1>
+    <p>@T["RestrictedAdvice"] — @T[Model.ToString()]</p>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a class="button" asp-area="Member" asp-controller="Plans" asp-action="Index">@T["ViewPlans"]</a>
+    }
+    else
+    {
+        <a class="button" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.PathBase + Context.Request.Path)">@T["Login"]</a>
+    }
+</section>

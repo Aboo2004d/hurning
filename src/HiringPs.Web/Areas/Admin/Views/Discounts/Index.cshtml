@@ -1,0 +1,36 @@
+@model AdminPage<DiscountCode>
+    <h1>@T["Discounts"]</h1>
+    <a class="button" asp-action="Edit">@T["Add"]</a>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>@T["DiscountCode"]</th>
+                    <th>@T["PlanId"]</th>
+                    <th>%</th>
+                    <th>@T["EndsUtc"]</th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var code in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <bdi>@code.Code</bdi>
+                        </td>
+                        <td>@code.PlanId</td>
+                        <td>@code.Percent</td>
+                        <td>
+                            <bdi>@code.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                        </td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@code.Id">@T["Edit"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />

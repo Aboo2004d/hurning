@@ -1,0 +1,66 @@
+@model MemberProfile
+<h1>@Model.Name</h1>
+@if (TempData["RecoveryLink"] is string recoveryLink)
+{
+    <div class="notice">
+        <p>@T["RecoveryLinkAdvice"]</p>
+        <input type="text" value="@recoveryLink" readonly dir="ltr" />
+    </div>
+    }<p>
+        <bdi>@ViewBag.Email</bdi> · <bdi>@Model.Mobile</bdi>
+    </p>
+    <p>@T["SuspensionReason"]: @Model.SuspensionReason</p>
+    <a asp-controller="Subscriptions" asp-action="Index" asp-route-q="@Model.UserId">@T["Subscriptions"]</a>
+    <a asp-controller="Payments" asp-action="Index" asp-route-q="@Model.UserId">@T["Payments"]</a>
+    <form asp-action="Suspend" method="post" class="membership-card">
+        <input name="id" value="@Model.UserId" type="hidden" />
+        <input name="suspended" value="@((!Model.Suspended).ToString())" type="hidden" />
+        <label>@T["Reason"]<textarea name="reason" required maxlength="1500">
+            </textarea>
+        </label>
+        @if (!Model.Suspended)
+        {
+            <label class="check">
+                <input name="freeze" type="checkbox" value="true" />@T["FreezeSubscription"]</label>
+        }
+        <button type="submit">@T[Model.Suspended ? "ResumeAccount" : "SuspendAccount"]</button>
+    </form>
+    <form asp-action="Recover" method="post" class="membership-card">
+        <h2>@T["RecoverAccount"]</h2>
+        <p>@T["RecoveryAdvice"]</p>
+        <input name="id" value="@Model.UserId" type="hidden" />
+        <label>@T["TelegramMobile"]<input name="mobile" type="tel" dir="ltr" required />
+        </label>
+        <label>@T["Reason"]<textarea name="reason" required maxlength="1500">
+            </textarea>
+        </label>
+        <button type="submit">@T["ConfirmRecovery"]</button>
+    </form>
+    @if (ViewBag.Audit is AdminPage<AuditEntry> audit)
+        {
+            <h2>@T["AuditLog"]</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>@T["CreatedUtc"]</th>
+                            <th>@T["Administrator"]</th>
+                            <th>@T["Details"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in audit.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <bdi>@entry.At.ToString("yyyy-MM-dd HH:mm")</bdi>
+                                </td>
+                                <td>@entry.Actor</td>
+                                <td dir="auto">@entry.Action · @entry.Detail</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <partial name="_AdminPagination" model="audit.Pager" />
+        }

@@ -4,6 +4,7 @@ namespace HiringPs.Web.Models;
 
 public class ListingModel
 {
+    public HashSet<OpportunityKind> AllowedDetails { get; set; } = [];
     public List<Opportunity> Items { get; set; } = [];
     public int Count { get; set; }
     public int Page { get; set; }

@@ -1,0 +1,25 @@
+@model RegisterInput
+@{ ViewData["Title"] = T["Register"]; }
+<section class="login-panel">
+    <h1>@T["Register"]</h1>
+    <p>@T["FreeRegistration"]</p>
+    <form method="post">
+        <partial name="_MemberValidation" />
+        <label>@T["Name"]<input asp-for="Name" autocomplete="name" required />
+        </label>
+        <label>@T["Email"]<input asp-for="Email" autocomplete="email" dir="ltr" required />
+        </label>
+        <label>@T["TelegramMobile"]<input asp-for="Mobile" type="tel" autocomplete="tel" placeholder="+970…" dir="ltr" required />
+        </label>
+        <label>@T["Password"]<input asp-for="Password" autocomplete="new-password" required />
+        </label>
+        <label>@T["ConfirmPassword"]<input asp-for="ConfirmPassword" autocomplete="new-password" required />
+        </label>
+        <p>@T["TelegramSignupNote"]</p>
+        <button type="submit" disabled="@(ViewBag.BotReady is not true)">@T["Register"]</button>
+        @if (ViewBag.BotReady is not true)
+        {
+            <p class="notice">@T["TelegramUnavailable"]</p>
+        }
+    </form>
+</section>

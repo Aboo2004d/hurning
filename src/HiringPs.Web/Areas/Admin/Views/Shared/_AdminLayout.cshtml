@@ -1,0 +1,4 @@
+@{ Layout = "/Views/Shared/_Document.cshtml"; ViewData["HeaderKind"] = "Admin"; }
+@section Header { <partial name="_SiteHeader" /> }
+@RenderBody()
+@section Scripts { @await RenderSectionAsync("Scripts", required: false) }

@@ -1,0 +1,24 @@
+@model MemberProfile
+@{ ViewData["Title"] = T["AccountSettings"]; }
+<h1>@T["AccountSettings"]</h1>
+<section class="membership-card">
+    <p>@Model.Name · <bdi>@Model.Mobile</bdi>
+    </p>
+    <p>@T["Notifications"]: @(Model.NotificationsEnabled ? T["Enabled"] : T["Disabled"])</p>
+    @if (Model.NotificationsEnabled)
+    {
+        <form asp-action="Stop" method="post">
+            <button class="secondary" type="submit">@T["StopNotifications"]</button>
+        </form>
+    }
+    else
+    {
+        <form asp-action="Enable" method="post">
+            <button type="submit">@T["EnableNotifications"]</button>
+        </form>
+    }
+    <form asp-action="ChangeTelegram" method="post">
+        <button class="secondary" type="submit">@T["ChangeTelegram"]</button>
+    </form>
+    <a asp-area="" asp-controller="Account" asp-action="ChangePassword">@T["ChangePassword"]</a>
+</section>

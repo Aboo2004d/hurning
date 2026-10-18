@@ -1,0 +1,44 @@
+@model PaymentOrder
+@{ ViewData["Title"] = T["PaymentDetails"]; var review = ViewBag.Review as PaymentReview; }
+<h1>@T["PaymentDetails"]</h1>
+<section class="membership-card">
+    <partial name="_PaymentSummary" model="Model" />
+    <form asp-action="Check" method="post">
+        <input name="id" type="hidden" value="@Model.Id" />
+        <button class="secondary" type="submit">@T["CheckPayment"]</button>
+    </form>
+    @if (!MembershipRules.Paid(Model.State))
+    {
+        @if (Model.ExpiresAt > DateTimeOffset.UtcNow && ViewBag.Ready is true)
+        {
+            <form asp-action="Pay" method="post">
+                <input name="id" type="hidden" value="@Model.Id" />
+                <button type="submit">@T["CompletePayment"]</button>
+            </form>
+        }
+        <a class="button secondary" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">@T["RetryPayment"]</a>
+    }
+    @if (review is null)
+    {
+        <h2>@T["ChargedNotActivated"]</h2>
+        <form asp-action="Review" method="post" enctype="multipart/form-data">
+            <input name="id" type="hidden" value="@Model.Id" />
+            <label>@T["OptionalNote"]<textarea name="note" maxlength="2000">
+                </textarea>
+            </label>
+            <label>@T["OptionalEvidence"]<input name="evidence" type="file" accept="image/png,image/jpeg" />
+            </label>
+            <button type="submit">@T["RequestReview"]</button>
+        </form>
+    }
+    else
+    {
+        <p>@T[review.ResolvedAt is null ? "ReviewPending" : "ReviewResolved"]</p>
+        <p dir="auto">@review.Note</p>
+        <p dir="auto">@review.Resolution</p>
+        @if (review.AttachmentName is not null)
+        {
+            <a asp-action="Evidence" asp-route-id="@Model.Id">@T["ViewEvidence"]</a>
+        }
+    }
+</section>

@@ -1,0 +1,153 @@
+@{
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    var activeKind = ViewData["ListingKind"] as OpportunityKind?;
+    var archive = ViewData["ListingArchive"] is true;
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var listing = ViewContext.RouteData.Values["controller"]?.ToString() is "Home" or "Opportunities";
+    var adminArea = ViewData["HeaderKind"] as string == "Admin";
+    var memberArea = ViewData["HeaderKind"] as string == "Member";
+}
+        <header class="topbar site-header">
+            <a
+                class="brand"
+                asp-area="" asp-controller="Home"
+                asp-action="Index"
+                aria-label="@(T["SiteName"].Value + (ar ? " — الرئيسية" : " — Home"))"
+            >
+                <img
+                    class="brand-logo"
+                    src="~/images/brand/basket-logo.png"
+                    asp-append-version="true"
+                    width="56"
+                    height="56"
+                    alt=""
+                />
+            </a>
+            <button
+                class="header-menu-toggle secondary"
+                type="button"
+                aria-expanded="false"
+                aria-controls="header-menu"
+                aria-label="@(adminArea ? T["ControlPanel"] : T["Menu"])"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span>@(adminArea ? T["ControlPanel"] : T["Menu"])</span>
+                <span class="menu-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="header-menu" class="header-menu">
+                <nav
+                    id="primary-navigation"
+                    class="header-nav @(adminArea ? "admin-header-nav" : null)"
+                    aria-label="@(adminArea ? T["ControlPanel"] : T["MainNavigation"])"
+                >
+                    @if (adminArea)
+                    {
+                        <partial name="/Areas/Admin/Views/Shared/_AdminNav.cshtml" />
+                    }
+                    else if (memberArea)
+                    {
+                        <partial name="/Areas/Member/Views/Shared/_MemberNav.cshtml" />
+                    }
+                    else
+                    {
+                        @foreach (var kind in Enum.GetValues<OpportunityKind>())
+                        {
+                            var selected = listing && !archive && activeKind == kind;
+                            <a
+                                asp-area="" asp-controller="Home"
+                                asp-action="Index"
+                                asp-route-kind="@kind"
+                                class="@(selected?"is-current":null)"
+                                aria-current="@(selected?"page":null)"
+                            >
+                                @T[kind==OpportunityKind.Job?"Jobs":kind.ToString()]
+                            </a>
+                        }
+                        <a
+                            asp-area="" asp-controller="Home"
+                            asp-action="Index"
+                            asp-route-archive="true"
+                            asp-route-kind="@activeKind"
+                            class="@(listing&&archive?"is-current":null)"
+                            aria-current="@(listing&&archive?"page":null)"
+                        >
+                            @T["Archive"]
+                        </a>
+                        <a asp-area="" asp-controller="About" asp-action="Index" aria-current="@(action=="About"?"page":null)">
+                            @T["About"]
+                        </a>
+                        <a asp-area="" asp-controller="Contact" asp-action="Index" aria-current="@(action=="Contact"?"page":null)">
+                            @T["Contact"]
+                        </a>
+                    }
+                </nav>
+                <div class="header-actions">
+                    <form asp-area="" asp-controller="Language" asp-action="Switch" method="post">
+                        <input type="hidden" name="culture" value="@(ar?"en":"ar")"/>
+                        <input type="hidden" name="returnUrl" value="@returnUrl"/>
+                        <button class="secondary" type="submit">
+                            @(ar?"English":"العربية")
+                        </button>
+                    </form>
+                    @if (adminArea || memberArea)
+                    {
+                        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                            <button class="header-account secondary" type="submit">@T["Logout"]</button>
+                        </form>
+                    }
+                    else if (User.IsInRole("Admin"))
+                    {
+                        <a class="header-account" asp-area="Admin" asp-controller="Admin" asp-action="Index">
+                            <svg
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                aria-hidden="true"
+                            >
+                                <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>
+                            </svg>
+                            <span>
+                                @T["ControlPanel"]
+                            </span>
+                        </a>
+                    }
+                    else if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="header-account" asp-area="Member" asp-controller="Dashboard" asp-action="Index">@T["MyAccount"]</a>
+                    }
+                    else
+                    {
+                        <a class="header-account" asp-area="" asp-controller="Account" asp-action="Login" >
+                            <svg
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                aria-hidden="true"
+                            >
+                                <path d="M14 4h6v16h-6M3 12h12m-4-4 4 4-4 4"/>
+                            </svg>
+                            <span>
+                                @T["LoginShort"]
+                            </span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </header>

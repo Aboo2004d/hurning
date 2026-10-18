@@ -1,0 +1,31 @@
+@model PaymentOrder
+<dl class="detail-grid">
+    <div>
+        <dt>@T["OrderId"]</dt>
+        <dd>
+            <bdi>@Model.Id</bdi>
+        </dd>
+    </div>
+    <div>
+        <dt>@T["Plan"]</dt>
+        <dd>@Model.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</dd>
+    </div>
+    <div>
+        <dt>@T["Amount"]</dt>
+        <dd>@MembershipRules.Money(Model.AmountIls)</dd>
+    </div>
+    <div>
+        <dt>@T["Status"]</dt>
+        <dd>@T["Payment" + Model.State]</dd>
+    </div>
+    <div>
+        <dt>@T["Reference"]</dt>
+        <dd dir="auto">@Model.ProviderReference</dd>
+    </div>
+    <div>
+        <dt>@T["CreatedUtc"]</dt>
+        <dd>
+            <bdi>@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+        </dd>
+    </div>
+</dl>

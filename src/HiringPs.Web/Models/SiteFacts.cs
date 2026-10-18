@@ -10,8 +10,8 @@ public static class SiteFacts
             ?
             [
                 new(
-                    "What is Palestine Opportunities?",
-                    "Palestine Opportunities (hiring.ps) brings together jobs, training opportunities, tenders and procurement notices related to Palestine from multiple websites. It is an opportunity aggregator, not the recruiting employer."
+                    "What is Employment in Palestine?",
+                    "Employment in Palestine (hiring.ps) brings together jobs, training opportunities, tenders and procurement notices related to Palestine from multiple websites. It is an opportunity aggregator, not the recruiting employer."
                 ),
                 new(
                     "How do I apply?",
@@ -33,8 +33,8 @@ public static class SiteFacts
             :
             [
                 new(
-                    "ما هو موقع فرص فلسطين؟",
-                    "فرص فلسطين (hiring.ps) يجمع الوظائف وفرص التدريب والعطاءات والمناقصات المرتبطة بفلسطين من مواقع متعددة. الموقع يجمع الفرص ولا يمثل جهة التوظيف المعلنة."
+                    "ما هو موقع التوظيف في فلسطين؟",
+                    "التوظيف في فلسطين (hiring.ps) يجمع الوظائف وفرص التدريب والعطاءات والمناقصات المرتبطة بفلسطين من مواقع متعددة. الموقع يجمع الفرص ولا يمثل جهة التوظيف المعلنة."
                 ),
                 new(
                     "كيف أتقدم لفرصة؟",

@@ -1,0 +1,41 @@
+@model PlanInput
+<h1>@T["EditPlan"]</h1>
+<p class="notice">@T["PlanVersionAdvice"]</p>
+<form method="post" class="membership-card">
+    <partial name="_MemberValidation" />
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="Version" type="hidden" />
+    <label>@T["NameAr"]<input asp-for="NameAr" required />
+    </label>
+    <label>@T["NameEn"]<input asp-for="NameEn" dir="ltr" required />
+    </label>
+    <label>@T["DescriptionAr"]<textarea asp-for="DescriptionAr">
+        </textarea>
+    </label>
+    <label>@T["DescriptionEn"]<textarea asp-for="DescriptionEn" dir="ltr">
+        </textarea>
+    </label>
+    <label>@T["BadgeAr"]<input asp-for="BadgeAr" />
+    </label>
+    <label>@T["BadgeEn"]<input asp-for="BadgeEn" dir="ltr" />
+    </label>
+    <label>@T["PriceIls"]<input asp-for="PriceIls" type="number" step=".01" min=".01" max="100000" required />
+    </label>
+    <label>@T["Days"]<input asp-for="Days" type="number" min="1" max="3650" required />
+    </label>
+    <label>@T["SortOrder"]<input asp-for="SortOrder" type="number" />
+    </label>
+    <label class="check">
+        <input asp-for="Visible" />@T["Visible"]</label>
+    @foreach (var kind in Enum.GetValues<OpportunityKind>())
+        {
+            <fieldset>
+                <legend>@T[kind.ToString()]</legend>
+                <label class="check">
+                    <input type="checkbox" name="Details" value="@kind" checked="@Model.Details.Contains(kind)" />@T["Details"]</label>
+                <label class="check">
+                    <input type="checkbox" name="Alerts" value="@kind" checked="@Model.Alerts.Contains(kind)" />@T["Notifications"]</label>
+            </fieldset>
+        }
+        <button type="submit">@T["Save"]</button>
+    </form>

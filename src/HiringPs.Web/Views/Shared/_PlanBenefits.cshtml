@@ -1,0 +1,19 @@
+@model MembershipPlanVersion
+<ul class="plan-benefits">
+    @foreach (var kind in Enum.GetValues<OpportunityKind>())
+        {
+            if (MembershipRules.Includes(Model.DetailKinds, kind) || MembershipRules.Includes(Model.AlertKinds, kind))
+            {
+                <li>@T[kind.ToString()]:
+                    @if (MembershipRules.Includes(Model.DetailKinds, kind))
+                    {
+                        <span>@T["Details"]</span>
+                    }
+                    @if (MembershipRules.Includes(Model.AlertKinds, kind))
+                    {
+                        <span> · @T["Notifications"]</span>
+                    }
+                </li>
+            }
+        }
+    </ul>

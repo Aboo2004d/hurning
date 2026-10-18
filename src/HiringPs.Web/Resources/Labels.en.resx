@@ -988,7 +988,7 @@
         <value>Your message was received. Thank you for contacting us.</value>
     </data>
     <data name="AboutIntro" xml:space="preserve">
-        <value>Palestine Opportunities brings together jobs, training, tenders and procurement opportunities related to Palestine.</value>
+        <value>Employment in Palestine brings together jobs, training, tenders and procurement opportunities related to Palestine.</value>
     </data>
     <data name="ReopenMessage" xml:space="preserve">
         <value>Reopen message</value>
@@ -997,7 +997,7 @@
         <value>We display concise information and links to original announcements. Check the publisher for application requirements, deadlines and updates, and apply through the original source.</value>
     </data>
     <data name="ContactReplySubject" xml:space="preserve">
-        <value>Reply to your message to Palestine Opportunities</value>
+        <value>Reply to your message to Employment in Palestine</value>
     </data>
     <data name="ContactPrivacyNote" xml:space="preserve">
         <value>Your name, email and message are visible only to site administrators to follow up on your enquiry.</value>
@@ -1078,13 +1078,13 @@
         <value>Procurement notices in the West Bank, Gaza and Jerusalem.</value>
     </data>
     <data name="SiteName" xml:space="preserve">
-        <value>Palestine Opportunities</value>
+        <value>Employment in Palestine</value>
     </data>
     <data name="BetaBadge" xml:space="preserve">
         <value>Beta</value>
     </data>
     <data name="BetaMessage" xml:space="preserve">
-        <value>We’re building Palestine Opportunities for you — this is a beta version. Our official launch is coming soon.</value>
+        <value>We’re building Employment in Palestine for you — this is a beta version. Our official launch is coming soon.</value>
     </data>
     <data name="DismissBeta" xml:space="preserve">
         <value>Dismiss the beta notice</value>
@@ -1546,4 +1546,199 @@
   <data name="SourceSetupNetworkFailed" xml:space="preserve"><value>A network connection failed during source setup; check the request log for the destination and cause.</value></data>
   <data name="SourceSetupSampleInvalid" xml:space="preserve"><value>The page opened but the announcement sample failed content validation; review its content settings.</value></data>
   <data name="SourceSetupBrowserFailed" xml:space="preserve"><value>A browser operation failed; Chromium readiness alone does not verify the URL or selectors. Check the request log.</value></data>
+    <data name="MyAccount" xml:space="preserve"><value>My account</value></data>
+    <data name="Loading" xml:space="preserve"><value>Loading…</value></data>
+    <data name="BackHome" xml:space="preserve"><value>Home</value></data>
+    <data name="SupportReference" xml:space="preserve"><value>Support reference</value></data>
+    <data name="ErrorAdvice" xml:space="preserve"><value>Return to the home page or try again later.</value></data>
+    <data name="Error400" xml:space="preserve"><value>Invalid request</value></data>
+    <data name="Error401" xml:space="preserve"><value>Please sign in</value></data>
+    <data name="Error403" xml:space="preserve"><value>Access denied</value></data>
+    <data name="Error404" xml:space="preserve"><value>Page not found</value></data>
+    <data name="Error408" xml:space="preserve"><value>The request timed out</value></data>
+    <data name="Error429" xml:space="preserve"><value>Too many requests; try again shortly</value></data>
+    <data name="Error500" xml:space="preserve"><value>Unable to complete the request</value></data>
+    <data name="Error502" xml:space="preserve"><value>Service temporarily unavailable</value></data>
+    <data name="Error503" xml:space="preserve"><value>Service temporarily unavailable</value></data>
+    <data name="Error504" xml:space="preserve"><value>The request timed out</value></data>
+    <data name="MyPlan" xml:space="preserve"><value>My plan</value></data>
+    <data name="MyPayments" xml:space="preserve"><value>My payments</value></data>
+    <data name="Preferences" xml:space="preserve"><value>My preferences</value></data>
+    <data name="Saved" xml:space="preserve"><value>Saved opportunities</value></data>
+    <data name="AccountSettings" xml:space="preserve"><value>Account settings</value></data>
+    <data name="Register" xml:space="preserve"><value>Create account</value></data>
+    <data name="FreeRegistration" xml:space="preserve"><value>Create a free account. Choose a paid plan later from My plan.</value></data>
+    <data name="TelegramMobile" xml:space="preserve"><value>Telegram phone number in international format</value></data>
+    <data name="MobileInternational" xml:space="preserve"><value>Enter the international number, such as +970…, without a local leading zero.</value></data>
+    <data name="ConfirmPassword" xml:space="preserve"><value>Confirm password</value></data>
+    <data name="TelegramSignupNote" xml:space="preserve"><value>To activate your account, open the bot, share your own phone number and enter the verification code here.</value></data>
+    <data name="TelegramUnavailable" xml:space="preserve"><value>Telegram is not configured yet. Try again after the administrator enables it.</value></data>
+    <data name="VerifyAccount" xml:space="preserve"><value>Verify account</value></data>
+    <data name="VerificationAdvice" xml:space="preserve"><value>The six-digit code is valid for five minutes. Request a new code after one minute.</value></data>
+    <data name="VerificationCode" xml:space="preserve"><value>Verification code</value></data>
+    <data name="VerificationInvalid" xml:space="preserve"><value>The code is invalid, expired or has exceeded the attempt limit.</value></data>
+    <data name="VerificationWait" xml:space="preserve"><value>Wait one minute before requesting another code.</value></data>
+    <data name="OpenTelegram" xml:space="preserve"><value>Open Telegram bot</value></data>
+    <data name="ResendCode" xml:space="preserve"><value>Send a new code</value></data>
+    <data name="SendCode" xml:space="preserve"><value>Send code</value></data>
+    <data name="Confirm" xml:space="preserve"><value>Confirm</value></data>
+    <data name="ResetPassword" xml:space="preserve"><value>Reset password</value></data>
+    <data name="ResetRequested" xml:space="preserve"><value>If the account is eligible, a code has been sent to its linked Telegram account.</value></data>
+    <data name="PasswordUpdated" xml:space="preserve"><value>Password updated. Sign in with your new password.</value></data>
+    <data name="PasswordInvalid" xml:space="preserve"><value>The password was not accepted. Use a stronger, matching password.</value></data>
+    <data name="RegistrationFailed" xml:space="preserve"><value>Unable to create the account. Check your details or try signing in.</value></data>
+    <data name="AccountSuspended" xml:space="preserve"><value>Account suspended</value></data>
+    <data name="Welcome" xml:space="preserve"><value>Welcome</value></data>
+    <data name="TelegramDeliveryProblem" xml:space="preserve"><value>Some Telegram messages could not be delivered. Check that the bot is unblocked and your account is still linked.</value></data>
+    <data name="FreePlan" xml:space="preserve"><value>Free</value></data>
+    <data name="CurrentPlan" xml:space="preserve"><value>Current plan</value></data>
+    <data name="Scheduled" xml:space="preserve"><value>Scheduled</value></data>
+    <data name="StartsUtc" xml:space="preserve"><value>Starts (UTC)</value></data>
+    <data name="EndsUtc" xml:space="preserve"><value>Ends (UTC)</value></data>
+    <data name="CreatedUtc" xml:space="preserve"><value>Created (UTC)</value></data>
+    <data name="RemainingDays" xml:space="preserve"><value>Days remaining</value></data>
+    <data name="ViewPlans" xml:space="preserve"><value>View plans</value></data>
+    <data name="ChoosePlan" xml:space="preserve"><value>Choose plan</value></data>
+    <data name="NoPlans" xml:space="preserve"><value>No plans are available for purchase yet.</value></data>
+    <data name="Days" xml:space="preserve"><value>days</value></data>
+    <data name="Notifications" xml:space="preserve"><value>Opportunity alerts</value></data>
+    <data name="ReviewOrder" xml:space="preserve"><value>Review subscription order</value></data>
+    <data name="OriginalAmount" xml:space="preserve"><value>Original amount</value></data>
+    <data name="FinalAmount" xml:space="preserve"><value>Final amount</value></data>
+    <data name="DiscountCode" xml:space="preserve"><value>Discount code</value></data>
+    <data name="ApplyDiscount" xml:space="preserve"><value>Apply discount</value></data>
+    <data name="PaymentGateway" xml:space="preserve"><value>Payment gateway</value></data>
+    <data name="NoRefundNotice" xml:space="preserve"><value>Subscriptions are paid and non-refundable after payment. Review the benefits, duration and start date before continuing.</value></data>
+    <data name="AcceptTerms" xml:space="preserve"><value>I agree to the subscription terms and the non-refund policy shown above.</value></data>
+    <data name="AcceptTermsRequired" xml:space="preserve"><value>You must accept the subscription terms and non-refund policy.</value></data>
+    <data name="CompletePayment" xml:space="preserve"><value>Complete payment</value></data>
+    <data name="GatewayUnavailable" xml:space="preserve"><value>The payment gateway is not ready. Do not send funds before it becomes available.</value></data>
+    <data name="PlanChanged" xml:space="preserve"><value>The plan has changed. Review the new details before confirming again.</value></data>
+    <data name="DiscountInvalid" xml:space="preserve"><value>The discount is invalid for this order, already used or has reached its limit.</value></data>
+    <data name="PreferencesAdvice" xml:space="preserve"><value>Alerts require an eligible paid plan. Leaving categories or locations empty means all. Changes apply only to newly published opportunities.</value></data>
+    <data name="OpportunityTypes" xml:space="preserve"><value>Opportunity types</value></data>
+    <data name="SavedReminders" xml:space="preserve"><value>Remind me one day before saved opportunities close</value></data>
+    <data name="SaveOpportunity" xml:space="preserve"><value>Save opportunity</value></data>
+    <data name="Remove" xml:space="preserve"><value>Remove</value></data>
+    <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+    <data name="StopNotifications" xml:space="preserve"><value>Stop opportunity alerts</value></data>
+    <data name="EnableNotifications" xml:space="preserve"><value>Enable alerts with a new code</value></data>
+    <data name="ChangeTelegram" xml:space="preserve"><value>Change linked Telegram account</value></data>
+    <data name="ChangePassword" xml:space="preserve"><value>Change password</value></data>
+    <data name="Continue" xml:space="preserve"><value>Continue</value></data>
+    <data name="OrderId" xml:space="preserve"><value>Order ID</value></data>
+    <data name="Plan" xml:space="preserve"><value>Plan</value></data>
+    <data name="Amount" xml:space="preserve"><value>Amount</value></data>
+    <data name="PaymentDetails" xml:space="preserve"><value>Payment details</value></data>
+    <data name="CheckPayment" xml:space="preserve"><value>Check payment</value></data>
+    <data name="RetryPayment" xml:space="preserve"><value>Create a new payment attempt</value></data>
+    <data name="ChargedNotActivated" xml:space="preserve"><value>I was charged but my subscription is not active</value></data>
+    <data name="OptionalNote" xml:space="preserve"><value>Note (optional)</value></data>
+    <data name="OptionalEvidence" xml:space="preserve"><value>Evidence image (optional, PNG or JPEG up to 5 MB)</value></data>
+    <data name="RequestReview" xml:space="preserve"><value>Request payment review</value></data>
+    <data name="ReviewPending" xml:space="preserve"><value>Payment review pending</value></data>
+    <data name="ReviewResolved" xml:space="preserve"><value>Review resolved</value></data>
+    <data name="ViewEvidence" xml:space="preserve"><value>View payment evidence</value></data>
+    <data name="ReviewRequested" xml:space="preserve"><value>Payment review requested.</value></data>
+    <data name="EvidenceInvalid" xml:space="preserve"><value>Evidence must be a PNG or JPEG image no larger than 5 MB.</value></data>
+    <data name="PaymentExpired" xml:space="preserve"><value>The order is confirmed or its checkout window has ended. Check its status or create a new attempt.</value></data>
+    <data name="PaymentNotFound" xml:space="preserve"><value>This order was not found in your account.</value></data>
+    <data name="PaymentConfirmed" xml:space="preserve"><value>Payment confirmed and subscription applied.</value></data>
+    <data name="PaymentCheckWait" xml:space="preserve"><value>Wait 30 seconds before checking again.</value></data>
+    <data name="PaymentNotConfirmed" xml:space="preserve"><value>Payment has not been confirmed yet. Check later or request a review.</value></data>
+    <data name="PaymentAwaitingPayment" xml:space="preserve"><value>Awaiting payment</value></data>
+    <data name="PaymentPending" xml:space="preserve"><value>Pending provider confirmation</value></data>
+    <data name="PaymentFailed" xml:space="preserve"><value>Failed</value></data>
+    <data name="PaymentCancelled" xml:space="preserve"><value>Cancelled</value></data>
+    <data name="PaymentPaid" xml:space="preserve"><value>Paid and verified</value></data>
+    <data name="PaymentManuallyApproved" xml:space="preserve"><value>Manually approved</value></data>
+    <data name="Members" xml:space="preserve"><value>Members</value></data>
+    <data name="AccountState" xml:space="preserve"><value>Account state</value></data>
+    <data name="Suspended" xml:space="preserve"><value>Suspended</value></data>
+    <data name="Active" xml:space="preserve"><value>Active</value></data>
+    <data name="AwaitingVerification" xml:space="preserve"><value>Awaiting verification</value></data>
+    <data name="TelegramLinked" xml:space="preserve"><value>Linked to Telegram</value></data>
+    <data name="PlanId" xml:space="preserve"><value>Plan ID</value></data>
+    <data name="Filter" xml:space="preserve"><value>Filter</value></data>
+    <data name="Mobile" xml:space="preserve"><value>Mobile number</value></data>
+    <data name="SuspensionReason" xml:space="preserve"><value>Suspension reason</value></data>
+    <data name="Subscriptions" xml:space="preserve"><value>Member subscriptions</value></data>
+    <data name="Payments" xml:space="preserve"><value>Payments</value></data>
+    <data name="Reason" xml:space="preserve"><value>Reason</value></data>
+    <data name="FreezeSubscription" xml:space="preserve"><value>Freeze subscription time and scheduled plans; otherwise the clock continues</value></data>
+    <data name="ResumeAccount" xml:space="preserve"><value>Resume account</value></data>
+    <data name="SuspendAccount" xml:space="preserve"><value>Suspend account</value></data>
+    <data name="RecoverAccount" xml:space="preserve"><value>Recover account link</value></data>
+    <data name="RecoveryAdvice" xml:space="preserve"><value>Verify the member's identity first. The existing Telegram link will be removed and the new number must be verified on sign-in.</value></data>
+    <data name="ConfirmRecovery" xml:space="preserve"><value>Approve recovery</value></data>
+    <data name="AuditLog" xml:space="preserve"><value>Audit log</value></data>
+    <data name="Administrator" xml:space="preserve"><value>Administrator</value></data>
+    <data name="Plans" xml:space="preserve"><value>Plans</value></data>
+    <data name="AddPlan" xml:space="preserve"><value>Add plan</value></data>
+    <data name="EditPlan" xml:space="preserve"><value>Edit plan</value></data>
+    <data name="Visible" xml:space="preserve"><value>Available to purchase</value></data>
+    <data name="TypeAccess" xml:space="preserve"><value>Opportunity type access</value></data>
+    <data name="PlanVersionAdvice" xml:space="preserve"><value>Saving creates a new version. Purchased subscriptions retain their original version's benefits.</value></data>
+    <data name="NameAr" xml:space="preserve"><value>Arabic name</value></data>
+    <data name="NameEn" xml:space="preserve"><value>English name</value></data>
+    <data name="DescriptionAr" xml:space="preserve"><value>Arabic description</value></data>
+    <data name="DescriptionEn" xml:space="preserve"><value>English description</value></data>
+    <data name="BadgeAr" xml:space="preserve"><value>Arabic badge</value></data>
+    <data name="BadgeEn" xml:space="preserve"><value>English badge</value></data>
+    <data name="PriceIls" xml:space="preserve"><value>Price in ILS</value></data>
+    <data name="SortOrder" xml:space="preserve"><value>Display order</value></data>
+    <data name="TypeAccessAdvice" xml:space="preserve"><value>Checked types have public details. Other types require plan benefits. Titles remain visible to everyone.</value></data>
+    <data name="PublicDetails" xml:space="preserve"><value>Public details</value></data>
+    <data name="MemberId" xml:space="preserve"><value>Member ID</value></data>
+    <data name="Subscriptioncurrent" xml:space="preserve"><value>Current</value></data>
+    <data name="Subscriptionscheduled" xml:space="preserve"><value>Scheduled</value></data>
+    <data name="Subscriptionexpired" xml:space="preserve"><value>Expired</value></data>
+    <data name="Subscriptioncancelled" xml:space="preserve"><value>Stopped</value></data>
+    <data name="StopSubscription" xml:space="preserve"><value>Stop subscription</value></data>
+    <data name="GrantSubscription" xml:space="preserve"><value>Grant subscription or extend time</value></data>
+    <data name="CustomDays" xml:space="preserve"><value>Custom duration in days (optional)</value></data>
+    <data name="ReferenceOrOrder" xml:space="preserve"><value>Order ID, payment reference or member ID</value></data>
+    <data name="MemberAccount" xml:space="preserve"><value>Member account</value></data>
+    <data name="ManualApproval" xml:space="preserve"><value>Manual approval after checking evidence</value></data>
+    <data name="PaymentEvidence" xml:space="preserve"><value>Payment evidence or verification reference (required)</value></data>
+    <data name="ApproveSubscription" xml:space="preserve"><value>Approve subscription</value></data>
+    <data name="ReviewResult" xml:space="preserve"><value>Review result and reason shown to the member</value></data>
+    <data name="ResolveReview" xml:space="preserve"><value>Resolve review and notify member</value></data>
+    <data name="Discounts" xml:space="preserve"><value>Discount codes</value></data>
+    <data name="DiscountPercent" xml:space="preserve"><value>Discount percentage out of 100</value></data>
+    <data name="MaximumUses" xml:space="preserve"><value>Maximum total uses</value></data>
+    <data name="DiscountUsedImmutable" xml:space="preserve"><value>This code is linked to existing orders. Create a new code to change its percentage or plan.</value></data>
+    <data name="SubscriberContent" xml:space="preserve"><value>Subscriber details</value></data>
+    <data name="RestrictedAdvice" xml:space="preserve"><value>Your current plan does not include details of this type. Choose a plan that includes them.</value></data>
+    <data name="SavedChanges" xml:space="preserve"><value>Changes saved.</value></data>
+    <data name="ManualEvidenceRequired" xml:space="preserve"><value>A reason and payment evidence are required for manual approval.</value></data>
+    <data name="ReasonRequired" xml:space="preserve"><value>A reason is required.</value></data>
+    <data name="InvalidDays" xml:space="preserve"><value>Duration must be between 1 and 3650 days.</value></data>
+    <data name="PaymentMismatch" xml:space="preserve"><value>Payment details do not match the order; no subscription was granted.</value></data>
+    <data name="PaymentGateways" xml:space="preserve"><value>Payment gateways</value></data>
+    <data name="GatewayConfigurationAdvice" xml:space="preserve"><value>Enabling a gateway requires valid credentials and a completed API adapter. Credentials alone do not complete the integration.</value></data>
+    <data name="Lahza" xml:space="preserve"><value>Lahza</value></data>
+    <data name="JawwalPay" xml:space="preserve"><value>Jawwal Pay</value></data>
+    <data name="GatewayAvailable" xml:space="preserve"><value>Available for payment</value></data>
+    <data name="GatewayDisabled" xml:space="preserve"><value>Adapter ready; gateway disabled</value></data>
+    <data name="GatewayAdapterMissing" xml:space="preserve"><value>API integration awaits specifications and testing; no live checkout yet</value></data>
+    <data name="PaymentOperations" xml:space="preserve"><value>View gateway transactions</value></data>
+    <data name="RecoveryLinkAdvice" xml:space="preserve"><value>Private recovery link with limited validity. Share it only with the member after verifying their identity; do not publish it.</value></data>
+    <data name="NotificationDelivery" xml:space="preserve"><value>Notification delivery</value></data>
+    <data name="Deliverypending" xml:space="preserve"><value>Pending</value></data>
+    <data name="Deliveryfailed" xml:space="preserve"><value>Delivery failed</value></data>
+    <data name="Deliverysent" xml:space="preserve"><value>Sent</value></data>
+    <data name="Deliverycancelled" xml:space="preserve"><value>Cancelled</value></data>
+    <data name="Attempts" xml:space="preserve"><value>Attempts</value></data>
+    <data name="BotInbox" xml:space="preserve"><value>Incomplete bot requests</value></data>
+    <data name="TelegramBlocked" xml:space="preserve"><value>Bot blocked or chat unavailable</value></data>
+    <data name="TelegramDeliveryFailed" xml:space="preserve"><value>Telegram delivery failed</value></data>
+    <data name="TelegramNetworkFailed" xml:space="preserve"><value>Telegram network failure</value></data>
+    <data name="TelegramNotLinked" xml:space="preserve"><value>Telegram is not linked</value></data>
+    <data name="Message" xml:space="preserve"><value>Message</value></data>
+    <data name="FieldRequired" xml:space="preserve"><value>This field is required.</value></data>
+    <data name="EmailInvalid" xml:space="preserve"><value>Enter a valid email address.</value></data>
+    <data name="PasswordMinLength" xml:space="preserve"><value>Use a password of at least 8 characters.</value></data>
+    <data name="PasswordMismatch" xml:space="preserve"><value>The passwords do not match.</value></data>
+    <data name="TextTooLong" xml:space="preserve"><value>The text exceeds the allowed length.</value></data>
 </root>

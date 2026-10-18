@@ -96,7 +96,7 @@
         connector.addEventListener("change", update);
         update();
     }
-    if (/^\/admin\/opportunities\/?$/i.test(location.pathname))
+    if (/\/admin\/opportunities\/?$/i.test(location.pathname))
         document.querySelectorAll(".table-wrap table").forEach((table) => {
             table.classList.remove("admin-table");
             table.classList.add("table-nowrap");
@@ -151,4 +151,33 @@
     }
     if (window.matchMedia("(max-width:800px)").matches)
         document.querySelectorAll(".filter-panel details").forEach((x) => (x.open = false));
+})();
+
+// Delay the indicator to avoid flashes on fast navigation; bfcache restores hide it.
+(() => {
+    const loader = document.querySelector('[data-page-loader]');
+    let timer;
+    const show = () => { timer = setTimeout(() => { if (loader) loader.hidden = false; }, 180); };
+    const hide = () => { clearTimeout(timer); if (loader) loader.hidden = true; };
+    window.addEventListener('pageshow', hide);
+    if (document.readyState !== 'complete') {
+        show();
+        window.addEventListener('load', hide, { once: true });
+        setTimeout(hide, 12000);
+    }
+    document.addEventListener('submit', event => {
+        if (!event.defaultPrevented && !event.target.target) {
+            show();
+            setTimeout(hide, 12000);
+        }
+    });
+    document.querySelector('[data-retry-page]')?.addEventListener('click', () => location.reload());
+    document.addEventListener('click', event => {
+        const link = event.target.closest('a[href]');
+        if (!link || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target || link.hasAttribute('download')) return;
+        const url = new URL(link.href, location.href);
+        if (url.origin === location.origin && url.pathname !== location.pathname && !url.pathname.includes('/Diagnostic')) {
+            show(); setTimeout(hide, 12000);
+        }
+    });
 })();

@@ -1,0 +1,45 @@
+@model SiteQuestionsInput
+@{ ViewData["Title"] = T["ManageSiteQuestions"]; }
+<a class="textlink" asp-controller="Pages" asp-action="Pages">@T["BackToPages"]</a>
+<h1>@T["ManageSiteQuestions"]</h1>
+<p class="muted">@T["SiteQuestionsEditorHelp"]</p>
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="validation-summary-errors" role="alert">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        { <p>@T[error.ErrorMessage]</p> }
+    </div>
+}
+<form method="post" asp-controller="SiteQuestions" asp-action="SiteQuestions" class="edit-form page-content-editor">
+    <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Version ?? [])" />
+    <div class="page-language-grid">
+        <label>@T["QuestionsHeadingAr"]<input asp-for="TitleAr" dir="rtl" maxlength="200" /></label>
+        <label>@T["QuestionsHeadingEn"]<input asp-for="TitleEn" dir="ltr" maxlength="200" /></label>
+    </div>
+    @for (var i = 0; i < Model.Items.Count; i++)
+    {
+        <fieldset>
+            <legend>@T["SiteQuestionLabel"] @(i + 1)</legend>
+            <div class="page-language-grid">
+                <div>
+                    <label>@T["QuestionAr"]<input asp-for="Items[i].QuestionAr" dir="rtl" /></label>
+                    <label>@T["AnswerAr"]<textarea asp-for="Items[i].AnswerAr" dir="rtl" rows="5"></textarea></label>
+                </div>
+                <div>
+                    <label>@T["QuestionEn"]<input asp-for="Items[i].QuestionEn" dir="ltr" /></label>
+                    <label>@T["AnswerEn"]<textarea asp-for="Items[i].AnswerEn" dir="ltr" rows="5"></textarea></label>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="button-outline" name="command" value="up:@i" disabled="@(i == 0)">@T["QuestionMoveUp"]</button>
+                <button type="submit" class="button-outline" name="command" value="down:@i" disabled="@(i + 1 == Model.Items.Count)">@T["QuestionMoveDown"]</button>
+                <button type="submit" class="button-outline" name="command" value="remove:@i">@T["QuestionRemove"]</button>
+            </div>
+        </fieldset>
+    }
+    <div class="actions">
+        <button type="submit" class="button-outline" name="command" value="add">@T["QuestionAdd"]</button>
+        <button type="submit" name="command" value="save">@T["Save"]</button>
+        <a class="textlink" asp-area="" asp-controller="About" asp-action="Index" asp-fragment="common-questions" target="_blank" rel="noopener noreferrer">@T["PreviewPage"]</a>
+    </div>
+</form>

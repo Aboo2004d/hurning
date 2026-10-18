@@ -1,0 +1,76 @@
+@model AdminPage<MemberSubscription>
+    <h1>@T["Subscriptions"]</h1>
+    <form method="get" class="membership-card">
+        <label>@T["Search"]<input name="q" value="@Context.Request.Query["q"]" />
+        </label>
+        <label>@T["Status"]<select name="status">
+                <option value="">@T["All"]</option>
+                @foreach (var state in new[] { "current", "scheduled", "expired", "cancelled" })
+                {
+                    <option value="@state" selected="@(Context.Request.Query["status"] == state)">@T["Subscription" + state]</option>
+                }
+            </select>
+        </label>
+        <button type="submit">@T["Filter"]</button>
+    </form>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>@T["MemberId"]</th>
+                    <th>@T["Plan"]</th>
+                    <th>@T["StartsUtc"]</th>
+                    <th>@T["EndsUtc"]</th>
+                    <th>@T["Status"]</th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sub in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <a asp-controller="Members" asp-action="Details" asp-route-id="@sub.UserId">@sub.UserId</a>
+                        </td>
+                        <td>@sub.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
+                        <td>
+                            <bdi>@sub.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                        </td>
+                        <td>
+                            <bdi>@sub.EndsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                        </td>
+                        <td>@T[sub.Cancelled ? "Subscriptioncancelled" : sub.StartsAt > DateTimeOffset.UtcNow ? "Subscriptionscheduled" : sub.EndsAt > DateTimeOffset.UtcNow ? "Subscriptioncurrent" : "Subscriptionexpired"]</td>
+                        <td>
+                            @if (!sub.Cancelled)
+                            {
+                                <form asp-action="Cancel" method="post">
+                                    <input name="id" value="@sub.Id" type="hidden" />
+                                    <label>@T["Reason"]<input name="reason" required maxlength="1500" />
+                                    </label>
+                                    <button class="secondary" type="submit">@T["StopSubscription"]</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />
+    <form asp-action="Grant" method="post" class="membership-card">
+        <h2>@T["GrantSubscription"]</h2>
+        <label>@T["MemberId"]<input name="userId" value="@Context.Request.Query["q"]" required />
+        </label>
+        <label>@T["Plan"]<select name="versionId">@foreach (var version in (List<MembershipPlanVersion>)ViewBag.Plans)
+                    {
+                        <option value="@version.Id">@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
+                        }</select>
+                </label>
+                <label>@T["CustomDays"]<input name="days" type="number" min="1" max="3650" />
+                </label>
+                <label>@T["Reason"]<textarea name="reason" required maxlength="1500">
+                    </textarea>
+                </label>
+                <button type="submit">@T["Confirm"]</button>
+            </form>

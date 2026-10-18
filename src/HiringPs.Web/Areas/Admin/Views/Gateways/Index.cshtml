@@ -1,0 +1,20 @@
+@model List<PaymentGatewaySetting>
+    @{ var ready = (string[])ViewBag.Ready; var available = (string[])ViewBag.Available; }
+    <h1>@T["PaymentGateways"]</h1>
+    <p class="notice">@T["GatewayConfigurationAdvice"]</p>
+    <div class="membership-grid">
+        @foreach (var setting in Model)
+        {
+            <section class="membership-card">
+                <h2>@(setting.Key == "Lahza" ? T["Lahza"] : T["JawwalPay"])</h2>
+                <p>@T[available.Contains(setting.Key) ? "GatewayAvailable" : ready.Contains(setting.Key) ? "GatewayDisabled" : "GatewayAdapterMissing"]</p>
+                <form asp-action="Update" method="post">
+                    <input name="key" value="@setting.Key" type="hidden" />
+                    <label class="check">
+                        <input name="enabled" type="checkbox" value="true" checked="@setting.Enabled" />@T["Enabled"]</label>
+                    <button type="submit">@T["Save"]</button>
+                </form>
+                <a asp-controller="Payments" asp-action="Index" asp-route-gateway="@setting.Key">@T["PaymentOperations"]</a>
+            </section>
+        }
+    </div>

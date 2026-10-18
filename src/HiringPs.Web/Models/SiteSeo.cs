@@ -50,17 +50,17 @@ public sealed class SiteSeo
         IEnumerable<KeyValuePair<string, string?>>? query = null
     )
     {
+        path = HiringPs.Web.Infrastructure.LanguageUrls.WithoutLanguage(path);
         var values = (query ?? [])
-            .Where(x => !string.IsNullOrWhiteSpace(x.Value) && x.Key != "culture")
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value) && x.Key is not ("culture" or "ui-culture"))
             .ToList();
-        values.Add(new("culture", english ? "en" : "ar"));
-        return Origin + path + QueryString.Create(values).ToUriComponent();
+        return Origin + (english ? "/en" : "/ar") + path + QueryString.Create(values).ToUriComponent();
     }
 
     public SeoMetadata Build(HttpRequest request, object? model, string title, string description)
     {
         var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
-        var brand = english ? "Palestine Opportunities" : "فرص فلسطين";
+        var brand = english ? "Employment in Palestine" : "التوظيف في فلسطين";
         var controller = request.RouteValues["controller"]?.ToString();
         var action = request.RouteValues["action"]?.ToString();
         var isHome = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase);
@@ -118,9 +118,9 @@ public sealed class SiteSeo
                 values.Add(new("page", listing.Page.ToString(CultureInfo.InvariantCulture)));
             pageType = "CollectionPage";
         }
-        else if (isHome && model is Opportunity opportunity)
+        else if (controller == "Opportunities" && model is Opportunity opportunity)
         {
-            path = "/Home/Details/" + opportunity.Id.ToString(CultureInfo.InvariantCulture);
+            path = "/Opportunities/Details/" + opportunity.Id.ToString(CultureInfo.InvariantCulture);
             name = string.Join(
                 " · ",
                 new[] { opportunity.Title, opportunity.Organization, opportunity.Locations }.Where(
@@ -148,13 +148,13 @@ public sealed class SiteSeo
                 )
             );
         }
-        else if (isHome && action is "About" or "Contact" or "Privacy")
+        else if (controller is "About" or "Contact" or "Privacy")
         {
-            path = "/Home/" + action;
+            path = "/" + controller;
             noindex = false;
             pageType =
-                action == "About" ? "AboutPage"
-                : action == "Contact" ? "ContactPage"
+                controller == "About" ? "AboutPage"
+                : controller == "Contact" ? "ContactPage"
                 : "WebPage";
         }
         else
@@ -175,8 +175,8 @@ public sealed class SiteSeo
                 {
                     ["@type"] = "Organization",
                     ["@id"] = Origin + "/#organization",
-                    ["name"] = "فرص فلسطين",
-                    ["alternateName"] = new[] { "Palestine Opportunities", "hiring.ps" },
+                    ["name"] = "التوظيف في فلسطين",
+                    ["alternateName"] = new[] { "Employment in Palestine", "hiring.ps" },
                     ["url"] = Origin + "/",
                     ["logo"] = Origin + "/images/brand/basket-logo.png",
                 }
@@ -237,14 +237,14 @@ public sealed class SiteSeo
                                     ["@type"] = "ListItem",
                                     ["position"] = (list.Page - 1) * 12 + index + 1,
                                     ["name"] = item.Title,
-                                    ["url"] = Url("/Home/Details/" + item.Id, english),
+                                    ["url"] = Url("/Opportunities/Details/" + item.Id, english),
                                 }
                         )
                         .ToArray(),
                 };
             }
 
-            if (model is SitePageViewModel about && action == "About" && about.Questions.Count > 0)
+            if (model is SitePageViewModel about && controller == "About" && about.Questions.Count > 0)
             {
                 webpage["hasPart"] = new Dictionary<string, object?>
                 {

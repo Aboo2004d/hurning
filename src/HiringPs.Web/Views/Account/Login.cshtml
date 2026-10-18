@@ -4,6 +4,7 @@
 }
 <section class="login-panel">
     <h1>@T["Login"]</h1>
+    @if (ViewBag.SuspensionReason is string reason) { <p class="notice" dir="auto">@reason</p> }
     <form method="post">
         <input asp-for="ReturnUrl" type="hidden"/>
         @foreach (var entry in ViewData.ModelState.Values.SelectMany(x => x.Errors))
@@ -20,4 +21,6 @@
         </label>
         <button type="submit">@T["Login"]</button>
     </form>
+    <p><a asp-controller="Registration" asp-action="Index">@T["Register"]</a></p>
+    <p><a asp-controller="PasswordReset" asp-action="Index">@T["ResetPassword"]</a></p>
 </section>

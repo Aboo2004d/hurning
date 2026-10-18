@@ -1,0 +1,30 @@
+@model MemberDashboard
+@{ ViewData["Title"] = T["MyAccount"]; }
+<h1>@T["Welcome"]، @Model.Member.Name</h1>
+@if (!Model.BotReady)
+{
+    <p class="notice">@T["TelegramUnavailable"]</p>
+}
+@if (Model.DeliveryError.Length > 0)
+{
+    <p class="notice">@T["TelegramDeliveryProblem"]</p>
+}
+<div class="membership-grid">
+    <a class="membership-card" asp-controller="Plans" asp-action="Index">
+        <h2>@T["MyPlan"]</h2>
+        <p>@(Model.Subscriptions.FirstOrDefault()?.PlanVersion.Name(Model.Member.Language) ?? T["FreePlan"].Value)</p>
+    </a>
+    <a class="membership-card" asp-controller="Payments" asp-action="Index">
+        <h2>@T["MyPayments"]</h2>
+    </a>
+    <a class="membership-card" asp-controller="Preferences" asp-action="Index">
+        <h2>@T["Preferences"]</h2>
+    </a>
+    <a class="membership-card" asp-controller="Saved" asp-action="Index">
+        <h2>@T["Saved"]</h2>
+        <p>@Model.SavedCount</p>
+    </a>
+    <a class="membership-card" asp-controller="Settings" asp-action="Index">
+        <h2>@T["AccountSettings"]</h2>
+    </a>
+</div>
