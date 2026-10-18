@@ -81,6 +81,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Errors/Status?code=403";
     options.Cookie.Name = "HiringPs.Admin";
+    // Language prefixes must share one login session and one logout cookie path.
+    options.Cookie.Path = "/";
     options.Events.OnValidatePrincipal = async context =>
     {
         await SecurityStampValidator.ValidatePrincipalAsync(context);

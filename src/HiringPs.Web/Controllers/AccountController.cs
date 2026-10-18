@@ -1,11 +1,13 @@
 // تسجيل دخول الإدارة والخروج وتغيير كلمة المرور.
 using System.ComponentModel.DataAnnotations;
 using HiringPs.Core;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace HiringPs.Web.Controllers;
 
@@ -127,9 +129,23 @@ public class AccountController(
     }
 
     [HttpPost, Authorize]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout(
+        [FromServices] IOptionsMonitor<CookieAuthenticationOptions> cookieOptions
+    )
     {
         await signIn.SignOutAsync();
+
+        // Remove sessions issued before the cookie path was shared across languages.
+        var options = cookieOptions.Get(IdentityConstants.ApplicationScheme);
+        var mount = HttpContext.Items["MountPath"]?.ToString()?.TrimEnd('/') ?? "";
+        foreach (var path in new[] { mount, mount + "/ar", mount + "/en" })
+        {
+            if (string.IsNullOrEmpty(path))
+                continue;
+            var cookie = options.Cookie.Build(HttpContext);
+            cookie.Path = path;
+            options.CookieManager.DeleteCookie(HttpContext, options.Cookie.Name!, cookie);
+        }
         return RedirectToAction("Index", "Home");
     }
 

@@ -212,7 +212,12 @@ public static class MembershipChecks
         builder
             .Services.AddAuthentication(options => options.DefaultAuthenticateScheme = "Fixture")
             .AddScheme<AuthenticationSchemeOptions, FixtureAuthentication>("Fixture", _ => { });
-        builder.Services.ConfigureApplicationCookie(x => x.LoginPath = "/Account/Login");
+        builder.Services.ConfigureApplicationCookie(x =>
+        {
+            x.LoginPath = "/Account/Login";
+            x.Cookie.Name = "HiringPs.Admin";
+            x.Cookie.Path = "/";
+        });
         builder.Services.AddLocalization(x => x.ResourcesPath = "Resources");
         builder
             .Services.AddControllersWithViews(x =>
@@ -457,6 +462,89 @@ public static class MembershipChecks
                 "Member password page can render its own area navigation"
             );
             client.DefaultRequestHeaders.Remove("X-Fixture-Role");
+            foreach (var role in new[] { "Admin", "Member" })
+            foreach (var language in new[] { "ar", "en" })
+            {
+                var cookies = new CookieContainer();
+                using var session = new HttpClient(
+                    new HttpClientHandler { AllowAutoRedirect = false, CookieContainer = cookies }
+                );
+                session.DefaultRequestHeaders.Add("X-Fixture-Role", role);
+                var page =
+                    role == "Admin" ? "/Admin/AdminShellFixture" : "/Member/MemberShellFixture";
+                var shell = await session.GetStringAsync(origin + "/" + language + page);
+                var logoutForm = System
+                    .Text.RegularExpressions.Regex.Match(
+                        shell,
+                        "<form[^>]*action=\"[^\"]*/Account/Logout\"[^>]*>.*?</form>",
+                        System.Text.RegularExpressions.RegexOptions.Singleline
+                    )
+                    .Value;
+                var token = System
+                    .Text.RegularExpressions.Regex.Match(
+                        logoutForm,
+                        "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\""
+                    )
+                    .Groups[1]
+                    .Value;
+                Check(token.Length > 0, role + " logout form includes CSRF token in " + language);
+                foreach (var path in new[] { "", "/ar", "/en" })
+                {
+                    var fields = new Dictionary<string, string>
+                    {
+                        ["__RequestVerificationToken"] = token,
+                    };
+                    if (path.Length > 0)
+                        fields["legacyPath"] = path;
+                    using var issued = await session.PostAsync(
+                        origin + "/" + language + "/SessionShellFixture/Issue",
+                        new FormUrlEncodedContent(fields)
+                    );
+                    Check(
+                        issued.StatusCode == HttpStatusCode.NoContent,
+                        "Issue current or legacy login cookie: " + path
+                    );
+                }
+                Check(
+                    cookies
+                        .GetAllCookies()
+                        .Cast<Cookie>()
+                        .Any(c => c.Name == "HiringPs.Admin" && c.Path == "/"),
+                    "Login cookie uses a shared path independent of language"
+                );
+                var otherLanguage = language == "ar" ? "en" : "ar";
+                // Language navigation renders a fresh form with that page's CSRF cookie.
+                shell = await session.GetStringAsync(origin + "/" + otherLanguage + page);
+                logoutForm = System
+                    .Text.RegularExpressions.Regex.Match(
+                        shell,
+                        "<form[^>]*action=\"[^\"]*/Account/Logout\"[^>]*>.*?</form>",
+                        System.Text.RegularExpressions.RegexOptions.Singleline
+                    )
+                    .Value;
+                token = System
+                    .Text.RegularExpressions.Regex.Match(
+                        logoutForm,
+                        "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\""
+                    )
+                    .Groups[1]
+                    .Value;
+                using var loggedOut = await session.PostAsync(
+                    origin + "/" + otherLanguage + "/Account/Logout",
+                    new FormUrlEncodedContent(
+                        new Dictionary<string, string> { ["__RequestVerificationToken"] = token }
+                    )
+                );
+                Check(
+                    loggedOut.StatusCode == HttpStatusCode.Redirect
+                        && loggedOut.Headers.Location?.ToString() == "/" + otherLanguage,
+                    role + " logout redirects home after switching from " + language
+                );
+                Check(
+                    !cookies.GetAllCookies().Cast<Cookie>().Any(c => c.Name == "HiringPs.Admin"),
+                    "Logout removes root and both legacy language cookies for " + role
+                );
+            }
             response = await client.GetAsync(origin + "/en/TimeoutShellFixture");
             html = await response.Content.ReadAsStringAsync();
             Check(

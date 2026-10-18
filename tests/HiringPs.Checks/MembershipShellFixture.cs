@@ -115,3 +115,33 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
             }
         );
 }
+
+// This controller exists only in the checks assembly; production never loads it.
+public class SessionShellFixtureController : Controller
+{
+    [HttpPost, Authorize]
+    public async Task<IActionResult> Issue(
+        [FromServices]
+            IOptionsMonitor<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions> cookieOptions,
+        string? legacyPath
+    )
+    {
+        var scheme = Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
+        if (legacyPath is null)
+            await HttpContext.SignInAsync(scheme, User);
+        else
+        {
+            var options = cookieOptions.Get(scheme);
+            var ticket = new AuthenticationTicket(User, new AuthenticationProperties(), scheme);
+            var cookie = options.Cookie.Build(HttpContext);
+            cookie.Path = legacyPath;
+            options.CookieManager.AppendResponseCookie(
+                HttpContext,
+                options.Cookie.Name!,
+                options.TicketDataFormat.Protect(ticket),
+                cookie
+            );
+        }
+        return NoContent();
+    }
+}
