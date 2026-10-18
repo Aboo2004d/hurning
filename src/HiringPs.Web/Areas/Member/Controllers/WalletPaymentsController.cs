@@ -10,7 +10,8 @@ public sealed class WalletPaymentsController(
     PaymentGatewayRegistry registry,
     JawwalPayGateway gateway,
     WalletCheckoutService checkout,
-    PaymentEnvironment environment
+    PaymentEnvironment environment,
+    PaymentTraceWriter? diagnostics = null
 ) : MemberControllerBase(db)
 {
     [HttpGet]
@@ -82,6 +83,7 @@ public sealed class WalletPaymentsController(
         if (outcome == "PaymentNotFound")
             return NotFound();
         TempData["Notice"] = outcome;
+        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return RedirectToAction(nameof(Index), new { id });
     }
 
@@ -93,6 +95,7 @@ public sealed class WalletPaymentsController(
         if (outcome == "PaymentNotFound")
             return NotFound();
         TempData["Notice"] = outcome;
+        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return outcome == "PaymentConfirmed"
             ? RedirectToAction("Details", "Payments", new { id })
             : RedirectToAction(nameof(Index), new { id });

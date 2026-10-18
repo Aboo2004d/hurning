@@ -9,7 +9,8 @@ public sealed record GatewayCheck(
     decimal? Amount,
     string? Currency,
     PaymentState State,
-    bool Inconclusive = false
+    bool Inconclusive = false,
+    string? DiagnosticCode = null
 );
 
 public sealed record GatewayCheckout(string Reference, Uri Url);
@@ -135,7 +136,11 @@ public sealed class PaymentReconciliation(
             {
                 trace?.Step("Provider", "VerifyStarted");
                 result = await gateway.CheckAsync(order, ct);
-                trace?.Step("Provider", result.Confirmed ? "Confirmed" : result.State.ToString());
+                trace?.Step(
+                    "Provider",
+                    result.DiagnosticCode
+                        ?? (result.Confirmed ? "Confirmed" : result.State.ToString())
+                );
             }
             catch (PaymentProviderException ex)
             {

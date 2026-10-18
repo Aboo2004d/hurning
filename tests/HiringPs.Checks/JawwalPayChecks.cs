@@ -161,6 +161,83 @@ public static class JawwalPayChecks
                     && body.RootElement.GetProperty("otp").GetString() == "123456",
                 "confirm sends only session_key and otp"
             );
+        var numericStrings = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
+        foreach (
+            var field in new[]
+            {
+                "transaction_id",
+                "amount",
+                "jawwal_fee",
+                "platform_fee",
+                "net_credited",
+            }
+        )
+            numericStrings[field] = numericStrings[field]!.ToString();
+        handler.Body = numericStrings.ToJsonString();
+        var textReceipt = await gateway.ConfirmAsync(order, session.SessionKey, "123456", default);
+        Check(
+            textReceipt.TransactionId == 12
+                && textReceipt.Amount == 25m
+                && textReceipt.NetCredited == 23.5m,
+            "String numeric receipt fields preserve gross amount, fees and transaction ID"
+        );
+        var optionalReferences = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
+        optionalReferences.AsObject().Remove("external_ref");
+        optionalReferences.AsObject().Remove("reference");
+        handler.Body = optionalReferences.ToJsonString();
+        Check(
+            (await gateway.ConfirmAsync(order, session.SessionKey, "123456", default)).TransactionId
+                == 12,
+            "Direct session-bound receipt permits omitted nullable reference fields"
+        );
+        foreach (
+            var field in new[]
+            {
+                "transaction_id",
+                "amount",
+                "jawwal_fee",
+                "platform_fee",
+                "net_credited",
+            }
+        )
+        {
+            var missing = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
+            missing.AsObject().Remove(field);
+            handler.Body = missing.ToJsonString();
+            try
+            {
+                await gateway.ConfirmAsync(order, session.SessionKey, "123456", default);
+                Check(false, "Missing financial field must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == "WalletField." + field + ".Missing" && ex.HttpStatus == 200,
+                    "Missing receipt field has a safe diagnostic code: " + field
+                );
+            }
+        }
+        var malformed = System.Text.Json.Nodes.JsonNode.Parse(Receipt())!;
+        malformed["amount"] = "25,00";
+        handler.Body = malformed.ToJsonString();
+        try
+        {
+            await gateway.ConfirmAsync(order, session.SessionKey, "123456", default);
+            Check(false, "Ambiguous amount must reject");
+        }
+        catch (PaymentProviderException ex)
+        {
+            Check(
+                ex.ReasonCode == "WalletField.amount.InvalidString",
+                "Ambiguous decimal string cannot confirm a debit"
+            );
+        }
+        handler.Body =
+            "{\"ok\":true,\"session_key\":\"ps_secret_fixture\",\"amount\":\"25.00\",\"expires_in\":\"900\"}";
+        Check(
+            (await gateway.InitiateAsync(order, "0599123456", default)).ExpiresIn == 900,
+            "Numeric strings in OTP initialization are parsed without logging the session key"
+        );
         foreach (
             var bad in new[]
             {
@@ -202,9 +279,14 @@ public static class JawwalPayChecks
                 await gateway.ConfirmAsync(order, session.SessionKey, "123456", default);
                 Check(false, "HTTP failure rejected");
             }
-            catch (PaymentProviderException)
+            catch (PaymentProviderException ex)
             {
-                Check(true, "HTTP " + (int)status + " cannot confirm debit");
+                Check(
+                    ex.ReasonCode == "WalletHttpFailure" && ex.HttpStatus == (int)status,
+                    "HTTP "
+                        + (int)status
+                        + " cannot confirm debit and retains a safe diagnostic code"
+                );
             }
         }
         handler.Status = HttpStatusCode.UnprocessableEntity;

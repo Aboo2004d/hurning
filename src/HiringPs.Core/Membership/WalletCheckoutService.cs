@@ -11,17 +11,55 @@ public sealed class WalletCheckoutService(
     MembershipService membership,
     PaymentGatewayRegistry registry,
     JawwalPayGateway gateway,
-    IDataProtectionProvider protection
+    IDataProtectionProvider protection,
+    PaymentTraceWriter? diagnostics = null
 )
 {
     private readonly IDataProtector protector = protection.CreateProtector(
         "HiringPs.JawwalPay.Sessions.v1"
     );
 
-    public async Task<string> InitiateAsync(
+    public Task<string> InitiateAsync(Guid id, string owner, string? phone, CancellationToken ct) =>
+        TraceAsync(id, "WalletInitiate", trace => InitiateCoreAsync(id, owner, phone, trace, ct));
+
+    public Task<string> ConfirmAsync(Guid id, string owner, string? otp, CancellationToken ct) =>
+        TraceAsync(id, "WalletConfirm", trace => ConfirmCoreAsync(id, owner, otp, trace, ct));
+
+    private async Task<string> TraceAsync(
+        Guid id,
+        string operation,
+        Func<PaymentTraceSession?, Task<string>> run
+    )
+    {
+        await using var trace = diagnostics?.Start(id);
+        if (trace is not null)
+        {
+            trace.Gateway = "JawwalPay";
+            trace.RuntimeEnvironment = db.ActivePaymentEnvironment;
+            trace.AdapterEnvironment = gateway.Environment;
+        }
+        trace?.Step(operation, "RequestStarted");
+        try
+        {
+            var outcome = await run(trace);
+            trace?.Step("Complete", outcome);
+            return outcome;
+        }
+        catch (Exception ex)
+        {
+            var sql =
+                ex as Microsoft.Data.SqlClient.SqlException
+                ?? ex.InnerException as Microsoft.Data.SqlClient.SqlException;
+            trace?.Step("Failure", sql is null ? ex.GetType().Name : "SqlError" + sql.Number);
+            throw;
+        }
+    }
+
+    private async Task<string> InitiateCoreAsync(
         Guid id,
         string owner,
         string? phone,
+        PaymentTraceSession? trace,
         CancellationToken ct
     )
     {
@@ -51,6 +89,8 @@ public sealed class WalletCheckoutService(
             if (!member.Activated || member.Suspended)
                 return "AccountSuspended";
             order = await db.PaymentOrders.AsNoTracking().SingleAsync(x => x.Id == id, ct);
+            if (trace is not null)
+                trace.OrderEnvironment = order.GatewayEnvironment;
             if (MembershipRules.Paid(order.State))
                 return "PaymentConfirmed";
             var now = DateTimeOffset.UtcNow;
@@ -89,11 +129,14 @@ public sealed class WalletCheckoutService(
                 );
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+            trace?.Step("Session", "ClaimCommitted");
         }
         // No transport retry: the persisted row is the one initiation claim for this order.
         try
         {
+            trace?.Step("ProviderInitiate", "RequestSent");
             var result = await gateway.InitiateAsync(order, mobile, ct);
+            trace?.Step("ProviderInitiate", "ResponseParsed");
             var expires = DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn);
             if (expires > order.ExpiresAt)
                 expires = order.ExpiresAt;
@@ -111,10 +154,12 @@ public sealed class WalletCheckoutService(
                             .SetProperty(x => x.ExpiresAt, expires),
                     CancellationToken.None
                 );
+            trace?.Step("Session", "Saved");
             return "WalletOtpSent";
         }
         catch (WalletRequestRejectedException)
         {
+            trace?.Step("ProviderFailure", "WalletExplicitRejection", 422);
             await db
                 .WalletPaymentSessions.Where(x => x.OrderId == id)
                 .ExecuteUpdateAsync(
@@ -124,13 +169,20 @@ public sealed class WalletCheckoutService(
             await MarkFailedAsync(id);
             return "WalletInitiateRejected";
         }
-        catch (PaymentProviderException)
+        catch (PaymentProviderException ex)
         {
+            trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
             return "WalletInitiationUnknown";
         }
     }
 
-    public async Task<string> ConfirmAsync(Guid id, string owner, string? otp, CancellationToken ct)
+    private async Task<string> ConfirmCoreAsync(
+        Guid id,
+        string owner,
+        string? otp,
+        PaymentTraceSession? trace,
+        CancellationToken ct
+    )
     {
         if (!await OwnedAsync(id, owner, ct))
             return "PaymentNotFound";
@@ -151,6 +203,8 @@ public sealed class WalletCheckoutService(
             if (!member.Activated || member.Suspended)
                 return "AccountSuspended";
             order = await db.PaymentOrders.AsNoTracking().SingleAsync(x => x.Id == id, ct);
+            if (trace is not null)
+                trace.OrderEnvironment = order.GatewayEnvironment;
             if (MembershipRules.Paid(order.State))
                 return "PaymentConfirmed";
             var session = await db
@@ -169,6 +223,7 @@ public sealed class WalletCheckoutService(
             }
             catch (CryptographicException)
             {
+                trace?.Step("Session", "SessionKeyUnprotectFailed");
                 return "WalletSessionUnavailable";
             }
             var claimed = await db
@@ -185,16 +240,20 @@ public sealed class WalletCheckoutService(
             if (claimed != 1)
                 return "WalletAlreadyConfirming";
             await transaction.CommitAsync(ct);
+            trace?.Step("Session", "ClaimCommitted");
         }
         // From this point a debit may happen. Browser cancellation must not interrupt
         // receipt persistence. The provider client supplies its own 20-second timeout.
         WalletReceipt receipt;
         try
         {
+            trace?.Step("ProviderConfirm", "RequestSent");
             receipt = await gateway.ConfirmAsync(order, sessionKey, otp!, CancellationToken.None);
+            trace?.Step("ProviderConfirm", "ResponseParsed");
         }
         catch (WalletRequestRejectedException)
         {
+            trace?.Step("ProviderFailure", "WalletExplicitRejection", 422);
             await db
                 .WalletPaymentSessions.Where(x => x.OrderId == id)
                 .ExecuteUpdateAsync(
@@ -204,13 +263,17 @@ public sealed class WalletCheckoutService(
             await MarkFailedAsync(id);
             return "WalletConfirmRejected";
         }
-        catch (PaymentProviderException)
+        catch (PaymentProviderException ex)
         {
+            trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
             return "PaymentUncertain";
         }
         // A saved receipt lets the worker recover even after the transaction leaves
         // the partner's last-50 list. Its unique ID cannot fund two website orders.
+        trace?.Step("Receipt", "SaveStarted");
         await gateway.SaveReceiptAsync(id, receipt, CancellationToken.None);
+        trace?.Step("Receipt", "Saved");
+        trace?.Step("Subscription", "SaveStarted");
         await membership.ConfirmAsync(
             id,
             owner,

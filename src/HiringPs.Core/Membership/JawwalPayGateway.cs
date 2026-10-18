@@ -138,17 +138,18 @@ public sealed class JawwalPayGateway(
         {
             if (root.GetProperty("ok").ValueKind != JsonValueKind.True)
                 throw new PaymentProviderException();
-            var key = root.GetProperty("session_key").GetString();
-            var amount = root.GetProperty("amount").GetDecimal();
-            var expires = root.GetProperty("expires_in").GetInt32();
+            var key = ReadText(root, "session_key");
+            var amount = ReadMoney(root, "amount");
+            var expires = ReadInteger(root, "expires_in");
             if (
                 key is null
                 || key.Length is < 1 or > 1024
                 || amount != order.AmountIls
                 || expires <= 0
+                || expires > int.MaxValue
             )
                 throw new PaymentProviderException();
-            return new(key, amount, expires);
+            return new(key, amount, (int)expires);
         }
         catch (Exception ex)
             when (ex
@@ -199,22 +200,24 @@ public sealed class JawwalPayGateway(
         {
             if (!transactionList && item.GetProperty("ok").ValueKind != JsonValueKind.True)
                 throw new PaymentProviderException();
-            var external = item.GetProperty("external_ref");
+            var external = ReadText(item, "external_ref", optional: !transactionList);
             if (
-                (external.ValueKind != JsonValueKind.Null || transactionList)
-                && external.GetString() != JawwalPayRules.ExternalReference(order.Id)
+                (external is not null || transactionList)
+                && external != JawwalPayRules.ExternalReference(order.Id)
             )
-                throw new PaymentProviderException();
-            var id = item.GetProperty(transactionList ? "id" : "transaction_id").GetInt64();
-            var amount = item.GetProperty("amount").GetDecimal();
-            var reference = item.GetProperty(transactionList ? "jawwal_reference" : "reference")
-                .GetString();
+                throw new PaymentProviderException("WalletExternalReferenceMismatch", 200);
+            var id = ReadInteger(item, transactionList ? "id" : "transaction_id");
+            var amount = ReadMoney(item, "amount");
+            var reference = ReadText(
+                item,
+                transactionList ? "jawwal_reference" : "reference",
+                optional: true
+            );
             if (transactionList && item.GetProperty("status").GetString() != "success")
                 throw new PaymentProviderException();
-            var fee = item.GetProperty("jawwal_fee").GetDecimal();
-            var platformFee = item.GetProperty("platform_fee").GetDecimal();
-            var net = item.GetProperty(transactionList ? "net_amount" : "net_credited")
-                .GetDecimal();
+            var fee = ReadMoney(item, "jawwal_fee");
+            var platformFee = ReadMoney(item, "platform_fee");
+            var net = ReadMoney(item, transactionList ? "net_amount" : "net_credited");
             if (
                 id <= 0
                 || amount != order.AmountIls
@@ -228,7 +231,7 @@ public sealed class JawwalPayGateway(
                 || net > amount
                 || Math.Abs(fee + platformFee + net - amount) > .01m
             )
-                throw new PaymentProviderException();
+                throw new PaymentProviderException("WalletReceiptMismatch", 200);
             return new(id, reference, amount, fee, platformFee, net);
         }
         catch (Exception ex)
@@ -240,8 +243,78 @@ public sealed class JawwalPayGateway(
                         or OverflowException
             )
         {
-            throw new PaymentProviderException();
+            throw new PaymentProviderException("WalletMalformedReceipt", 200);
         }
+    }
+
+    private static JsonElement RequiredField(JsonElement root, string field)
+    {
+        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty(field, out var value))
+            throw new PaymentProviderException("WalletField." + field + ".Missing", 200);
+        return value;
+    }
+
+    private static decimal ReadMoney(JsonElement root, string field)
+    {
+        var value = RequiredField(root, field);
+        decimal amount;
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out amount))
+            return amount;
+        if (
+            value.ValueKind == JsonValueKind.String
+            && decimal.TryParse(
+                value.GetString(),
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                CultureInfo.InvariantCulture,
+                out amount
+            )
+        )
+            return amount;
+        throw new PaymentProviderException(
+            "WalletField." + field + ".Invalid" + value.ValueKind,
+            200
+        );
+    }
+
+    private static long ReadInteger(JsonElement root, string field)
+    {
+        var value = RequiredField(root, field);
+        long number;
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out number))
+            return number;
+        if (
+            value.ValueKind == JsonValueKind.String
+            && long.TryParse(
+                value.GetString(),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out number
+            )
+        )
+            return number;
+        throw new PaymentProviderException(
+            "WalletField." + field + ".Invalid" + value.ValueKind,
+            200
+        );
+    }
+
+    private static string? ReadText(JsonElement root, string field, bool optional = false)
+    {
+        if (
+            optional
+            && (
+                !root.TryGetProperty(field, out var optionalValue)
+                || optionalValue.ValueKind == JsonValueKind.Null
+            )
+        )
+            return null;
+        var value = RequiredField(root, field);
+        if (value.ValueKind == JsonValueKind.String)
+            return value.GetString();
+        throw new PaymentProviderException(
+            "WalletField." + field + ".Invalid" + value.ValueKind,
+            200
+        );
     }
 
     public async Task<GatewayCheck> CheckAsync(PaymentOrder order, CancellationToken ct)
@@ -269,8 +342,16 @@ public sealed class JawwalPayGateway(
             );
         // No sandbox transaction-list endpoint was supplied. Never query live data
         // to recover a sandbox session. A persisted sandbox receipt still works.
-        if (Sandbox || session?.ConfirmationStartedAt is null)
-            return Uncertain(order);
+        if (Sandbox)
+            return Uncertain(
+                order,
+                session is null ? "WalletSessionMissing"
+                    : session.ConfirmationStartedAt is null ? "WalletAwaitingOtpConfirmation"
+                    : session.ConfirmationRejected ? "WalletConfirmationRejected"
+                    : "WalletSandboxReceiptMissing"
+            );
+        if (session?.ConfirmationStartedAt is null)
+            return Uncertain(order, "WalletAwaitingOtpConfirmation");
         using var json = await SendAsync(HttpMethod.Get, "/api/partner/transactions", null, ct);
         var receipt = FindReceipt(json.RootElement, order, session.Phone);
         if (receipt is null)
@@ -353,7 +434,7 @@ public sealed class JawwalPayGateway(
         }
     }
 
-    private static GatewayCheck Uncertain(PaymentOrder order) =>
+    private static GatewayCheck Uncertain(PaymentOrder order, string? reason = null) =>
         new(
             false,
             order.Id,
@@ -361,7 +442,8 @@ public sealed class JawwalPayGateway(
             null,
             null,
             order.State == PaymentState.Failed ? PaymentState.Failed : PaymentState.Pending,
-            Inconclusive: true
+            Inconclusive: true,
+            DiagnosticCode: reason
         );
 
     public async Task SaveReceiptAsync(Guid orderId, WalletReceipt receipt, CancellationToken ct)
@@ -444,6 +526,7 @@ public sealed class JawwalPayGateway(
             throw new PaymentProviderException();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        int? httpStatus = null;
         try
         {
             using var request = new HttpRequestMessage(method, "https://store.portal.ps" + path);
@@ -455,11 +538,12 @@ public sealed class JawwalPayGateway(
                 HttpCompletionOption.ResponseHeadersRead,
                 timeout.Token
             );
+            httpStatus = (int)response.StatusCode;
             if (
                 !response.IsSuccessStatusCode
                 && !(allowRejection && response.StatusCode == HttpStatusCode.UnprocessableEntity)
             )
-                throw new PaymentProviderException();
+                throw new PaymentProviderException("WalletHttpFailure", httpStatus);
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var bounded = new MemoryStream();
             var buffer = new byte[8192];
@@ -467,7 +551,7 @@ public sealed class JawwalPayGateway(
             while ((size = await stream.ReadAsync(buffer, timeout.Token)) > 0)
             {
                 if (bounded.Length + size > 262144)
-                    throw new PaymentProviderException();
+                    throw new PaymentProviderException("WalletResponseTooLarge", httpStatus);
                 bounded.Write(buffer, 0, size);
             }
             var json = JsonDocument.Parse(bounded.ToArray());
@@ -477,7 +561,7 @@ public sealed class JawwalPayGateway(
             )
             {
                 json.Dispose();
-                throw new PaymentProviderException();
+                throw new PaymentProviderException("WalletMalformedEnvelope", httpStatus);
             }
             if (
                 allowRejection
@@ -491,7 +575,7 @@ public sealed class JawwalPayGateway(
             if (!response.IsSuccessStatusCode || ok.ValueKind != JsonValueKind.True)
             {
                 json.Dispose();
-                throw new PaymentProviderException();
+                throw new PaymentProviderException("WalletApiRejected", httpStatus);
             }
             return json;
         }
@@ -504,7 +588,17 @@ public sealed class JawwalPayGateway(
                 || ex is OperationCanceledException && !ct.IsCancellationRequested
             )
         {
-            throw new PaymentProviderException();
+            throw new PaymentProviderException(
+                ex switch
+                {
+                    OperationCanceledException => "WalletTimeout",
+                    HttpRequestException => "WalletNetworkFailure",
+                    IOException => "WalletResponseReadFailure",
+                    JsonException => "WalletMalformedJson",
+                    _ => "WalletUnexpectedPayload",
+                },
+                httpStatus
+            );
         }
     }
 }

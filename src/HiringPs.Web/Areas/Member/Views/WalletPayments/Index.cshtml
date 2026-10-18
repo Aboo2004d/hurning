@@ -9,6 +9,7 @@
 }
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model.Order" />
+    <partial name="_PaymentTraceReference" />
     <p>@T["NoRefundNotice"]</p>
     @if (Model.CanInitiate)
     {

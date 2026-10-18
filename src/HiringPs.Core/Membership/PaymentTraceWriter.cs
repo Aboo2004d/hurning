@@ -13,7 +13,7 @@ public sealed class PaymentTraceWriter(
     ILogger<PaymentTraceWriter> logger
 )
 {
-    public const string BuildMarker = "payment-trace-typed-fields-v2";
+    public const string BuildMarker = "payment-trace-wallet-confirm-v3";
     public string? LastTraceId { get; private set; }
 
     public PaymentTraceSession Start(Guid orderId)
