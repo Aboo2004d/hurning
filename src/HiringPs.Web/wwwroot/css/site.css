@@ -1466,6 +1466,8 @@ footer {
 .membership-card form + form { margin-block-start: .8rem; }
 .membership-card fieldset { border: 1px solid #d9e6e0; border-radius: .7rem; padding: 1rem; }
 .membership-card .detail-grid dd { overflow-wrap: anywhere; }
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem; }
+.plan-price strong, .plan-duration { white-space: nowrap; }
 .plan-benefits { padding-inline-start: 1.25rem; }
 
 /* Read-only wallet checkout preview in the administrator area. */

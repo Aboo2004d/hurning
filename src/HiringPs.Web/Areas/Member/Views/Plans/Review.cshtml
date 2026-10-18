@@ -4,12 +4,12 @@
 <partial name="_PaymentEnvironmentNotice" />
 <section class="membership-card">
     <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
-    <p>@Model.Plan.Days @T["Days"] · @T["StartsUtc"]: <bdi>@Model.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+    <p><bdi>@Model.Plan.Days</bdi> @T["Days"] · @T["StartsUtc"]: <bdi>@Model.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
     </p>
     <partial name="_PlanBenefits" model="Model.Plan" />
-    <p>@T["OriginalAmount"]: @MembershipRules.Money(Model.Plan.PriceIls)</p>
+    <p>@T["OriginalAmount"]: <bdi dir="ltr">@MembershipRules.Money(Model.Plan.PriceIls)</bdi></p>
     <p>
-        <strong>@T["FinalAmount"]: @MembershipRules.Money(Model.FinalAmount)</strong>
+        <strong>@T["FinalAmount"]: <bdi dir="ltr">@MembershipRules.Money(Model.FinalAmount)</bdi></strong>
     </p>
     <form method="post">
         <partial name="_MemberValidation" />

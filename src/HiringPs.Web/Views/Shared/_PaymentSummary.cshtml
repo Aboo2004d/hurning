@@ -12,7 +12,7 @@
     </div>
     <div>
         <dt>@T["Amount"]</dt>
-        <dd>@MembershipRules.Money(Model.AmountIls)</dd>
+        <dd><bdi dir="ltr">@MembershipRules.Money(Model.AmountIls)</bdi></dd>
     </div>
     <div>
         <dt>@T["PaymentGateway"]</dt><dd>@T[Model.Gateway == "discount" ? "DiscountPayment" : Model.Gateway]</dd>

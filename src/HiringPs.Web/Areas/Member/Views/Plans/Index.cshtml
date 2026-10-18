@@ -7,12 +7,19 @@
     @foreach (var plan in Model.Plans)
     {
         var version = Model.Versions.Single(x => x.Id == plan.CurrentVersionId);
+        var badge = ar ? version.BadgeAr : version.BadgeEn;
         <article class="membership-card">
-            <span class="badge">@(ar ? version.BadgeAr : version.BadgeEn)</span>
+            @if (!string.IsNullOrWhiteSpace(badge))
+            {
+                <span class="badge">@badge</span>
+            }
             <h2>@version.Name(ar ? "ar" : "en")</h2>
             <p>@(ar ? version.DescriptionAr : version.DescriptionEn)</p>
-            <p>
-                <strong>@MembershipRules.Money(version.PriceIls)</strong> / @version.Days @T["Days"]</p>
+            <p class="plan-price">
+                <strong><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></strong>
+                <span aria-hidden="true">/</span>
+                <span class="plan-duration"><bdi>@version.Days</bdi> @T["Days"]</span>
+            </p>
             <partial name="_PlanBenefits" model="version" />
             <a class="button" asp-action="Review" asp-route-id="@plan.Id">@T["ChoosePlan"]</a>
         </article>
