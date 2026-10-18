@@ -8,8 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace HiringPs.Web.Controllers;
 
 [AllowAnonymous, IgnoreAntiforgeryToken]
-public sealed class LahzaController(HiringDb db, IConfiguration configuration, LahzaGateway gateway)
-    : Controller
+public sealed class LahzaController(
+    HiringDb db,
+    IConfiguration configuration,
+    LahzaGateway gateway,
+    ILogger<LahzaController>? logger = null
+) : Controller
 {
     [HttpGet("/integrations/lahza/return")]
     public IActionResult Returned(string? reference, string? lang)
@@ -28,7 +32,15 @@ public sealed class LahzaController(HiringDb db, IConfiguration configuration, L
     public async Task<IActionResult> Webhook(CancellationToken ct)
     {
         if (!gateway.Ready)
+        {
+            logger?.LogWarning(
+                "PaymentWebhook Configuration {Code} Environment {Environment} Build {Build}",
+                gateway.ConfigurationStatus,
+                gateway.Environment,
+                PaymentTraceWriter.BuildMarker
+            );
             return Unauthorized();
+        }
         using var body = new MemoryStream();
         await Request.Body.CopyToAsync(body, ct);
         if (body.Length > 65536)
@@ -40,7 +52,14 @@ public sealed class LahzaController(HiringDb db, IConfiguration configuration, L
                 configuration["Payments:Lahza:" + gateway.Environment + ":SecretKey"] ?? ""
             )
         )
+        {
+            logger?.LogWarning(
+                "PaymentWebhook InvalidSignature Environment {Environment} Build {Build}",
+                gateway.Environment,
+                PaymentTraceWriter.BuildMarker
+            );
             return Unauthorized();
+        }
         try
         {
             using var json = JsonDocument.Parse(body.ToArray());
@@ -62,7 +81,7 @@ public sealed class LahzaController(HiringDb db, IConfiguration configuration, L
             var reference = field.GetString();
             // The signed event only schedules verification: never grant from its body.
             // Save the work before acknowledging; repeated events are harmless.
-            await db
+            var matched = await db
                 .PaymentOrders.Where(x =>
                     x.Gateway == "Lahza"
                     && x.GatewayEnvironment == gateway.Environment
@@ -77,10 +96,25 @@ public sealed class LahzaController(HiringDb db, IConfiguration configuration, L
                             .SetProperty(x => x.LastCheckedAt, (DateTimeOffset?)null),
                     ct
                 );
+            Guid.TryParseExact(
+                reference?.StartsWith("hiring-", StringComparison.Ordinal) is true
+                    ? reference[7..]
+                    : "",
+                "N",
+                out var orderId
+            );
+            logger?.LogInformation(
+                "PaymentWebhook Accepted Order {OrderId} MatchedOrders {Count} Environment {Environment} Build {Build}",
+                orderId,
+                matched,
+                gateway.Environment,
+                PaymentTraceWriter.BuildMarker
+            );
             return Ok();
         }
         catch (JsonException)
         {
+            logger?.LogWarning("PaymentWebhook MalformedJson");
             return BadRequest();
         }
     }

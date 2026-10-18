@@ -87,6 +87,7 @@ if (!isProbe)
     builder.Services.AddScoped<MembershipService>();
     builder.Services.AddScoped<MemberVerification>();
     builder.Services.AddScoped<PaymentReconciliation>();
+    builder.Services.AddScoped<PaymentTraceWriter>();
     builder.Services.AddScoped<PaymentGatewayRegistry>();
     builder.Services.AddSingleton<PaymentEnvironment>();
     builder.Services.AddScoped<PaymentToolProbes>();

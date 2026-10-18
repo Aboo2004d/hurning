@@ -1,0 +1,4 @@
+@if (TempData["PaymentTraceId"] is string traceId && !string.IsNullOrWhiteSpace(traceId))
+{
+    <p class="muted payment-trace-reference">@T["PaymentTraceReference"]: <bdi dir="ltr">@traceId</bdi></p>
+}

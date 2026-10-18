@@ -41,6 +41,7 @@ builder.Services.AddScoped<MemberVerification>();
 builder.Services.AddScoped<PendingVerificationCookie>();
 builder.Services.AddScoped<PaymentEvidenceStore>();
 builder.Services.AddScoped<PaymentReconciliation>();
+builder.Services.AddScoped<PaymentTraceWriter>();
 builder.Services.AddScoped<WalletCheckoutService>();
 builder.Services.AddScoped<PaymentGatewayRegistry>();
 builder.Services.AddSingleton<PaymentEnvironment>();

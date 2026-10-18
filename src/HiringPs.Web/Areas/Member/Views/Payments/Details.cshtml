@@ -4,29 +4,32 @@
 <partial name="_PaymentEnvironmentNotice" />
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model" />
-    <form asp-action="Check" method="post">
-        <input name="id" type="hidden" value="@Model.Id" />
-        <button class="secondary" type="submit">@T["CheckPayment"]</button>
-    </form>
-    @if (!MembershipRules.Paid(Model.State))
-    {
-        @if (Model.ExpiresAt > DateTimeOffset.UtcNow && ViewBag.Ready is true)
+    <partial name="_PaymentTraceReference" />
+    <div class="payment-actions">
+        <form asp-action="Check" method="post">
+            <input name="id" type="hidden" value="@Model.Id" />
+            <button class="button button-outline" type="submit">@T["CheckPayment"]</button>
+        </form>
+        @if (!MembershipRules.Paid(Model.State))
         {
-            <form asp-action="Pay" method="post">
-                <input name="id" type="hidden" value="@Model.Id" />
-                <button type="submit">@T["CompletePayment"]</button>
-            </form>
+            @if (Model.ExpiresAt > DateTimeOffset.UtcNow && ViewBag.Ready is true)
+            {
+                <form asp-action="Pay" method="post">
+                    <input name="id" type="hidden" value="@Model.Id" />
+                    <button type="submit">@T["CompletePayment"]</button>
+                </form>
+            }
+            @if (ViewBag.WalletUncertain is true)
+            {
+                <p class="notice">@T["PaymentUncertain"]</p>
+            }
+            else
+            {
+                <a class="button button-outline" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">@T["RetryPayment"]</a>
+            }
         }
-        @if (ViewBag.WalletUncertain is true)
-        {
-            <p class="notice">@T["PaymentUncertain"]</p>
-        }
-        else
-        {
-            <a class="button secondary" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">@T["RetryPayment"]</a>
-        }
-    }
-    @if (review is null)
+    </div>
+    @if (review is null && !MembershipRules.Paid(Model.State))
     {
         <h2>@T["ChargedNotActivated"]</h2>
         <form asp-action="Review" method="post" enctype="multipart/form-data">
@@ -39,7 +42,7 @@
             <button type="submit">@T["RequestReview"]</button>
         </form>
     }
-    else
+    else if (review is not null)
     {
         <p>@T[review.ResolvedAt is null ? "ReviewPending" : "ReviewResolved"]</p>
         <p dir="auto">@review.Note</p>

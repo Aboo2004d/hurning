@@ -174,15 +174,45 @@ public static class LahzaChecks
                 );
             }
         }
+        foreach (
+            var failure in new[]
+            {
+                (Payload(amount: 499), "AmountMismatch"),
+                (Payload(currency: "USD"), "CurrencyMismatch"),
+                (Payload(domain: "live"), "ResponseEnvironmentMismatch"),
+                (Payload(reference: "other-order"), "ReferenceMismatch"),
+                ("not json", "MalformedJson"),
+            }
+        )
+        {
+            handler.Body = failure.Item1;
+            try
+            {
+                await gateway.CheckAsync(order, default);
+                Check(false, "Invalid response must reject");
+            }
+            catch (PaymentProviderException ex)
+            {
+                Check(
+                    ex.ReasonCode == failure.Item2
+                        && ex.HttpStatus == 200
+                        && !ex.ToString().Contains(secret),
+                    "Safe diagnostic reason and HTTP status identify " + failure.Item2
+                );
+            }
+        }
         handler.Code = HttpStatusCode.Unauthorized;
         try
         {
             await gateway.CheckAsync(order, default);
             Check(false, "401 must reject");
         }
-        catch (PaymentProviderException)
+        catch (PaymentProviderException ex)
         {
-            Check(true, "HTTP failure rejects payment");
+            Check(
+                ex.ReasonCode == "HttpFailure" && ex.HttpStatus == 401,
+                "HTTP failure retains a safe status code"
+            );
         }
         foreach (
             var uri in new[]
@@ -278,6 +308,7 @@ public static class LahzaChecks
         );
         config["Payments:Lahza:Sandbox:SecretKey"] = "***";
         Check(!gateway.Ready, "placeholder keeps adapter unavailable");
+        await PaymentTraceChecks.RunAsync();
         Console.WriteLine($"Lahza checks passed: {count}");
     }
 

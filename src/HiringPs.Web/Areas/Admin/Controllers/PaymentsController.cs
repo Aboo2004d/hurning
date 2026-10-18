@@ -12,7 +12,8 @@ public class PaymentsController(
     HiringDb db,
     MembershipService membership,
     PaymentReconciliation reconciliation,
-    PaymentEvidenceStore evidenceStore
+    PaymentEvidenceStore evidenceStore,
+    PaymentTraceWriter? diagnostics = null
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -63,6 +64,17 @@ public class PaymentsController(
             .SingleOrDefaultAsync(x => x.Id == id, ct);
         if (order is null)
             return NotFound();
+        var traceActor = "Payment:" + id.ToString("N");
+        ViewBag.PaymentTraces = await db
+            .Audit.AsNoTracking()
+            .Where(x => x.Action == "Payment.VerifyTrace" && x.Actor == traceActor)
+            .OrderByDescending(x => x.At)
+            .ThenByDescending(x => x.Id)
+            .Take(10)
+            .ToListAsync(ct);
+        ViewBag.TraceHost = HttpContext
+            .RequestServices.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>()
+            .EnvironmentName;
         ViewBag.Review = await db
             .PaymentReviews.AsNoTracking()
             .SingleOrDefaultAsync(x => x.OrderId == id, ct);
@@ -90,6 +102,7 @@ public class PaymentsController(
             User.Identity?.Name ?? "Admin",
             ct
         );
+        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return RedirectToAction(nameof(Details), new { id });
     }
 

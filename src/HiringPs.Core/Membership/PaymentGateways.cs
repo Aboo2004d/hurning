@@ -29,7 +29,8 @@ public interface IPaymentGateway
 public sealed class PaymentReconciliation(
     HiringDb db,
     MembershipService membership,
-    PaymentGatewayRegistry registry
+    PaymentGatewayRegistry registry,
+    PaymentTraceWriter? diagnostics = null
 )
 {
     public async Task<string> CheckAsync(
@@ -39,94 +40,155 @@ public sealed class PaymentReconciliation(
         CancellationToken ct
     )
     {
-        var order = await db
-            .PaymentOrders.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == orderId && (owner == null || x.UserId == owner), ct);
-        if (order is null)
-            return "PaymentNotFound";
-        if (order.GatewayEnvironment != db.ActivePaymentEnvironment)
-            return "PaymentEnvironmentMismatch";
-        if (order.State == PaymentState.Paid)
-            return "PaymentConfirmed";
-        if (
-            order.Gateway == "discount"
-            && order.AmountIls == 0
-            && order.DiscountPercent == 100
-            && order.DiscountCodeId != null
-        )
-        {
-            await membership.ConfirmAsync(
-                orderId,
-                actor,
-                false,
-                "Full discount",
-                "Reserved discount",
-                "discount:" + orderId,
-                0,
-                "ILS",
-                ct
-            );
-            return "PaymentConfirmed";
-        }
-        if (order.LastCheckedAt > DateTimeOffset.UtcNow.AddSeconds(-30))
-            return "PaymentCheckWait";
-        var gateway = registry.ForVerification(order.Gateway);
-        if (gateway is null)
-            return "GatewayUnavailable";
-        // Durable claim prevents repeated site/bot polling from hammering the provider.
-        var now = DateTimeOffset.UtcNow;
-        var claimed = await db
-            .PaymentOrders.Where(x =>
-                x.Id == orderId
-                && (x.LastCheckedAt == null || x.LastCheckedAt <= now.AddSeconds(-30))
-            )
-            .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastCheckedAt, now), ct);
-        if (claimed == 0)
-            return "PaymentCheckWait";
-        GatewayCheck result;
+        await using var trace = diagnostics?.Start(orderId);
         try
         {
-            result = await gateway.CheckAsync(order, ct);
-        }
-        catch (PaymentProviderException)
-        {
-            return "GatewayUnavailable";
-        }
-        if (result.Confirmed)
-        {
-            if (result.OrderId != order.Id)
-                throw new InvalidOperationException("PaymentMismatch");
-            await membership.ConfirmAsync(
-                orderId,
-                actor,
-                false,
-                "Provider API confirmation",
-                "Provider API",
-                result.Reference,
-                result.Amount,
-                result.Currency,
-                ct
-            );
-            return "PaymentConfirmed";
-        }
-        await db
-            .PaymentOrders.Where(x =>
-                x.Id == orderId
-                && x.State != PaymentState.Paid
-                && x.State != PaymentState.ManuallyApproved
+            var order = await db
+                .PaymentOrders.AsNoTracking()
+                .SingleOrDefaultAsync(
+                    x => x.Id == orderId && (owner == null || x.UserId == owner),
+                    ct
+                );
+            if (order is null)
+            {
+                trace?.Step("Order", "NotFound");
+                return "PaymentNotFound";
+            }
+            if (trace is not null)
+            {
+                trace.OrderEnvironment = order.GatewayEnvironment;
+                trace.RuntimeEnvironment = db.ActivePaymentEnvironment;
+                trace.Gateway = order.Gateway;
+            }
+            trace?.Step("Order", order.State.ToString());
+            if (order.GatewayEnvironment != db.ActivePaymentEnvironment)
+            {
+                trace?.Step("Environment", "OrderEnvironmentMismatch");
+                return "PaymentEnvironmentMismatch";
+            }
+            if (order.State == PaymentState.Paid)
+            {
+                trace?.Step("Complete", "AlreadyPaid");
+                if (trace is not null)
+                    trace.Persist = false;
+                return "PaymentConfirmed";
+            }
+            if (
+                order.Gateway == "discount"
+                && order.AmountIls == 0
+                && order.DiscountPercent == 100
+                && order.DiscountCodeId != null
             )
-            .ExecuteUpdateAsync(
-                x =>
-                    x.SetProperty(
-                        y => y.State,
-                        result.State == PaymentState.Paid
-                        || result.State == PaymentState.ManuallyApproved
-                            ? PaymentState.Pending
-                            : result.State
-                    ),
-                ct
-            );
-        return result.Inconclusive ? "PaymentUncertain" : "PaymentNotConfirmed";
+            {
+                await membership.ConfirmAsync(
+                    orderId,
+                    actor,
+                    false,
+                    "Full discount",
+                    "Reserved discount",
+                    "discount:" + orderId,
+                    0,
+                    "ILS",
+                    ct
+                );
+                return "PaymentConfirmed";
+            }
+            if (order.LastCheckedAt > DateTimeOffset.UtcNow.AddSeconds(-30))
+            {
+                trace?.Step("Throttle", "Wait30Seconds");
+                if (trace is not null)
+                    trace.Persist = false;
+                return "PaymentCheckWait";
+            }
+            // Durable claim prevents repeated site/bot polling from hammering the provider.
+            var now = DateTimeOffset.UtcNow;
+            var claimed = await db
+                .PaymentOrders.Where(x =>
+                    x.Id == orderId
+                    && (x.LastCheckedAt == null || x.LastCheckedAt <= now.AddSeconds(-30))
+                )
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastCheckedAt, now), ct);
+            if (claimed == 0)
+            {
+                trace?.Step("Throttle", "ConcurrentCheck");
+                if (trace is not null)
+                    trace.Persist = false;
+                return "PaymentCheckWait";
+            }
+            var gateway = registry.ForVerification(order.Gateway);
+            if (gateway is null)
+            {
+                var adapter = registry.FindAdapter(order.Gateway);
+                if (trace is not null)
+                    trace.AdapterEnvironment = adapter?.Environment;
+                trace?.Step(
+                    "Configuration",
+                    adapter is LahzaGateway lahza ? lahza.ConfigurationStatus : "AdapterNotReady"
+                );
+                return "GatewayUnavailable";
+            }
+            if (trace is not null)
+                trace.AdapterEnvironment = gateway.Environment;
+            trace?.Step("Configuration", "Ready");
+            GatewayCheck result;
+            try
+            {
+                trace?.Step("Provider", "VerifyStarted");
+                result = await gateway.CheckAsync(order, ct);
+                trace?.Step("Provider", result.Confirmed ? "Confirmed" : result.State.ToString());
+            }
+            catch (PaymentProviderException ex)
+            {
+                trace?.Step("ProviderFailure", ex.ReasonCode, ex.HttpStatus);
+                return "GatewayUnavailable";
+            }
+            if (result.Confirmed)
+            {
+                if (result.OrderId != order.Id)
+                    throw new InvalidOperationException("PaymentMismatch");
+                trace?.Step("Subscription", "SaveStarted");
+                await membership.ConfirmAsync(
+                    orderId,
+                    actor,
+                    false,
+                    "Provider API confirmation",
+                    "Provider API",
+                    result.Reference,
+                    result.Amount,
+                    result.Currency,
+                    ct
+                );
+                trace?.Step("Complete", "SubscriptionSaved");
+                return "PaymentConfirmed";
+            }
+            await db
+                .PaymentOrders.Where(x =>
+                    x.Id == orderId
+                    && x.State != PaymentState.Paid
+                    && x.State != PaymentState.ManuallyApproved
+                )
+                .ExecuteUpdateAsync(
+                    x =>
+                        x.SetProperty(
+                            y => y.State,
+                            result.State == PaymentState.Paid
+                            || result.State == PaymentState.ManuallyApproved
+                                ? PaymentState.Pending
+                                : result.State
+                        ),
+                    ct
+                );
+            trace?.Step("Complete", "PaymentNotConfirmed");
+            return result.Inconclusive ? "PaymentUncertain" : "PaymentNotConfirmed";
+        }
+        catch (Exception ex)
+        {
+            var sql =
+                ex as Microsoft.Data.SqlClient.SqlException
+                ?? ex.InnerException as Microsoft.Data.SqlClient.SqlException;
+            trace?.Step("Failure", sql is null ? ex.GetType().Name : "SqlError" + sql.Number);
+            throw;
+        }
     }
 }
 
@@ -137,6 +199,8 @@ public sealed class PaymentGatewayRegistry(
 )
 {
     // Closing new sales must not prevent confirming an existing charge.
+    public IPaymentGateway? FindAdapter(string key) => gateways.SingleOrDefault(x => x.Key == key);
+
     public IPaymentGateway? ForVerification(string key) =>
         gateways.SingleOrDefault(x => x.Key == key && x.Ready);
 

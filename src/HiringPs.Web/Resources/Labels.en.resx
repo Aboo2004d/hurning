@@ -1821,4 +1821,9 @@
   <data name="ToolCode_PaymentProviderUnavailable" xml:space="preserve"><value>Connectivity could not be verified; check the current environment key, permissions, and network.</value></data>
   <data name="DiscountPayment" xml:space="preserve"><value>Full discount</value></data>
     <data name="InvalidNumber" xml:space="preserve"><value>Enter a valid number using a decimal point.</value></data>
+    <data name="PaymentTraceReference" xml:space="preserve"><value>Payment check trace ID</value></data>
+    <data name="PaymentDiagnostics" xml:space="preserve"><value>Payment verification diagnostics</value></data>
+    <data name="PaymentTraceBuild" xml:space="preserve"><value>Trace build and website environment</value></data>
+    <data name="PaymentTraceAdvice" xml:space="preserve"><value>Latest 10 verification attempts: application, environment, stage, reason code and HTTP status when available. No keys or sensitive payment data.</value></data>
+    <data name="PaymentTraceEmpty" xml:space="preserve"><value>No attempts recorded yet. Check payment, then inspect Web/Worker logs for PaymentTrace if no record appears.</value></data>
 </root>

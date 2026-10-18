@@ -10,7 +10,8 @@ public class PaymentsController(
     HiringDb db,
     PaymentGatewayRegistry registry,
     PaymentReconciliation reconciliation,
-    PaymentEvidenceStore evidenceStore
+    PaymentEvidenceStore evidenceStore,
+    PaymentTraceWriter? diagnostics = null
 ) : MemberControllerBase(db)
 {
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default) =>
@@ -137,6 +138,7 @@ public class PaymentsController(
     public async Task<IActionResult> Returned(Guid id, CancellationToken ct)
     {
         TempData["Notice"] = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
+        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -144,6 +146,7 @@ public class PaymentsController(
     public async Task<IActionResult> Check(Guid id, CancellationToken ct)
     {
         TempData["Notice"] = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
+        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return RedirectToAction(nameof(Details), new { id });
     }
 

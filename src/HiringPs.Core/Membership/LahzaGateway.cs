@@ -11,8 +11,18 @@ namespace HiringPs.Core;
 
 public sealed class PaymentProviderException : Exception
 {
-    public PaymentProviderException()
-        : base("GatewayUnavailable") { }
+    public PaymentProviderException(
+        string reasonCode = "ProviderUnavailable",
+        int? httpStatus = null
+    )
+        : base("GatewayUnavailable")
+    {
+        ReasonCode = reasonCode;
+        HttpStatus = httpStatus;
+    }
+
+    public string ReasonCode { get; }
+    public int? HttpStatus { get; }
 }
 
 // Hosted checkout: card data never enters this application.
@@ -29,18 +39,29 @@ public sealed class LahzaGateway(
     private string PublicOrigin =>
         configuration["Payments:Lahza:" + Environment + ":PublicOrigin"] ?? "";
     private string Secret => configuration["Payments:Lahza:" + Environment + ":SecretKey"] ?? "";
-    public bool Ready =>
-        !string.IsNullOrWhiteSpace(Secret)
-        && !Secret.Contains('*')
-        && Secret.StartsWith(Sandbox ? "sk_test_" : "sk_live_", StringComparison.Ordinal)
-        && Uri.TryCreate(PublicOrigin, UriKind.Absolute, out var origin)
-        && origin.Scheme == "https"
-        && origin.IsDefaultPort
-        && origin.AbsolutePath == "/"
-        && origin.UserInfo.Length == 0
-        && origin.Query.Length == 0
-        && origin.Fragment.Length == 0
-        && !origin.Host.Contains("YOUR-", StringComparison.OrdinalIgnoreCase);
+    public bool Ready => ConfigurationStatus == "Ready";
+    public string ConfigurationStatus
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Secret) || Secret.Contains('*'))
+                return "MissingSecret";
+            if (!Secret.StartsWith(Sandbox ? "sk_test_" : "sk_live_", StringComparison.Ordinal))
+                return "WrongSecretEnvironment";
+            if (
+                !Uri.TryCreate(PublicOrigin, UriKind.Absolute, out var origin)
+                || origin.Scheme != "https"
+                || !origin.IsDefaultPort
+                || origin.AbsolutePath != "/"
+                || origin.UserInfo.Length != 0
+                || origin.Query.Length != 0
+                || origin.Fragment.Length != 0
+                || origin.Host.Contains("YOUR-", StringComparison.OrdinalIgnoreCase)
+            )
+                return "InvalidPublicOrigin";
+            return "Ready";
+        }
+    }
 
     public static string Reference(Guid id) => "hiring-" + id.ToString("N");
 
@@ -127,10 +148,10 @@ public sealed class LahzaGateway(
     public async Task<GatewayCheck> CheckAsync(PaymentOrder order, CancellationToken ct)
     {
         if (order.GatewayEnvironment != Environment)
-            throw new PaymentProviderException();
+            throw new PaymentProviderException("OrderEnvironmentMismatch");
         var reference = Reference(order.Id);
         if (order.ProviderReference != reference)
-            throw new PaymentProviderException();
+            throw new PaymentProviderException("StoredReferenceMismatch");
         using var data = await SendAsync(
             HttpMethod.Get,
             "transaction/verify/" + reference,
@@ -144,7 +165,7 @@ public sealed class LahzaGateway(
         catch (Exception ex)
             when (ex is KeyNotFoundException or InvalidOperationException or FormatException)
         {
-            throw new PaymentProviderException();
+            throw new PaymentProviderException("MalformedVerificationData", 200);
         }
     }
 
@@ -154,13 +175,14 @@ public sealed class LahzaGateway(
         var reference = data.GetProperty("reference").GetString();
         var amount = data.GetProperty("amount").GetDecimal() / 100m;
         var currency = data.GetProperty("currency").GetString();
-        if (
-            reference != Reference(order.Id)
-            || amount != order.AmountIls
-            || currency != "ILS"
-            || !MatchesOptionalDomain(data, testMode)
-        )
-            throw new PaymentProviderException();
+        if (reference != Reference(order.Id))
+            throw new PaymentProviderException("ReferenceMismatch", 200);
+        if (amount != order.AmountIls)
+            throw new PaymentProviderException("AmountMismatch", 200);
+        if (currency != "ILS")
+            throw new PaymentProviderException("CurrencyMismatch", 200);
+        if (!MatchesOptionalDomain(data, testMode))
+            throw new PaymentProviderException("ResponseEnvironmentMismatch", 200);
         var status = data.GetProperty("status").GetString();
         return new(
             status == "success",
@@ -208,10 +230,11 @@ public sealed class LahzaGateway(
     )
     {
         if (!Ready)
-            throw new PaymentProviderException();
+            throw new PaymentProviderException(ConfigurationStatus);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
         var operation = timeout.Token;
+        int? httpStatus = null;
         try
         {
             using var request = new HttpRequestMessage(method, "https://api.lahza.io/" + path);
@@ -223,8 +246,11 @@ public sealed class LahzaGateway(
                 HttpCompletionOption.ResponseHeadersRead,
                 operation
             );
-            if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength > 262144)
-                throw new PaymentProviderException();
+            httpStatus = (int)response.StatusCode;
+            if (!response.IsSuccessStatusCode)
+                throw new PaymentProviderException("HttpFailure", httpStatus);
+            if (response.Content.Headers.ContentLength > 262144)
+                throw new PaymentProviderException("ResponseTooLarge", httpStatus);
             await using var stream = await response.Content.ReadAsStreamAsync(operation);
             using var bounded = new MemoryStream();
             var buffer = new byte[8192];
@@ -232,7 +258,7 @@ public sealed class LahzaGateway(
             while ((count = await stream.ReadAsync(buffer, operation)) > 0)
             {
                 if (bounded.Length + count > 262144)
-                    throw new PaymentProviderException();
+                    throw new PaymentProviderException("ResponseTooLarge", httpStatus);
                 bounded.Write(buffer, 0, count);
             }
             var json = JsonDocument.Parse(bounded.ToArray());
@@ -243,7 +269,7 @@ public sealed class LahzaGateway(
             )
             {
                 json.Dispose();
-                throw new PaymentProviderException();
+                throw new PaymentProviderException("ApiRejected", httpStatus);
             }
             return json;
         }
@@ -258,7 +284,17 @@ public sealed class LahzaGateway(
             )
         {
             // Provider bodies and authorization headers must never reach logs or the browser.
-            throw new PaymentProviderException();
+            throw new PaymentProviderException(
+                ex switch
+                {
+                    OperationCanceledException => "Timeout",
+                    HttpRequestException => "NetworkFailure",
+                    IOException => "ResponseReadFailure",
+                    JsonException => "MalformedJson",
+                    _ => "UnexpectedPayload",
+                },
+                httpStatus
+            );
         }
     }
 }

@@ -1477,3 +1477,16 @@ footer {
 .wallet-endpoints code { display: block; text-align: start; overflow-wrap: anywhere; line-height: 1.8; margin-block-start: .5rem; }
 .wallet-preview fieldset { border: 0; margin: 0; padding: 0; }
 .wallet-preview button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Payment controls share one row and the site's outlined button style. */
+.payment-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: 1.25rem; }
+.membership-card .payment-actions form { margin: 0; }
+.payment-actions button, .payment-actions .button { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding: .75rem 1.25rem; border-radius: .75rem; line-height: 1.4; text-decoration: none; }
+.payment-actions .notice { flex-basis: 100%; }
+.payment-trace-reference { overflow-wrap: anywhere; }
+.payment-diagnostics details { margin-block: .75rem; }
+.payment-diagnostics pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+@media (max-width: 480px) {
+    .payment-actions > form, .payment-actions > .button { flex: 1 1 100%; }
+    .payment-actions button { width: 100%; }
+}

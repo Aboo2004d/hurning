@@ -3,6 +3,7 @@
 <h1>@T["PaymentDetails"]</h1>
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model" />
+    <partial name="_PaymentTraceReference" />
     <p>@T["PaymentEnvironment"]: @T["PaymentEnvironment" + Model.GatewayEnvironment]</p>
     @if (Model.DecisionReason.Length > 0)
     {
@@ -64,4 +65,24 @@
         <p dir="auto">@review.Resolution</p>
     }
 }
+</section>
+
+<section class="membership-card payment-diagnostics">
+    <h2>@T["PaymentDiagnostics"]</h2>
+    <p>@T["PaymentTraceBuild"]: <bdi dir="ltr">@PaymentTraceWriter.BuildMarker</bdi> · <bdi>@ViewBag.TraceHost</bdi></p>
+    <p class="muted">@T["PaymentTraceAdvice"]</p>
+    @if (ViewBag.PaymentTraces is IEnumerable<AuditEntry> traces && traces.Any())
+    {
+        foreach (var trace in traces)
+        {
+            <details>
+                <summary><bdi dir="ltr">@trace.At.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) UTC</bdi></summary>
+                <pre dir="ltr">@trace.Detail</pre>
+            </details>
+        }
+    }
+    else
+    {
+        <p>@T["PaymentTraceEmpty"]</p>
+    }
 </section>

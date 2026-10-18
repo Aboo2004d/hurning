@@ -88,6 +88,30 @@ public class TimeoutShellFixtureController : Controller
 [Area("Member"), Authorize]
 public sealed class WalletShellFixtureController(PaymentEnvironment environment) : Controller
 {
+    public IActionResult Details(bool paid = false)
+    {
+        ViewBag.Ready = false;
+        TempData["PaymentTraceId"] = "11112222333344445555666677778888";
+        return View(
+            "/Areas/Member/Views/Payments/Details.cshtml",
+            new PaymentOrder
+            {
+                Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
+                State = paid ? PaymentState.Paid : PaymentState.Pending,
+                AmountIls = 5,
+                Gateway = "Lahza",
+                GatewayEnvironment = environment.Name,
+                PlanVersion = new MembershipPlanVersion
+                {
+                    PlanId = 1,
+                    NameAr = "باقة",
+                    NameEn = "Plan",
+                    Days = 30,
+                },
+            }
+        );
+    }
+
     public IActionResult Index(bool confirm = false) =>
         View(
             "/Areas/Member/Views/WalletPayments/Index.cshtml",
@@ -159,6 +183,36 @@ public class SessionShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminFormShellFixtureController : Controller
 {
+    public IActionResult PaymentTrace()
+    {
+        ViewBag.PaymentTraces = new List<AuditEntry>
+        {
+            new()
+            {
+                Action = "Payment.VerifyTrace",
+                Detail =
+                    "{\"Stage\":\"ProviderFailure\",\"Code\":\"AmountMismatch\",\"HttpStatus\":200}",
+            },
+        };
+        ViewBag.TraceHost = "Development";
+        return View(
+            "/Areas/Admin/Views/Payments/Details.cshtml",
+            new PaymentOrder
+            {
+                AmountIls = 5,
+                Gateway = "Lahza",
+                GatewayEnvironment = "Sandbox",
+                PlanVersion = new MembershipPlanVersion
+                {
+                    PlanId = 1,
+                    NameAr = "باقة",
+                    NameEn = "Plan",
+                    Days = 30,
+                },
+            }
+        );
+    }
+
     public IActionResult EditPreview(string kind)
     {
         ViewBag.OriginalSources = Array.Empty<string>();

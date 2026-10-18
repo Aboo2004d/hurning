@@ -196,6 +196,7 @@ public static class MembershipChecks
         builder.Services.AddScoped<PendingVerificationCookie>();
         builder.Services.AddScoped<PaymentEvidenceStore>();
         builder.Services.AddScoped<PaymentReconciliation>();
+        builder.Services.AddScoped<PaymentTraceWriter>();
         builder.Services.AddScoped<PaymentGatewayRegistry>();
         builder.Services.AddSingleton<PaymentEnvironment>();
         builder.Services.AddScoped<PaymentToolProbes>();
@@ -445,6 +446,17 @@ public static class MembershipChecks
             }
             client.DefaultRequestHeaders.Add("X-Fixture-Role", "Admin");
             await AdminFormChecks.RunAsync(client, origin);
+            response = await client.GetAsync(
+                origin + "/ar/Admin/AdminFormShellFixture/PaymentTrace"
+            );
+            html = await response.Content.ReadAsStringAsync();
+            Check(
+                response.IsSuccessStatusCode
+                    && html.Contains(PaymentTraceWriter.BuildMarker)
+                    && html.Contains("AmountMismatch")
+                    && html.Contains("payment-diagnostics"),
+                "Admin payment page renders protected diagnostic history and current build marker"
+            );
             response = await client.GetAsync(origin + "/en/Admin/AdminShellFixture");
             html = await response.Content.ReadAsStringAsync();
             Check(
@@ -470,6 +482,25 @@ public static class MembershipChecks
                     && html.Contains("/ar/Account/Logout"),
                 "Member area has its own navigation and logout"
             );
+            foreach (var language in new[] { "ar", "en" })
+            {
+                var payment = await client.GetStringAsync(
+                    origin + "/" + language + "/Member/WalletShellFixture/Details"
+                );
+                Check(
+                    payment.Contains("payment-actions")
+                        && payment.Contains("button button-outline")
+                        && payment.Contains("11112222333344445555666677778888"),
+                    "Payment controls and safe trace reference render in " + language
+                );
+                var paid = await client.GetStringAsync(
+                    origin + "/" + language + "/Member/WalletShellFixture/Details?paid=true"
+                );
+                Check(
+                    !paid.Contains("name=\"evidence\"") && !paid.Contains("/Member/Plans/Review"),
+                    "Paid orders no longer invite a second payment or activation complaint"
+                );
+            }
             response = await client.GetAsync(origin + "/ar/Account/ChangePassword");
             Check(
                 response.StatusCode == HttpStatusCode.OK
