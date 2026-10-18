@@ -7,6 +7,27 @@ public static class MembershipSchema
 {
     public static void Configure(ModelBuilder b)
     {
+        b.Entity<PaymentOrder>().Property(x => x.GatewayEnvironment).HasDefaultValue("Production");
+        b.Entity<MemberSubscription>()
+            .Property(x => x.GatewayEnvironment)
+            .HasDefaultValue("Production");
+        b.Entity<WalletPaymentSession>()
+            .Property(x => x.GatewayEnvironment)
+            .HasDefaultValue("Production");
+        b.Entity<WalletPaymentSession>()
+            .HasOne(x => x.Order)
+            .WithOne()
+            .HasForeignKey<WalletPaymentSession>(x => x.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<WalletPaymentSession>()
+            .HasIndex(x => new { x.GatewayEnvironment, x.TransactionId })
+            .IsUnique()
+            .HasFilter("[TransactionId] IS NOT NULL");
+        b.Entity<WalletPaymentSession>().HasIndex(x => x.CreatedAt);
+        b.Entity<WalletPaymentSession>()
+            .HasIndex(x => new { x.GatewayEnvironment, x.SessionKeyHash })
+            .IsUnique()
+            .HasFilter("[SessionKeyHash] IS NOT NULL");
         b.Entity<MembershipRuntimeState>().Property(x => x.Id).ValueGeneratedNever();
         b.Entity<MembershipRuntimeState>().HasData(new MembershipRuntimeState { Id = 1 });
         b.Entity<TelegramInbox>().Property(x => x.Id).ValueGeneratedNever();
@@ -100,7 +121,12 @@ public static class MembershipSchema
             .HasForeignKey(x => x.DiscountCodeId)
             .OnDelete(DeleteBehavior.Restrict);
         b.Entity<PaymentOrder>()
-            .HasIndex(x => new { x.Gateway, x.ProviderReference })
+            .HasIndex(x => new
+            {
+                x.Gateway,
+                x.GatewayEnvironment,
+                x.ProviderReference,
+            })
             .IsUnique()
             .HasFilter("[ProviderReference] IS NOT NULL");
         b.Entity<PaymentOrder>().HasIndex(x => new { x.UserId, x.CreatedAt });

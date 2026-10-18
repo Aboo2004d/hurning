@@ -151,6 +151,8 @@ public static class ToolMonitoringRules
         "PdfLanguages",
         "PdfWorkspace",
         "PdfPipeline",
+        "LahzaPayment",
+        "JawwalPayPayment",
     ];
 
     public static bool WorkerFresh(ToolWorkerState? worker, DateTimeOffset now) =>

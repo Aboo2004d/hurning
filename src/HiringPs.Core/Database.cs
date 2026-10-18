@@ -7,8 +7,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HiringPs.Core;
 
-public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<IdentityUser>(options)
+public class HiringDb(
+    DbContextOptions<HiringDb> options,
+    PaymentEnvironment? paymentEnvironment = null
+) : IdentityDbContext<IdentityUser>(options)
 {
+    public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
+
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<SourceItem> SourceItems => Set<SourceItem>();
     public DbSet<SourceItemRevision> Revisions => Set<SourceItemRevision>();
@@ -41,6 +46,7 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     public DbSet<MembershipPlanVersion> MembershipPlanVersions => Set<MembershipPlanVersion>();
     public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
+    public DbSet<WalletPaymentSession> WalletPaymentSessions => Set<WalletPaymentSession>();
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
     public DbSet<PaymentReview> PaymentReviews => Set<PaymentReview>();
     public DbSet<MemberChallenge> MemberChallenges => Set<MemberChallenge>();
@@ -55,6 +61,8 @@ public class HiringDb(DbContextOptions<HiringDb> options) : IdentityDbContext<Id
     {
         base.OnModelCreating(b);
         MembershipSchema.Configure(b);
+        b.Entity<MemberSubscription>()
+            .HasQueryFilter(x => x.GatewayEnvironment == ActivePaymentEnvironment);
         b.Entity<ToolCheckRequest>()
             .HasIndex(x => x.ActiveSlot)
             .IsUnique()

@@ -248,6 +248,7 @@ public static class MembershipSqlChecks
                     .AnyAsync(x => x.EventKey == "review:fixture-only" && x.SentAt != null),
                 "Outbox rowversion claim can deliver a message tracked in the same scope"
             );
+            await WalletSqlChecks.RunAsync(options, version.Id);
             var frozenVersion = await db.MembershipPlanVersions.SingleAsync(x =>
                 x.Id == version.Id
             );

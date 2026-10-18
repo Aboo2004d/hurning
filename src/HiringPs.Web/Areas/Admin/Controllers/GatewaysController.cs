@@ -26,6 +26,11 @@ public class GatewaysController(
         var setting = await db.PaymentGatewaySettings.SingleOrDefaultAsync(x => x.Key == key, ct);
         if (setting is null)
             return NotFound();
+        if (key == "JawwalPay" && enabled && !adapters.Any(x => x.Key == key && x.Ready))
+        {
+            TempData["Notice"] = "GatewayUnavailable";
+            return RedirectToAction(nameof(Index));
+        }
         setting.Enabled = enabled;
         membership.Audit(
             User.Identity?.Name ?? "Admin",

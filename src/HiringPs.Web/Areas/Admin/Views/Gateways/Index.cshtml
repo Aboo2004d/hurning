@@ -11,10 +11,14 @@
                 <form asp-action="Update" method="post">
                     <input name="key" value="@setting.Key" type="hidden" />
                     <label class="check">
-                        <input name="enabled" type="checkbox" value="true" checked="@setting.Enabled" />@T["Enabled"]</label>
+                        <input name="enabled" type="checkbox" value="true" checked="@setting.Enabled" disabled="@(setting.Key == "JawwalPay" && !ready.Contains(setting.Key))" />@T["Enabled"]</label>
                     <button type="submit">@T["Save"]</button>
                 </form>
                 <a asp-controller="Payments" asp-action="Index" asp-route-gateway="@setting.Key">@T["PaymentOperations"]</a>
+                @if (setting.Key == "JawwalPay")
+                {
+                    <a class="button secondary" asp-controller="JawwalPay" asp-action="Index">@T["JawwalPaySetup"]</a>
+                }
             </section>
         }
     </div>

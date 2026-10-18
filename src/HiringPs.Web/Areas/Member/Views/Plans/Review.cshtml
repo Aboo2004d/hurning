@@ -1,6 +1,7 @@
 @model PurchaseInput
 @{ ViewData["Title"] = T["ReviewOrder"]; }
 <h1>@T["ReviewOrder"]</h1>
+<partial name="_PaymentEnvironmentNotice" />
 <section class="membership-card">
     <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
     <p>@Model.Plan.Days @T["Days"] · @T["StartsUtc"]: <bdi>@Model.StartsAt.ToString("yyyy-MM-dd HH:mm")</bdi>
@@ -22,7 +23,7 @@
         <label>@T["PaymentGateway"]<select asp-for="Gateway">
                 @foreach (var gateway in Model.Gateways)
                 {
-                    <option value="@gateway">@gateway</option>
+                    <option value="@gateway">@T[gateway]</option>
                 }
             </select>
         </label>

@@ -60,7 +60,6 @@ public class PlansController(
             : await Db
                 .MembershipPlanVersions.AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == plan.CurrentVersionId, ct);
-        input.Gateways = (await registry.AvailableAsync(ct)).Select(x => x.Key).ToArray();
         input.FinalAmount = input.Plan?.PriceIls ?? 0;
         input.StartsAt = MembershipRules.Starts(
             DateTimeOffset.UtcNow,
@@ -85,6 +84,10 @@ public class PlansController(
             if (discount is not null)
                 input.FinalAmount = MembershipRules.Amount(input.Plan.PriceIls, discount.Percent);
         }
+        input.Gateways = (await registry.AvailableAsync(ct))
+            .Where(x => x.SupportsAmount(input.FinalAmount))
+            .Select(x => x.Key)
+            .ToArray();
     }
 
     [HttpPost]
@@ -164,11 +167,16 @@ public class PlansController(
                     discount is null
                     || discount.MaximumUses
                         <= await Db.PaymentOrders.CountAsync(
-                            x => x.DiscountCodeId == discount.Id,
+                            x =>
+                                x.DiscountCodeId == discount.Id
+                                && x.GatewayEnvironment == Db.ActivePaymentEnvironment,
                             ct
                         )
                     || await Db.PaymentOrders.AnyAsync(
-                        x => x.DiscountCodeId == discount.Id && x.UserId == MemberId,
+                        x =>
+                            x.DiscountCodeId == discount.Id
+                            && x.UserId == MemberId
+                            && x.GatewayEnvironment == Db.ActivePaymentEnvironment,
                         ct
                     )
                 )
@@ -178,7 +186,12 @@ public class PlansController(
                 }
             }
             var amount = MembershipRules.Amount(input.Plan.PriceIls, discount?.Percent ?? 0);
-            if (amount > 0 && !(await registry.AvailableAsync(ct)).Any(x => x.Key == input.Gateway))
+            if (
+                amount > 0
+                && !(await registry.AvailableAsync(ct)).Any(x =>
+                    x.Key == input.Gateway && x.SupportsAmount(amount)
+                )
+            )
             {
                 ModelState.AddModelError("", "GatewayUnavailable");
                 return View(input);
@@ -193,6 +206,7 @@ public class PlansController(
                 DiscountCodeId = discount?.Id,
                 DiscountPercent = discount?.Percent ?? 0,
                 Gateway = amount == 0 ? "discount" : input.Gateway,
+                GatewayEnvironment = Db.ActivePaymentEnvironment,
                 ExpiresAt = now.AddMinutes(10),
                 TermsAcceptedAt = now,
             };

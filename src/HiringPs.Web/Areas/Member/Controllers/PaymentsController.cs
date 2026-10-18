@@ -18,7 +18,9 @@ public class PaymentsController(
             await Db
                 .PaymentOrders.AsNoTracking()
                 .Include(x => x.PlanVersion)
-                .Where(x => x.UserId == MemberId)
+                .Where(x =>
+                    x.UserId == MemberId && x.GatewayEnvironment == Db.ActivePaymentEnvironment
+                )
                 .OrderByDescending(x => x.CreatedAt)
                 .ThenBy(x => x.Id)
                 .PageAsync(page, ct)
@@ -36,6 +38,13 @@ public class PaymentsController(
             .PaymentReviews.AsNoTracking()
             .SingleOrDefaultAsync(x => x.OrderId == id, ct);
         ViewBag.Ready = (await registry.AvailableAsync(ct)).Any(x => x.Key == order.Gateway);
+        ViewBag.WalletUncertain =
+            order.Gateway == "JawwalPay"
+            && order.State != PaymentState.Failed
+            && await Db.WalletPaymentSessions.AnyAsync(
+                x => x.OrderId == id && x.ConfirmationStartedAt != null && !x.ConfirmationRejected,
+                ct
+            );
         return View(order);
     }
 
@@ -53,6 +62,11 @@ public class PaymentsController(
             TempData["Notice"] = "PaymentExpired";
             return RedirectToAction(nameof(Details), new { id });
         }
+        if (order.GatewayEnvironment != Db.ActivePaymentEnvironment)
+        {
+            TempData["Notice"] = "PaymentEnvironmentMismatch";
+            return RedirectToAction(nameof(Details), new { id });
+        }
         var gateway = (await registry.AvailableAsync(ct)).SingleOrDefault(x =>
             x.Key == order.Gateway
         );
@@ -61,13 +75,69 @@ public class PaymentsController(
             TempData["Notice"] = "GatewayUnavailable";
             return RedirectToAction(nameof(Details), new { id });
         }
-        var checkout = await gateway.CheckoutAsync(order, ct);
-        if (checkout.Url.Scheme != "https")
-            throw new InvalidOperationException("Invalid checkout URL");
-        order.ProviderReference = checkout.Reference;
-        order.State = PaymentState.Pending;
-        await Db.SaveChangesAsync(ct);
-        return Redirect(checkout.Url.AbsoluteUri);
+        if (gateway.Key == "JawwalPay")
+            return RedirectToAction("Index", "WalletPayments", new { id });
+        // Claim once, before the HTTP call. A timeout must never create another charge.
+        if (order.CheckoutUrl is not null)
+        {
+            if (
+                Uri.TryCreate(order.CheckoutUrl, UriKind.Absolute, out var saved)
+                && LahzaGateway.IsCheckoutUrl(saved)
+            )
+                return Redirect(saved.AbsoluteUri);
+            return BadRequest();
+        }
+        var claimed = await Db
+            .PaymentOrders.Where(x =>
+                x.Id == id
+                && x.UserId == MemberId
+                && x.CheckoutStartedAt == null
+                && x.ExpiresAt > DateTimeOffset.UtcNow
+                && x.State == PaymentState.AwaitingPayment
+            )
+            .ExecuteUpdateAsync(
+                update =>
+                    update
+                        .SetProperty(x => x.CheckoutStartedAt, DateTimeOffset.UtcNow)
+                        .SetProperty(x => x.ProviderReference, LahzaGateway.Reference(id))
+                        .SetProperty(x => x.State, PaymentState.Pending),
+                ct
+            );
+        if (claimed == 0)
+        {
+            TempData["Notice"] = "PaymentInitializationPending";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        await Db.Entry(order).ReloadAsync(ct);
+        try
+        {
+            var checkout = await gateway.CheckoutAsync(order, ct);
+            if (
+                !LahzaGateway.IsCheckoutUrl(checkout.Url)
+                || checkout.Reference != order.ProviderReference
+            )
+                throw new PaymentProviderException();
+            await Db
+                .PaymentOrders.Where(x => x.Id == id)
+                .ExecuteUpdateAsync(
+                    update => update.SetProperty(x => x.CheckoutUrl, checkout.Url.AbsoluteUri),
+                    ct
+                );
+            return Redirect(checkout.Url.AbsoluteUri);
+        }
+        catch (PaymentProviderException)
+        {
+            TempData["Notice"] = "PaymentInitializationPending";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+    }
+
+    // The return URL is only navigation. Server-side verification determines payment.
+    [HttpGet]
+    public async Task<IActionResult> Returned(Guid id, CancellationToken ct)
+    {
+        TempData["Notice"] = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpPost]

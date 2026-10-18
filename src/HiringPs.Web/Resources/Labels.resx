@@ -1721,7 +1721,7 @@
     <data name="JawwalPay" xml:space="preserve"><value>جوال باي</value></data>
     <data name="GatewayAvailable" xml:space="preserve"><value>متاحة للدفع</value></data>
     <data name="GatewayDisabled" xml:space="preserve"><value>التكامل جاهز لكن البوابة متوقفة</value></data>
-    <data name="GatewayAdapterMissing" xml:space="preserve"><value>تكامل API بانتظار المواصفات والاختبار؛ لا دفع فعلي الآن</value></data>
+    <data name="GatewayAdapterMissing" xml:space="preserve"><value>البوابة غير جاهزة؛ راجع اكتمال الربط ومفاتيح الإعدادات</value></data>
     <data name="PaymentOperations" xml:space="preserve"><value>عرض عمليات البوابة</value></data>
     <data name="RecoveryLinkAdvice" xml:space="preserve"><value>رابط استعادة سري صالح لمدة محدودة. سلّمه للمستخدم بعد التحقق من هويته ولا تنشره.</value></data>
     <data name="NotificationDelivery" xml:space="preserve"><value>متابعة تسليم التنبيهات</value></data>
@@ -1741,4 +1741,83 @@
     <data name="PasswordMinLength" xml:space="preserve"><value>كلمة المرور يجب ألا تقل عن 8 أحرف.</value></data>
     <data name="PasswordMismatch" xml:space="preserve"><value>كلمتا المرور غير متطابقتين.</value></data>
     <data name="TextTooLong" xml:space="preserve"><value>النص أطول من الحد المسموح.</value></data>
+  <data name="PaymentInitializationPending" xml:space="preserve"><value>بدأ تجهيز الدفع، لكن رابط الدفع لم يتأكد بعد. تحقّق من حالة الطلب أو اطلب مراجعة قبل إعادة المحاولة.</value></data>
+  <data name="JawwalPaySetup" xml:space="preserve"><value>إعداد جوال باي</value></data>
+  <data name="WalletContractMissing" xml:space="preserve"><value>جوال باي قيد التجهيز. روابط الخدمة معروفة، لكن حقول الطلب والمصادقة وردود تأكيد الدفع لم تُوثّق بعد؛ البوابة غير متاحة للمشتركين حاليًا.</value></data>
+  <data name="WalletKnownEndpoints" xml:space="preserve"><value>روابط الخدمة المعتمدة</value></data>
+  <data name="WalletEndpointsInvalid" xml:space="preserve"><value>روابط الإعدادات لا تطابق روابط الخدمة التي تم تزويدنا بها.</value></data>
+  <data name="WalletInitiateEndpoint" xml:space="preserve"><value>طلب رمز الدفع</value></data>
+  <data name="WalletConfirmEndpoint" xml:space="preserve"><value>تأكيد عملية الدفع</value></data>
+  <data name="WalletBalanceEndpoint" xml:space="preserve"><value>رصيد حساب الشريك</value></data>
+  <data name="WalletBalanceMeaning" xml:space="preserve"><value>يُجلب الرصيد عند طلب الإدارة فقط. الرصيد ليس دليلًا على نجاح طلب دفع معين.</value></data>
+  <data name="WalletPreviewTitle" xml:space="preserve"><value>معاينة خطوات الدفع للمشترك</value></data>
+  <data name="WalletPreviewNotice" xml:space="preserve"><value>معاينة تصميم للإدارة فقط. الحقول والأزرار معطلة، ولا يُرسل رمز أو طلب دفع.</value></data>
+  <data name="WalletMobileStep" xml:space="preserve"><value>١ · رقم المحفظة</value></data>
+  <data name="WalletEnterMobile" xml:space="preserve"><value>الدفع بواسطة جوال باي</value></data>
+  <data name="WalletAmountSummary" xml:space="preserve"><value>يسبق هذه الخطوة عرض الباقة ومدتها والسعر النهائي بالشيكل بعد الخصم؛ يُؤخذ مبلغ الدفع من الطلب المحفوظ في الخادم.</value></data>
+  <data name="WalletMobileLabel" xml:space="preserve"><value>رقم الجوال المرتبط بمحفظة جوال باي</value></data>
+  <data name="WalletMobileHelp" xml:space="preserve"><value>يرسل الموقع رقم المحفظة والمبلغ إلى الخدمة من السيرفر لطلب رمز الدفع. لا يخصم initiate مبلغًا.</value></data>
+  <data name="WalletSendCode" xml:space="preserve"><value>إرسال رمز الدفع</value></data>
+  <data name="WalletOtpStep" xml:space="preserve"><value>٢ · رمز الدفع والتأكيد</value></data>
+  <data name="WalletEnterOtp" xml:space="preserve"><value>تأكيد الدفع</value></data>
+  <data name="WalletOtpLabel" xml:space="preserve"><value>رمز التحقق الخاص بالدفع</value></data>
+  <data name="WalletOtpHelp" xml:space="preserve"><value>أدخل رمز الدفع الذي يصلك من خدمة المحفظة. هذا الرمز منفصل عن رمز ربط حساب تليجرام.</value></data>
+  <data name="WalletConfirmPayment" xml:space="preserve"><value>تأكيد العملية والدفع</value></data>
+  <data name="WalletConfirmationHelp" xml:space="preserve"><value>يُفعّل الاشتراك بعد تأكيد الخدمة نجاح الدفع ومطابقة الطلب والمبلغ والعملة. عند انقطاع الاتصال تبقى النتيجة بانتظار التحقق.</value></data>
+  <data name="WalletMissingContractTitle" xml:space="preserve"><value>المعلومات اللازمة لاستكمال الربط</value></data>
+  <data name="WalletMissingAuthentication" xml:space="preserve"><value>أسماء ترويسات المصادقة وطريقة استخدام مفاتيح الشريك، دون عرض قيمها.</value></data>
+  <data name="WalletMissingInitiate" xml:space="preserve"><value>حقول طلب الرمز، وحدة المبلغ، صيغة الهاتف، ومعرّف الجلسة ومدة صلاحيتها.</value></data>
+  <data name="WalletMissingConfirm" xml:space="preserve"><value>حقول التأكيد ونموذج رد النجاح والفشل والرمز غير الصحيح، مع مرجع الدفع والمبلغ والعملة.</value></data>
+  <data name="WalletMissingStatus" xml:space="preserve"><value>طريقة استعلام آمنة عن طلب بعينه عند فشل الاتصال أو تأخر التأكيد؛ رابط الرصيد وحده لا يكفي.</value></data>
+  <data name="WalletMissingRetry" xml:space="preserve"><value>قواعد إعادة إرسال الرمز والمحاولات، ومنع تكرار الخصم، وبيئة الاختبار إن توفرت.</value></data>
+  <data name="WalletTransactionsEndpoint" xml:space="preserve"><value>آخر عمليات الشريك</value></data>
+  <data name="WalletConfigured" xml:space="preserve"><value>إعدادات الاتصال موجودة. فعّل جوال باي من بوابات الدفع لإتاحتها للمشتركين، ثم اختبر الربط بمفتاحك. جاهزية الإعداد لا تعني نجاح اتصال فعلي.</value></data>
+  <data name="WalletNeedsKey" xml:space="preserve"><value>ضع مفتاح الشريك في إعدادات Web وWorker؛ اسم الترويسة X-Partner-Key. الاتصال غير جاهز ما دامت القيمة ***.</value></data>
+  <data name="WalletLiveMobileHelp" xml:space="preserve"><value>أدخل 10 أرقام تبدأ بـ05. طلب الرمز لا يخصم مبلغًا؛ الخصم يحصل بعد إدخال الرمز وتأكيد الدفع.</value></data>
+  <data name="WalletCodeSentTo" xml:space="preserve"><value>أُرسل رمز الدفع إلى</value></data>
+  <data name="WalletCodeExpiresUtc" xml:space="preserve"><value>صالح حتى (UTC):</value></data>
+  <data name="WalletSingleConfirmation" xml:space="preserve"><value>تأكد من الرمز قبل التأكيد. تُرسل محاولة تأكيد واحدة فقط لهذه الجلسة؛ لن نكرر الخصم تلقائيًا.</value></data>
+  <data name="WalletMobileInvalid" xml:space="preserve"><value>أدخل رقم جوال باي من 10 أرقام يبدأ بـ05، مثل 0599123456.</value></data>
+  <data name="WalletAmountInvalid" xml:space="preserve"><value>جوال باي تدعم مبلغًا من 1 إلى 5000 شيكل، بحد منزلتين عشريتين. اختر وسيلة دفع أخرى.</value></data>
+  <data name="WalletOtpInvalid" xml:space="preserve"><value>أدخل رمز الدفع بالأرقام دون مسافات.</value></data>
+  <data name="WalletOtpSent" xml:space="preserve"><value>أُرسل رمز الدفع. أدخله ثم أكد العملية قبل انتهاء المهلة.</value></data>
+  <data name="WalletAlreadyRequested" xml:space="preserve"><value>سبق طلب رمز لهذا الطلب. استخدم الجلسة الحالية إن كانت متاحة؛ لا نكرر إرسال الطلب تلقائيًا.</value></data>
+  <data name="WalletRequestWait" xml:space="preserve"><value>انتظر دقيقة بين طلبات الرموز. الحد الأقصى ثلاثة طلبات خلال 15 دقيقة لحسابك.</value></data>
+  <data name="WalletInitiateRejected" xml:space="preserve"><value>تعذر إرسال رمز الدفع. لم ينفذ الموقع تأكيد خصم؛ تحقق من الرقم ثم ابدأ طلبًا جديدًا.</value></data>
+  <data name="WalletInitiationUnknown" xml:space="preserve"><value>لم نستلم جلسة رمز صالحة من الخدمة. لم نرسل تأكيد خصم لهذا الطلب. يمكنك بدء طلب جديد بعد مهلة طلب الرموز.</value></data>
+  <data name="WalletSessionUnavailable" xml:space="preserve"><value>جلسة الدفع غير متاحة أو منتهية. افتح تفاصيل الطلب للتحقق أو بدء طلب جديد عندما تسمح الحالة.</value></data>
+  <data name="WalletAlreadyConfirming" xml:space="preserve"><value>سبق إرسال محاولة التأكيد لهذه الجلسة، ولن تُرسل مرة أخرى. تحقّق من حالة الطلب أو اطلب مراجعة الإدارة.</value></data>
+  <data name="WalletConfirmRejected" xml:space="preserve"><value>لم تؤكد الخدمة نجاح الدفع. لا يمكن إعادة التأكيد على الجلسة نفسها؛ راجع الحالة قبل بدء طلب جديد.</value></data>
+  <data name="PaymentUncertain" xml:space="preserve"><value>نتيجة الدفع غير محسومة. لا تدفع مجددًا الآن؛ تحقّق من الطلب أو اطلب مراجعة الإدارة. عدم ظهور العملية ضمن آخر 50 عملية لا يعني فشلها.</value></data>
+  <data name="WalletFetchBalance" xml:space="preserve"><value>جلب الرصيد الآن</value></data>
+  <data name="WalletBalance" xml:space="preserve"><value>الرصيد</value></data>
+  <data name="WalletAvailableBalance" xml:space="preserve"><value>المتاح للسحب</value></data>
+  <data name="WalletGrossTotal" xml:space="preserve"><value>إجمالي المبالغ المدفوعة</value></data>
+  <data name="WalletJawwalFees" xml:space="preserve"><value>رسوم جوال باي</value></data>
+  <data name="WalletPlatformFees" xml:space="preserve"><value>عمولة المنصة</value></data>
+  <data name="WalletNetTotal" xml:space="preserve"><value>الصافي المضاف لرصيد الشريك</value></data>
+  <data name="WalletWithdrawn" xml:space="preserve"><value>المبالغ المسحوبة</value></data>
+  <data name="WalletPendingWithdrawals" xml:space="preserve"><value>السحوبات المعلقة</value></data>
+  <data name="WalletBalanceFetchedUtc" xml:space="preserve"><value>وقت جلب الرصيد (UTC):</value></data>
+  <data name="WalletOperatingRules" xml:space="preserve"><value>آلية التشغيل</value></data>
+  <data name="WalletLast50Advice" xml:space="preserve"><value>الاستعلام المالي يعرض آخر 50 عملية فقط. يبحث النظام عن external_ref مطابق، ولا يعتبر غياب العملية دليل فشل. للعمليات الأقدم استخدم المراجعة اليدوية وإثبات المزود.</value></data>
+  <data name="WalletFeeAdvice" xml:space="preserve"><value>السعر المحفوظ للباقة هو المبلغ المدفوع بالشيكل. الرسوم والصافي تؤخذ من رد المزود ولا تُضاف تلقائيًا فوق سعر المستخدم.</value></data>
+  <data name="WalletReceiptTitle" xml:space="preserve"><value>إيصال جوال باي</value></data>
+  <data name="WalletTransactionId" xml:space="preserve"><value>معرّف عملية الشريك</value></data>
+  <data name="WalletProviderReference" xml:space="preserve"><value>مرجع جوال باي</value></data>
+  <data name="PaymentSandboxNotice" xml:space="preserve"><value>بيئة دفع تجريبية للتطوير. عمليات الاختبار لا تُعد دفعات إنتاج.</value></data>
+  <data name="WalletSandboxNotice" xml:space="preserve"><value>أنت في Sandbox لجوال باي: تجربة دون خصم ودون إرسال SMS.</value></data>
+  <data name="WalletSandboxPhone" xml:space="preserve"><value>رقم الهاتف التجريبي:</value></data>
+  <data name="WalletSandboxCode" xml:space="preserve"><value>رمز نجاح الاختبار:</value></data>
+  <data name="WalletSandboxBalanceUnavailable" xml:space="preserve"><value>فحص المفتاح يتم عبر ping التجريبي. لم يزوّدنا المزود بمسار رصيد تجريبي؛ لن نستخدم رصيد الإنتاج هنا.</value></data>
+  <data name="PaymentEnvironmentMismatch" xml:space="preserve"><value>هذا الطلب يتبع بيئة دفع مختلفة ولا يمكن معالجته في البيئة الحالية.</value></data>
+  <data name="PaymentEnvironment" xml:space="preserve"><value>بيئة الدفع</value></data>
+  <data name="PaymentEnvironmentSandbox" xml:space="preserve"><value>تجريبية (Sandbox)</value></data>
+  <data name="PaymentEnvironmentProduction" xml:space="preserve"><value>الإنتاج</value></data>
+  <data name="Tool_LahzaPayment" xml:space="preserve"><value>بوابة لحظة</value></data>
+  <data name="Tool_JawwalPayPayment" xml:space="preserve"><value>بوابة جوال باي</value></data>
+  <data name="ToolCode_PaymentCredentialsMissing" xml:space="preserve"><value>إعدادات البوابة أو مفتاح البيئة الحالية غير مكتملة.</value></data>
+  <data name="ToolCode_PaymentProviderResponded" xml:space="preserve"><value>نجح فحص اتصال آمن للقراءة فقط، دون دفع أو إرسال رمز.</value></data>
+  <data name="ToolCode_PaymentProviderUnavailable" xml:space="preserve"><value>تعذر التحقق من الاتصال؛ راجع مفتاح البيئة الحالية وصلاحياته والشبكة.</value></data>
+  <data name="DiscountPayment" xml:space="preserve"><value>خصم كامل</value></data>
 </root>

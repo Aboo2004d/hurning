@@ -25,7 +25,8 @@ public sealed class TelegramClient(HttpClient http, IConfiguration configuration
         string text,
         CancellationToken ct,
         bool contactButton = false,
-        (string Text, string Url)[]? buttons = null
+        (string Text, string Url)[]? buttons = null,
+        string language = "ar"
     )
     {
         if (!Ready)
@@ -37,7 +38,11 @@ public sealed class TelegramClient(HttpClient http, IConfiguration configuration
                 {
                     new[]
                     {
-                        new { text = "مشاركة رقمي / Share my number", request_contact = true },
+                        new
+                        {
+                            text = language == "en" ? "Share my number" : "مشاركة رقمي",
+                            request_contact = true,
+                        },
                     },
                 },
                 resize_keyboard = true,

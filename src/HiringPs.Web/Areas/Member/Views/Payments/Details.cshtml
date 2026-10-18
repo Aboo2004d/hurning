@@ -1,6 +1,7 @@
 @model PaymentOrder
 @{ ViewData["Title"] = T["PaymentDetails"]; var review = ViewBag.Review as PaymentReview; }
 <h1>@T["PaymentDetails"]</h1>
+<partial name="_PaymentEnvironmentNotice" />
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model" />
     <form asp-action="Check" method="post">
@@ -16,7 +17,14 @@
                 <button type="submit">@T["CompletePayment"]</button>
             </form>
         }
-        <a class="button secondary" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">@T["RetryPayment"]</a>
+        @if (ViewBag.WalletUncertain is true)
+        {
+            <p class="notice">@T["PaymentUncertain"]</p>
+        }
+        else
+        {
+            <a class="button secondary" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">@T["RetryPayment"]</a>
+        }
     }
     @if (review is null)
     {

@@ -132,6 +132,12 @@ public static class ToolCheckQueue
                         ? new(key, ToolState.Problem, "AiInvalidResponse")
                         : new(key, ToolState.Ready, "AiResponded");
                 }
+                else if (key is "LahzaPayment" or "JawwalPayPayment")
+                    result = await Microsoft
+                        .Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PaymentToolProbes>(
+                            services
+                        )
+                        .CheckAsync(key, ct);
                 else
                     result = await new ToolProbes(config).CheckAsync(key, ct);
             }

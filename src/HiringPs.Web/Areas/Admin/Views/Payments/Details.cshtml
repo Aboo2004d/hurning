@@ -3,11 +3,24 @@
 <h1>@T["PaymentDetails"]</h1>
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model" />
+    <p>@T["PaymentEnvironment"]: @T["PaymentEnvironment" + Model.GatewayEnvironment]</p>
     @if (Model.DecisionReason.Length > 0)
     {
         <dl class="detail-grid">
             <div><dt>@T["Reason"]</dt><dd dir="auto">@Model.DecisionReason</dd></div>
             <div><dt>@T["PaymentEvidence"]</dt><dd dir="auto">@Model.PaymentEvidence</dd></div>
+        </dl>
+    }
+    @if (ViewBag.WalletReceipt is WalletReceiptSummary receipt && receipt.TransactionId is not null)
+    {
+        <h2>@T["WalletReceiptTitle"]</h2>
+        <dl class="detail-grid">
+            <dt>@T["WalletTransactionId"]</dt><dd><bdi>@receipt.TransactionId</bdi></dd>
+            <dt>@T["WalletProviderReference"]</dt><dd><bdi>@receipt.JawwalReference</bdi></dd>
+            <dt>@T["FinalAmount"]</dt><dd>@MembershipRules.Money(receipt.Amount ?? 0)</dd>
+            <dt>@T["WalletJawwalFees"]</dt><dd>@MembershipRules.Money(receipt.JawwalFee ?? 0)</dd>
+            <dt>@T["WalletPlatformFees"]</dt><dd>@MembershipRules.Money(receipt.PlatformFee ?? 0)</dd>
+            <dt>@T["WalletNetTotal"]</dt><dd>@MembershipRules.Money(receipt.NetCredited ?? 0)</dd>
         </dl>
     }
     <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.UserId">@T["MemberAccount"]</a>

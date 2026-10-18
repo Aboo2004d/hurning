@@ -93,10 +93,11 @@
                             "PdfText" or "PdfRender" or "PdfOcr" => "ToolsToolVersion",
                             "PdfLanguages" => "ToolsOcrLanguages",
                             "AiLive" => "ToolsHttpStatus",
+                            "LahzaPayment" or "JawwalPayPayment" => "PaymentEnvironment",
                             _ => "ToolsCheckDetails"
                         };
                         <dt>@T[detailLabel]</dt>
-                        <dd><bdi class="tool-detail">@result.Detail</bdi></dd>
+                        <dd><bdi class="tool-detail">@(key is "LahzaPayment" or "JawwalPayPayment" ? T["PaymentEnvironment" + result.Detail] : result.Detail)</bdi></dd>
                     }
                     <dt>@T["ToolsCheckedAtUtc"]</dt>
                     <dd><bdi>@result.CheckedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</bdi></dd>

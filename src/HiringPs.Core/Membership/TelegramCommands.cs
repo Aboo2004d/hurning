@@ -76,10 +76,27 @@ public sealed class TelegramCommands(
         );
         if (member is null)
         {
+            var english =
+                sender.TryGetProperty("language_code", out var nativeLanguage)
+                && nativeLanguage.ValueKind == JsonValueKind.String
+                && (
+                    nativeLanguage.GetString()?.StartsWith("en", StringComparison.OrdinalIgnoreCase)
+                    ?? false
+                );
+            var visitorSite =
+                (configuration["Seo:PublicOrigin"] ?? "https://hiring.ps").TrimEnd('/')
+                + (english ? "/en" : "/ar");
             await telegram.SendAsync(
                 chatId,
-                "اربط حسابك من الموقع أولًا. / Link your account from the website first.",
-                ct
+                english
+                    ? "Welcome to Employment in Palestine 🌿\nLink your account from the website to activate it. Once subscribed, receive opportunity alerts for your preferences and track your subscription."
+                    : "أهلًا بك في التوظيف في فلسطين 🌿\nاربط حسابك من الموقع لتفعيله. وبعد الاشتراك تصلك تنبيهات الفرص حسب تفضيلاتك ويمكنك متابعة باقتك ومدفوعاتك.",
+                ct,
+                buttons:
+                [
+                    (english ? "Create an account" : "إنشاء حساب", visitorSite + "/Registration"),
+                    (english ? "Sign in" : "تسجيل الدخول", visitorSite + "/Account/Login"),
+                ]
             );
             return;
         }
@@ -126,6 +143,12 @@ public sealed class TelegramCommands(
                     "PaymentConfirmed" => en
                         ? "Payment confirmed and subscription applied."
                         : "تم تأكيد الدفع واعتماد الاشتراك.",
+                    "PaymentEnvironmentMismatch" => en
+                        ? "This order belongs to another payment environment."
+                        : "هذا الطلب يتبع بيئة دفع مختلفة.",
+                    "PaymentUncertain" => en
+                        ? "Payment status is unresolved. Do not pay again yet; check this order or request an administrator review."
+                        : "نتيجة الدفع غير محسومة. لا تدفع مجددًا الآن؛ تحقّق من الطلب أو اطلب مراجعة الإدارة.",
                     "PaymentNotFound" => en
                         ? "Order not found in your account."
                         : "لم نجد الطلب ضمن حسابك.",
@@ -160,7 +183,10 @@ public sealed class TelegramCommands(
                                 ? ""
                                 : "\n"
                                     + (en ? "Ends (UTC): " : "تنتهي (UTC): ")
-                                    + active.EndsAt.ToString("yyyy-MM-dd HH:mm")
+                                    + active.EndsAt.ToString(
+                                        "yyyy-MM-dd HH:mm",
+                                        System.Globalization.CultureInfo.InvariantCulture
+                                    )
                         )
                         + "\n"
                         + (en ? "Alerts: " : "التنبيهات: ")

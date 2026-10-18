@@ -1721,7 +1721,7 @@
     <data name="JawwalPay" xml:space="preserve"><value>Jawwal Pay</value></data>
     <data name="GatewayAvailable" xml:space="preserve"><value>Available for payment</value></data>
     <data name="GatewayDisabled" xml:space="preserve"><value>Adapter ready; gateway disabled</value></data>
-    <data name="GatewayAdapterMissing" xml:space="preserve"><value>API integration awaits specifications and testing; no live checkout yet</value></data>
+    <data name="GatewayAdapterMissing" xml:space="preserve"><value>Gateway is not ready; check the adapter and configured credentials</value></data>
     <data name="PaymentOperations" xml:space="preserve"><value>View gateway transactions</value></data>
     <data name="RecoveryLinkAdvice" xml:space="preserve"><value>Private recovery link with limited validity. Share it only with the member after verifying their identity; do not publish it.</value></data>
     <data name="NotificationDelivery" xml:space="preserve"><value>Notification delivery</value></data>
@@ -1741,4 +1741,83 @@
     <data name="PasswordMinLength" xml:space="preserve"><value>Use a password of at least 8 characters.</value></data>
     <data name="PasswordMismatch" xml:space="preserve"><value>The passwords do not match.</value></data>
     <data name="TextTooLong" xml:space="preserve"><value>The text exceeds the allowed length.</value></data>
+  <data name="PaymentInitializationPending" xml:space="preserve"><value>Payment initialization started, but the checkout link is not confirmed yet. Check this order or request a review before retrying.</value></data>
+  <data name="JawwalPaySetup" xml:space="preserve"><value>Jawwal Pay setup</value></data>
+  <data name="WalletContractMissing" xml:space="preserve"><value>Jawwal Pay is being prepared. Service endpoints are known, but authentication, request fields, and payment confirmation responses still need documentation. The gateway is not available to members yet.</value></data>
+  <data name="WalletKnownEndpoints" xml:space="preserve"><value>Supplied service endpoints</value></data>
+  <data name="WalletEndpointsInvalid" xml:space="preserve"><value>Configured endpoints do not match the supplied service URLs.</value></data>
+  <data name="WalletInitiateEndpoint" xml:space="preserve"><value>Request a payment code</value></data>
+  <data name="WalletConfirmEndpoint" xml:space="preserve"><value>Confirm payment</value></data>
+  <data name="WalletBalanceEndpoint" xml:space="preserve"><value>Partner account balance</value></data>
+  <data name="WalletBalanceMeaning" xml:space="preserve"><value>Balance is fetched only at an administrator’s request. It is not evidence that an individual payment succeeded.</value></data>
+  <data name="WalletPreviewTitle" xml:space="preserve"><value>Member checkout preview</value></data>
+  <data name="WalletPreviewNotice" xml:space="preserve"><value>Design preview for administrators only. Fields and buttons are disabled; no code or payment request is sent.</value></data>
+  <data name="WalletMobileStep" xml:space="preserve"><value>1 · Wallet number</value></data>
+  <data name="WalletEnterMobile" xml:space="preserve"><value>Pay with Jawwal Pay</value></data>
+  <data name="WalletAmountSummary" xml:space="preserve"><value>The selected plan, duration, and final price in ILS after discounts appear before this step. The payment amount comes from the order saved on the server.</value></data>
+  <data name="WalletMobileLabel" xml:space="preserve"><value>Mobile number linked to your Jawwal Pay wallet</value></data>
+  <data name="WalletMobileHelp" xml:space="preserve"><value>The server sends the wallet number and amount to request a payment code. Initiate does not debit funds.</value></data>
+  <data name="WalletSendCode" xml:space="preserve"><value>Send payment code</value></data>
+  <data name="WalletOtpStep" xml:space="preserve"><value>2 · Payment code and confirmation</value></data>
+  <data name="WalletEnterOtp" xml:space="preserve"><value>Confirm payment</value></data>
+  <data name="WalletOtpLabel" xml:space="preserve"><value>Payment verification code</value></data>
+  <data name="WalletOtpHelp" xml:space="preserve"><value>Enter the payment code sent by the wallet service. This is separate from your Telegram account verification code.</value></data>
+  <data name="WalletConfirmPayment" xml:space="preserve"><value>Confirm and pay</value></data>
+  <data name="WalletConfirmationHelp" xml:space="preserve"><value>The subscription activates after the provider confirms payment and the order, amount, and currency match. If the connection is interrupted, the result remains unverified.</value></data>
+  <data name="WalletMissingContractTitle" xml:space="preserve"><value>Required integration details</value></data>
+  <data name="WalletMissingAuthentication" xml:space="preserve"><value>Authentication header names and how partner credentials are used, without exposing their values.</value></data>
+  <data name="WalletMissingInitiate" xml:space="preserve"><value>Code-request fields, amount units, phone format, session identifier, and expiry.</value></data>
+  <data name="WalletMissingConfirm" xml:space="preserve"><value>Confirmation fields and success, failure, and invalid-code responses, including payment reference, amount, and currency.</value></data>
+  <data name="WalletMissingStatus" xml:space="preserve"><value>A safe way to query an individual order after connection failure or delayed confirmation; the balance endpoint alone is insufficient.</value></data>
+  <data name="WalletMissingRetry" xml:space="preserve"><value>Code resend and attempt rules, duplicate-charge prevention, and a test environment if available.</value></data>
+  <data name="WalletTransactionsEndpoint" xml:space="preserve"><value>Recent partner transactions</value></data>
+  <data name="WalletConfigured" xml:space="preserve"><value>Connection settings are present. Enable Jawwal Pay under payment gateways to offer it to members, then test with your key. Configuration readiness does not prove a live connection.</value></data>
+  <data name="WalletNeedsKey" xml:space="preserve"><value>Set the partner key in Web and Worker settings; the header is X-Partner-Key. The connection is unavailable while the key remains ***.</value></data>
+  <data name="WalletLiveMobileHelp" xml:space="preserve"><value>Enter 10 digits starting with 05. Requesting the code does not debit your wallet; the debit occurs after entering the code and confirming payment.</value></data>
+  <data name="WalletCodeSentTo" xml:space="preserve"><value>Payment code sent to</value></data>
+  <data name="WalletCodeExpiresUtc" xml:space="preserve"><value>Valid until (UTC):</value></data>
+  <data name="WalletSingleConfirmation" xml:space="preserve"><value>Check the code before confirming. Only one confirmation attempt is sent for this session; the debit is never retried automatically.</value></data>
+  <data name="WalletMobileInvalid" xml:space="preserve"><value>Enter a 10-digit Jawwal Pay number starting with 05, such as 0599123456.</value></data>
+  <data name="WalletAmountInvalid" xml:space="preserve"><value>Jawwal Pay supports amounts from 1 to 5000 ILS with up to two decimal places. Choose another payment method.</value></data>
+  <data name="WalletOtpInvalid" xml:space="preserve"><value>Enter the numeric payment code without spaces.</value></data>
+  <data name="WalletOtpSent" xml:space="preserve"><value>The payment code was sent. Enter it and confirm before the session expires.</value></data>
+  <data name="WalletAlreadyRequested" xml:space="preserve"><value>A code was already requested for this order. Use the current session if available; initiation is not repeated automatically.</value></data>
+  <data name="WalletRequestWait" xml:space="preserve"><value>Wait one minute between code requests. Your account is limited to three requests per 15 minutes.</value></data>
+  <data name="WalletInitiateRejected" xml:space="preserve"><value>The payment code could not be sent. The website did not confirm a debit; check the number and start a new order.</value></data>
+  <data name="WalletInitiationUnknown" xml:space="preserve"><value>No valid code session was received from the service. No debit confirmation was sent for this order. You may start a new order after the code-request cooldown.</value></data>
+  <data name="WalletSessionUnavailable" xml:space="preserve"><value>The payment session is unavailable or expired. Open the order details to check its status or start a new order when permitted.</value></data>
+  <data name="WalletAlreadyConfirming" xml:space="preserve"><value>A confirmation attempt was already sent for this session and will not be sent again. Check the order status or request an administrator review.</value></data>
+  <data name="WalletConfirmRejected" xml:space="preserve"><value>The service did not confirm payment success. This session cannot be confirmed again; review its status before starting a new order.</value></data>
+  <data name="PaymentUncertain" xml:space="preserve"><value>Payment status is unresolved. Do not pay again yet; check this order or request an administrator review. Absence from the last 50 transactions does not prove failure.</value></data>
+  <data name="WalletFetchBalance" xml:space="preserve"><value>Fetch balance now</value></data>
+  <data name="WalletBalance" xml:space="preserve"><value>Balance</value></data>
+  <data name="WalletAvailableBalance" xml:space="preserve"><value>Available balance</value></data>
+  <data name="WalletGrossTotal" xml:space="preserve"><value>Gross payments</value></data>
+  <data name="WalletJawwalFees" xml:space="preserve"><value>Jawwal Pay fees</value></data>
+  <data name="WalletPlatformFees" xml:space="preserve"><value>Platform fees</value></data>
+  <data name="WalletNetTotal" xml:space="preserve"><value>Net credited to partner</value></data>
+  <data name="WalletWithdrawn" xml:space="preserve"><value>Withdrawn total</value></data>
+  <data name="WalletPendingWithdrawals" xml:space="preserve"><value>Pending withdrawals</value></data>
+  <data name="WalletBalanceFetchedUtc" xml:space="preserve"><value>Balance fetched (UTC):</value></data>
+  <data name="WalletOperatingRules" xml:space="preserve"><value>Operating rules</value></data>
+  <data name="WalletLast50Advice" xml:space="preserve"><value>The transaction query exposes only the last 50 records. The application matches external_ref; absence is not evidence of failure. Older transactions require manual review and provider evidence.</value></data>
+  <data name="WalletFeeAdvice" xml:space="preserve"><value>The saved plan price is the gross payment in ILS. Fees and net proceeds come from the provider response and are not automatically added to the member price.</value></data>
+  <data name="WalletReceiptTitle" xml:space="preserve"><value>Jawwal Pay receipt</value></data>
+  <data name="WalletTransactionId" xml:space="preserve"><value>Partner transaction ID</value></data>
+  <data name="WalletProviderReference" xml:space="preserve"><value>Jawwal Pay reference</value></data>
+  <data name="PaymentSandboxNotice" xml:space="preserve"><value>Development payment sandbox. Test transactions are not production payments.</value></data>
+  <data name="WalletSandboxNotice" xml:space="preserve"><value>Jawwal Pay sandbox: testing without debits or SMS.</value></data>
+  <data name="WalletSandboxPhone" xml:space="preserve"><value>Test phone number:</value></data>
+  <data name="WalletSandboxCode" xml:space="preserve"><value>Successful test code:</value></data>
+  <data name="WalletSandboxBalanceUnavailable" xml:space="preserve"><value>The key is checked with sandbox ping. No sandbox balance endpoint was provided; production balance is not queried here.</value></data>
+  <data name="PaymentEnvironmentMismatch" xml:space="preserve"><value>This order belongs to another payment environment and cannot be processed here.</value></data>
+  <data name="PaymentEnvironment" xml:space="preserve"><value>Payment environment</value></data>
+  <data name="PaymentEnvironmentSandbox" xml:space="preserve"><value>Sandbox</value></data>
+  <data name="PaymentEnvironmentProduction" xml:space="preserve"><value>Production</value></data>
+  <data name="Tool_LahzaPayment" xml:space="preserve"><value>Lahza payment gateway</value></data>
+  <data name="Tool_JawwalPayPayment" xml:space="preserve"><value>Jawwal Pay gateway</value></data>
+  <data name="ToolCode_PaymentCredentialsMissing" xml:space="preserve"><value>Gateway settings or credentials for the current environment are incomplete.</value></data>
+  <data name="ToolCode_PaymentProviderResponded" xml:space="preserve"><value>A read-only connectivity check succeeded; no payment or code was sent.</value></data>
+  <data name="ToolCode_PaymentProviderUnavailable" xml:space="preserve"><value>Connectivity could not be verified; check the current environment key, permissions, and network.</value></data>
+  <data name="DiscountPayment" xml:space="preserve"><value>Full discount</value></data>
 </root>

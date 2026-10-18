@@ -500,6 +500,13 @@ namespace HiringPs.Core.Migrations
                     b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("GatewayEnvironment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)")
+                        .HasDefaultValue("Production");
+
                     b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1037,6 +1044,13 @@ namespace HiringPs.Core.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTimeOffset?>("CheckoutStartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CheckoutUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1063,6 +1077,13 @@ namespace HiringPs.Core.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("GatewayEnvironment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)")
+                        .HasDefaultValue("Production");
 
                     b.Property<DateTimeOffset?>("LastCheckedAt")
                         .HasColumnType("datetimeoffset");
@@ -1110,11 +1131,11 @@ namespace HiringPs.Core.Migrations
 
                     b.HasIndex("PlanVersionId");
 
-                    b.HasIndex("Gateway", "ProviderReference")
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("Gateway", "GatewayEnvironment", "ProviderReference")
                         .IsUnique()
                         .HasFilter("[ProviderReference] IS NOT NULL");
-
-                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("PaymentOrders");
                 });
@@ -1826,6 +1847,93 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("Reports");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.WalletPaymentSession", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("ConfirmationRejected")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("ConfirmationStartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal?>("ConfirmedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("ConfirmedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("GatewayEnvironment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)")
+                        .HasDefaultValue("Production");
+
+                    b.Property<bool>("InitiationRejected")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("JawwalFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("JawwalReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal?>("NetCredited")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal?>("PlatformFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ProtectedSessionKey")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SessionKeyHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long?>("TransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("GatewayEnvironment", "SessionKeyHash")
+                        .IsUnique()
+                        .HasFilter("[SessionKeyHash] IS NOT NULL");
+
+                    b.HasIndex("GatewayEnvironment", "TransactionId")
+                        .IsUnique()
+                        .HasFilter("[TransactionId] IS NOT NULL");
+
+                    b.ToTable("WalletPaymentSessions");
+                });
+
             modelBuilder.Entity("HiringPs.Core.WorkerHeartbeat", b =>
                 {
                     b.Property<int>("Id")
@@ -2300,6 +2408,17 @@ namespace HiringPs.Core.Migrations
                         .IsRequired();
 
                     b.Navigation("Opportunity");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.WalletPaymentSession", b =>
+                {
+                    b.HasOne("HiringPs.Core.PaymentOrder", "Order")
+                        .WithOne()
+                        .HasForeignKey("HiringPs.Core.WalletPaymentSession", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("HiringPs.Core.WorkflowSettings", b =>

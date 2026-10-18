@@ -121,6 +121,9 @@ public sealed class MemberSubscription
     public int PlanVersionId { get; set; }
     public MembershipPlanVersion PlanVersion { get; set; } = null!;
     public Guid? OrderId { get; set; }
+
+    [MaxLength(12)]
+    public string GatewayEnvironment { get; set; } = "Production";
     public DateTimeOffset StartsAt { get; set; }
     public DateTimeOffset EndsAt { get; set; }
     public bool Cancelled { get; set; }
@@ -176,8 +179,15 @@ public sealed class PaymentOrder
     [MaxLength(30)]
     public string Gateway { get; set; } = "";
 
+    [MaxLength(12)]
+    public string GatewayEnvironment { get; set; } = "Production";
+
     [MaxLength(200)]
     public string? ProviderReference { get; set; }
+
+    [MaxLength(2048)]
+    public string? CheckoutUrl { get; set; }
+    public DateTimeOffset? CheckoutStartedAt { get; set; }
     public PaymentState State { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset ExpiresAt { get; set; }
@@ -336,4 +346,50 @@ public sealed class PaymentGatewaySetting
     [Key, MaxLength(30)]
     public string Key { get; set; } = "";
     public bool Enabled { get; set; }
+}
+
+// A single session per order. ConfirmationStartedAt is a permanent, durable claim:
+// the partner explicitly forbids a second confirm call, even after an error.
+public sealed class WalletPaymentSession
+{
+    [Key]
+    public Guid OrderId { get; set; }
+    public PaymentOrder Order { get; set; } = null!;
+
+    [MaxLength(12)]
+    public string GatewayEnvironment { get; set; } = "Production";
+
+    [MaxLength(10)]
+    public string Phone { get; set; } = "";
+
+    [MaxLength(4096)]
+    public string? ProtectedSessionKey { get; set; }
+
+    [MaxLength(64)]
+    public string? SessionKeyHash { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+    public bool InitiationRejected { get; set; }
+    public DateTimeOffset? ConfirmationStartedAt { get; set; }
+    public bool ConfirmationRejected { get; set; }
+    public long? TransactionId { get; set; }
+
+    [MaxLength(200)]
+    public string? JawwalReference { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? ConfirmedAmount { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? JawwalFee { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? PlatformFee { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? NetCredited { get; set; }
+    public DateTimeOffset? ConfirmedAt { get; set; }
+
+    [Timestamp]
+    public byte[] Version { get; set; } = [];
 }

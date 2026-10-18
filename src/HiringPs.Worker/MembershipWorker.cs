@@ -43,7 +43,8 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
         var zeroOrders = await db
             .PaymentOrders.AsNoTracking()
             .Where(x =>
-                x.Gateway == "discount"
+                x.GatewayEnvironment == db.ActivePaymentEnvironment
+                && x.Gateway == "discount"
                 && x.AmountIls == 0
                 && x.DiscountPercent == 100
                 && x.State == PaymentState.AwaitingPayment
@@ -55,9 +56,32 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
         var paymentCheck = scope.ServiceProvider.GetRequiredService<PaymentReconciliation>();
         foreach (var id in zeroOrders)
             await paymentCheck.CheckAsync(id, null, "Discount recovery", ct);
+        var now = DateTimeOffset.UtcNow;
+        var reconciliation = scope.ServiceProvider.GetRequiredService<PaymentReconciliation>();
+        var pending = await db
+            .PaymentOrders.AsNoTracking()
+            .Where(x =>
+                x.GatewayEnvironment == db.ActivePaymentEnvironment
+                && (
+                    x.State == PaymentState.Pending
+                    || (
+                        x.Gateway == "JawwalPay"
+                        && x.State == PaymentState.Failed
+                        && db.WalletPaymentSessions.Any(session =>
+                            session.OrderId == x.Id && session.ConfirmationStartedAt != null
+                        )
+                    )
+                )
+                && (x.LastCheckedAt == null || x.LastCheckedAt < now.AddMinutes(-5))
+            )
+            .OrderBy(x => x.LastCheckedAt)
+            .Select(x => x.Id)
+            .Take(5)
+            .ToListAsync(ct);
+        foreach (var id in pending)
+            await reconciliation.CheckAsync(id, null, "Payment reconciliation", ct);
         if (!telegram.Ready)
             return;
-        var now = DateTimeOffset.UtcNow;
         if (
             await db
                 .MembershipRuntimeStates.Where(x =>
@@ -108,19 +132,6 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
             await db
                 .TelegramInbox.Where(x => x.ReceivedAt < now.AddDays(-7))
                 .ExecuteDeleteAsync(ct);
-            var reconciliation = scope.ServiceProvider.GetRequiredService<PaymentReconciliation>();
-            var pending = await db
-                .PaymentOrders.AsNoTracking()
-                .Where(x =>
-                    x.State == PaymentState.Pending
-                    && (x.LastCheckedAt == null || x.LastCheckedAt < now.AddMinutes(-5))
-                )
-                .OrderBy(x => x.LastCheckedAt)
-                .Select(x => x.Id)
-                .Take(5)
-                .ToListAsync(ct);
-            foreach (var id in pending)
-                await reconciliation.CheckAsync(id, null, "Payment reconciliation", ct);
         }
         finally
         {

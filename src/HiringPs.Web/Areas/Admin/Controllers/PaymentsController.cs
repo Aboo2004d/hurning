@@ -18,6 +18,7 @@ public class PaymentsController(
     public async Task<IActionResult> Index(
         string? q,
         string? gateway,
+        string? environment,
         PaymentState? state,
         bool review = false,
         int page = 1,
@@ -28,10 +29,21 @@ public class PaymentsController(
         if (!string.IsNullOrWhiteSpace(q))
         {
             Guid.TryParse(q, out var orderId);
-            query = query.Where(x => x.Id == orderId || x.ProviderReference == q || x.UserId == q);
+            long.TryParse(q, out var transactionId);
+            query = query.Where(x =>
+                x.Id == orderId
+                || x.ProviderReference == q
+                || x.UserId == q
+                || db.WalletPaymentSessions.Any(session =>
+                    session.OrderId == x.Id
+                    && (session.JawwalReference == q || session.TransactionId == transactionId)
+                )
+            );
         }
         if (!string.IsNullOrWhiteSpace(gateway))
             query = query.Where(x => x.Gateway == gateway);
+        if (environment is "Sandbox" or "Production")
+            query = query.Where(x => x.GatewayEnvironment == environment);
         if (state is not null)
             query = query.Where(x => x.State == state);
         if (review)
@@ -54,6 +66,18 @@ public class PaymentsController(
         ViewBag.Review = await db
             .PaymentReviews.AsNoTracking()
             .SingleOrDefaultAsync(x => x.OrderId == id, ct);
+        ViewBag.WalletReceipt = await db
+            .WalletPaymentSessions.AsNoTracking()
+            .Where(x => x.OrderId == id)
+            .Select(x => new WalletReceiptSummary(
+                x.TransactionId,
+                x.JawwalReference,
+                x.ConfirmedAmount,
+                x.JawwalFee,
+                x.PlatformFee,
+                x.NetCredited
+            ))
+            .SingleOrDefaultAsync(ct);
         return View(order);
     }
 
@@ -84,6 +108,16 @@ public class PaymentsController(
             || evidence.Length > 1500
         )
             return BadRequest();
+        if (
+            !await db.PaymentOrders.AnyAsync(
+                x => x.Id == id && x.GatewayEnvironment == db.ActivePaymentEnvironment,
+                ct
+            )
+        )
+        {
+            TempData["Notice"] = "PaymentEnvironmentMismatch";
+            return RedirectToAction(nameof(Details), new { id });
+        }
         await membership.ConfirmAsync(
             id,
             User.Identity?.Name ?? "Admin",

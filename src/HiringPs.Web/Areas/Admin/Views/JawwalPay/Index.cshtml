@@ -1,0 +1,82 @@
+@model JawwalPaySetup
+@{
+    ViewData["Title"] = T["JawwalPaySetup"];
+}
+<h1>@T["JawwalPaySetup"]</h1>
+<p class="notice">@T[Model.Ready ? "WalletConfigured" : "WalletNeedsKey"]</p>
+<partial name="_MemberValidation" />
+@if (Model.IsSandbox)
+{
+    <p class="notice">@T["WalletSandboxNotice"] @T["WalletSandboxBalanceUnavailable"]</p>
+}
+<section class="membership-card">
+    <h2>@T["WalletBalanceEndpoint"]</h2>
+    <form asp-action="Balance" method="post">
+        <button type="submit" class="secondary" disabled="@(!Model.Ready || Model.IsSandbox)">@T["WalletFetchBalance"]</button>
+    </form>
+    @if (Model.Balance is { } balance)
+    {
+        <dl class="detail-grid">
+            <dt>@T["WalletBalance"]</dt><dd>@MembershipRules.Money(balance.Balance)</dd>
+            <dt>@T["WalletAvailableBalance"]</dt><dd>@MembershipRules.Money(balance.Available)</dd>
+            <dt>@T["WalletGrossTotal"]</dt><dd>@MembershipRules.Money(balance.GrossTotal)</dd>
+            <dt>@T["WalletJawwalFees"]</dt><dd>@MembershipRules.Money(balance.JawwalFees)</dd>
+            <dt>@T["WalletPlatformFees"]</dt><dd>@MembershipRules.Money(balance.PlatformFees)</dd>
+            <dt>@T["WalletNetTotal"]</dt><dd>@MembershipRules.Money(balance.CreditedTotal)</dd>
+            <dt>@T["WalletWithdrawn"]</dt><dd>@MembershipRules.Money(balance.WithdrawnTotal)</dd>
+            <dt>@T["WalletPendingWithdrawals"]</dt><dd>@MembershipRules.Money(balance.PendingWithdrawals)</dd>
+            <dt>@T["PaymentOperations"]</dt><dd>@balance.TransactionsCount</dd>
+        </dl>
+        <p>@T["WalletBalanceFetchedUtc"] <bdi>@Model.BalanceFetchedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</bdi></p>
+    }
+</section>
+<section class="membership-card">
+    <h2>@T["WalletKnownEndpoints"]</h2>
+    @if (!Model.EndpointsValid)
+    {
+        <p role="alert">@T["WalletEndpointsInvalid"]</p>
+    }
+    <ul class="wallet-endpoints">
+        @foreach (var endpoint in Model.Endpoints)
+        {
+            <li>
+                <strong>@T[endpoint.Label]</strong>
+                <code dir="ltr">@endpoint.Method @endpoint.Address</code>
+            </li>
+        }
+    </ul>
+    <p>@T["WalletBalanceMeaning"]</p>
+</section>
+<h2>@T["WalletPreviewTitle"]</h2>
+<p>@T["WalletPreviewNotice"]</p>
+<div class="membership-grid">
+    <section class="membership-card wallet-preview">
+        <p class="eyebrow">@T["WalletMobileStep"]</p>
+        <h3>@T["WalletEnterMobile"]</h3>
+        <p>@T["WalletAmountSummary"]</p>
+        <fieldset disabled>
+            <label for="wallet-preview-mobile">@T["WalletMobileLabel"]</label>
+            <input id="wallet-preview-mobile" type="tel" inputmode="tel" dir="ltr" autocomplete="off" />
+            <p>@T["WalletMobileHelp"]</p>
+            <button type="button" disabled>@T["WalletSendCode"]</button>
+        </fieldset>
+    </section>
+    <section class="membership-card wallet-preview">
+        <p class="eyebrow">@T["WalletOtpStep"]</p>
+        <h3>@T["WalletEnterOtp"]</h3>
+        <p>@T["WalletOtpHelp"]</p>
+        <fieldset disabled>
+            <label for="wallet-preview-code">@T["WalletOtpLabel"]</label>
+            <input id="wallet-preview-code" type="text" inputmode="numeric" dir="ltr" autocomplete="off" />
+            <button type="button" disabled>@T["WalletConfirmPayment"]</button>
+        </fieldset>
+        <p>@T["WalletConfirmationHelp"]</p>
+    </section>
+</div>
+<section class="membership-card">
+    <h2>@T["WalletOperatingRules"]</h2>
+    <p>@T["WalletSingleConfirmation"]</p>
+    <p>@T["WalletLast50Advice"]</p>
+    <p>@T["WalletFeeAdvice"]</p>
+    <a class="button secondary" asp-controller="Gateways" asp-action="Index">@T["PaymentGateways"]</a>
+</section>

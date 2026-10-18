@@ -1467,3 +1467,11 @@ footer {
 .membership-card fieldset { border: 1px solid #d9e6e0; border-radius: .7rem; padding: 1rem; }
 .membership-card .detail-grid dd { overflow-wrap: anywhere; }
 .plan-benefits { padding-inline-start: 1.25rem; }
+
+/* Read-only wallet checkout preview in the administrator area. */
+.wallet-endpoints { list-style: none; padding: 0; margin: 0; }
+.wallet-endpoints li { padding-block: 1rem; border-block-end: 1px solid #d9e6e0; }
+.wallet-endpoints li:last-child { border-block-end: 0; }
+.wallet-endpoints code { display: block; text-align: start; overflow-wrap: anywhere; line-height: 1.8; margin-block-start: .5rem; }
+.wallet-preview fieldset { border: 0; margin: 0; padding: 0; }
+.wallet-preview button:disabled { opacity: .55; cursor: not-allowed; }

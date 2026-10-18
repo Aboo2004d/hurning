@@ -15,6 +15,9 @@
         <dd>@MembershipRules.Money(Model.AmountIls)</dd>
     </div>
     <div>
+        <dt>@T["PaymentGateway"]</dt><dd>@T[Model.Gateway == "discount" ? "DiscountPayment" : Model.Gateway]</dd>
+    </div>
+    <div>
         <dt>@T["Status"]</dt>
         <dd>@T["Payment" + Model.State]</dd>
     </div>

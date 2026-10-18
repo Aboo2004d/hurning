@@ -121,11 +121,18 @@ public sealed class MemberVerification(
         challenge.TelegramUserId = from;
         challenge.ChatId = chat;
         await db.SaveChangesAsync(ct);
+        var language = await db
+            .MemberProfiles.Where(x => x.UserId == challenge.UserId)
+            .Select(x => x.Language)
+            .SingleAsync(ct);
         await telegram.SendAsync(
             chat,
-            "اضغط مشاركة رقمي للتحقق من رقم التسجيل. / Share your own number to verify registration.",
+            language == "en"
+                ? "Tap Share my number to verify the mobile number used for registration."
+                : "اضغط مشاركة رقمي للتحقق من رقم الهاتف الذي سجلت به.",
             ct,
-            true
+            contactButton: true,
+            language: language
         );
         return true;
     }

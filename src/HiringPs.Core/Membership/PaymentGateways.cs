@@ -8,7 +8,8 @@ public sealed record GatewayCheck(
     string? Reference,
     decimal? Amount,
     string? Currency,
-    PaymentState State
+    PaymentState State,
+    bool Inconclusive = false
 );
 
 public sealed record GatewayCheckout(string Reference, Uri Url);
@@ -19,6 +20,8 @@ public interface IPaymentGateway
 {
     string Key { get; }
     bool Ready { get; }
+    string Environment => "Production";
+    bool SupportsAmount(decimal amount) => amount > 0;
     Task<GatewayCheckout> CheckoutAsync(PaymentOrder order, CancellationToken ct);
     Task<GatewayCheck> CheckAsync(PaymentOrder order, CancellationToken ct);
 }
@@ -41,6 +44,8 @@ public sealed class PaymentReconciliation(
             .SingleOrDefaultAsync(x => x.Id == orderId && (owner == null || x.UserId == owner), ct);
         if (order is null)
             return "PaymentNotFound";
+        if (order.GatewayEnvironment != db.ActivePaymentEnvironment)
+            return "PaymentEnvironmentMismatch";
         if (order.State == PaymentState.Paid)
             return "PaymentConfirmed";
         if (
@@ -65,9 +70,7 @@ public sealed class PaymentReconciliation(
         }
         if (order.LastCheckedAt > DateTimeOffset.UtcNow.AddSeconds(-30))
             return "PaymentCheckWait";
-        var gateway = (await registry.AvailableAsync(ct)).SingleOrDefault(x =>
-            x.Key == order.Gateway
-        );
+        var gateway = registry.ForVerification(order.Gateway);
         if (gateway is null)
             return "GatewayUnavailable";
         // Durable claim prevents repeated site/bot polling from hammering the provider.
@@ -80,7 +83,15 @@ public sealed class PaymentReconciliation(
             .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastCheckedAt, now), ct);
         if (claimed == 0)
             return "PaymentCheckWait";
-        var result = await gateway.CheckAsync(order, ct);
+        GatewayCheck result;
+        try
+        {
+            result = await gateway.CheckAsync(order, ct);
+        }
+        catch (PaymentProviderException)
+        {
+            return "GatewayUnavailable";
+        }
         if (result.Confirmed)
         {
             if (result.OrderId != order.Id)
@@ -115,7 +126,7 @@ public sealed class PaymentReconciliation(
                     ),
                 ct
             );
-        return "PaymentNotConfirmed";
+        return result.Inconclusive ? "PaymentUncertain" : "PaymentNotConfirmed";
     }
 }
 
@@ -125,6 +136,10 @@ public sealed class PaymentGatewayRegistry(
     IEnumerable<IPaymentGateway> gateways
 )
 {
+    // Closing new sales must not prevent confirming an existing charge.
+    public IPaymentGateway? ForVerification(string key) =>
+        gateways.SingleOrDefault(x => x.Key == key && x.Ready);
+
     public async Task<IPaymentGateway[]> AvailableAsync(CancellationToken ct)
     {
         var enabled = await db

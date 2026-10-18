@@ -1,0 +1,5 @@
+@inject Microsoft.Extensions.Hosting.IHostEnvironment HostEnvironment
+@if (HostEnvironment.EnvironmentName.Equals("Development", StringComparison.OrdinalIgnoreCase))
+{
+    <p class="notice">@T["PaymentSandboxNotice"]</p>
+}

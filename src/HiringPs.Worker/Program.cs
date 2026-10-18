@@ -88,9 +88,15 @@ if (!isProbe)
     builder.Services.AddScoped<MemberVerification>();
     builder.Services.AddScoped<PaymentReconciliation>();
     builder.Services.AddScoped<PaymentGatewayRegistry>();
+    builder.Services.AddSingleton<PaymentEnvironment>();
+    builder.Services.AddScoped<PaymentToolProbes>();
+    builder.Services.AddLahza();
+    builder.Services.AddJawwalPay();
     builder.Services.AddScoped<TelegramCommands>();
     builder.Services.AddScoped<MemberNotifications>();
-    builder.Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20)).RemoveAllLoggers();
+    builder
+        .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
+        .RemoveAllLoggers();
     builder.Services.AddScoped<CollectionPipeline>();
     // Gemini HTTP Client
     builder.Services.AddHttpClient<AiExtractor>();

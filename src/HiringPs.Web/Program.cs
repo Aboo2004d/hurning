@@ -41,7 +41,12 @@ builder.Services.AddScoped<MemberVerification>();
 builder.Services.AddScoped<PendingVerificationCookie>();
 builder.Services.AddScoped<PaymentEvidenceStore>();
 builder.Services.AddScoped<PaymentReconciliation>();
+builder.Services.AddScoped<WalletCheckoutService>();
 builder.Services.AddScoped<PaymentGatewayRegistry>();
+builder.Services.AddSingleton<PaymentEnvironment>();
+builder.Services.AddScoped<PaymentToolProbes>();
+builder.Services.AddLahza();
+builder.Services.AddJawwalPay();
 builder
     .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
     .RemoveAllLoggers();
@@ -205,7 +210,7 @@ app.Use(
             + "img-src 'self' data:; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
-            + "form-action 'self'";
+            + "form-action 'self' https://checkout.lahza.io";
         await next();
     }
 );

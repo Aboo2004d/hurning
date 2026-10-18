@@ -220,7 +220,13 @@ public sealed class MemberNotifications(
                 continue;
             await EnqueueAsync(
                 member,
-                "saved:" + save.OpportunityId + ":" + tomorrow.ToString("yyyyMMdd"),
+                "saved:"
+                    + save.OpportunityId
+                    + ":"
+                    + tomorrow.ToString(
+                        "yyyyMMdd",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                 MemberMessageKind.SavedDeadline,
                 (
                     member.Language == "en"
@@ -405,9 +411,15 @@ public sealed class MemberNotifications(
                     + " · "
                     + MembershipRules.Money(order.AmountIls)
                     + (en ? " · Starts (UTC): " : " · البداية (UTC): ")
-                    + subscription.StartsAt.ToString("yyyy-MM-dd HH:mm")
+                    + subscription.StartsAt.ToString(
+                        "yyyy-MM-dd HH:mm",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    )
                     + (en ? " · Ends (UTC): " : " · النهاية (UTC): ")
-                    + subscription.EndsAt.ToString("yyyy-MM-dd HH:mm");
+                    + subscription.EndsAt.ToString(
+                        "yyyy-MM-dd HH:mm",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
             }
             else if (
                 message.Kind == MemberMessageKind.Review

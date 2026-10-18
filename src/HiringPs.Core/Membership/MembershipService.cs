@@ -88,6 +88,8 @@ public sealed class MembershipService(HiringDb db)
         var order = await db
             .PaymentOrders.Include(x => x.PlanVersion)
             .SingleAsync(x => x.Id == orderId, ct);
+        if (order.GatewayEnvironment != db.ActivePaymentEnvironment)
+            throw new InvalidOperationException("PaymentEnvironmentMismatch");
         if (MembershipRules.Paid(order.State))
         {
             if (!manual && order.State == PaymentState.ManuallyApproved)
@@ -134,6 +136,7 @@ public sealed class MembershipService(HiringDb db)
                 UserId = owner,
                 PlanVersionId = order.PlanVersionId,
                 OrderId = order.Id,
+                GatewayEnvironment = order.GatewayEnvironment,
                 StartsAt = start,
                 EndsAt = start.AddDays(order.PlanVersion.Days),
             }
@@ -161,9 +164,17 @@ public sealed class MembershipService(HiringDb db)
                     + " · "
                     + MembershipRules.Money(order.AmountIls)
                     + (en ? " · Starts (UTC): " : " · البداية (UTC): ")
-                    + start.ToString("yyyy-MM-dd HH:mm")
+                    + start.ToString(
+                        "yyyy-MM-dd HH:mm",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    )
                     + (en ? " · Ends (UTC): " : " · النهاية (UTC): ")
-                    + start.AddDays(order.PlanVersion.Days).ToString("yyyy-MM-dd HH:mm"),
+                    + start
+                        .AddDays(order.PlanVersion.Days)
+                        .ToString(
+                            "yyyy-MM-dd HH:mm",
+                            System.Globalization.CultureInfo.InvariantCulture
+                        ),
             }
         );
         await db.SaveChangesAsync(ct);
@@ -203,6 +214,7 @@ public sealed class MembershipService(HiringDb db)
             {
                 UserId = userId,
                 PlanVersionId = versionId,
+                GatewayEnvironment = db.ActivePaymentEnvironment,
                 StartsAt = start,
                 EndsAt = start.AddDays(days),
             }

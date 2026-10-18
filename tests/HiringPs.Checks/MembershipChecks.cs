@@ -168,7 +168,10 @@ public static class MembershipChecks
         );
     }
 
-    public static async Task ShellAsync(bool preview = false)
+    public static async Task ShellAsync(
+        bool preview = false,
+        string environmentName = "Development"
+    )
     {
         var root = Path.GetFullPath("src/HiringPs.Web");
         var builder = WebApplication.CreateBuilder(
@@ -176,7 +179,7 @@ public static class MembershipChecks
             {
                 ApplicationName = typeof(HomeController).Assembly.FullName,
                 ContentRootPath = root,
-                EnvironmentName = "Development",
+                EnvironmentName = environmentName,
             }
         );
         builder.Logging.ClearProviders();
@@ -193,6 +196,11 @@ public static class MembershipChecks
         builder.Services.AddScoped<PaymentEvidenceStore>();
         builder.Services.AddScoped<PaymentReconciliation>();
         builder.Services.AddScoped<PaymentGatewayRegistry>();
+        builder.Services.AddSingleton<PaymentEnvironment>();
+        builder.Services.AddScoped<PaymentToolProbes>();
+        builder.Services.AddLahza();
+        builder.Services.AddJawwalPay();
+        builder.Services.AddScoped<WalletCheckoutService>();
         builder.Services.AddHttpClient<TelegramClient>().RemoveAllLoggers();
         builder
             .Services.AddIdentity<
@@ -272,6 +280,20 @@ public static class MembershipChecks
         app.UseAuthorization();
         app.MapSiteRoutes();
         await app.StartAsync();
+        await using (var paymentScope = app.Services.CreateAsyncScope())
+        {
+            var services = paymentScope.ServiceProvider;
+            Check(
+                services.GetRequiredService<WalletCheckoutService>() is not null,
+                "Wallet checkout dependency graph resolves without database access"
+            );
+            var expected = environmentName == "Development" ? "Sandbox" : "Production";
+            Check(
+                services.GetRequiredService<LahzaGateway>().Environment == expected
+                    && services.GetRequiredService<JawwalPayGateway>().Environment == expected,
+                "Both gateway clients receive the runtime payment environment through DI"
+            );
+        }
         if (preview)
         {
             await File.WriteAllTextAsync("/tmp/hiring-membership-shell-url", app.Urls.Single());
@@ -450,6 +472,40 @@ public static class MembershipChecks
             Check(
                 response.StatusCode == HttpStatusCode.Unauthorized,
                 "Webhook rejects missing/placeholder secret before database access"
+            );
+            response = await client.PostAsync(
+                origin + "/integrations/lahza/webhook",
+                new StringContent("{}")
+            );
+            Check(
+                response.StatusCode == HttpStatusCode.Unauthorized,
+                "Lahza webhook rejects placeholders without language redirect or SQL"
+            );
+            var callbackOrder = Guid.NewGuid();
+            foreach (var language in new[] { "ar", "en" })
+            {
+                response = await client.GetAsync(
+                    origin
+                        + "/integrations/lahza/return?reference="
+                        + LahzaGateway.Reference(callbackOrder)
+                        + "&lang="
+                        + language
+                );
+                Check(
+                    response.StatusCode == HttpStatusCode.Redirect
+                        && response.Headers.Location?.OriginalString
+                            == "/" + language + "/Member/Payments/Returned/" + callbackOrder,
+                    "Public Lahza callback preserves explicit "
+                        + language
+                        + " and navigates to protected member verification"
+                );
+            }
+            response = await client.GetAsync(
+                origin + "/integrations/lahza/return?reference=invalid&lang=en"
+            );
+            Check(
+                response.StatusCode == HttpStatusCode.BadRequest,
+                "HTTP callback rejects malformed reference"
             );
         }
         finally
