@@ -48,6 +48,10 @@ public sealed class ToolProbes(IConfiguration configuration)
         {
             return new(tool, ToolState.Problem, "CheckTimeout");
         }
+        catch (PdfToolFailureException ex)
+        {
+            return new(tool, ToolState.Problem, "ToolExecutionFailed", ex.Message.Truncate(1000));
+        }
         catch (ContentNeedsReviewException ex)
         {
             return new(

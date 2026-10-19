@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace HiringPs.Core;
 
+public sealed class PdfToolFailureException(string message) : ContentNeedsReviewException(message);
+
 // Run document tools directly, with bounded output and a deadline; never through a shell.
 public sealed class PdfTools(IConfiguration configuration)
 {
@@ -28,7 +30,34 @@ public sealed class PdfTools(IConfiguration configuration)
                 StandardErrorEncoding = Encoding.UTF8,
             },
         };
-        foreach (var argument in arguments)
+        var toolArguments = arguments.ToList();
+        var dataIndex = toolArguments.IndexOf("--tessdata-dir");
+        if (setting == "OcrExecutable" && dataIndex >= 0 && dataIndex + 1 < toolArguments.Count)
+        {
+            var dataPath = PdfToolPaths.Directory(toolArguments[dataIndex + 1]);
+            foreach (var language in new[] { "ara", "eng" })
+            {
+                var file = Path.Combine(dataPath, language + ".traineddata");
+                try
+                {
+                    using var stream = File.OpenRead(file);
+                    if (stream.Length == 0)
+                        throw new PdfToolFailureException($"Empty OCR language file: {file}");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    throw new PdfToolFailureException($"Cannot read OCR language file: {file} ({ex.GetType().Name}).");
+                }
+            }
+            if (OperatingSystem.IsWindows())
+            {
+                // Native Windows tools may not accept Unicode data paths. .NET sets
+                // the working directory through Unicode APIs; pass a relative path to Tesseract.
+                process.StartInfo.WorkingDirectory = dataPath;
+                toolArguments[dataIndex + 1] = ".";
+            }
+        }
+        foreach (var argument in toolArguments)
             process.StartInfo.ArgumentList.Add(argument);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var seconds = int.TryParse(configuration["Pdf:ProcessTimeoutSeconds"], out var configured)
@@ -49,9 +78,15 @@ public sealed class PdfTools(IConfiguration configuration)
                 pending.Remove(completed);
             }
             if (process.ExitCode != 0)
-                throw new ContentNeedsReviewException(
-                    $"PDF tool failed: {fallback} (exit {process.ExitCode}); inspect the PDF and tool installation."
+            {
+                // Only language listing is safe to expose: document processing output
+                // may contain private extracted text.
+                var diagnostic = setting == "OcrExecutable" && toolArguments.Contains("--list-langs")
+                    ? (await error).Trim().Truncate(650) : "";
+                throw new PdfToolFailureException(
+                    $"PDF tool failed: {fallback} (exit {process.ExitCode}). {diagnostic}".Trim()
                 );
+            }
             return await output + "\n" + await error;
         }
         catch (Win32Exception)
