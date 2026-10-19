@@ -1816,7 +1816,7 @@ footer {
 .preference-editor .member-reminders { align-items: start; }
 .member-reminders input { margin-block-start: .3rem; }
 [data-preference-editor][aria-busy="true"], [data-saved-results][aria-busy="true"] { opacity: .65; cursor: progress; }
-.listing-action.is-saved:disabled { opacity: 1; color: var(--accent); background: var(--soft); border-color: #94bbaa; cursor: default; filter: none; }
+.listing-action.is-saved:not(:hover):not(:focus-visible) { color: var(--accent); background: var(--soft); border-color: #94bbaa; }
 .save-feedback { flex-basis: 100%; color: var(--accent); font-size: .85rem; }
 .save-feedback.is-error { color: #9c2c2c; }
 @media (max-width: 900px) {
@@ -1908,3 +1908,6 @@ footer {
 .auth-provider form { margin: 0; }
 .auth-provider-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; width: 100%; min-height: 48px; border-radius: 12px; }
 .auth-provider-button .fa-google { width: 1.2em; height: 1.2em; }
+
+.preference-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-block-start: .85rem; }
+.preference-bulk-help { font-size: .85rem; line-height: 1.8; margin-block: .6rem; }

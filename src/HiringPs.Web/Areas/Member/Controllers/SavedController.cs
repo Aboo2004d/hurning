@@ -76,6 +76,23 @@ public class SavedController(HiringDb db, MembershipService membership) : Member
             : RedirectToAction(nameof(Index));
     }
 
+    // Card actions use the opportunity ID; the saved-list Remove action uses a saved-row ID.
+    [HttpPost]
+    public async Task<IActionResult> Unsave(long id, string? returnUrl, CancellationToken ct)
+    {
+        await Db
+            .SavedOpportunities.Where(x => x.UserId == MemberId && x.OpportunityId == id)
+            .ExecuteDeleteAsync(ct);
+        Response.Headers.CacheControl = "no-store";
+        if (Request.Headers["X-Member-Async"] == "true")
+            return Json(
+                new { saved = false, opportunityId = id.ToString(CultureInfo.InvariantCulture) }
+            );
+        return Url.IsLocalUrl(returnUrl)
+            ? LocalRedirect(returnUrl!)
+            : RedirectToAction(nameof(Index));
+    }
+
     [HttpPost]
     public async Task<IActionResult> Remove(long id, int page = 1, CancellationToken ct = default)
     {

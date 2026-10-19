@@ -21,32 +21,34 @@
             .filter(button => button.dataset.saveButton === id);
         if (!buttons.length || buttons.every(button => button.disabled)) return;
         const disabled = buttons.map(button => button.disabled);
+        const shouldSave = buttons[0].getAttribute("aria-pressed") !== "true";
+        const action = shouldSave ? buttons[0].dataset.saveAction : buttons[0].dataset.unsaveAction;
         busy.add(form);
         buttons.forEach(button => { button.disabled = true; button.setAttribute("aria-busy", "true"); });
         const feedback = [...document.querySelectorAll("[data-save-feedback]")]
             .filter(node => node.dataset.saveFeedback === id);
         feedback.forEach(node => { node.hidden = true; });
         try {
-            const response = await fetch(form.action, {
+            const response = await fetch(action, {
                 method: "POST", headers: { ...header, Accept: "application/json" }, body: data,
                 credentials: "same-origin", cache: "no-store",
             });
             if (!response.ok || response.redirected) throw new Error("Save unavailable");
             const result = await response.json();
-            if (result.saved !== true || String(result.opportunityId) !== id) throw new Error("Unexpected saved state");
+            if (result.saved !== shouldSave || String(result.opportunityId) !== id) throw new Error("Unexpected saved state");
             buttons.forEach(button => {
-                button.classList.add("is-saved");
-                button.setAttribute("aria-pressed", "true");
-                button.querySelector(".fa-solid").className = "fa-solid fa-check";
-                button.querySelector("[data-save-label]").textContent = button.dataset.savedText;
+                button.classList.toggle("is-saved", result.saved);
+                button.setAttribute("aria-pressed", String(result.saved));
+                button.formAction = result.saved ? button.dataset.unsaveAction : button.dataset.saveAction;
+                button.querySelector(".fa-solid").className = result.saved ? "fa-solid fa-trash-can" : "fa-solid fa-bookmark";
+                button.querySelector("[data-save-label]").textContent = result.saved ? button.dataset.unsaveText : button.dataset.saveText;
             });
             feedback.forEach(node => {
                 node.classList.remove("is-error");
-                node.textContent = buttons[0].dataset.savedText;
+                node.textContent = result.saved ? buttons[0].dataset.savedText : buttons[0].dataset.unsavedText;
                 node.hidden = false;
             });
         } catch {
-            buttons.forEach((button, index) => { button.disabled = disabled[index]; });
             feedback.forEach(node => {
                 node.classList.add("is-error");
                 node.textContent = buttons[0].dataset.saveError;
@@ -54,7 +56,10 @@
             });
         } finally {
             busy.delete(form);
-            buttons.forEach(button => button.removeAttribute("aria-busy"));
+            buttons.forEach((button, index) => {
+                button.disabled = disabled[index];
+                button.removeAttribute("aria-busy");
+            });
         }
     }
 

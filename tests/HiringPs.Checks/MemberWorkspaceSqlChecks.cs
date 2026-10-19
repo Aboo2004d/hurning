@@ -86,6 +86,7 @@ public static class MemberWorkspaceSqlChecks
             savedId = saved.Single().Id;
             var wrongOwner = Setup(new SavedController(db, new MembershipService(db)), other);
             await wrongOwner.Remove(savedId);
+            await wrongOwner.Unsave(opportunityId, null, default);
             Check(
                 await db.SavedOpportunities.AnyAsync(x => x.Id == savedId),
                 "Removing another member's saved row cannot delete it"
@@ -100,11 +101,43 @@ public static class MemberWorkspaceSqlChecks
             );
         }
 
+        await Save();
+        await using (var db = new HiringDb(options))
+        {
+            db.SavedOpportunities.Add(
+                new SavedOpportunity { UserId = other, OpportunityId = opportunityId }
+            );
+            await db.SaveChangesAsync();
+            var controller = Setup(new SavedController(db, new MembershipService(db)), owner);
+            var first = await controller.Unsave(opportunityId, null, default);
+            var repeated = await controller.Unsave(opportunityId, null, default);
+            Check(
+                first is JsonResult
+                    && repeated is JsonResult
+                    && !await db.SavedOpportunities.AnyAsync(x =>
+                        x.UserId == owner && x.OpportunityId == opportunityId
+                    )
+                    && await db.SavedOpportunities.AnyAsync(x =>
+                        x.UserId == other && x.OpportunityId == opportunityId
+                    ),
+                "Card unsave is idempotent and preserves another member's bookmark for the same opportunity"
+            );
+        }
+        await Save();
+        await using (var db = new HiringDb(options))
+            Check(
+                await db.SavedOpportunities.CountAsync(x =>
+                    x.UserId == owner && x.OpportunityId == opportunityId
+                ) == 1,
+                "Opportunity can be saved again after unsaving from its card"
+            );
+
         async Task<IActionResult?> Change(
             string? addCategory = null,
             string? removeCategory = null,
             string? addLocation = null,
-            string? removeLocation = null
+            string? removeLocation = null,
+            string? bulkAction = null
         )
         {
             await using var db = new HiringDb(options);
@@ -139,7 +172,8 @@ public static class MemberWorkspaceSqlChecks
                         removeCategory,
                         addLocation,
                         removeLocation,
-                        default
+                        default,
+                        bulkAction
                     );
                     return new ActionExecutedContext(action, [], controller) { Result = result };
                 }
@@ -188,6 +222,35 @@ public static class MemberWorkspaceSqlChecks
                 "Preference changes cannot alter a different member"
             );
         }
+        foreach (var field in new[] { "categories", "locations" })
+        {
+            var selected = (PartialViewResult)(await Change(bulkAction: "select-" + field))!;
+            var model = (PreferenceInput)selected.Model!;
+            Check(
+                field == "categories"
+                    ? !model.AvailableCategories.Except(model.Categories).Any()
+                    : !model.AvailableLocations.Except(model.Locations).Any(),
+                "Bulk select uses the server catalog for " + field
+            );
+            Check(
+                await Change(bulkAction: "clear-" + field) is PartialViewResult,
+                "Bulk clear saves " + field
+            );
+            await using var db = new HiringDb(options);
+            var pref = await db.MemberPreferences.SingleAsync(x => x.UserId == owner);
+            Check(
+                (field == "categories" ? pref.CategoriesJson : pref.LocationsJson) == "[]",
+                "Bulk clear persists an empty selected list for " + field
+            );
+        }
+        Check(
+            await Change(bulkAction: "unknown") is BadRequestResult,
+            "Unknown bulk preference action is rejected"
+        );
+        Check(
+            await Change(addCategory: category, bulkAction: "clear-categories") is BadRequestResult,
+            "Mixed bulk and individual preference mutations are rejected"
+        );
     }
 
     private static T Setup<T>(T controller, string owner)

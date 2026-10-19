@@ -1,8 +1,15 @@
 @model SaveButton
+@{
+    var saveAction = Url.Action("Add", "Saved", new { area = "Member" });
+    var unsaveAction = Url.Action("Unsave", "Saved", new { area = "Member" });
+}
 <button class="button button-outline listing-action @(Model.Saved ? "is-saved" : "")" type="submit" form="@Model.FormId"
-        data-save-button="@Model.OpportunityId" data-saved-text="@T["OpportunitySaved"]"
-        data-save-error="@T["SaveOpportunityFailed"]" aria-pressed="@(Model.Saved ? "true" : "false")" disabled="@Model.Saved">
-    <span class="fa-solid @(Model.Saved ? "fa-check" : "fa-bookmark")" aria-hidden="true"></span>
-    <span data-save-label>@T[Model.Saved ? "OpportunitySaved" : "SaveOpportunity"]</span>
+        formaction="@(Model.Saved ? unsaveAction : saveAction)"
+        data-save-button="@Model.OpportunityId" data-save-action="@saveAction" data-unsave-action="@unsaveAction"
+        data-save-text="@T["SaveOpportunity"]" data-unsave-text="@T["UnsaveOpportunity"]"
+        data-saved-text="@T["OpportunitySaved"]" data-unsaved-text="@T["OpportunityUnsaved"]"
+        data-save-error="@T["SaveOpportunityFailed"]" aria-pressed="@(Model.Saved ? "true" : "false")">
+    <span class="fa-solid @(Model.Saved ? "fa-trash-can" : "fa-bookmark")" aria-hidden="true"></span>
+    <span data-save-label>@T[Model.Saved ? "UnsaveOpportunity" : "SaveOpportunity"]</span>
 </button>
 <span class="save-feedback" data-save-feedback="@Model.OpportunityId" role="status" hidden></span>

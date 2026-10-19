@@ -2755,7 +2755,7 @@
     <value>Saved</value>
   </data>
   <data name="SaveOpportunityFailed" xml:space="preserve">
-    <value>Could not save this opportunity. Check that you are signed in and try again.</value>
+    <value>Could not confirm the saved status update. Please try again.</value>
   </data>
   <data name="PreferenceCardsAdvice" xml:space="preserve">
     <value>Add or remove categories and locations using the cards. Changes are saved without leaving this page.</value>
@@ -2988,4 +2988,9 @@
   <data name="GoogleReopenForm"><value>Reopen account completion form</value></data>
   <data name="VerificationBotHelp"><value>Open the bot and follow the instructions to receive your verification code, then enter it here.</value></data>
   <data name="ContinueVia"><value>Or continue with</value></data>
+  <data name="UnsaveOpportunity"><value>Unsave opportunity</value></data>
+  <data name="OpportunityUnsaved"><value>Opportunity removed from saved.</value></data>
+  <data name="SelectAllPreferences"><value>Select all</value></data>
+  <data name="ClearAllPreferences"><value>Clear all</value></data>
+  <data name="EmptyPreferencesMeansAll"><value>Leaving this list empty includes all options without restricting alerts by this preference.</value></data>
 </root>

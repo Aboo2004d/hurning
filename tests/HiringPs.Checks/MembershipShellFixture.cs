@@ -148,7 +148,8 @@ public class MemberShellFixtureController : Controller
         string? addCategory,
         string? removeCategory,
         string? addLocation,
-        string? removeLocation
+        string? removeLocation,
+        string? bulkAction = null
     )
     {
         if (HttpMethods.IsGet(Request.Method))
@@ -167,6 +168,28 @@ public class MemberShellFixtureController : Controller
             input.Locations = input.Locations.Append(addLocation).Distinct().ToArray();
         if (removeLocation is not null)
             input.Locations = input.Locations.Where(x => x != removeLocation).ToArray();
+        switch (bulkAction)
+        {
+            case "select-categories":
+                input.Categories = input
+                    .Categories.Concat(input.AvailableCategories)
+                    .Distinct()
+                    .ToArray();
+                break;
+            case "clear-categories":
+                input.Categories = [];
+                break;
+            case "select-locations":
+                input.Locations = input
+                    .Locations.Concat(input.AvailableLocations)
+                    .Distinct()
+                    .ToArray();
+                break;
+            case "clear-locations":
+                input.Locations = [];
+                break;
+        }
+
         return Request.Headers["X-Member-Async"] == "true"
             ? PartialView("/Areas/Member/Views/Preferences/_PreferenceEditor.cshtml", input)
             : View("/Areas/Member/Views/Preferences/Index.cshtml", input);

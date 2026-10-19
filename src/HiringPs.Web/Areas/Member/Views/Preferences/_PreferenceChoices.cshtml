@@ -2,6 +2,7 @@
 @{
     var available = Model.Available.Except(Model.Selected).ToArray();
     var addName = Model.Field == "Categories" ? "addCategory" : "addLocation";
+    var group = Model.Field == "Categories" ? "categories" : "locations";
     var removeName = Model.Field == "Categories" ? "removeCategory" : "removeLocation";
 }
 <section class="preference-group" aria-labelledby="preference-@Model.Field">
@@ -9,6 +10,15 @@
         <h2 id="preference-@Model.Field">@T[Model.LabelKey]</h2>
         <span class="badge">@Model.Selected.Length @T["SelectedPreferences"]</span>
     </div>
+    <div class="preference-bulk-actions">
+        <button class="button button-outline member-action" type="submit" name="bulkAction" value="select-@group" disabled="@(available.Length == 0)">
+            <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["SelectAllPreferences"]</span>
+        </button>
+        <button class="button button-outline member-action" type="submit" name="bulkAction" value="clear-@group" disabled="@(Model.Selected.Length == 0)">
+            <span class="fa-solid fa-trash-can" aria-hidden="true"></span><span>@T["ClearAllPreferences"]</span>
+        </button>
+    </div>
+    <p class="muted preference-bulk-help">@T["EmptyPreferencesMeansAll"]</p>
     <div class="preference-chips" data-preference-selected="@Model.Field">
         @foreach (var value in Model.Selected)
         {

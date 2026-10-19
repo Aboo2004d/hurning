@@ -69,7 +69,8 @@ public class PreferencesController(HiringDb db) : MemberControllerBase(db)
         string? removeCategory,
         string? addLocation,
         string? removeLocation,
-        CancellationToken ct
+        CancellationToken ct,
+        string? bulkAction = null
     )
     {
         var pref = await Db.MemberPreferences.SingleAsync(x => x.UserId == MemberId, ct);
@@ -77,8 +78,8 @@ public class PreferencesController(HiringDb db) : MemberControllerBase(db)
         var priorLocations = JsonSerializer.Deserialize<string[]>(pref.LocationsJson) ?? [];
         await FillAsync(input, ct);
         if (
-            new[] { addCategory, removeCategory, addLocation, removeLocation }.Count(x =>
-                x is not null
+            new[] { addCategory, removeCategory, addLocation, removeLocation, bulkAction }.Count(
+                x => x is not null
             ) > 1
         )
             return BadRequest();
@@ -98,6 +99,31 @@ public class PreferencesController(HiringDb db) : MemberControllerBase(db)
         }
         if (removeLocation is not null)
             input.Locations = input.Locations.Where(x => x != removeLocation).ToArray();
+        switch (bulkAction)
+        {
+            case null:
+                break;
+            case "select-categories":
+                input.Categories = input
+                    .Categories.Concat(input.AvailableCategories)
+                    .Distinct()
+                    .ToArray();
+                break;
+            case "clear-categories":
+                input.Categories = [];
+                break;
+            case "select-locations":
+                input.Locations = input
+                    .Locations.Concat(input.AvailableLocations)
+                    .Distinct()
+                    .ToArray();
+                break;
+            case "clear-locations":
+                input.Locations = [];
+                break;
+            default:
+                return BadRequest();
+        }
         // Keep previously chosen values removable even if the source catalog no longer lists them.
         if (
             !ModelState.IsValid

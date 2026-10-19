@@ -2755,7 +2755,7 @@
     <value>محفوظة</value>
   </data>
   <data name="SaveOpportunityFailed" xml:space="preserve">
-    <value>تعذّر حفظ الفرصة. تأكد من تسجيل الدخول وحاول مجددًا.</value>
+    <value>تعذّر تأكيد تحديث حفظ الفرصة. حاول مجددًا.</value>
   </data>
   <data name="PreferenceCardsAdvice" xml:space="preserve">
     <value>أضف الفئات والأماكن أو أزلها من البطاقات. تُحفظ التغييرات دون مغادرة الصفحة.</value>
@@ -2988,4 +2988,9 @@
   <data name="GoogleReopenForm"><value>إعادة فتح نموذج إكمال الحساب</value></data>
   <data name="VerificationBotHelp"><value>افتح البوت واتبع التعليمات لاستلام رمز التحقق، ثم أدخله هنا.</value></data>
   <data name="ContinueVia"><value>أو المتابعة عبر</value></data>
+  <data name="UnsaveOpportunity"><value>إلغاء الحفظ</value></data>
+  <data name="OpportunityUnsaved"><value>أُلغي حفظ الفرصة.</value></data>
+  <data name="SelectAllPreferences"><value>تحديد الكل</value></data>
+  <data name="ClearAllPreferences"><value>إزالة الكل</value></data>
+  <data name="EmptyPreferencesMeansAll"><value>ترك هذه القائمة فارغة يعني استقبال جميع الخيارات دون تقييد بها.</value></data>
 </root>
