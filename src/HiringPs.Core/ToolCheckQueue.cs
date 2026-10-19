@@ -137,7 +137,7 @@ public static class ToolCheckQueue
                         ? new(key, ToolState.Problem, "AiInvalidResponse")
                         : new(key, ToolState.Ready, "AiResponded");
                 }
-                else if (key is "GoogleLogin" or "Facebook" or "LinkedIn")
+                else if (key is "GoogleLogin" or "Facebook" or "LinkedIn" or "LinkedInPersonal")
                     result = await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<SocialPublishing>(services).ProbeAsync(key, ct);
                 else if (key is "LahzaPayment" or "JawwalPayPayment")
                     result = await Microsoft

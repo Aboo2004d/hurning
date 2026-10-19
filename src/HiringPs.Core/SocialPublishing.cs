@@ -41,7 +41,17 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
     IDataProtectionProvider protection, IHttpClientFactory clients, ILogger<SocialPublishing>? logger = null)
 {
     private readonly IDataProtector protector = protection.CreateProtector("HiringPs.SocialToken.v1");
-    public static bool IsProvider(string provider) => provider is "Facebook" or "LinkedIn";
+    public static bool IsProvider(string provider) => provider is "Facebook" or "LinkedIn" or "LinkedInPersonal";
+    public static bool IsLinkedIn(string provider) => provider is "LinkedIn" or "LinkedInPersonal";
+    public static string TemplateProvider(string provider) => provider == "LinkedInPersonal" ? "LinkedIn" : provider;
+    public static string LinkedInSetting(IConfiguration config, string provider, string name) =>
+        config[$"Integrations:{provider}:{name}"] ?? config[$"Integrations:LinkedIn:{name}"] ?? "";
+    private string RequiredLinkedIn(string provider, string name)
+    {
+        var value = LinkedInSetting(config, provider, name);
+        return !string.IsNullOrWhiteSpace(value) && value != "***" ? value
+            : throw new InvalidOperationException("IntegrationNotConfigured");
+    }
     public string Protect(string token) => protector.Protect(token);
     public static bool Eligible(Opportunity item, DateOnly today) =>
         item.Status == PublicationStatus.Published && (item.Deadline is null || item.Deadline >= today) && string.IsNullOrWhiteSpace(item.ClosureEvidence);
@@ -66,13 +76,13 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         }
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
     }
-    private HttpRequestMessage Request(string url, string token)
+    private HttpRequestMessage Request(string url, string token, string provider = "LinkedIn")
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        if (url.StartsWith("https://api.linkedin.com/"))
+        if (url.StartsWith("https://api.linkedin.com/rest/"))
         {
-            request.Headers.Add("LinkedIn-Version", Required("Integrations:LinkedIn:ApiVersion"));
+            request.Headers.Add("LinkedIn-Version", RequiredLinkedIn(provider, "ApiVersion"));
             request.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
         }
         return request;
@@ -111,6 +121,32 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         using var orgRequest = Request("https://api.linkedin.com/rest/organizations/" + pageId, token);
         using var org = await ReadAsync(orgRequest, ct);
         return (token, org.RootElement.GetProperty("localizedName").GetString() ?? pageId);
+    }
+    public async Task<(string Id, string Name)> ResolvePersonalAsync(string token, CancellationToken ct)
+    {
+        using var request = Request("https://api.linkedin.com/v2/userinfo", token);
+        using var response = await ReadAsync(request, ct);
+        var profile = response.RootElement;
+        var id = profile.GetProperty("sub").GetString() ?? "";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(id, "^[A-Za-z0-9_-]{1,100}$"))
+            throw new InvalidOperationException("IntegrationPageInvalid");
+        return (id, profile.TryGetProperty("name", out var name) ? name.GetString() ?? id : id);
+    }
+    public async Task ValidateLinkedInGrantAsync(string provider, string token, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://www.linkedin.com/oauth/v2/introspectToken")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["token"] = token, ["client_id"] = RequiredLinkedIn(provider, "ClientId"),
+                ["client_secret"] = RequiredLinkedIn(provider, "ClientSecret")
+            })
+        };
+        using var grant = await ReadAsync(request, ct);
+        var permission = provider == "LinkedInPersonal" ? "w_member_social" : "w_organization_social";
+        if (!grant.RootElement.GetProperty("active").GetBoolean()
+            || !grant.RootElement.GetProperty("scope").GetString()!.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries).Contains(permission))
+            throw new InvalidOperationException("IntegrationPermissionMissing");
     }
     private async Task ValidateFacebookPageTokenAsync(string pageId, string token, CancellationToken ct)
     {
@@ -157,6 +193,7 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         if (connection is null) return new(provider, ToolState.NotConfigured, "IntegrationNotConfigured");
         try
         {
+            if (!connection.Enabled) return new(provider, ToolState.Disabled, "IntegrationDisabled");
             if (connection.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException("IntegrationExpired");
             var token = protector.Unprotect(connection.ProtectedToken);
             if (provider == "Facebook")
@@ -174,13 +211,15 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
             }
             else
             {
-                await ResolvePageAsync(provider, connection.PageId, token, ct);
-                using var introspect = new HttpRequestMessage(HttpMethod.Post, "https://www.linkedin.com/oauth/v2/introspectToken")
-                { Content = new FormUrlEncodedContent(new Dictionary<string,string> { ["token"] = token, ["client_id"] = Required("Integrations:LinkedIn:ClientId"), ["client_secret"] = Required("Integrations:LinkedIn:ClientSecret") }) };
-                using var grant = await ReadAsync(introspect, ct);
-                if (!grant.RootElement.GetProperty("active").GetBoolean() || !grant.RootElement.GetProperty("scope").GetString()!.Split(',', ' ').Contains("w_organization_social")) throw new InvalidOperationException("IntegrationPermissionMissing");
+                if (provider == "LinkedInPersonal")
+                {
+                    var profile = await ResolvePersonalAsync(token, ct);
+                    if (profile.Id != connection.PageId) throw new InvalidOperationException("IntegrationPageInvalid");
+                }
+                else await ResolvePageAsync(provider, connection.PageId, token, ct);
+                await ValidateLinkedInGrantAsync(provider, token, ct);
             }
-            return new(provider, ToolState.Ready, "IntegrationPageReady", connection.PageName + " · " + connection.PageId);
+            return new(provider, ToolState.Ready, provider == "LinkedInPersonal" ? "IntegrationPersonalReady" : "IntegrationPageReady", connection.PageName + " · " + connection.PageId);
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or JsonException or KeyNotFoundException or System.Security.Cryptography.CryptographicException)
         { return new(provider, ToolState.Problem, ex is InvalidOperationException ? ex.Message : "IntegrationUnavailable", connection.PageName + " · " + connection.PageId); }
@@ -188,14 +227,15 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
     public async Task PublishAsync(SocialPublication attempt, CancellationToken ct)
     {
         var connection = await db.SocialConnections.AsNoTracking().SingleAsync(x => x.Provider == attempt.Provider, ct);
+        if (!connection.Enabled) throw new InvalidOperationException("IntegrationDisabled");
         if (connection.PageId != attempt.PageId) throw new InvalidOperationException("IntegrationPageInvalid");
         if (connection.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException("IntegrationExpired");
         var token = protector.Unprotect(connection.ProtectedToken);
-        using var request = Request(attempt.Provider == "Facebook" ? FacebookRoot + "/" + connection.PageId + "/feed" : "https://api.linkedin.com/rest/posts", token);
+        using var request = Request(attempt.Provider == "Facebook" ? FacebookRoot + "/" + connection.PageId + "/feed" : "https://api.linkedin.com/rest/posts", token, attempt.Provider);
         request.Method = HttpMethod.Post;
         request.Content = attempt.Provider == "Facebook"
             ? new FormUrlEncodedContent(new Dictionary<string,string> { ["message"] = attempt.Text })
-            : JsonContent.Create(new { author = "urn:li:organization:" + connection.PageId, commentary = attempt.Text,
+            : JsonContent.Create(new { author = (attempt.Provider == "LinkedInPersonal" ? "urn:li:person:" : "urn:li:organization:") + connection.PageId, commentary = attempt.Text,
                 visibility = "PUBLIC", distribution = new { feedDistribution = "MAIN_FEED", targetEntities = Array.Empty<object>(), thirdPartyDistributionChannels = Array.Empty<object>() }, lifecycleState = "PUBLISHED", isReshareDisabledByAuthor = false });
         using var response = await Client().SendAsync(request, ct);
         if (!response.IsSuccessStatusCode)

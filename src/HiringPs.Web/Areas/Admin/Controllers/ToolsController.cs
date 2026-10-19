@@ -96,6 +96,7 @@ public class ToolsController : AdminControllerBase
         "GoogleLogin" => QueueToolCheckAsync(ToolCheckKind.GoogleLogin, ct),
         "Facebook" => QueueToolCheckAsync(ToolCheckKind.Facebook, ct),
         "LinkedIn" => QueueToolCheckAsync(ToolCheckKind.LinkedIn, ct),
+        "LinkedInPersonal" => QueueToolCheckAsync(ToolCheckKind.LinkedInPersonal, ct),
         _ => Task.FromResult<IActionResult>(BadRequest())
     };
 

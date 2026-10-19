@@ -132,7 +132,7 @@
             } else {
             <form asp-controller="Tools" asp-action="CheckTool" method="get" data-tool-check><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             }
-            @if (key is "GoogleLogin" or "Facebook" or "LinkedIn") {
+            @if (key is "GoogleLogin" or "Facebook" or "LinkedIn" or "LinkedInPersonal") {
                 <a class="button button-outline" asp-controller="Integrations" asp-action="Index" asp-fragment="@(key == "GoogleLogin" ? "google-integration" : key.ToLowerInvariant() + "-integration")">@T["IntegrationSettings"]</a>
             }
             </div>

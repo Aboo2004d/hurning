@@ -28,28 +28,34 @@
     </div>
     <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Authentication:Google:ClientId<br />Authentication:Google:ClientSecret</code><p>@T["IntegrationCallback"]</p><code>@origin/signin-google</code></details>
 </section>
-@foreach(var provider in new[] { "Facebook", "LinkedIn" })
+@foreach(var provider in new[] { "Facebook", "LinkedIn", "LinkedInPersonal" })
 {
     var connection = Model.SingleOrDefault(x => x.Provider == provider);
     var configured = await Schemes.GetSchemeAsync("Publish" + provider) is not null;
     var expired = connection?.ExpiresAt <= DateTimeOffset.UtcNow;
     var connected = connection is not null && !expired;
     <section class="tool-card integration-card" id="@(provider.ToLowerInvariant())-integration">
-        <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true">@(provider == "Facebook" ? "f" : "in")</span><div><h2>@provider</h2><p class="muted">@T["SocialIntegrationPurpose"]</p></div></header>
+        <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true">@(provider == "Facebook" ? "f" : "in")</span><div><h2>@T["SocialDestination_" + provider]</h2><p class="muted">@T["SocialIntegrationPurpose"]</p></div></header>
         <span class="tool-status @(connected ? "tool-ready" : expired ? "tool-problem" : "tool-neutral")">@(connected ? T["IntegrationConnectedLabel"] : expired ? T["IntegrationExpiredLabel"] : T["IntegrationDisconnectedLabel"])</span>
         @if(connection is not null) {
-            <dl class="integration-facts"><dt>@T["IntegrationPageName"]</dt><dd>@connection.PageName</dd><dt>@T["IntegrationPageId"]</dt><dd><bdi>@connection.PageId</bdi></dd><dt>@T["IntegrationLinkedAt"]</dt><dd><bdi>@TimeZoneInfo.ConvertTime(connection.ConnectedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></dd></dl>
+            <dl class="integration-facts"><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountName" : "IntegrationPageName"]</dt><dd>@connection.PageName</dd><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountId" : "IntegrationPageId"]</dt><dd><bdi>@connection.PageId</bdi></dd><dt>@T["IntegrationLinkedAt"]</dt><dd><bdi>@TimeZoneInfo.ConvertTime(connection.ConnectedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></dd></dl>
         }
         @if(!configured) { <p class="notice">@T["IntegrationNotConfigured"]</p> }
         <form asp-action="Connect" method="post" class="integration-connect-form">
             <input type="hidden" name="provider" value="@provider" />
-            <label>@T["IntegrationPageId"]<input name="pageId" value="@connection?.PageId" pattern="[0-9]{1,40}" required dir="ltr" inputmode="numeric" autocomplete="off" /></label>
+            @if (provider != "LinkedInPersonal") {
+                <label>@T["IntegrationPageId"]<input name="pageId" value="@connection?.PageId" pattern="[0-9]{1,40}" required dir="ltr" inputmode="numeric" autocomplete="off" /></label>
+            } else {
+                <p class="muted">@T["LinkedInPersonalConnectHelp"]</p>
+            }
             <button type="submit" disabled="@(!configured)">@T["IntegrationConnect"]</button>
         </form>
         @if(connection is not null) {
             <form asp-action="Disconnect" method="post" class="integration-disconnect-form"><input type="hidden" name="provider" value="@provider" /><button type="submit" class="button-outline">@T["IntegrationDisconnect"]</button></form>
         }
-        <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Integrations:@provider:ClientId<br />Integrations:@provider:ClientSecret<br />Integrations:@provider:ApiVersion</code><p>@T["IntegrationCallback"]</p><code>@origin/integrations/@provider.ToLowerInvariant()/callback</code></details>
+        <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Integrations:@provider:ClientId<br />Integrations:@provider:ClientSecret<br />Integrations:@provider:ApiVersion</code>
+            @if (provider == "LinkedInPersonal") { <p>@T["LinkedInPersonalSetupHelp"]</p> }
+            <p>@T["IntegrationCallback"]</p><code>@origin/integrations/@provider.ToLowerInvariant()/callback</code></details>
     </section>
 }
 </div>

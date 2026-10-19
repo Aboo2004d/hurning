@@ -21,6 +21,7 @@ public enum ToolCheckKind
     PdfPipeline,
     LahzaPayment,
     JawwalPayPayment,
+    LinkedInPersonal,
 }
 
 public enum ToolRequestStatus
@@ -177,6 +178,7 @@ public static class ToolMonitoringRules
         "GoogleLogin",
         "Facebook",
         "LinkedIn",
+        "LinkedInPersonal",
     ];
 
     public static bool WorkerFresh(ToolWorkerState? worker, DateTimeOffset now) =>

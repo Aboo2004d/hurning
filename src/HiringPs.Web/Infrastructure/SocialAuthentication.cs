@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using HiringPs.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 
@@ -24,10 +25,10 @@ public static class SocialAuthentication
             options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
             options.Cookie.SameSite = SameSiteMode.Lax;
         });
-        foreach (var provider in new[] { "Facebook", "LinkedIn" })
+        foreach (var provider in new[] { "Facebook", "LinkedIn", "LinkedInPersonal" })
         {
-            var id = config[$"Integrations:{provider}:ClientId"];
-            var secret = config[$"Integrations:{provider}:ClientSecret"];
+            var id = SocialPublishing.IsLinkedIn(provider) ? SocialPublishing.LinkedInSetting(config, provider, "ClientId") : config[$"Integrations:{provider}:ClientId"];
+            var secret = SocialPublishing.IsLinkedIn(provider) ? SocialPublishing.LinkedInSetting(config, provider, "ClientSecret") : config[$"Integrations:{provider}:ClientSecret"];
             if (string.IsNullOrWhiteSpace(id) || id == "***" || string.IsNullOrWhiteSpace(secret) || secret == "***") continue;
             builder.AddOAuth("Publish" + provider, options =>
             {
@@ -39,7 +40,9 @@ public static class SocialAuthentication
                 options.SaveTokens = true;
                 options.Backchannel = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
                 options.Scope.Clear();
-                foreach (var scope in provider == "Facebook" ? new[] { "pages_show_list", "pages_read_engagement", "pages_manage_posts" } : new[] { "rw_organization_admin", "w_organization_social" }) options.Scope.Add(scope);
+                foreach (var scope in provider == "Facebook" ? new[] { "pages_show_list", "pages_read_engagement", "pages_manage_posts" }
+                    : provider == "LinkedInPersonal" ? new[] { "openid", "profile", "w_member_social" }
+                    : new[] { "rw_organization_admin", "w_organization_social" }) options.Scope.Add(scope);
                 options.Events.OnCreatingTicket = context =>
                 {
                     // Preserve a distinct, short-lived OAuth ticket; never replace the admin login.

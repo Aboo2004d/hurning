@@ -2647,7 +2647,7 @@
     <value>صفحة فيسبوك</value>
   </data>
   <data name="Tool_LinkedIn">
-    <value>صفحة لينكدإن</value>
+    <value>LinkedIn — صفحة المؤسسة</value>
   </data>
   <data name="Close">
     <value>إغلاق</value>
@@ -3016,4 +3016,17 @@
   <data name="Date" xml:space="preserve"><value>التاريخ</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>معاينة نص هذا الإصدار في المحرر</value></data>
   <data name="ToolsFetchFailed" xml:space="preserve"><value>تعذر تأكيد الطلب أو تحديث النتائج. راجع سجل طلبات الفحص أو حدّث النتائج يدويًا قبل إعادة المحاولة.</value></data>
+  <data name="SocialDestination_Facebook"><value>صفحة فيسبوك</value></data>
+  <data name="SocialDestination_LinkedIn"><value>LinkedIn — صفحة المؤسسة</value></data>
+  <data name="SocialDestination_LinkedInPersonal"><value>LinkedIn — الحساب الشخصي</value></data>
+  <data name="Tool_LinkedInPersonal"><value>LinkedIn — الحساب الشخصي</value></data>
+  <data name="ToolKind_LinkedInPersonal"><value>فحص حساب LinkedIn الشخصي</value></data>
+  <data name="SocialDestinations"><value>وجهات النشر — يمكنك اختيار الوجهتين</value></data>
+  <data name="SocialDestinationRequired"><value>اختر وجهة نشر مرتبطة واحدة على الأقل.</value></data>
+  <data name="SocialAlreadyProcessed"><value>تم التعامل مع طلب النشر سابقًا؛ راجع سجل النشر لهذه الوجهة.</value></data>
+  <data name="LinkedInPersonalConnectHelp"><value>فوّض حسابك الشخصي؛ تُقرأ هويته من LinkedIn تلقائيًا، ولا تحتاج إلى معرف صفحة مؤسسة.</value></data>
+  <data name="LinkedInPersonalSetupHelp"><value>فعّل Share on LinkedIn وSign In with LinkedIn using OpenID Connect. الصلاحيات المطلوبة: openid، profile، w_member_social. إذا لم يُضبط قسم LinkedInPersonal، تُستخدم إعدادات LinkedIn نفسها.</value></data>
+  <data name="ToolCode_IntegrationPersonalReady"><value>تم التحقق من هوية الحساب الشخصي وصلاحية رمز الوصول والنشر. لم ينشر أي محتوى.</value></data>
+  <data name="IntegrationAccountName"><value>اسم الحساب</value></data>
+  <data name="IntegrationAccountId"><value>معرّف الحساب</value></data>
 </root>

@@ -5,8 +5,11 @@ var item = Model.Opportunity!;
 <section class="social-composer" data-social-compose>
 <header class="social-composer-heading">
     <span class="social-provider-mark" aria-hidden="true"><span class="fa-solid @(Model.Provider == "Facebook" ? "fa-facebook-f" : "fa-linkedin-in")"></span></span>
-    <div><h2>@T["SocialCompose"] · <bdi>@Model.Provider</bdi></h2><p dir="auto">@item.Title</p></div>
+    <div><h2>@T["SocialCompose"] · <bdi>@(SocialPublishing.IsLinkedIn(Model.Provider) ? "LinkedIn" : Model.Provider)</bdi></h2><p dir="auto">@item.Title</p></div>
 </header>
+@foreach (var result in Model.PublishResults) {
+    <p class="notice" role="status">@T["SocialDestination_" + result.Key]: @T[result.Value]</p>
+}
 <form asp-controller="Social" asp-action="Publish" method="post">
 <p class="muted">@T["TemplateVersion"] @Model.TemplateNumber <a asp-controller="SocialTemplates" asp-action="Index">@T["SocialTemplates"]</a></p>
 <input type="hidden" name="TemplateVersionId" value="@Model.TemplateVersionId" />
@@ -14,14 +17,24 @@ var item = Model.Opportunity!;
 <input type="hidden" name="OpportunityId" value="@Model.OpportunityId" />
 <input type="hidden" name="Provider" value="@Model.Provider" />
 
-<label class="social-preview">@T["SocialPreview"]<textarea name="Text" data-social-text rows="12" dir="auto" required maxlength="@(Model.Provider == "LinkedIn" ? 2800 : 50000)">@Model.Text</textarea></label>
+@if (SocialPublishing.IsLinkedIn(Model.Provider)) {
+    <fieldset data-social-targets data-required-message="@T["SocialDestinationRequired"]"><legend>@T["SocialDestinations"]</legend>
+    @foreach (var target in new[] { "LinkedIn", "LinkedInPersonal" }) {
+        var connection = Model.Destinations.SingleOrDefault(x => x.Provider == target);
+        var available = connection is not null && connection.Enabled && !(connection.ExpiresAt <= DateTimeOffset.UtcNow);
+        <label><input type="checkbox" name="Targets" value="@target" disabled="@(!available)" checked="@(available && target == Model.Provider)" />@T["SocialDestination_" + target] @(connection is not null ? " · " + connection.PageName : "")</label>
+        @if (!available) { <a asp-controller="Integrations" asp-action="Index" asp-fragment="@(target.ToLowerInvariant())-integration">@T["IntegrationSettings"]</a> }
+    }
+    </fieldset>
+}
+<label class="social-preview">@T["SocialPreview"]<textarea name="Text" data-social-text rows="12" dir="auto" required maxlength="@(SocialPublishing.IsLinkedIn(Model.Provider) ? 2800 : 50000)">@Model.Text</textarea></label>
 <p class="social-canonical-link" dir="ltr"><a href="@Model.Link" target="_blank" rel="noopener">@Model.Link</a></p>
 @if(Model.PreviouslyPublished) { <label class="notice social-repeat"><input type="checkbox" name="ConfirmRepeat" value="true" required />@T["SocialRepeatRequired"]</label> }
-<div class="social-compose-actions"><button type="submit" class="admin-action"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["SocialPublish"] <bdi>@Model.Provider</bdi></button></div>
+<div class="social-compose-actions"><button type="submit" class="admin-action"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["SocialPublish"] <bdi>@(SocialPublishing.IsLinkedIn(Model.Provider) ? "LinkedIn" : Model.Provider)</bdi></button></div>
 </form>
 @if(Model.History.Count > 0) {
 <section class="social-history"><h3>@T["SocialHistory"]</h3><ul>
-@foreach(var post in Model.History) { <li><bdi>@TimeZoneInfo.ConvertTime(post.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi> · @T["Social" + post.Status] @if(!string.IsNullOrEmpty(post.Url)){<a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a>}</li> }
+@foreach(var post in Model.History) { <li>@T["SocialDestination_" + post.Provider] · <bdi>@TimeZoneInfo.ConvertTime(post.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi> · @T["Social" + post.Status] @if(!string.IsNullOrEmpty(post.Url)){<a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a>}</li> }
 </ul></section>
 }
 </section>

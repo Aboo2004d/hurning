@@ -103,6 +103,7 @@ public sealed class SocialTemplates(HiringDb db)
         CancellationToken ct
     )
     {
+        provider = SocialPublishing.TemplateProvider(provider);
         var scope = kind.ToString();
         return await db
                 .SocialTemplateVersions.AsNoTracking()

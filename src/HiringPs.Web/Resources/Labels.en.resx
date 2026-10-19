@@ -2647,7 +2647,7 @@
     <value>Facebook page</value>
   </data>
   <data name="Tool_LinkedIn">
-    <value>LinkedIn page</value>
+    <value>LinkedIn — organization page</value>
   </data>
   <data name="Close">
     <value>Close</value>
@@ -3016,4 +3016,17 @@
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>Load this version into the preview editor</value></data>
   <data name="ToolsFetchFailed" xml:space="preserve"><value>Could not confirm the request or refresh results. Check the request history or refresh results manually before retrying.</value></data>
+  <data name="SocialDestination_Facebook"><value>Facebook page</value></data>
+  <data name="SocialDestination_LinkedIn"><value>LinkedIn — organization page</value></data>
+  <data name="SocialDestination_LinkedInPersonal"><value>LinkedIn — personal account</value></data>
+  <data name="Tool_LinkedInPersonal"><value>LinkedIn — personal account</value></data>
+  <data name="ToolKind_LinkedInPersonal"><value>LinkedIn personal account check</value></data>
+  <data name="SocialDestinations"><value>Publishing destinations — you may select both</value></data>
+  <data name="SocialDestinationRequired"><value>Select at least one connected publishing destination.</value></data>
+  <data name="SocialAlreadyProcessed"><value>This publishing request was already handled; check this destination's publication history.</value></data>
+  <data name="LinkedInPersonalConnectHelp"><value>Authorize your personal account. Its identity is read from LinkedIn automatically; no organization page ID is needed.</value></data>
+  <data name="LinkedInPersonalSetupHelp"><value>Enable Share on LinkedIn and Sign In with LinkedIn using OpenID Connect. Required scopes: openid, profile, w_member_social. When LinkedInPersonal is absent, the LinkedIn settings are reused.</value></data>
+  <data name="ToolCode_IntegrationPersonalReady"><value>Personal account identity, token and publishing permission verified. No content was published.</value></data>
+  <data name="IntegrationAccountName"><value>Account name</value></data>
+  <data name="IntegrationAccountId"><value>Account ID</value></data>
 </root>

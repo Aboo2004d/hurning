@@ -64,13 +64,13 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
         return RedirectToAction(nameof(Index));
     }
     [HttpPost]
-    public async Task<IActionResult> Connect(string provider, string pageId)
+    public async Task<IActionResult> Connect(string provider, string? pageId = null)
     {
-        if (!SocialPublishing.IsProvider(provider) || !System.Text.RegularExpressions.Regex.IsMatch(pageId ?? "", "^[0-9]{1,40}$")) return BadRequest();
+        if (!SocialPublishing.IsProvider(provider) || (provider != "LinkedInPersonal" && !System.Text.RegularExpressions.Regex.IsMatch(pageId ?? "", "^[0-9]{1,40}$"))) return BadRequest();
         if (await schemes.GetSchemeAsync("Publish" + provider) is null) { TempData["Notice"] = "IntegrationNotConfigured"; return RedirectToAction(nameof(Index)); }
         var properties = new AuthenticationProperties { RedirectUri = Url.Action(nameof(Connected), new { provider }) };
         properties.Items["AdminId"] = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        properties.Items["PageId"] = pageId;
+        properties.Items["PageId"] = pageId ?? "";
         SocialAuthentication.UseInfrastructureCallbackBase(Request);
         return Challenge(properties, "Publish" + provider);
     }
@@ -86,9 +86,19 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
         if (string.IsNullOrEmpty(token)) return BadRequest();
         try
         {
-            var resolved = await social.ResolvePageAsync(provider, pageId, token, ct);
+            (string Token, string Name) resolved;
+            if (provider == "LinkedInPersonal")
+            {
+                var profile = await social.ResolvePersonalAsync(token, ct);
+                pageId = profile.Id;
+                resolved = (token, profile.Name);
+            }
+            else resolved = await social.ResolvePageAsync(provider, pageId, token, ct);
+            if (SocialPublishing.IsLinkedIn(provider))
+                await social.ValidateLinkedInGrantAsync(provider, token, ct);
             var connection = await db.SocialConnections.FindAsync([provider], ct);
             if (connection is null) { connection = new SocialConnection { Provider = provider }; db.SocialConnections.Add(connection); }
+            connection.Enabled = true;
             connection.PageId = pageId; connection.PageName = resolved.Name;
             connection.ProtectedToken = social.Protect(resolved.Token); connection.ConnectedAt = DateTimeOffset.UtcNow;
             connection.ExpiresAt = DateTimeOffset.TryParse(ticket.Properties.GetTokenValue("expires_at"), out var expires) ? expires : null;
