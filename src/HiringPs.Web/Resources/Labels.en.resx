@@ -2986,4 +2986,6 @@
   <data name="GoogleMobileHelp"><value>The + sign is already provided. Enter your country code and full Telegram phone number without the local leading zero. This number will be used to link and verify your account.</value></data>
   <data name="GoogleFormExpired"><value>The form could not be verified. The page session may be stale or its cookies may have changed. Reopen the form and try again. This error does not mean the Telegram number is already registered.</value></data>
   <data name="GoogleReopenForm"><value>Reopen account completion form</value></data>
+  <data name="VerificationBotHelp"><value>Open the bot and follow the instructions to receive your verification code, then enter it here.</value></data>
+  <data name="ContinueVia"><value>Or continue with</value></data>
 </root>

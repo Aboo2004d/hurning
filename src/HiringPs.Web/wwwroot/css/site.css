@@ -1879,3 +1879,32 @@ footer {
 @media (max-width: 900px) { .collector-card .tool-facts { grid-template-columns: repeat(2, auto minmax(0, 1fr)); } }
 @media (max-width: 600px) { .collector-card .tool-facts { grid-template-columns: auto minmax(0, 1fr); } }
 .tools-grid .tool-status { align-self: flex-start; width: fit-content; max-width: 100%; }
+
+/* Verification follows the order: bot instructions, code, then primary/secondary actions. */
+.verification-heading { display: flex; align-items: center; gap: .85rem; margin-block-end: 1.25rem; }
+.verification-heading h1 { margin: 0; min-width: 0; }
+.verification-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; border-radius: .9rem; background: var(--soft); color: var(--accent); }
+.verification-bot-step { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+.verification-bot-step p { margin: 0 0 .75rem; line-height: 1.8; }
+.verification-bot-step .button { width: 100%; }
+.verification-advice { margin-block: 1.25rem .85rem; font-size: .9rem; }
+.verification-panel .verification-code { text-align: center; font-size: 1.5rem; letter-spacing: .3em; font-variant-numeric: tabular-nums; margin-block-end: 0; }
+.verification-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-block-start: 1.25rem; }
+.verification-actions form { margin: 0; min-width: 0; }
+.verification-actions .button, .verification-bot-step .button { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 48px; border-radius: 12px; line-height: 1.5; }
+.verification-actions .button { width: 100%; height: 100%; }
+@media (max-width: 480px) {
+    .verification-actions { grid-template-columns: minmax(0, 1fr); }
+    .verification-heading { gap: .65rem; }
+    .verification-heading h1 { font-size: 1.65rem; }
+}
+
+/* Alternative sign-in stays inside the account card, after the account actions. */
+.fa-google { --fa-icon: url("../vendor/fontawesome/google.svg"); }
+.auth-provider { margin-block-start: 1.5rem; }
+.auth-provider-divider { display: flex; align-items: center; gap: .8rem; color: var(--muted); font-size: .875rem; margin-block-end: 1rem; }
+.auth-provider-divider::before, .auth-provider-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-provider-divider span { flex: 0 0 auto; }
+.auth-provider form { margin: 0; }
+.auth-provider-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; width: 100%; min-height: 48px; border-radius: 12px; }
+.auth-provider-button .fa-google { width: 1.2em; height: 1.2em; }

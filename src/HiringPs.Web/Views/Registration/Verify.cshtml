@@ -1,19 +1,36 @@
 @model VerificationInput
-@{ ViewData["Title"] = T["VerifyAccount"]; }
-<section class="login-panel">
-    <h1>@T["VerifyAccount"]</h1>
+@{
+    ViewData["Title"] = T["VerifyAccount"];
+}
+<section class="login-panel verification-panel">
+    <header class="verification-heading">
+        <span class="verification-icon" aria-hidden="true"><span class="fa-solid fa-key"></span></span>
+        <h1>@T["VerifyAccount"]</h1>
+    </header>
     @if (Model.BotLink is not null)
     {
-        <a class="button" href="@Model.BotLink" target="_blank" rel="noopener">@T["OpenTelegram"]</a>
+        <div class="verification-bot-step">
+            <p>@T["VerificationBotHelp"]</p>
+            <a class="button button-outline" href="@Model.BotLink" target="_blank" rel="noopener">
+                <span class="fa-solid fa-paper-plane" aria-hidden="true"></span><span>@T["OpenTelegram"]</span>
+            </a>
+        </div>
     }
-    <p>@T["VerificationAdvice"]</p>
-    <form method="post">
+    <p id="verification-advice" class="muted verification-advice">@T["VerificationAdvice"]</p>
+    <form asp-area="" asp-controller="Registration" asp-action="Verify" method="post" id="verification-code-form">
         <partial name="_MemberValidation" />
-        <label>@T["VerificationCode"]<input asp-for="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" dir="ltr" required />
-        </label>
-        <button type="submit">@T["Confirm"]</button>
+        <label for="Code">@T["VerificationCode"]</label>
+        <input asp-for="Code" class="verification-code" inputmode="numeric" autocomplete="one-time-code"
+               pattern="[0-9]{6}" maxlength="6" minlength="6" dir="ltr" aria-describedby="verification-advice" required />
     </form>
-    <form asp-action="Resend" method="post">
-        <button class="secondary" type="submit">@T["ResendCode"]</button>
-    </form>
+    <div class="verification-actions">
+        <button class="button" type="submit" form="verification-code-form">
+            <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["Confirm"]</span>
+        </button>
+        <form asp-area="" asp-controller="Registration" asp-action="Resend" method="post">
+            <button class="button button-outline" type="submit">
+                <span class="fa-solid fa-rotate-right" aria-hidden="true"></span><span>@T["ResendCode"]</span>
+            </button>
+        </form>
+    </div>
 </section>

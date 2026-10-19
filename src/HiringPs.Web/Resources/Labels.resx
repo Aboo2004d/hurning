@@ -2986,4 +2986,6 @@
   <data name="GoogleMobileHelp"><value>علامة + مضافة مسبقًا. أدخل رمز الدولة وبقية رقم تليجرام كاملًا، دون الصفر المحلي. سيُستخدم الرقم لربط حسابك والتحقق منه.</value></data>
   <data name="GoogleFormExpired"><value>تعذّر التحقق من صلاحية النموذج. قد تكون جلسة الصفحة قديمة أو تغيّرت ملفات الارتباط. أعد فتح النموذج وحاول مجددًا. هذا الخطأ لا يعني أن رقم تليجرام مكرر.</value></data>
   <data name="GoogleReopenForm"><value>إعادة فتح نموذج إكمال الحساب</value></data>
+  <data name="VerificationBotHelp"><value>افتح البوت واتبع التعليمات لاستلام رمز التحقق، ثم أدخله هنا.</value></data>
+  <data name="ContinueVia"><value>أو المتابعة عبر</value></data>
 </root>

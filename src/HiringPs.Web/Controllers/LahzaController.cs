@@ -45,18 +45,21 @@ public sealed class LahzaController(
         await Request.Body.CopyToAsync(body, ct);
         if (body.Length > 65536)
             return BadRequest();
+        var headerValid = TryReadSignature(Request.Headers, out var signature, out var headerName);
         if (
-            !LahzaGateway.VerifySignature(
+            !headerValid
+            || !LahzaGateway.VerifySignature(
                 body.ToArray(),
-                Request.Headers["x-lahza-signature"].ToString(),
+                signature,
                 configuration["Payments:Lahza:" + gateway.Environment + ":SecretKey"] ?? ""
             )
         )
         {
             logger?.LogWarning(
-                "PaymentWebhook InvalidSignature Environment {Environment} Build {Build}",
+                "PaymentWebhook InvalidSignature Environment {Environment} Build {Build} SignatureHeader {SignatureHeader}",
                 gateway.Environment,
-                PaymentTraceWriter.BuildMarker
+                PaymentTraceWriter.BuildMarker,
+                headerName
             );
             return Unauthorized();
         }
@@ -104,11 +107,12 @@ public sealed class LahzaController(
                 out var orderId
             );
             logger?.LogInformation(
-                "PaymentWebhook Accepted Order {OrderId} MatchedOrders {Count} Environment {Environment} Build {Build}",
+                "PaymentWebhook Accepted Order {OrderId} MatchedOrders {Count} Environment {Environment} Build {Build} SignatureHeader {SignatureHeader}",
                 orderId,
                 matched,
                 gateway.Environment,
-                PaymentTraceWriter.BuildMarker
+                PaymentTraceWriter.BuildMarker,
+                headerName
             );
             return Ok();
         }
@@ -117,5 +121,34 @@ public sealed class LahzaController(
             logger?.LogWarning("PaymentWebhook MalformedJson");
             return BadRequest();
         }
+    }
+
+    private static bool TryReadSignature(
+        IHeaderDictionary headers,
+        out string signature,
+        out string headerName
+    )
+    {
+        signature = "";
+        headerName = "MissingOrAmbiguous";
+        var documented = headers["x-lahza-signature"];
+        var observed = headers["x_lahza_signature"];
+        // HTTP header names are case-insensitive, but '-' and '_' are distinct characters.
+        // Accept the documented spelling and the spelling observed in actual Lahza requests.
+        if (
+            documented.Count > 1
+            || observed.Count > 1
+            || (documented.Count == 0 && observed.Count == 0)
+        )
+            return false;
+        if (
+            documented.Count == 1
+            && observed.Count == 1
+            && !string.Equals(documented[0], observed[0], StringComparison.OrdinalIgnoreCase)
+        )
+            return false;
+        signature = (documented.Count == 1 ? documented[0] : observed[0]) ?? "";
+        headerName = documented.Count == 1 ? "x-lahza-signature" : "x_lahza_signature";
+        return true;
     }
 }

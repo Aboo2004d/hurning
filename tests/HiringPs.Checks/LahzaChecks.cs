@@ -333,7 +333,11 @@ public static class LahzaChecks
             "reject erroneous SHA512 documentation example"
         );
 
-        LahzaController Controller(byte[] body, string header)
+        LahzaController Controller(
+            byte[] body,
+            string header,
+            string headerName = "x-lahza-signature"
+        )
         {
             var controller = new LahzaController(db, config, gateway);
             controller.ControllerContext = new ControllerContext
@@ -341,7 +345,7 @@ public static class LahzaChecks
                 HttpContext = new DefaultHttpContext(),
             };
             controller.Request.Body = new System.IO.MemoryStream(body);
-            controller.Request.Headers["x-lahza-signature"] = header;
+            controller.Request.Headers[headerName] = header;
             return controller;
         }
         Check(
@@ -351,6 +355,45 @@ public static class LahzaChecks
         Check(
             await Controller(bytes, "wrong").Webhook(default) is UnauthorizedResult,
             "unsigned event rejected before SQL access"
+        );
+        Check(
+            await Controller(bytes, signature, "X_lahza_signature").Webhook(default) is OkResult,
+            "accept actual Lahza underscore signature header with SHA256 verification"
+        );
+        Check(
+            await Controller(bytes, "wrong", "X_lahza_signature").Webhook(default)
+                is UnauthorizedResult,
+            "underscore signature header does not bypass cryptographic verification"
+        );
+        Check(
+            await Controller(Encoding.UTF8.GetBytes("changed"), signature, "X_lahza_signature")
+                .Webhook(default) is UnauthorizedResult,
+            "modified body is rejected with the actual underscore header"
+        );
+        var missingHeader = Controller(bytes, signature);
+        missingHeader.Request.Headers.Remove("x-lahza-signature");
+        Check(
+            await missingHeader.Webhook(default) is UnauthorizedResult,
+            "missing both signature aliases is rejected"
+        );
+        var sameHeaders = Controller(bytes, signature);
+        sameHeaders.Request.Headers["X_lahza_signature"] = signature.ToUpperInvariant();
+        Check(
+            await sameHeaders.Webhook(default) is OkResult,
+            "identical signature aliases accept equivalent hex casing"
+        );
+        var conflictingHeaders = Controller(bytes, signature);
+        conflictingHeaders.Request.Headers["X_lahza_signature"] = new string('0', 64);
+        Check(
+            await conflictingHeaders.Webhook(default) is UnauthorizedResult,
+            "conflicting signature aliases are rejected even when one signature is valid"
+        );
+        var repeatedHeader = Controller(bytes, signature, "X_lahza_signature");
+        repeatedHeader.Request.Headers["X_lahza_signature"] =
+            new Microsoft.Extensions.Primitives.StringValues(new[] { signature, signature });
+        Check(
+            await repeatedHeader.Webhook(default) is UnauthorizedResult,
+            "multiple signature values are rejected"
         );
         var invalid = Encoding.UTF8.GetBytes("not json");
         var invalidSignature = Convert.ToHexString(

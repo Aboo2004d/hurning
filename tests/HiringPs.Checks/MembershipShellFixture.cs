@@ -620,6 +620,17 @@ public static class PaymentListingFixtureData
 // Real Google completion view; no OAuth identity or database access in layout previews.
 public sealed class GoogleCompletionShellFixtureController : Controller
 {
+    public IActionResult GoogleButton() => PartialView("/Views/Shared/_GoogleLoginButton.cshtml");
+
+    public IActionResult Verification(bool bot = true) =>
+        View(
+            "/Views/Registration/Verify.cshtml",
+            new VerificationInput
+            {
+                BotLink = bot ? "https://t.me/fixture_bot?start=fixture" : null,
+            }
+        );
+
     public IActionResult Index(bool duplicate = false)
     {
         if (duplicate)
