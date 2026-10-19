@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
@@ -36,7 +37,7 @@ public sealed class SocialPublication
 
 // Read-only probes and publishing use the same page identity and protected credentials.
 public sealed class SocialPublishing(HiringDb db, IConfiguration config,
-    IDataProtectionProvider protection, IHttpClientFactory clients)
+    IDataProtectionProvider protection, IHttpClientFactory clients, ILogger<SocialPublishing>? logger = null)
 {
     private readonly IDataProtector protector = protection.CreateProtector("HiringPs.SocialToken.v1");
     public static bool IsProvider(string provider) => provider is "Facebook" or "LinkedIn";
@@ -56,7 +57,12 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
     private async Task<JsonDocument> ReadAsync(HttpRequestMessage request, CancellationToken ct)
     {
         using var response = await Client().SendAsync(request, ct);
-        if (!response.IsSuccessStatusCode) throw new InvalidOperationException("IntegrationProviderRejected");
+        if (!response.IsSuccessStatusCode)
+        {
+            logger?.LogWarning("SocialConnection Stage ProviderRequest Path {Path} HttpStatus {HttpStatus}",
+                request.RequestUri?.AbsolutePath, (int)response.StatusCode);
+            throw new InvalidOperationException("IntegrationProviderRejected");
+        }
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
     }
     private HttpRequestMessage Request(string url, string token)
@@ -83,7 +89,19 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
                 if (!page.GetProperty("tasks").EnumerateArray().Any(x => x.GetString() is "CREATE_CONTENT" or "MANAGE" or "PROFILE_PLUS_CREATE_CONTENT")) throw new InvalidOperationException("IntegrationPermissionMissing");
                 return (page.GetProperty("access_token").GetString()!, page.GetProperty("name").GetString()!);
             }
-            throw new InvalidOperationException("IntegrationPageUnavailable");
+            // Some business-managed pages are omitted from /me/accounts despite a page grant.
+            // Resolve only the explicitly selected page, then validate its own token.
+            logger?.LogInformation("SocialConnection Provider Facebook Stage DirectPageLookup PageId {PageId}", pageId);
+            using var directRequest = Request(FacebookRoot + "/" + pageId + "?fields=id,name,access_token", token);
+            using var direct = await ReadAsync(directRequest, ct);
+            var selected = direct.RootElement;
+            if (selected.GetProperty("id").GetString() != pageId)
+                throw new InvalidOperationException("IntegrationPageInvalid");
+            var pageToken = selected.GetProperty("access_token").GetString();
+            if (string.IsNullOrWhiteSpace(pageToken))
+                throw new InvalidOperationException("IntegrationPageUnavailable");
+            await ValidateFacebookPageTokenAsync(pageId, pageToken, ct);
+            return (pageToken, selected.GetProperty("name").GetString() ?? pageId);
         }
         using var aclRequest = Request("https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&state=APPROVED", token);
         using var acl = await ReadAsync(aclRequest, ct);
@@ -92,6 +110,31 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         using var orgRequest = Request("https://api.linkedin.com/rest/organizations/" + pageId, token);
         using var org = await ReadAsync(orgRequest, ct);
         return (token, org.RootElement.GetProperty("localizedName").GetString() ?? pageId);
+    }
+    private async Task ValidateFacebookPageTokenAsync(string pageId, string token, CancellationToken ct)
+    {
+        using var identityRequest = Request(FacebookRoot + "/me?fields=id", token);
+        using var identity = await ReadAsync(identityRequest, ct);
+        if (identity.RootElement.GetProperty("id").GetString() != pageId)
+            throw new InvalidOperationException("IntegrationPageInvalid");
+        logger?.LogInformation("SocialConnection Provider Facebook Stage ValidatePageGrant PageId {PageId}", pageId);
+        using var request = Request(FacebookRoot + "/debug_token?input_token=" + Uri.EscapeDataString(token),
+            Required("Integrations:Facebook:ClientId") + "|" + Required("Integrations:Facebook:ClientSecret"));
+        using var response = await ReadAsync(request, ct);
+        var grant = response.RootElement.GetProperty("data");
+        if (!grant.GetProperty("is_valid").GetBoolean()
+            || grant.GetProperty("app_id").GetString() != Required("Integrations:Facebook:ClientId")
+            || grant.GetProperty("type").GetString() != "PAGE"
+            || !grant.GetProperty("scopes").EnumerateArray().Any(x => x.GetString() == "pages_manage_posts")
+            || (grant.TryGetProperty("expires_at", out var expiry) && expiry.GetInt64() != 0
+                && expiry.GetInt64() <= DateTimeOffset.UtcNow.ToUnixTimeSeconds()))
+            throw new InvalidOperationException("IntegrationPermissionMissing");
+        if (grant.TryGetProperty("granular_scopes", out var scopes))
+            foreach (var scope in scopes.EnumerateArray())
+                if (scope.GetProperty("scope").GetString() == "pages_manage_posts"
+                    && scope.TryGetProperty("target_ids", out var targets)
+                    && !targets.EnumerateArray().Any(x => x.GetString() == pageId))
+                    throw new InvalidOperationException("IntegrationPermissionMissing");
     }
     public async Task<ToolProbe> ProbeAsync(string provider, CancellationToken ct)
     {

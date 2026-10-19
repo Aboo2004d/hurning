@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--facebook-page-check"))
+{
+    await FacebookPageChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--google-redirect-check"))
 {
     await GoogleRedirectChecks.RunAsync();

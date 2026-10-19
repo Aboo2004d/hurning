@@ -93,7 +93,17 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
             TempData["Notice"] = "IntegrationConnected";
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or System.Text.Json.JsonException or KeyNotFoundException)
-        { TempData["Notice"] = "IntegrationUnavailable"; }
+        {
+            // Never log the exception message or provider response: either can contain tokens.
+            var code = ex is InvalidOperationException && ex.Message is
+                "IntegrationPageInvalid" or "IntegrationPageUnavailable" or "IntegrationPermissionMissing"
+                or "IntegrationProviderRejected" or "IntegrationNotConfigured"
+                ? ex.Message : "IntegrationUnavailable";
+            HttpContext.RequestServices.GetRequiredService<ILogger<IntegrationsController>>()
+                .LogWarning("SocialConnection Provider {Provider} Stage ResolveAndSave Code {Code} ExceptionType {ExceptionType} TraceId {TraceId}",
+                    provider, code, ex.GetType().Name, HttpContext.TraceIdentifier);
+            TempData["Notice"] = code;
+        }
         return RedirectToAction(nameof(Index));
     }
     [HttpPost]
