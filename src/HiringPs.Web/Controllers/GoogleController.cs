@@ -151,7 +151,7 @@ public sealed class GoogleController(
         );
     }
 
-    [HttpPost]
+    [HttpPost, TypeFilter(typeof(GoogleCompletionDiagnostics))]
     public async Task<IActionResult> Complete(GoogleProfileInput input, CancellationToken ct)
     {
         if (await db.SocialConnections.AnyAsync(x => x.Provider == "Google" && !x.Enabled, ct))

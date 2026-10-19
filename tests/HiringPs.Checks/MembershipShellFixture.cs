@@ -634,7 +634,7 @@ public sealed class GoogleCompletionShellFixtureController : Controller
         );
     }
 
-    [HttpPost]
+    [HttpPost, TypeFilter(typeof(HiringPs.Web.Infrastructure.GoogleCompletionDiagnostics))]
     public IActionResult Validate(HiringPs.Web.Controllers.GoogleProfileInput input) =>
         Json(
             new

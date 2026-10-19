@@ -6,8 +6,12 @@
     <img src="~/images/brand/basket-logo.png" width="72" height="72" alt="" />
     <p class="error-code" dir="ltr">@Model.StatusCode</p>
     <h1>@T["Error" + Model.StatusCode]</h1>
-    <p>@T["ErrorAdvice"]</p>
+    <p>@T[Model.GoogleFormExpired ? "GoogleFormExpired" : "ErrorAdvice"]</p>
     <div class="actions">
+        @if (Model.GoogleFormExpired)
+        {
+            <a class="button button-outline" asp-area="" asp-controller="Google" asp-action="Complete">@T["GoogleReopenForm"]</a>
+        }
         <a class="button" asp-area="" asp-controller="Home" asp-action="Index">@T["BackHome"]</a>
         @if (Model.StatusCode is 408 or 429 or 500 or 502 or 503 or 504)
         {

@@ -82,6 +82,32 @@ public static class GoogleCompletionFormChecks
                 "Missing CSRF token remains rejected with 400 rather than weakening protection: "
                     + language
             );
+            var rejectedHtml = await missingToken.Content.ReadAsStringAsync();
+            Check(
+                rejectedHtml.Contains("/" + language + "/Google/Complete")
+                    && !rejectedHtml.Contains(">GoogleFormExpired<"),
+                "Rejected Google form offers a localized safe GET to reopen without replaying POST: "
+                    + language
+            );
+            using var invalidToken = await client.PostAsync(
+                path + "/Validate",
+                new FormUrlEncodedContent(
+                    new Dictionary<string, string>
+                    {
+                        ["Name"] = "Fixture",
+                        ["Mobile"] = "970599123456",
+                        ["__RequestVerificationToken"] = "invalid-fixture-token",
+                    }
+                )
+            );
+            Check(
+                invalidToken.StatusCode == HttpStatusCode.BadRequest
+                    && (await invalidToken.Content.ReadAsStringAsync()).Contains(
+                        "/" + language + "/Google/Complete"
+                    ),
+                "Invalid Google CSRF token is also rejected and recoverable without weakening validation: "
+                    + language
+            );
             var duplicate = await client.GetStringAsync(path + "?duplicate=true");
             Check(
                 duplicate.Contains("id=\"google-mobile-error\"")
