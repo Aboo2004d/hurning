@@ -1911,3 +1911,31 @@ footer {
 
 .preference-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-block-start: .85rem; }
 .preference-bulk-help { font-size: .85rem; line-height: 1.8; margin-block: .6rem; }
+
+/* Social publishing uses the same cards, outline actions and local brand icons. */
+.fa-facebook-f { --fa-icon: url("../vendor/fontawesome/facebook-f.svg"); }
+.fa-linkedin-in { --fa-icon: url("../vendor/fontawesome/linkedin-in.svg"); }
+.social-composer { background: white; border: 1px solid var(--line); border-radius: 20px; padding: clamp(1rem, 3vw, 2rem); min-width: 0; }
+.social-composer-heading { display: flex; align-items: center; gap: 1rem; margin-block-end: 1.5rem; }
+.social-composer-heading h2 { margin: 0; }
+.social-composer-heading p { margin: .5rem 0 0; color: var(--muted); overflow-wrap: anywhere; }
+.social-provider-mark { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 52px; height: 52px; border-radius: 14px; background: #e9f4f0; color: #176c54; font-size: 1.6rem; }
+.social-fields { display: flex; flex-wrap: wrap; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; margin: 0 0 1.5rem; min-width: 0; }
+.social-fields legend { padding-inline: .5rem; font-weight: 700; }
+.social-fields .social-field { display: inline-flex; align-items: center; gap: .6rem; margin: 0; padding: .7rem 1rem; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.social-fields .social-field:has(input:checked) { background: #e9f4f0; border-color: #87b8a8; }
+.social-composer input[type="checkbox"] { width: 1.1rem; height: 1.1rem; margin: 0; flex: 0 0 auto; accent-color: #176c54; }
+.social-preview { display: grid; gap: .7rem; }
+.social-preview textarea { width: 100%; box-sizing: border-box; min-height: 260px; resize: vertical; line-height: 1.9; }
+.social-canonical-link { padding: .8rem 1rem; background: #f3f8f6; border-radius: 10px; overflow-wrap: anywhere; font-size: .9rem; }
+.social-repeat { display: flex; align-items: center; gap: .75rem; }
+.social-compose-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block-start: 1.25rem; }
+.social-history { border-block-start: 1px solid var(--line); margin-block-start: 1.75rem; padding-block-start: 1rem; }
+.social-history ul { padding: 0; list-style: none; }
+.social-history li { padding-block: .75rem; border-block-end: 1px solid var(--line); overflow-wrap: anywhere; }
+.social-history a { margin-inline-start: .75rem; }
+@media (max-width: 540px) {
+    .social-composer-heading { align-items: flex-start; }
+    .social-composer-heading h2 { font-size: 1.25rem; }
+    .social-compose-actions button { width: 100%; justify-content: center; }
+}
