@@ -3015,4 +3015,5 @@
   <data name="TemplateToken_summary" xml:space="preserve"><value>الملخص</value></data>
   <data name="Date" xml:space="preserve"><value>التاريخ</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>معاينة نص هذا الإصدار في المحرر</value></data>
+  <data name="ToolsFetchFailed" xml:space="preserve"><value>تعذر تأكيد الطلب أو تحديث النتائج. راجع سجل طلبات الفحص أو حدّث النتائج يدويًا قبل إعادة المحاولة.</value></data>
 </root>

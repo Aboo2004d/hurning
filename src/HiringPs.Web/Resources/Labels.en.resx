@@ -3015,4 +3015,5 @@
   <data name="TemplateToken_summary" xml:space="preserve"><value>Summary</value></data>
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>Load this version into the preview editor</value></data>
+  <data name="ToolsFetchFailed" xml:space="preserve"><value>Could not confirm the request or refresh results. Check the request history or refresh results manually before retrying.</value></data>
 </root>

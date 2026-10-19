@@ -7,6 +7,10 @@
     var workerFresh = ToolMonitoringRules.WorkerFresh(Model.Worker, Model.Now);
     var collectorFailed = Model.Worker?.LastFailureAt is { } failure && (Model.Worker.LastSuccessAt is null || failure > Model.Worker.LastSuccessAt);
 }
+<p class="notice" role="status" data-tools-feedback hidden
+   data-queued="@T["ToolsCheckQueued"]" data-existing="@T["ToolsCheckAlreadyQueued"]"
+   data-error="@T["ToolsFetchFailed"]"></p>
+<div data-tools-dashboard data-pending="@(Model.HasPendingChecks ? "true" : "false")">
 <h1>@T["Tools"]</h1>
 @if (Context.Request.Query["googleTest"] == "failed")
 {
@@ -22,7 +26,7 @@
 <p class="muted">@T["ToolsAllCost"]</p>
 @if (Model.HasPendingChecks)
 {
-    <p class="notice" role="status" data-collection-pending="@(workerFresh ? "true" : "false")">@T["ToolsCheckAlreadyQueued"]</p>
+    <p class="notice" role="status">@T["ToolsCheckAlreadyQueued"]</p>
 }
 @if (!workerFresh)
 {
@@ -65,7 +69,7 @@
             <p>@T["ToolHelp_Collector"]</p>
         }
         <div class="tool-card-actions">
-            <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="Collector" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
+            <form asp-controller="Tools" asp-action="CheckTool" method="get" data-tool-check><input type="hidden" name="tool" value="Collector" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             <a class="button button-outline" asp-controller="Sources" asp-action="Sources">@T["Sources"]</a>
         </div>
     </section>
@@ -126,7 +130,7 @@
             @if (key == "GoogleLogin") {
                 <form asp-controller="Integrations" asp-action="TestGoogle" method="get"><input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" /><button type="submit" class="button-outline">@T["GoogleTestLabel"]</button></form>
             } else {
-            <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
+            <form asp-controller="Tools" asp-action="CheckTool" method="get" data-tool-check><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             }
             @if (key is "GoogleLogin" or "Facebook" or "LinkedIn") {
                 <a class="button button-outline" asp-controller="Integrations" asp-action="Index" asp-fragment="@(key == "GoogleLogin" ? "google-integration" : key.ToLowerInvariant() + "-integration")">@T["IntegrationSettings"]</a>
@@ -206,4 +210,8 @@
 </section>
 
 <partial name="_AdminPagination" model="Model.RequestsPager" />
+</div>
+@section Scripts {
+    <script src="~/js/tool-checks.js" asp-append-version="true" defer></script>
+}
 

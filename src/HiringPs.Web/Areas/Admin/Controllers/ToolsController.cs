@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace HiringPs.Web.Areas.Admin.Controllers;
 
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public class ToolsController : AdminControllerBase
 {
     public ToolsController(HiringDb database, UrlPolicy urls, IConfiguration settings)
@@ -107,6 +108,8 @@ public class ToolsController : AdminControllerBase
             User.Identity?.Name ?? "Admin",
             ct
         );
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            return Json(new { queued });
         TempData["Notice"] = queued ? "ToolsCheckQueued" : "ToolsCheckAlreadyQueued";
         // A check changes state; always display its result with a separate GET.
         // 303 explicitly prevents refresh from submitting the check again.
