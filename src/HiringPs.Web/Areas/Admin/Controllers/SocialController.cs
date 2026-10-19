@@ -8,6 +8,8 @@ namespace HiringPs.Web.Areas.Admin.Controllers;
 
 public sealed class SocialCompose
 {
+    public long? TemplateVersionId { get; set; }
+    public int TemplateNumber { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public long OpportunityId { get; set; }
     public string Provider { get; set; } = "";
@@ -20,7 +22,7 @@ public sealed class SocialCompose
 }
 
 [Area("Admin"), Authorize(Roles = "Admin"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class SocialController(HiringDb db, SocialPublishing publishing) : Controller
+public sealed class SocialController(HiringDb db, SocialPublishing publishing, SocialTemplates templates) : Controller
 {
     public async Task<IActionResult> Compose(long id, string provider, CancellationToken ct)
     {
@@ -29,8 +31,9 @@ public sealed class SocialController(HiringDb db, SocialPublishing publishing) :
         if (item is null) return NotFound();
         if (!SocialPublishing.Eligible(item, TextRules.PalestineToday())) return BadRequest();
         var history = await db.SocialPublications.AsNoTracking().Where(x => x.OpportunityId == id && x.Provider == provider).OrderByDescending(x => x.CreatedAt).Take(20).ToListAsync(ct);
+        var template = await templates.ResolveAsync(provider, item.Kind, ct);
         var model = new SocialCompose { OpportunityId = id, Provider = provider, Opportunity = item,
-            Text = string.Join("\n", new[] { item.Title, item.Organization, item.Summary, item.Locations, item.Deadline?.ToString("yyyy-MM-dd") }.Where(x => !string.IsNullOrWhiteSpace(x))),
+            Text = SocialTemplateText.Render(template.Body, item), TemplateVersionId = template.Id, TemplateNumber = template.Number,
             Link = publishing.OpportunityUrl(id, item.OriginalLanguage), History = history,
             PreviouslyPublished = await db.SocialPublications.AnyAsync(x => x.OpportunityId == id && x.Provider == provider && x.Status == "Published", ct) };
         return Request.Headers["X-Requested-With"] == "fetch" ? PartialView("_Compose", model) : View(model);
@@ -55,14 +58,15 @@ public sealed class SocialController(HiringDb db, SocialPublishing publishing) :
             { TempData["Notice"] = "SocialRepeatRequired"; return RedirectToAction(nameof(Compose), new { id = item.Id, provider = input.Provider }); }
             var connection = await db.SocialConnections.SingleOrDefaultAsync(x => x.Provider == input.Provider, ct);
             if (connection is null) { TempData["Notice"] = "IntegrationNotConfigured"; return RedirectToAction("Index", "Integrations"); }
+            if (input.TemplateVersionId is not {} templateId || !await db.SocialTemplateVersions.AnyAsync(x => x.Id == templateId && x.Provider == input.Provider && (x.Scope == item.Kind.ToString() || x.Scope == "general"), ct)) return BadRequest();
             var text = input.Text.Trim();
             var link = publishing.OpportunityUrl(item.Id, item.OriginalLanguage);
             // The canonical link is appended on the server, outside the editable text.
-            text += "\n\n" + link;
+            text = text.Replace(link, "", StringComparison.Ordinal).Trim() + "\n\n" + link;
             if (text.Length > (input.Provider == "LinkedIn" ? 3000 : 60000))
             { TempData["Notice"] = "SocialTextTooLong"; return RedirectToAction(nameof(Compose), new { id = item.Id, provider = input.Provider }); }
             attempt = new SocialPublication { Id = input.Id, OpportunityId = item.Id, Provider = input.Provider,
-                PageId = connection.PageId, Text = text, Actor = User.Identity?.Name ?? "Admin" };
+                PageId = connection.PageId, TemplateVersionId = input.TemplateVersionId, Text = text, Actor = User.Identity?.Name ?? "Admin" };
             db.SocialPublications.Add(attempt);
             db.Audit.Add(new AuditEntry { Actor = attempt.Actor, Action = "Social.Reserved", Detail = attempt.Id.ToString() });
             await db.SaveChangesAsync(ct);

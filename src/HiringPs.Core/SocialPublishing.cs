@@ -22,6 +22,7 @@ public sealed class SocialConnection
 
 public sealed class SocialPublication
 {
+    public long? TemplateVersionId { get; set; }
     public Guid Id { get; set; }
     public long OpportunityId { get; set; }
     public Opportunity Opportunity { get; set; } = null!;

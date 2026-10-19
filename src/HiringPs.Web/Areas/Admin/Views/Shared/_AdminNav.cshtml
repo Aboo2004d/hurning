@@ -46,6 +46,7 @@
             Label: isArabic ? "المحتوى والتواصل" : "Content & messages",
             Links: new[]
             {
+                (Controller: "SocialTemplates", Action: "Index", Status: "", Label: T["SocialTemplates"].Value),
                 (Controller: "Pages", Action: "Pages", Status: "", Label: T["PageContents"].Value),
                 (Controller: "Messages", Action: "Messages", Status: "", Label: T["ContactInbox"].Value),
                 (Controller: "Reports", Action: "Reports", Status: "", Label: T["Reports"].Value)

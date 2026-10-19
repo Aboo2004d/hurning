@@ -7,6 +7,7 @@ public static class SocialRegistration
     public static IServiceCollection AddSocialPublishing(this IServiceCollection services)
     {
         services.AddScoped<SocialPublishing>();
+        services.AddScoped<SocialTemplates>();
         services.AddHttpClient("SocialProviders", client => client.Timeout = TimeSpan.FromSeconds(20))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .RemoveAllLoggers();

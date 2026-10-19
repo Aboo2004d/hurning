@@ -1,0 +1,18 @@
+@model AdminPage<SocialTemplateVersion>
+@{ ViewData["Title"] = T["SocialTemplates"].Value; }
+<section class="admin-list-page" data-template-list>
+<header class="admin-page-heading"><h1>@T["SocialTemplates"]</h1></header>
+<form asp-action="Edit" method="get" class="actions template-tokens">
+<select name="provider" aria-label="@T["Platform"]"><option>Facebook</option><option>LinkedIn</option></select>
+<select name="scope" aria-label="@T["Kind"]"><option value="general">@T["GeneralTemplate"]</option>@foreach (var kind in Enum.GetValues<OpportunityKind>()) { <option value="@kind">@T[kind.ToString()]</option> }</select>
+<button type="submit" class="button-outline admin-action">@T["Edit"]</button>
+</form>
+<p class="notice">@T["SocialTemplateHelp"]</p>
+<div class="table-wrap"><table class="table-nowrap"><thead><tr><th>@T["Platform"]</th><th>@T["Kind"]</th><th>@T["TemplateVersion"]</th><th>@T["Date"]</th><th></th></tr></thead><tbody>
+@foreach (var version in Model.Items) {
+<tr><td>@version.Provider</td><td>@T[version.Scope == "general" ? "GeneralTemplate" : version.Scope]</td><td>@version.Number</td><td><bdi>@TimeZoneInfo.ConvertTime(version.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></td><td><a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-provider="@version.Provider" asp-route-scope="@version.Scope" title="@T["Edit"]" aria-label="@T["Edit"]"><span class="fa-solid fa-pen-to-square" aria-hidden="true"></span></a></td></tr>
+}
+</tbody></table></div>
+<partial name="_AdminPagination" model="Model.Pager" />
+</section>
+<script src="~/js/social-templates.js" asp-append-version="true" defer></script>

@@ -678,3 +678,25 @@ public sealed class GoogleCompletionShellFixtureController : Controller
             }
         );
 }
+
+[Area("Admin"), Authorize(Roles = "Admin")]
+public class SocialTemplateShellFixtureController : Controller
+{
+    public IActionResult Edit()
+    {
+        ViewBag.History = new AdminPage<SocialTemplateVersion>
+        {
+            Items = [new SocialTemplateVersion { Id = 1, Provider = "Facebook", Scope = "general", Number = 1, Active = true, Body = SocialTemplateText.DefaultBody, Actor = "Fixture" }],
+            Pager = new AdminPager { TotalRecords = 1 },
+        };
+        return View("/Areas/Admin/Views/SocialTemplates/Edit.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
+        { Provider = "Facebook", Scope = "general", Body = SocialTemplateText.DefaultBody, ExpectedActiveId = 1 });
+    }
+
+    public IActionResult Compose() => View("/Areas/Admin/Views/Social/Compose.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialCompose
+    {
+        OpportunityId = 1, Provider = "Facebook", TemplateVersionId = 1, TemplateNumber = 1,
+        Opportunity = new Opportunity { Title = "وظيفة تجريبية", Organization = "جهة تجريبية" },
+        Text = "وظيفة تجريبية", Link = "https://hiring.ps/ar/Opportunities/Details/1",
+    });
+}

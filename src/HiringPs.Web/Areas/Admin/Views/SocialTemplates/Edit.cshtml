@@ -1,0 +1,40 @@
+@model HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
+@{ ViewData["Title"] = T["SocialTemplates"].Value; var history = (AdminPage<SocialTemplateVersion>)ViewBag.History; }
+<header class="admin-page-heading"><h1>@T["SocialTemplates"] · @Model.Provider · @T[Model.Scope == "general" ? "GeneralTemplate" : Model.Scope]</h1></header>
+<p class="notice">@T["SocialTemplateHelp"]</p>
+@if (ViewData["TemplateInvalid"] is true) { <p class="notice" role="alert">@T["SocialTemplateInvalid"]</p> }
+<section class="social-composer" data-template-editor>
+<form asp-action="Save" method="post" data-template-form>
+<input type="hidden" asp-for="Provider" /><input type="hidden" asp-for="Scope" /><input type="hidden" asp-for="ExpectedActiveId" />
+<div class="actions template-tokens">
+@foreach (var token in SocialTemplateText.Tokens) { <button type="button" class="button-outline" data-template-token="@token">@T["TemplateToken_" + token] <bdi>@("{{" + token + "}}")</bdi></button> }
+</div>
+<label class="social-preview">@T["TemplateBody"]<textarea asp-for="Body" rows="14" dir="auto" data-template-body maxlength="50000" required></textarea></label>
+<div class="social-compose-actions"><button type="submit" class="admin-action"><span class="fa-solid fa-floppy-disk" aria-hidden="true"></span>@T["SaveTemplateVersion"]</button><a class="button button-outline" asp-action="Index">@T["Back"]</a></div>
+</form>
+<details class="template-preview"><summary>@T["TemplatePreview"]</summary>
+<label>@T["OpportunityId"]<input type="number" min="1" data-template-opportunity /></label>
+<button type="button" class="button-outline admin-action" data-template-preview data-url="@Url.Action("Preview")"><span class="fa-solid fa-eye" aria-hidden="true"></span>@T["TemplatePreview"]</button>
+<p role="status" data-template-error hidden>@T["LoadFailed"]</p><pre class="template-preview-text" dir="auto" data-template-output></pre>
+</details>
+</section>
+<section class="social-composer social-history" data-template-list>
+<h2>@T["TemplateHistory"]</h2>
+@foreach (var version in history.Items) {
+<details class="template-history-version"><summary>@T["TemplateVersion"] @version.Number · <bdi>@TimeZoneInfo.ConvertTime(version.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi> · @version.Actor @(version.Active ? "✓" : "")</summary>
+<pre class="template-preview-text" dir="auto">@version.Body</pre>
+@if (!version.Active) {
+<button type="button" class="button-outline admin-action" data-template-load>@T["PreviewTemplateVersion"]</button>
+<form asp-action="Save" method="post"><input type="hidden" name="Provider" value="@Model.Provider" /><input type="hidden" name="Scope" value="@Model.Scope" /><input type="hidden" name="ExpectedActiveId" value="@Model.ExpectedActiveId" /><input type="hidden" name="restoreId" value="@version.Id" /><button type="submit" class="button-outline admin-action"><span class="fa-solid fa-rotate-right" aria-hidden="true"></span>@T["RestoreTemplateVersion"]</button></form>
+}
+</details>
+}
+@if (history.Pager.Pages > 1) {
+<nav class="pagination" aria-label="@T["Pagination"]">
+@if (history.Pager.Page > 1) { <a class="button button-outline" asp-action="Edit" asp-route-provider="@Model.Provider" asp-route-scope="@Model.Scope" asp-route-page="@(history.Pager.Page - 1)">@T["Previous"]</a> }
+<span><bdi>@history.Pager.Page / @history.Pager.Pages</bdi></span>
+@if (history.Pager.Page < history.Pager.Pages) { <a class="button button-outline" asp-action="Edit" asp-route-provider="@Model.Provider" asp-route-scope="@Model.Scope" asp-route-page="@(history.Pager.Page + 1)">@T["Next"]</a> }
+</nav>
+}
+</section>
+<script src="~/js/social-templates.js" asp-append-version="true" defer></script>

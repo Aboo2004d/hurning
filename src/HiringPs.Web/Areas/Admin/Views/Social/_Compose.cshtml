@@ -1,12 +1,6 @@
 @model HiringPs.Web.Areas.Admin.Controllers.SocialCompose
 @{
 var item = Model.Opportunity!;
-var english = item.OriginalLanguage.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-var fields = new[] {
-    (Key:"Title", Text:item.Title), (Key:"Organization", Text:item.Organization),
-    (Key:"Summary", Text:item.Summary), (Key:"Location", Text:item.Locations),
-    (Key:"Deadline", Text:item.Deadline is {} date ? (english ? "Apply by: " : "آخر موعد للتقديم: ") + date.ToString("yyyy-MM-dd") : "")
-};
 }
 <section class="social-composer" data-social-compose>
 <header class="social-composer-heading">
@@ -14,14 +8,12 @@ var fields = new[] {
     <div><h2>@T["SocialCompose"] · <bdi>@Model.Provider</bdi></h2><p dir="auto">@item.Title</p></div>
 </header>
 <form asp-controller="Social" asp-action="Publish" method="post">
+<p class="muted">@T["TemplateVersion"] @Model.TemplateNumber <a asp-controller="SocialTemplates" asp-action="Index">@T["SocialTemplates"]</a></p>
+<input type="hidden" name="TemplateVersionId" value="@Model.TemplateVersionId" />
 <input type="hidden" name="Id" value="@Model.Id" />
 <input type="hidden" name="OpportunityId" value="@Model.OpportunityId" />
 <input type="hidden" name="Provider" value="@Model.Provider" />
-<fieldset class="social-fields"><legend>@T["SocialFields"]</legend>
-@foreach(var field in fields) {
-<label class="social-field"><input type="checkbox" data-social-field data-text="@field.Text" checked /><span>@T[field.Key]</span></label>
-}
-</fieldset>
+
 <label class="social-preview">@T["SocialPreview"]<textarea name="Text" data-social-text rows="12" dir="auto" required maxlength="@(Model.Provider == "LinkedIn" ? 2800 : 50000)">@Model.Text</textarea></label>
 <p class="social-canonical-link" dir="ltr"><a href="@Model.Link" target="_blank" rel="noopener">@Model.Link</a></p>
 @if(Model.PreviouslyPublished) { <label class="notice social-repeat"><input type="checkbox" name="ConfirmRepeat" value="true" required />@T["SocialRepeatRequired"]</label> }

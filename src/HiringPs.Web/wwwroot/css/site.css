@@ -1939,3 +1939,9 @@ footer {
     .social-composer-heading h2 { font-size: 1.25rem; }
     .social-compose-actions button { width: 100%; justify-content: center; }
 }
+.template-tokens { display: flex; flex-wrap: wrap; gap: .6rem; margin-block-end: 1rem; }
+.template-tokens button { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .8rem; font-size: .9rem; }
+.template-preview { margin-block-start: 1.5rem; border-block-start: 1px solid var(--line); padding-block-start: 1rem; }
+.template-preview input { max-width: 220px; }
+.template-preview-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.9; padding: 1rem; background: #f3f8f6; border-radius: 12px; }
+.template-history-version { border-block-end: 1px solid var(--line); padding-block: 1rem; }

@@ -1485,6 +1485,9 @@ namespace HiringPs.Core.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<long?>("TemplateVersionId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1496,9 +1499,60 @@ namespace HiringPs.Core.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TemplateVersionId");
+
                     b.HasIndex("OpportunityId", "Provider", "CreatedAt");
 
                     b.ToTable("SocialPublications");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.SocialTemplateVersion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(50000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Provider", "Scope")
+                        .IsUnique()
+                        .HasFilter("[Active] = 1");
+
+                    b.HasIndex("Provider", "Scope", "Number")
+                        .IsUnique();
+
+                    b.ToTable("SocialTemplateVersions");
                 });
 
             modelBuilder.Entity("HiringPs.Core.Source", b =>
@@ -2459,6 +2513,11 @@ namespace HiringPs.Core.Migrations
                         .HasForeignKey("OpportunityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("HiringPs.Core.SocialTemplateVersion", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Opportunity");
                 });

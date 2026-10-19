@@ -251,6 +251,7 @@ public static class MembershipSqlChecks
             await WalletSqlChecks.RunAsync(options, version.Id);
             await CheckoutSqlChecks.RunAsync(options, version.Id);
             await MemberWorkspaceSqlChecks.RunAsync(options);
+            await SocialTemplateChecks.SqlAsync(options);
             await PasswordRecoverySqlChecks.RunAsync(options);
             await GoogleCompletionSqlChecks.RunAsync(options);
             var frozenVersion = await db.MembershipPlanVersions.SingleAsync(x =>

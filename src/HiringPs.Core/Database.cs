@@ -13,6 +13,7 @@ public class HiringDb(
 ) : IdentityDbContext<IdentityUser>(options)
 {
     public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
+    public DbSet<SocialTemplateVersion> SocialTemplateVersions => Set<SocialTemplateVersion>();
     public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
     public DbSet<SocialPublication> SocialPublications => Set<SocialPublication>();
 
@@ -62,6 +63,9 @@ public class HiringDb(
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<SocialTemplateVersion>().HasIndex(x => new { x.Provider, x.Scope, x.Number }).IsUnique();
+        b.Entity<SocialTemplateVersion>().HasIndex(x => new { x.Provider, x.Scope }).IsUnique().HasFilter("[Active] = 1");
+        b.Entity<SocialPublication>().HasOne<SocialTemplateVersion>().WithMany().HasForeignKey(x => x.TemplateVersionId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<SocialPublication>().HasIndex(x => new { x.OpportunityId, x.Provider, x.CreatedAt });
         b.Entity<SocialPublication>().HasOne(x => x.Opportunity).WithMany().HasForeignKey(x => x.OpportunityId).OnDelete(DeleteBehavior.Restrict);
         MembershipSchema.Configure(b);
@@ -167,6 +171,10 @@ public class HiringDb(
 
     private void NormalizeRecords()
     {
+        if (ChangeTracker.Entries<SocialTemplateVersion>().Any(x => x.State == EntityState.Deleted
+            || (x.State == EntityState.Modified && x.Properties.Any(p => p.IsModified && p.Metadata.Name != nameof(SocialTemplateVersion.Active)))))
+            throw new InvalidOperationException("Social template versions are immutable; create a new version.");
+
         if (
             ChangeTracker
                 .Entries<PromptVersion>()

@@ -2993,4 +2993,26 @@
   <data name="SelectAllPreferences"><value>Select all</value></data>
   <data name="ClearAllPreferences"><value>Clear all</value></data>
   <data name="EmptyPreferencesMeansAll"><value>Leaving this list empty includes all options without restricting alerts by this preference.</value></data>
+  <data name="SocialTemplates" xml:space="preserve"><value>Publishing templates</value></data>
+  <data name="SocialTemplateHelp" xml:space="preserve"><value>Each platform has a general template and templates by opportunity type. Saving activates a new version. Lines with empty values are omitted. The opportunity link is appended once automatically.</value></data>
+  <data name="Platform" xml:space="preserve"><value>Platform</value></data>
+  <data name="TemplateVersion" xml:space="preserve"><value>Template version</value></data>
+  <data name="GeneralTemplate" xml:space="preserve"><value>General template</value></data>
+  <data name="TemplateBody" xml:space="preserve"><value>Template text</value></data>
+  <data name="SaveTemplateVersion" xml:space="preserve"><value>Save and activate new version</value></data>
+  <data name="TemplatePreview" xml:space="preserve"><value>Preview with a real opportunity</value></data>
+  <data name="OpportunityId" xml:space="preserve"><value>Opportunity ID</value></data>
+  <data name="TemplateHistory" xml:space="preserve"><value>Version history</value></data>
+  <data name="RestoreTemplateVersion" xml:space="preserve"><value>Restore as a new version</value></data>
+  <data name="SocialTemplateInvalid" xml:space="preserve"><value>Could not save: check the text, supported variables and length.</value></data>
+  <data name="SocialTemplateConflict" xml:space="preserve"><value>The template was changed in another session. Reopen it before saving.</value></data>
+  <data name="SocialTemplateMissing" xml:space="preserve"><value>No active template exists for this platform.</value></data>
+  <data name="TemplateToken_kind" xml:space="preserve"><value>Opportunity type</value></data>
+  <data name="TemplateToken_title" xml:space="preserve"><value>Title</value></data>
+  <data name="TemplateToken_organization" xml:space="preserve"><value>Organization</value></data>
+  <data name="TemplateToken_location" xml:space="preserve"><value>Location</value></data>
+  <data name="TemplateToken_deadline" xml:space="preserve"><value>Deadline</value></data>
+  <data name="TemplateToken_summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="PreviewTemplateVersion" xml:space="preserve"><value>Load this version into the preview editor</value></data>
 </root>
