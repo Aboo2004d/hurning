@@ -252,6 +252,7 @@ public static class MembershipSqlChecks
             await CheckoutSqlChecks.RunAsync(options, version.Id);
             await MemberWorkspaceSqlChecks.RunAsync(options);
             await PasswordRecoverySqlChecks.RunAsync(options);
+            await GoogleCompletionSqlChecks.RunAsync(options);
             var frozenVersion = await db.MembershipPlanVersions.SingleAsync(x =>
                 x.Id == version.Id
             );

@@ -2982,4 +2982,6 @@
   <data name="ToolsIntroPalestine">
     <value>Tool status comes from the worker environment. All displayed times use Palestine time; results describe each tool at the time of its check.</value>
   </data>
+  <data name="TelegramMobileAlreadyRegistered"><value>This Telegram phone number is already registered to another account. Please enter a different Telegram number.</value></data>
+  <data name="GoogleMobileHelp"><value>The + sign is already provided. Enter your country code and full Telegram phone number without the local leading zero. This number will be used to link and verify your account.</value></data>
 </root>

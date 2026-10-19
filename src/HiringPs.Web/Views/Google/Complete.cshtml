@@ -1,11 +1,33 @@
 @model HiringPs.Web.Controllers.GoogleProfileInput
-@{ ViewData["Title"] = T["GoogleComplete"]; }
+@{
+    ViewData["Title"] = T["GoogleComplete"];
+}
 <section class="login-panel">
-<h1>@T["GoogleComplete"]</h1><p>@T["GoogleTelegramRequired"]</p>
-<form method="post">
-<partial name="_MemberValidation" />
-<label>@T["Name"]<input asp-for="Name" required autocomplete="name" /></label>
-<label>@T["TelegramMobile"]<input asp-for="Mobile" required type="tel" dir="ltr" autocomplete="tel" /></label>
-<button type="submit">@T["Continue"]</button>
-</form>
+    <h1>@T["GoogleComplete"]</h1>
+    <p>@T["GoogleTelegramRequired"]</p>
+    <form asp-area="" asp-controller="Google" asp-action="Complete" method="post" asp-antiforgery="true">
+        @foreach (var error in ViewData.ModelState.Where(entry => entry.Key != "Mobile").SelectMany(entry => entry.Value!.Errors))
+        {
+            <p class="validation" role="alert">@T[error.ErrorMessage]</p>
+        }
+        <label>
+            @T["Name"]
+            <input asp-for="Name" required maxlength="160" autocomplete="name" />
+        </label>
+        <p id="google-mobile-help" class="muted auth-field-help">@T["GoogleMobileHelp"]</p>
+        <label for="Mobile">@T["TelegramMobile"]</label>
+        <div class="international-phone" dir="ltr">
+            <span aria-hidden="true">+</span>
+            <input asp-for="Mobile" type="tel" dir="ltr" inputmode="numeric" autocomplete="tel-national"
+                   pattern="[1-9][0-9]{7,14}" minlength="8" maxlength="15" placeholder="970599123456"
+                   aria-describedby="google-mobile-help google-mobile-error" required />
+        </div>
+        @if (ViewData.ModelState.TryGetValue("Mobile", out var mobileState) && mobileState.Errors.Count > 0)
+        {
+            <p id="google-mobile-error" class="validation" role="alert">@T[mobileState.Errors[0].ErrorMessage]</p>
+        }
+        <button class="button button-outline auth-submit" type="submit">
+            <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["Continue"]</span>
+        </button>
+    </form>
 </section>

@@ -629,6 +629,7 @@ public static class MembershipChecks
                 );
             }
             await AccountScheduleChecks.RunAsync(client, origin);
+            await GoogleCompletionFormChecks.RunAsync(client, origin);
             response = await client.GetAsync(origin + "/en/TimeoutShellFixture");
             html = await response.Content.ReadAsStringAsync();
             Check(

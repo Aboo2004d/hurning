@@ -616,3 +616,31 @@ public static class PaymentListingFixtureData
             },
         };
 }
+
+// Real Google completion view; no OAuth identity or database access in layout previews.
+public sealed class GoogleCompletionShellFixtureController : Controller
+{
+    public IActionResult Index(bool duplicate = false)
+    {
+        if (duplicate)
+            ModelState.AddModelError("Mobile", "TelegramMobileAlreadyRegistered");
+        return View(
+            "/Views/Google/Complete.cshtml",
+            new HiringPs.Web.Controllers.GoogleProfileInput
+            {
+                Name = "Fixture member",
+                Mobile = duplicate ? "970599123456" : "",
+            }
+        );
+    }
+
+    [HttpPost]
+    public IActionResult Validate(HiringPs.Web.Controllers.GoogleProfileInput input) =>
+        Json(
+            new
+            {
+                valid = ModelState.IsValid,
+                mobile = ModelState.IsValid ? MembershipRules.Mobile(input.Mobile) : null,
+            }
+        );
+}
