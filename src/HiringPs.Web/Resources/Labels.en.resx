@@ -3029,4 +3029,8 @@
   <data name="ToolCode_IntegrationPersonalReady"><value>Personal account identity, token and publishing permission verified. No content was published.</value></data>
   <data name="IntegrationAccountName"><value>Account name</value></data>
   <data name="IntegrationAccountId"><value>Account ID</value></data>
+  <data name="SocialDestinationsHelp"><value>Choose where to publish this opportunity. You can select both your personal account and organization page.</value></data>
+  <data name="SocialOrganizationPage"><value>Organization page</value></data>
+  <data name="SocialPersonalAccount"><value>Personal account</value></data>
+  <data name="SocialDestinationNotConnected"><value>Connect this destination to enable publishing</value></data>
 </root>

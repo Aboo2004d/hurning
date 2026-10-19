@@ -18,13 +18,31 @@ var item = Model.Opportunity!;
 <input type="hidden" name="Provider" value="@Model.Provider" />
 
 @if (SocialPublishing.IsLinkedIn(Model.Provider)) {
-    <fieldset data-social-targets data-required-message="@T["SocialDestinationRequired"]"><legend>@T["SocialDestinations"]</legend>
+    <fieldset class="social-destinations" data-social-targets data-required-message="@T["SocialDestinationRequired"]"><legend>@T["SocialDestinations"]</legend>
+    <p class="social-destinations-help">@T["SocialDestinationsHelp"]</p>
+    <div class="social-destination-grid">
     @foreach (var target in new[] { "LinkedIn", "LinkedInPersonal" }) {
         var connection = Model.Destinations.SingleOrDefault(x => x.Provider == target);
         var available = connection is not null && connection.Enabled && !(connection.ExpiresAt <= DateTimeOffset.UtcNow);
-        <label><input type="checkbox" name="Targets" value="@target" disabled="@(!available)" checked="@(available && target == Model.Provider)" />@T["SocialDestination_" + target] @(connection is not null ? " · " + connection.PageName : "")</label>
-        @if (!available) { <a asp-controller="Integrations" asp-action="Index" asp-fragment="@(target.ToLowerInvariant())-integration">@T["IntegrationSettings"]</a> }
+        var status = connection is null ? "IntegrationDisconnectedLabel"
+            : !connection.Enabled ? "ToolState_Disabled"
+            : connection.ExpiresAt <= DateTimeOffset.UtcNow ? "IntegrationExpiredLabel" : "IntegrationConnectedLabel";
+        <div class="social-destination @(available ? "" : "social-destination-unavailable")">
+            <label class="social-destination-choice">
+                <input type="checkbox" name="Targets" value="@target" disabled="@(!available)" checked="@(available && target == Model.Provider)" />
+                <span class="social-destination-icon" aria-hidden="true"><span class="fa-solid @(target == "LinkedIn" ? "fa-linkedin-in" : "fa-user")"></span></span>
+                <span class="social-destination-copy">
+                    <strong>@T[target == "LinkedIn" ? "SocialOrganizationPage" : "SocialPersonalAccount"]</strong>
+                    <span class="social-destination-account" dir="auto">@(connection is not null ? connection.PageName : T["SocialDestinationNotConnected"].Value)</span>
+                    <span class="social-destination-status @(available ? "is-connected" : "")">@T[status]</span>
+                </span>
+            </label>
+            @if (!available) {
+                <a class="social-destination-settings" asp-controller="Integrations" asp-action="Index" asp-fragment="@(target.ToLowerInvariant())-integration">@T["IntegrationSettings"] <span class="fa-solid fa-gear" aria-hidden="true"></span></a>
+            }
+        </div>
     }
+    </div>
     </fieldset>
 }
 <label class="social-preview">@T["SocialPreview"]<textarea name="Text" data-social-text rows="12" dir="auto" required maxlength="@(SocialPublishing.IsLinkedIn(Model.Provider) ? 2800 : 50000)">@Model.Text</textarea></label>

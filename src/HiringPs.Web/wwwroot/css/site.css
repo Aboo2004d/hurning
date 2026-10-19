@@ -1925,6 +1925,31 @@ footer {
 .social-fields .social-field { display: inline-flex; align-items: center; gap: .6rem; margin: 0; padding: .7rem 1rem; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
 .social-fields .social-field:has(input:checked) { background: #e9f4f0; border-color: #87b8a8; }
 .social-composer input[type="checkbox"] { width: 1.1rem; height: 1.1rem; margin: 0; flex: 0 0 auto; accent-color: #176c54; }
+.social-destinations { min-inline-size: 0; border: 0; padding: 0; margin: 1.5rem 0; }
+.social-destinations legend { padding: 0; font-weight: 700; color: var(--ink); font-size: 1rem; }
+.social-destinations-help { margin: .35rem 0 1rem; color: var(--muted); font-size: .875rem; }
+.social-destination-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.social-destination { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; transition: border-color .15s ease, background-color .15s ease; }
+.social-destination:has(input:checked) { border-color: var(--accent); background: var(--soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.social-destination:has(input:focus-visible) { outline: 3px solid #84b9a7; outline-offset: 3px; }
+.social-destination:not(.social-destination-unavailable):hover { border-color: var(--accent); }
+.social-destination .social-destination-choice { display: flex; align-items: flex-start; gap: .85rem; margin: 0; padding: 1.15rem; cursor: pointer; color: var(--ink); }
+.social-destination-choice > input[type="checkbox"] { width: 20px; height: 20px; margin: .7rem 0 0; padding: 0; }
+.social-destination-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; height: 44px; border-radius: 12px; background: var(--soft); color: var(--accent); font-size: 1.15rem; }
+.social-destination-copy { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; min-width: 0; }
+.social-destination-copy strong { font-size: .95rem; }
+.social-destination-account { font-size: .875rem; color: var(--muted); overflow-wrap: anywhere; max-width: 100%; }
+.social-destination-status { display: inline-flex; align-items: center; gap: .4rem; border-radius: 20px; background: var(--bg); color: var(--muted); padding: .15rem .65rem; font-size: .75rem; }
+.social-destination-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.social-destination-status.is-connected { color: var(--accent); background: var(--soft); }
+.social-destination-unavailable { background: var(--bg); border-style: dashed; }
+.social-destination-unavailable .social-destination-choice { cursor: not-allowed; }
+.social-destination-unavailable .social-destination-icon { background: var(--surface); color: var(--muted); }
+.social-destination-settings { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .65rem 1.15rem; border-block-start: 1px solid var(--line); font-size: .8rem; background: var(--surface); }
+@media (max-width: 640px) {
+    .social-destination-grid { grid-template-columns: minmax(0, 1fr); }
+    .social-destination .social-destination-choice { padding: 1rem; gap: .65rem; }
+}
 .social-preview { display: grid; gap: .7rem; }
 .social-preview textarea { width: 100%; box-sizing: border-box; min-height: 260px; resize: vertical; line-height: 1.9; }
 .social-canonical-link { padding: .8rem 1rem; background: #f3f8f6; border-radius: 10px; overflow-wrap: anywhere; font-size: .9rem; }

@@ -3029,4 +3029,8 @@
   <data name="ToolCode_IntegrationPersonalReady"><value>تم التحقق من هوية الحساب الشخصي وصلاحية رمز الوصول والنشر. لم ينشر أي محتوى.</value></data>
   <data name="IntegrationAccountName"><value>اسم الحساب</value></data>
   <data name="IntegrationAccountId"><value>معرّف الحساب</value></data>
+  <data name="SocialDestinationsHelp"><value>حدد أين تريد نشر الفرصة. يمكنك اختيار الحساب الشخصي وصفحة المؤسسة معًا.</value></data>
+  <data name="SocialOrganizationPage"><value>صفحة المؤسسة</value></data>
+  <data name="SocialPersonalAccount"><value>الحساب الشخصي</value></data>
+  <data name="SocialDestinationNotConnected"><value>اربط هذه الوجهة لتفعيل النشر عليها</value></data>
 </root>
