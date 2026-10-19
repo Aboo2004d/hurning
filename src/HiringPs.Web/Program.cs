@@ -268,7 +268,7 @@ app.Use(
             + "img-src 'self' data:; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
-            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com";
+            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com";
         await next();
     }
 );
