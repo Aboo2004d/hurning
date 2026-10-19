@@ -237,7 +237,9 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
             ? new FormUrlEncodedContent(new Dictionary<string,string> { ["message"] = attempt.Text })
             : JsonContent.Create(new { author = (attempt.Provider == "LinkedInPersonal" ? "urn:li:person:" : "urn:li:organization:") + connection.PageId, commentary = attempt.Text,
                 visibility = "PUBLIC", distribution = new { feedDistribution = "MAIN_FEED", targetEntities = Array.Empty<object>(), thirdPartyDistributionChannels = Array.Empty<object>() }, lifecycleState = "PUBLISHED", isReshareDisabledByAuthor = false });
-        using var response = await Client().SendAsync(request, ct);
+        using var response = await Client().SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        logger?.LogInformation("SocialPublish Attempt {AttemptId} Provider {Provider} Stage ResponseHeaders HttpStatus {HttpStatus}",
+            attempt.Id, attempt.Provider, (int)response.StatusCode);
         if (!response.IsSuccessStatusCode)
         {
             attempt.Status = (int)response.StatusCode >= 500 || response.StatusCode == System.Net.HttpStatusCode.RequestTimeout ? "Unknown" : "Failed";
@@ -252,7 +254,13 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         else
         {
             attempt.RemoteId = response.Headers.TryGetValues("x-restli-id", out var ids) ? ids.First() : "";
-            if (attempt.RemoteId.Length == 0) { attempt.Status = "Unknown"; return; }
+            if (attempt.RemoteId.Length == 0)
+            {
+                logger?.LogWarning("SocialPublish Attempt {AttemptId} Provider {Provider} Stage MissingPostId HttpStatus {HttpStatus}",
+                    attempt.Id, attempt.Provider, (int)response.StatusCode);
+                attempt.Status = "Unknown";
+                return;
+            }
             attempt.Url = "https://www.linkedin.com/feed/update/" + Uri.EscapeDataString(attempt.RemoteId) + "/";
         }
         attempt.Status = "Published";

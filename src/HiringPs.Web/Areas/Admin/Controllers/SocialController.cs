@@ -28,7 +28,7 @@ public sealed class SocialCompose
 }
 
 [Area("Admin"), Authorize(Roles = "Admin"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class SocialController(HiringDb db, SocialPublishing publishing, SocialTemplates templates) : Controller
+public sealed class SocialController(HiringDb db, SocialPublishing publishing, SocialTemplates templates, ILogger<SocialController> logger) : Controller
 {
     public async Task<IActionResult> Compose(long id, string provider, CancellationToken ct)
     {
@@ -112,8 +112,20 @@ public sealed class SocialController(HiringDb db, SocialPublishing publishing, S
         // A disconnected browser must not cancel recording a provider's result.
         using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         try { await publishing.PublishAsync(attempt, budget.Token); }
-        catch (InvalidOperationException) { attempt.Status = "Failed"; }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException or KeyNotFoundException or System.Security.Cryptography.CryptographicException) { attempt.Status = "Unknown"; }
+        catch (Exception ex) when (ex is InvalidOperationException or CryptographicException)
+        {
+            // Configuration and token decryption fail before sending to the provider.
+            attempt.Status = "Failed";
+            logger.LogWarning("SocialPublish Attempt {AttemptId} Provider {Provider} Stage PreparationFailed ExceptionType {ExceptionType}",
+                attempt.Id, attempt.Provider, ex.GetType().Name);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or KeyNotFoundException)
+        {
+            attempt.Status = "Unknown";
+            // Provider bodies and exception messages can contain tokens or private content.
+            logger.LogWarning("SocialPublish Attempt {AttemptId} Provider {Provider} Stage Unconfirmed ExceptionType {ExceptionType}",
+                attempt.Id, attempt.Provider, ex.GetType().Name);
+        }
         await db.SaveChangesAsync(CancellationToken.None);
         TempData["Notice"] = "Social" + attempt.Status;
         return RedirectToAction(nameof(Compose), new { id = input.OpportunityId, provider = input.Provider });
