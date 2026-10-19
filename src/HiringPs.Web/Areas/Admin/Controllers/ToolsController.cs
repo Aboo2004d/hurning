@@ -26,6 +26,8 @@ public class ToolsController : AdminControllerBase
         var model = new ToolDashboard
         {
             Now = now,
+            HasPendingChecks = await db.ToolCheckRequests.AnyAsync(
+                x => x.Status == ToolRequestStatus.Pending || x.Status == ToolRequestStatus.Running, ct),
             GoogleInteractive = await db.ToolCheckResults.AsNoTracking()
                 .Where(x => x.Tool == "GoogleInteractive" && x.State == ToolState.Ready)
                 .OrderByDescending(x => x.Id).FirstOrDefaultAsync(ct),

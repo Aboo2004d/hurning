@@ -34,6 +34,8 @@ public static class AdminActionRoutes
         ["UndoMerge"] = "Merges",
         ["Tools"] = "Tools",
         ["CheckTools"] = "Tools",
+        ["CheckTool"] = "Tools",
+        ["CheckIntegration"] = "Tools",
         ["CheckAi"] = "Tools",
         ["SiteQuestions"] = "SiteQuestions",
     };

@@ -30,6 +30,14 @@ public static class SiteRoutes
                     action,
                 }
             );
+        // Match tool commands before /Admin/Tools/{id?}; otherwise CheckTool
+        // is treated as a dashboard id and no check is queued.
+        foreach (var action in new[] { "CheckTool", "CheckTools", "CheckAi", "CheckIntegration" })
+            app.MapControllerRoute(
+                "admin-tools-" + action,
+                "Admin/Tools/" + action,
+                new { area = "Admin", controller = "Tools", action }
+            );
         foreach (var pair in AdminActionRoutes.Controllers)
             app.MapControllerRoute(
                 "admin-" + pair.Key,

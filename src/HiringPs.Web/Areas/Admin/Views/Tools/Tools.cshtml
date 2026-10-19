@@ -20,6 +20,10 @@
     <a class="button button-outline" asp-controller="Tools" asp-action="Tools">@T["ToolsRefresh"]</a>
 </div>
 <p class="muted">@T["ToolsAllCost"]</p>
+@if (Model.HasPendingChecks)
+{
+    <p class="notice" role="status" data-collection-pending="@(workerFresh ? "true" : "false")">@T["ToolsCheckAlreadyQueued"]</p>
+}
 @if (!workerFresh)
 {
     <p class="notice">@T["ToolsWorkerOffline"]</p>
