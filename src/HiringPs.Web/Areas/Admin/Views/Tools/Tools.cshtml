@@ -109,12 +109,19 @@
                 </dl>
             }
             <div class="tool-card-actions">
+            @if (key == "GoogleLogin") {
+                <form asp-controller="Integrations" asp-action="TestGoogle" method="get"><button type="submit" class="button-outline">@T["GoogleTestLabel"]</button></form>
+            } else {
             <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
+            }
             @if (key is "GoogleLogin" or "Facebook" or "LinkedIn") {
                 <a class="button button-outline" asp-controller="Integrations" asp-action="Index" asp-fragment="@(key == "GoogleLogin" ? "google-integration" : key.ToLowerInvariant() + "-integration")">@T["IntegrationSettings"]</a>
             }
             </div>
-            @if (key == "GoogleLogin") { <p class="muted">@T["GoogleConfigurationOnly"]</p> }            @if (key == "AiConfiguration" || key == "AiLive")
+            @if (key == "GoogleLogin" && Model.GoogleInteractive is { } googleTest) {
+                <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@PalestineTime(googleTest.CheckedAt)</bdi></p>
+            }
+            @if (key == "AiConfiguration" || key == "AiLive")
             {
                 <a asp-controller="AiUsage" asp-action="AiUsage">@T["AiUsage"]</a>
             }

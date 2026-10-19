@@ -7,6 +7,7 @@ public sealed class ToolDashboard
     public ToolWorkerState? Worker { get; set; }
     public int FreshWorkers { get; set; }
     public List<ToolCheckResult> Results { get; set; } = [];
+    public ToolCheckResult? GoogleInteractive { get; set; }
     public List<ToolCheckRequest> Requests { get; set; } = [];
     public AdminPager RequestsPager { get; set; } = new();
     public AiUsage? LastAi { get; set; }

@@ -26,6 +26,9 @@ public class ToolsController : AdminControllerBase
         var model = new ToolDashboard
         {
             Now = now,
+            GoogleInteractive = await db.ToolCheckResults.AsNoTracking()
+                .Where(x => x.Tool == "GoogleInteractive" && x.State == ToolState.Ready)
+                .OrderByDescending(x => x.Id).FirstOrDefaultAsync(ct),
             Worker = await db
                 .ToolWorkers.AsNoTracking()
                 .OrderByDescending(x => x.At)

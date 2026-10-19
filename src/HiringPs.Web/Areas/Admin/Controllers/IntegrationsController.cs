@@ -19,7 +19,7 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
             .OrderByDescending(x => x.Id).FirstOrDefaultAsync();
         return View(await db.SocialConnections.AsNoTracking().ToListAsync());
     }
-    [HttpPost]
+    [HttpGet]
     public async Task<IActionResult> TestGoogle()
     {
         if (await schemes.GetSchemeAsync("Google") is null) { TempData["Notice"] = "IntegrationNotConfigured"; return RedirectToAction(nameof(Index)); }
