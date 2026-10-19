@@ -240,6 +240,7 @@ public static class MembershipChecks
             )
         );
         await using var app = builder.Build();
+        app.UseAuthentication();
         app.UseMiddleware<LanguagePathMiddleware>();
         app.UseExceptionHandler(
             new ExceptionHandlerOptions
@@ -298,7 +299,6 @@ public static class MembershipChecks
             }
         );
         app.UseRateLimiter();
-        app.UseAuthentication();
         app.UseAuthorization();
         app.MapSiteRoutes();
         await app.StartAsync();

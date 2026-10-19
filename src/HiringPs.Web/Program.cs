@@ -4,11 +4,24 @@ using HiringPs.Web;
 using HiringPs.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ngrok and local reverse proxies connect from loopback, which ASP.NET trusts by default.
+// Add the actual proxy IP in hosting configuration when it is not a loopback address.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    foreach (
+        var address in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>()
+            ?? []
+    )
+        options.KnownProxies.Add(System.Net.IPAddress.Parse(address));
+});
 builder.Services.AddSingleton<HiringPs.Web.Models.SiteSeo>();
 
 // ======================================
@@ -79,25 +92,41 @@ builder
     })
     .AddEntityFrameworkStores<HiringDb>()
     .AddDefaultTokenProviders();
-if (!string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientId"])
+if (
+    !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientId"])
     && builder.Configuration["Authentication:Google:ClientId"] != "***"
     && !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientSecret"])
-    && builder.Configuration["Authentication:Google:ClientSecret"] != "***")
+    && builder.Configuration["Authentication:Google:ClientSecret"] != "***"
+)
 {
-    builder.Services.AddAuthentication().AddGoogle(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-        options.SignInScheme = IdentityConstants.ExternalScheme;
-        options.SaveTokens = false;
-        options.Events.OnRemoteFailure = context =>
+    builder
+        .Services.AddAuthentication()
+        .AddGoogle(options =>
         {
-            context.HandleResponse();
-            var diagnostic = context.Properties?.Items.TryGetValue("GoogleAdminTest", out var test) == true && test == "true";
-            context.Response.Redirect(context.Request.PathBase + (diagnostic ? "/Admin/Integrations/Index?googleTest=failed" : "/Account/Login"));
-            return Task.CompletedTask;
-        };
-    });
+            options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+            options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+            // Keep only the technical path fixed. Google middleware builds the absolute URI
+            // from this request's public Scheme, Host (including port), and real mount path.
+            options.CallbackPath = "/signin-google";
+            options.SignInScheme = IdentityConstants.ExternalScheme;
+            options.SaveTokens = false;
+            options.Events.OnRemoteFailure = context =>
+            {
+                context.HandleResponse();
+                var diagnostic =
+                    context.Properties?.Items.TryGetValue("GoogleAdminTest", out var test) == true
+                    && test == "true";
+                context.Response.Redirect(
+                    context.Request.PathBase
+                        + (
+                            diagnostic
+                                ? "/Admin/Integrations/Index?googleTest=failed"
+                                : "/Account/Login"
+                        )
+                );
+                return Task.CompletedTask;
+            };
+        });
 }
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -200,6 +229,9 @@ if (!string.IsNullOrWhiteSpace(keyPath))
 // ========================================
 var app = builder.Build();
 
+// Restore the public HTTPS scheme before redirects and OAuth correlation cookies are created.
+app.UseForwardedHeaders();
+
 // ========================================
 // 11. Database Migrations & Seed
 // ========================================
@@ -235,7 +267,7 @@ app.Use(
             + "img-src 'self' data:; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
-            + "form-action 'self' https://checkout.lahza.io";
+            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com";
         await next();
     }
 );
@@ -243,7 +275,6 @@ app.Use(
 // ========================================
 // 14. Middleware
 // ========================================
-app.UseMiddleware<LanguagePathMiddleware>();
 app.UseExceptionHandler(
     new ExceptionHandlerOptions
     {
@@ -251,6 +282,11 @@ app.UseExceptionHandler(
         StatusCodeSelector = exception => exception is TimeoutException ? 504 : 500,
     }
 );
+
+// Authentication must capture the real mount path before language is added to PathBase.
+// Changing PathBase inside a controller is too late for OAuth's original callback base.
+app.UseAuthentication();
+app.UseMiddleware<LanguagePathMiddleware>();
 app.UseRequestLocalization(SiteLocalization.Options());
 
 // Capture privacy before LanguagePathMiddleware restores the external request path.
@@ -283,7 +319,6 @@ app.UseStatusCodePagesWithReExecute("/Errors/Status", "?code={0}");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
-app.UseAuthentication();
 app.Use(
     async (context, next) =>
     {
