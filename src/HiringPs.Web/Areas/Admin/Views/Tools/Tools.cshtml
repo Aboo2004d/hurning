@@ -8,6 +8,10 @@
     var collectorFailed = Model.Worker?.LastFailureAt is { } failure && (Model.Worker.LastSuccessAt is null || failure > Model.Worker.LastSuccessAt);
 }
 <h1>@T["Tools"]</h1>
+@if (Context.Request.Query["googleTest"] == "failed")
+{
+    <p class="notice" role="alert">@T["GoogleFailed"]</p>
+}
 <p class="notice">@T["ToolsIntroPalestine"]</p>
 <div class="actions tools-actions">
     <form asp-controller="Tools" asp-action="CheckTools" method="post">
@@ -65,6 +69,12 @@
     {
         var result = Model.Results.FirstOrDefault(x => x.Tool == key);
         var fresh = result is not null && ToolMonitoringRules.ResultFresh(result, Model.Worker, Model.Now);
+        if (key == "GoogleLogin" && Model.GoogleInteractive is { } interactive
+            && (result is null || interactive.CheckedAt >= result.CheckedAt || result.State == ToolState.Configured))
+        {
+            result = interactive;
+            fresh = true;
+        }
         var state = fresh ? result!.State : ToolState.Unknown;
         <section class="tool-card">
             <h2>@T["Tool_" + key]</h2>
@@ -110,7 +120,7 @@
             }
             <div class="tool-card-actions">
             @if (key == "GoogleLogin") {
-                <form asp-controller="Integrations" asp-action="TestGoogle" method="get"><button type="submit" class="button-outline">@T["GoogleTestLabel"]</button></form>
+                <form asp-controller="Integrations" asp-action="TestGoogle" method="get"><input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" /><button type="submit" class="button-outline">@T["GoogleTestLabel"]</button></form>
             } else {
             <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             }
@@ -118,7 +128,7 @@
                 <a class="button button-outline" asp-controller="Integrations" asp-action="Index" asp-fragment="@(key == "GoogleLogin" ? "google-integration" : key.ToLowerInvariant() + "-integration")">@T["IntegrationSettings"]</a>
             }
             </div>
-            @if (key == "GoogleLogin" && Model.GoogleInteractive is { } googleTest) {
+            @if (key == "GoogleLogin" && result?.Tool != "GoogleInteractive" && Model.GoogleInteractive is { } googleTest) {
                 <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@PalestineTime(googleTest.CheckedAt)</bdi></p>
             }
             @if (key == "AiConfiguration" || key == "AiLive")

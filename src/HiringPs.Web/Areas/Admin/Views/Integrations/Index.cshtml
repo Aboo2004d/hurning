@@ -23,7 +23,7 @@
     </form>
     <div class="integration-test-panel">
         <h3>@T["GoogleTestLabel"]</h3><p class="muted">@T["GoogleTestHelp"]</p>
-        <form asp-action="TestGoogle" method="get"><button type="submit" disabled="@(!googleReady)">@T["GoogleTestLabel"]</button></form>
+        <form asp-action="TestGoogle" method="get"><input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" /><button type="submit" disabled="@(!googleReady)">@T["GoogleTestLabel"]</button></form>
         @if(googleTest is not null) { <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@TimeZoneInfo.ConvertTime(googleTest.CheckedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></p> }
     </div>
     <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Authentication:Google:ClientId<br />Authentication:Google:ClientSecret</code><p>@T["IntegrationCallback"]</p><code>@origin/signin-google</code></details>

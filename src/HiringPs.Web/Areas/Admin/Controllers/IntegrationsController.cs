@@ -20,12 +20,14 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
         return View(await db.SocialConnections.AsNoTracking().ToListAsync());
     }
     [HttpGet]
-    public async Task<IActionResult> TestGoogle()
+    public async Task<IActionResult> TestGoogle(string? returnUrl = null)
     {
-        if (await schemes.GetSchemeAsync("Google") is null) { TempData["Notice"] = "IntegrationNotConfigured"; return RedirectToAction(nameof(Index)); }
+        var destination = Url.IsLocalUrl(returnUrl) ? returnUrl! : Url.Action(nameof(Index))!;
+        if (await schemes.GetSchemeAsync("Google") is null) { TempData["Notice"] = "IntegrationNotConfigured"; return LocalRedirect(destination); }
         var properties = signIn.ConfigureExternalAuthenticationProperties("Google",
             Url.Action(nameof(GoogleTestComplete)), User.FindFirstValue(ClaimTypes.NameIdentifier));
         properties.Items["GoogleAdminTest"] = "true";
+        properties.Items["GoogleTestReturnUrl"] = destination;
         SocialAuthentication.UseInfrastructureCallbackBase(Request);
         return Challenge(properties, "Google");
     }
@@ -34,8 +36,10 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
         var ticket = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
         var isTest = ticket.Properties is not null && ticket.Properties.Items.TryGetValue("GoogleAdminTest", out var purpose) && purpose == "true";
         var info = isTest ? await signIn.GetExternalLoginInfoAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)) : null;
+        var returnUrl = isTest && ticket.Properties!.Items.TryGetValue("GoogleTestReturnUrl", out var savedReturn)
+            && Url.IsLocalUrl(savedReturn) ? savedReturn! : Url.Action(nameof(Index))!;
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        if (info?.LoginProvider != "Google") { TempData["Notice"] = "GoogleFailed"; return RedirectToAction(nameof(Index)); }
+        if (info?.LoginProvider != "Google") { TempData["Notice"] = "GoogleFailed"; return LocalRedirect(returnUrl); }
         var request = new ToolCheckRequest { Kind = ToolCheckKind.GoogleLogin, Status = ToolRequestStatus.Completed,
             Actor = User.Identity?.Name ?? "Admin", StartedAt = DateTimeOffset.UtcNow, FinishedAt = DateTimeOffset.UtcNow, Outcome = "ChecksFinished" };
         db.ToolCheckRequests.Add(request);
@@ -47,7 +51,7 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         TempData["Notice"] = "GoogleInteractiveReady";
-        return RedirectToAction(nameof(Index));
+        return LocalRedirect(returnUrl);
     }
     [HttpPost]
     public async Task<IActionResult> GoogleEnabled(bool enabled, CancellationToken ct)

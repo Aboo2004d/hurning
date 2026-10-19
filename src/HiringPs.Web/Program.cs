@@ -116,6 +116,14 @@ if (
                 var diagnostic =
                     context.Properties?.Items.TryGetValue("GoogleAdminTest", out var test) == true
                     && test == "true";
+                if (diagnostic && context.Properties!.Items.TryGetValue("GoogleTestReturnUrl", out var destination)
+                    && !string.IsNullOrEmpty(destination))
+                {
+                    // LocalRedirect validates the protected return destination before redirecting.
+                    return Results.LocalRedirect(
+                        Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(destination, "googleTest", "failed")
+                    ).ExecuteAsync(context.HttpContext);
+                }
                 context.Response.Redirect(
                     context.Request.PathBase
                         + (
