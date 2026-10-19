@@ -243,6 +243,49 @@ public static class MemberWorkspaceSqlChecks
                 "Bulk clear persists an empty selected list for " + field
             );
         }
+        // Arabic JSON escaping can exceed the former 4000-character storage limit.
+        var largeCategories = Enumerable
+            .Range(0, 80)
+            .Select(i => $"مجال فلسطيني تجريبي لاختبار تحديد الكل {owner} {i}")
+            .ToArray();
+        await using (var db = new HiringDb(options))
+        {
+            db.Opportunities.AddRange(
+                largeCategories.Select(value => new Opportunity
+                {
+                    Title = "Large preference catalog fixture",
+                    Organization = "Fixture",
+                    Category = value,
+                    Status = PublicationStatus.Published,
+                })
+            );
+            await db.SaveChangesAsync();
+        }
+        Check(
+            await Change(bulkAction: "select-categories") is PartialViewResult,
+            "Selecting a large Arabic category catalog succeeds"
+        );
+        await using (var db = new HiringDb(options))
+        {
+            var pref = await db
+                .MemberPreferences.AsNoTracking()
+                .SingleAsync(x => x.UserId == owner);
+            Check(
+                pref.CategoriesJson.Length > 4000
+                    && !largeCategories
+                        .Except(JsonSerializer.Deserialize<string[]>(pref.CategoriesJson)!)
+                        .Any(),
+                "Large Arabic preferences round-trip through SQL without truncation"
+            );
+        }
+        Check(
+            await Change(removeCategory: largeCategories[0]) is PartialViewResult,
+            "An individual category remains removable after selecting a large catalog"
+        );
+        Check(
+            await Change(bulkAction: "clear-categories") is PartialViewResult,
+            "Large category selections remain clearable"
+        );
         Check(
             await Change(bulkAction: "unknown") is BadRequestResult,
             "Unknown bulk preference action is rejected"

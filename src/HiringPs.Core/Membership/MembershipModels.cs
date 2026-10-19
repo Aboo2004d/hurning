@@ -41,10 +41,8 @@ public sealed class MemberPreference
     public string UserId { get; set; } = "";
     public int Kinds { get; set; } = 15;
 
-    [MaxLength(4000)]
     public string CategoriesJson { get; set; } = "[]";
 
-    [MaxLength(4000)]
     public string LocationsJson { get; set; } = "[]";
     public DateTimeOffset ChangedAt { get; set; } = DateTimeOffset.UtcNow;
 }

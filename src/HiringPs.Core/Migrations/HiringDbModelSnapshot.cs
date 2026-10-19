@@ -391,8 +391,7 @@ namespace HiringPs.Core.Migrations
 
                     b.Property<string>("CategoriesJson")
                         .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset>("ChangedAt")
                         .HasColumnType("datetimeoffset");
@@ -402,8 +401,7 @@ namespace HiringPs.Core.Migrations
 
                     b.Property<string>("LocationsJson")
                         .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
 

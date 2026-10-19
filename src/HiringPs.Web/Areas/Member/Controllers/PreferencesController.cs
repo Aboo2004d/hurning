@@ -136,8 +136,6 @@ public class PreferencesController(HiringDb db) : MemberControllerBase(db)
         input.Locations = input.Locations.Distinct().ToArray();
         var categories = JsonSerializer.Serialize(input.Categories);
         var locations = JsonSerializer.Serialize(input.Locations);
-        if (categories.Length > 4000 || locations.Length > 4000)
-            return BadRequest();
         pref.Kinds = input.Kinds.Aggregate(0, (mask, kind) => mask | MembershipRules.Bit(kind));
         pref.CategoriesJson = categories;
         pref.LocationsJson = locations;

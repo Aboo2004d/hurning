@@ -145,6 +145,21 @@ public static class MembershipChecks
             );
             var model =
                 db.GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>().Model;
+            foreach (
+                var property in new[]
+                {
+                    nameof(MemberPreference.CategoriesJson),
+                    nameof(MemberPreference.LocationsJson),
+                }
+            )
+                Check(
+                    model
+                        .FindEntityType(typeof(MemberPreference))!
+                        .FindProperty(property)!
+                        .GetColumnType() == "nvarchar(max)",
+                    "Preference catalog storage supports selections beyond 4000 characters: "
+                        + property
+                );
             Check(
                 model
                     .FindEntityType(typeof(MemberSubscription))!
