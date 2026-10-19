@@ -57,7 +57,7 @@
             <p>@T["ToolHelp_Collector"]</p>
         }
         <div class="tool-card-actions">
-            <form asp-controller="Tools" asp-action="CheckTool" method="post"><input type="hidden" name="tool" value="Collector" /><button class="button-outline">@T["ToolsCheckSingle"]</button></form>
+            <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="Collector" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             <a class="button button-outline" asp-controller="Sources" asp-action="Sources">@T["Sources"]</a>
         </div>
     </section>
@@ -109,7 +109,7 @@
                 </dl>
             }
             <div class="tool-card-actions">
-            <form asp-controller="Tools" asp-action="CheckTool" method="post"><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
+            <form asp-controller="Tools" asp-action="CheckTool" method="get"><input type="hidden" name="tool" value="@key" /><button type="submit" class="button-outline">@T["ToolsCheckSingle"]</button></form>
             @if (key is "GoogleLogin" or "Facebook" or "LinkedIn") {
                 <a class="button button-outline" asp-controller="Integrations" asp-action="Index" asp-fragment="@(key == "GoogleLogin" ? "google-integration" : key.ToLowerInvariant() + "-integration")">@T["IntegrationSettings"]</a>
             }

@@ -71,7 +71,7 @@ public class ToolsController : AdminControllerBase
     public Task<IActionResult> CheckTools(CancellationToken ct) =>
         QueueToolCheckAsync(ToolCheckKind.All, ct);
 
-    [HttpPost]
+    [HttpGet]
     public Task<IActionResult> CheckTool(string tool, CancellationToken ct)
     {
         if (tool != "Collector" && tool != "AiLive" && !ToolMonitoringRules.StandardTools.Contains(tool))
@@ -80,11 +80,11 @@ public class ToolsController : AdminControllerBase
             ? QueueToolCheckAsync(kind, ct) : Task.FromResult<IActionResult>(BadRequest());
     }
 
-    [HttpPost]
+    [HttpGet]
     public Task<IActionResult> CheckAi(CancellationToken ct) =>
         QueueToolCheckAsync(ToolCheckKind.AiLive, ct);
 
-    [HttpPost]
+    [HttpGet]
     public Task<IActionResult> CheckIntegration(string provider, CancellationToken ct) => provider switch
     {
         "GoogleLogin" => QueueToolCheckAsync(ToolCheckKind.GoogleLogin, ct),
