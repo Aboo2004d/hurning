@@ -67,6 +67,11 @@ public sealed class PaymentReconciliation(
                 trace?.Step("Environment", "OrderEnvironmentMismatch");
                 return "PaymentEnvironmentMismatch";
             }
+            if (order.Gateway == "JawwalPay" && order.State == PaymentState.Cancelled)
+            {
+                trace?.Step("Complete", "WalletCancelled");
+                return "WalletCancelled";
+            }
             if (order.State == PaymentState.Paid)
             {
                 trace?.Step("Complete", "AlreadyPaid");

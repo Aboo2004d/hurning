@@ -88,19 +88,37 @@ public class TimeoutShellFixtureController : Controller
 [Area("Member"), Authorize]
 public sealed class WalletShellFixtureController(PaymentEnvironment environment) : Controller
 {
-    public IActionResult PaymentList() =>
-        View("/Areas/Member/Views/Payments/Index.cshtml", PaymentListingFixtureData.Page());
+    public IActionResult PaymentList(int page = 1) =>
+        Request.Headers["X-Payment-Page"] == "true"
+            ? PartialView(
+                "/Areas/Member/Views/Payments/_PaymentTable.cshtml",
+                PaymentListingFixtureData.Page(page)
+            )
+            : View(
+                "/Areas/Member/Views/Payments/Index.cshtml",
+                PaymentListingFixtureData.Page(page)
+            );
 
-    public IActionResult Details(bool paid = false)
+    public IActionResult Details(bool paid = false, string phase = "ready")
     {
-        ViewBag.Ready = false;
+        ViewBag.Ready = true;
         TempData["PaymentTraceId"] = "11112222333344445555666677778888";
         return View(
             "/Areas/Member/Views/Payments/Details.cshtml",
             new PaymentOrder
             {
                 Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
-                State = paid ? PaymentState.Paid : PaymentState.Pending,
+                State =
+                    paid ? PaymentState.Paid
+                    : phase == "failed" ? PaymentState.Failed
+                    : PaymentState.Pending,
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10),
+                CheckoutStartedAt = phase is "returned" or "checked"
+                    ? DateTimeOffset.UtcNow.AddMinutes(-2)
+                    : null,
+                LastCheckedAt = phase is "returned" or "checked"
+                    ? DateTimeOffset.UtcNow.AddMinutes(-1)
+                    : null,
                 AmountIls = 5,
                 Gateway = "Lahza",
                 GatewayEnvironment = environment.Name,
@@ -115,7 +133,46 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
         );
     }
 
-    public IActionResult Index(bool confirm = false) =>
+    public IActionResult PurchasePreview(string? code = null)
+    {
+        if (code == "INVALID")
+            ModelState.AddModelError("DiscountCode", "DiscountInvalid");
+        var input = new PurchaseInput
+        {
+            PlanId = 1,
+            Plan = new MembershipPlanVersion
+            {
+                Id = 1,
+                PlanId = 1,
+                NameAr = "باقة شهرية",
+                NameEn = "Monthly plan",
+                Days = 30,
+                PriceIls = 5,
+            },
+            PresentedVersionId = 1,
+            PresentedAmount =
+                code == "SAVE20" ? 4
+                : code == "FREE" ? 0
+                : 5,
+            FinalAmount =
+                code == "SAVE20" ? 4
+                : code == "FREE" ? 0
+                : 5,
+            DiscountCode = code ?? "",
+            Gateway = "JawwalPay",
+            Gateways = ["JawwalPay", "Lahza"],
+            StartsAt = DateTimeOffset.UtcNow,
+        };
+        return Request.Headers["X-Checkout-Async"] == "true"
+            ? PartialView("/Areas/Member/Views/Plans/_CheckoutReview.cshtml", input)
+            : View("/Areas/Member/Views/Plans/Review.cshtml", input);
+    }
+
+    public IActionResult Index(
+        bool confirm = false,
+        bool uncertain = false,
+        bool rejected = false
+    ) =>
         View(
             "/Areas/Member/Views/WalletPayments/Index.cshtml",
             new WalletCheckoutPage
@@ -135,8 +192,11 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
                     },
                 },
                 IsSandbox = environment.ShowDevelopmentHints,
-                CanInitiate = !confirm,
-                CanConfirm = confirm,
+                CanInitiate = !confirm && !uncertain && !rejected,
+                CanConfirm = confirm && !uncertain && !rejected,
+                ConfirmationStarted = uncertain || rejected,
+                Rejected = rejected,
+                CanCancel = !uncertain,
                 PhoneHint = confirm ? "05••••3456" : null,
                 ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5),
             }
@@ -186,8 +246,115 @@ public class SessionShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminFormShellFixtureController : Controller
 {
-    public IActionResult PaymentList() =>
-        View("/Areas/Admin/Views/Payments/Index.cshtml", PaymentListingFixtureData.Page());
+    public IActionResult PaymentList(int page = 1) =>
+        Request.Headers["X-Payment-Page"] == "true"
+            ? PartialView(
+                "/Areas/Admin/Views/Payments/_PaymentTable.cshtml",
+                PaymentListingFixtureData.Page(page)
+            )
+            : View(
+                "/Areas/Admin/Views/Payments/Index.cshtml",
+                PaymentListingFixtureData.Page(page)
+            );
+
+    public IActionResult ListPreview(string kind)
+    {
+        var version = new MembershipPlanVersion
+        {
+            Id = 1,
+            PlanId = 1,
+            NameAr = "باقة شهرية",
+            NameEn = "Monthly plan",
+            Days = 30,
+            PriceIls = 5,
+        };
+        ViewBag.Versions = new List<MembershipPlanVersion> { version };
+        ViewBag.Plans = new List<MembershipPlanVersion> { version };
+        ViewBag.Inbox = new AdminPage<TelegramInbox>
+        {
+            Items = [new() { Id = 1, ReceivedAt = DateTimeOffset.UtcNow }],
+        };
+        ViewBag.Ready = new[] { "Lahza", "JawwalPay" };
+        ViewBag.Available = new[] { "Lahza" };
+        return kind switch
+        {
+            "Members" => View(
+                "/Areas/Admin/Views/Members/Index.cshtml",
+                PageOf(
+                    new MemberProfile
+                    {
+                        UserId = "fixture",
+                        Name = "مستخدم تجريبي",
+                        Mobile = "0599123456",
+                        Activated = true,
+                    }
+                )
+            ),
+            "Plans" => View(
+                "/Areas/Admin/Views/Plans/Index.cshtml",
+                PageOf(
+                    new MembershipPlan
+                    {
+                        Id = 1,
+                        CurrentVersionId = 1,
+                        Visible = true,
+                    }
+                )
+            ),
+            "Subscriptions" => View(
+                "/Areas/Admin/Views/Subscriptions/Index.cshtml",
+                PageOf(
+                    new MemberSubscription
+                    {
+                        UserId = "fixture",
+                        PlanVersion = version,
+                        StartsAt = DateTimeOffset.UtcNow,
+                        EndsAt = DateTimeOffset.UtcNow.AddDays(30),
+                    }
+                )
+            ),
+            "Notifications" => View(
+                "/Areas/Admin/Views/Notifications/Index.cshtml",
+                PageOf(
+                    new MemberMessage
+                    {
+                        UserId = "fixture",
+                        Text =
+                            "تم العثور على فرص جديدة تطابق تفضيلاتك في الموقع. يمكنك فتح الموقع للاطلاع على التفاصيل.",
+                    }
+                )
+            ),
+            "Discounts" => View(
+                "/Areas/Admin/Views/Discounts/Index.cshtml",
+                PageOf(
+                    new DiscountCode
+                    {
+                        Id = 1,
+                        PlanId = 1,
+                        Code = "SAVE10",
+                        Percent = 10,
+                        ExpiresAt = DateTimeOffset.UtcNow.AddDays(30),
+                    }
+                )
+            ),
+            "Gateways" => View(
+                "/Areas/Admin/Views/Gateways/Index.cshtml",
+                new List<PaymentGatewaySetting>
+                {
+                    new() { Key = "Lahza", Enabled = true },
+                    new() { Key = "JawwalPay" },
+                }
+            ),
+            _ => NotFound(),
+        };
+    }
+
+    private static AdminPage<T> PageOf<T>(T item) =>
+        new()
+        {
+            Items = [item],
+            Pager = new() { TotalRecords = 1 },
+        };
 
     public IActionResult PaymentTrace()
     {
@@ -260,20 +427,31 @@ public class AdminFormShellFixtureController : Controller
 
 public static class PaymentListingFixtureData
 {
-    public static AdminPage<PaymentOrder> Page() =>
-        new()
+    public static AdminPage<PaymentOrder> Page(int page = 1)
+    {
+        var orders = new List<PaymentOrder>
         {
-            Pager = new AdminPager { TotalRecords = 2 },
-            Items = new List<PaymentOrder>
-            {
-                Order("Lahza", "2026-10-18T14:34:30Z"),
-                Order("JawwalPay", "2026-10-18T13:22:00Z"),
-            },
+            Order("Lahza", "2026-10-18T14:34:30Z"),
+            Order("JawwalPay", "2026-10-18T13:22:00Z"),
         };
+        orders.AddRange(
+            Enumerable.Range(0, 10).Select(_ => Order("Lahza", "2026-10-17T12:00:00Z"))
+        );
+        page = AdminPager.Normalize(page, orders.Count);
+        return new()
+        {
+            Pager = new AdminPager { TotalRecords = orders.Count, Page = page },
+            Items = orders
+                .Skip((page - 1) * AdminPager.PageSize)
+                .Take(AdminPager.PageSize)
+                .ToList(),
+        };
+    }
 
     private static PaymentOrder Order(string gateway, string timestamp) =>
         new()
         {
+            Id = Guid.NewGuid(),
             AmountIls = 5,
             Gateway = gateway,
             GatewayEnvironment = "Sandbox",

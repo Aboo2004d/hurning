@@ -1,6 +1,10 @@
 @model AdminPage<MemberMessage>
-    <h1>@T["NotificationDelivery"]</h1>
-    <form method="get" class="membership-card">
+@{ ViewData["Title"] = T["NotificationDelivery"].Value; }
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <h1>@T["NotificationDelivery"]</h1>
+    </header>
+    <form method="get" class="membership-card admin-filters">
         <label>@T["MemberId"]<input name="userId" value="@Context.Request.Query["userId"]" />
         </label>
         <label>@T["Status"]<select name="state">
@@ -11,10 +15,13 @@
                 }
             </select>
         </label>
-        <button type="submit">@T["Filter"]</button>
+        <button class="button button-outline admin-action" type="submit">
+            <span class="fa-solid fa-filter" aria-hidden="true"></span>
+            <span>@T["Filter"]</span>
+        </button>
     </form>
     <div class="table-wrap">
-        <table>
+        <table class="table-nowrap">
             <thead>
                 <tr>
                     <th>@T["MemberId"]</th>
@@ -32,7 +39,7 @@
                         <td>
                             <a asp-controller="Members" asp-action="Details" asp-route-id="@message.UserId">@message.UserId</a>
                         </td>
-                        <td dir="auto">@message.Text</td>
+                        <td class="admin-message-cell" dir="auto">@message.Text</td>
                         <td>@T[message.SentAt != null ? "Deliverysent" : message.CancelledAt != null ? "Deliverycancelled" : message.LastError.Length > 0 ? "Deliveryfailed" : "Deliverypending"]<br />@T[message.LastError]</td>
                         <td>@message.Attempts</td>
                         <td>
@@ -40,7 +47,10 @@
                             {
                                 <form asp-action="Retry" method="post">
                                     <input name="id" value="@message.Id" type="hidden" />
-                                    <button class="secondary" type="submit">@T["Retry"]</button>
+                                    <button class="button button-outline admin-action" type="submit">
+                                        <span class="fa-solid fa-rotate-right" aria-hidden="true"></span>
+                                        <span>@T["Retry"]</span>
+                                    </button>
                                 </form>
                             }
                         </td>
@@ -54,7 +64,7 @@
         {
             <h2 id="bot-inbox">@T["BotInbox"]</h2>
             <div class="table-wrap">
-                <table>
+                <table class="table-nowrap">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -76,7 +86,10 @@
                                 <td>
                                     <form asp-action="RetryInbox" method="post">
                                         <input name="id" value="@update.Id" type="hidden" />
-                                        <button class="secondary" type="submit">@T["Retry"]</button>
+                                        <button class="button button-outline admin-action" type="submit">
+                                            <span class="fa-solid fa-rotate-right" aria-hidden="true"></span>
+                                            <span>@T["Retry"]</span>
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
@@ -86,3 +99,4 @@
             </div>
             <partial name="_AdminPagination" model="inbox.Pager" />
         }
+</section>

@@ -10,7 +10,7 @@ public sealed class WalletCheckoutPage
     public bool CanConfirm { get; init; }
     public bool ConfirmationStarted { get; init; }
     public bool Rejected { get; init; }
-    public bool CanRetryOrder { get; init; }
+    public bool CanCancel { get; init; }
     public string? PhoneHint { get; init; }
     public DateTimeOffset? ExpiresAt { get; init; }
 }

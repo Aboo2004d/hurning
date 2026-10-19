@@ -1832,4 +1832,24 @@
     <data name="EndsPalestineTime" xml:space="preserve"><value>Ends (Palestine time)</value></data>
     <data name="WalletCodeExpiresPalestineTime" xml:space="preserve"><value>Code expires (Palestine time)</value></data>
     <data name="WalletBalanceFetchedPalestineTime" xml:space="preserve"><value>Balance fetched (Palestine time)</value></data>
+    <data name="PaymentsLahza" xml:space="preserve"><value>Lahza payments</value></data>
+    <data name="PaymentsJawwalPay" xml:space="preserve"><value>Jawwal Pay payments</value></data>
+    <data name="AddDiscount" xml:space="preserve"><value>Add discount code</value></data>
+    <data name="EditDiscount" xml:space="preserve"><value>Edit discount code</value></data>
+    <data name="MemberDetails" xml:space="preserve"><value>Member details</value></data>
+    <data name="AddSource" xml:space="preserve"><value>Add source</value></data>
+    <data name="EditSource" xml:space="preserve"><value>Edit source</value></data>
+    <data name="AddOpportunity" xml:space="preserve"><value>Add opportunity</value></data>
+    <data name="EditOpportunity" xml:space="preserve"><value>Edit opportunity</value></data>
+    <data name="SubscribeForDetails" xml:space="preserve"><value>For more details, please subscribe to a suitable plan.</value></data>
+    <data name="ChoosePaymentGateway" xml:space="preserve"><value>Choose your payment method</value></data>
+    <data name="LahzaCardDescription" xml:space="preserve"><value>Pay securely by card through Lahza</value></data>
+    <data name="JawwalWalletDescription" xml:space="preserve"><value>Pay from your Jawwal Pay wallet using a verification code</value></data>
+    <data name="DiscountSaving" xml:space="preserve"><value>Discount</value></data>
+    <data name="DiscountCoversPayment" xml:space="preserve"><value>The discount covers the full amount; no payment gateway is needed.</value></data>
+    <data name="CheckoutRequestFailed" xml:space="preserve"><value>The order could not be updated. Check your connection and order status before trying again.</value></data>
+    <data name="OrderSummary" xml:space="preserve"><value>Order summary</value></data>
+    <data name="CancelPayment" xml:space="preserve"><value>Cancel payment</value></data>
+    <data name="WalletCancelled" xml:space="preserve"><value>The payment was cancelled and the website payment session was invalidated.</value></data>
+    <data name="WalletCancellationUnavailable" xml:space="preserve"><value>Payment confirmation has started. A possibly debited session cannot be cancelled; check its status first.</value></data>
 </root>

@@ -1,8 +1,18 @@
 @model AdminPage<DiscountCode>
-    <h1>@T["Discounts"]</h1>
-    <a class="button" asp-action="Create">@T["Add"]</a>
+@{ ViewData["Title"] = T["Discounts"].Value; }
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <h1>@T["Discounts"]</h1>
+        <div class="actions">
+            <a class="button button-outline admin-action" asp-action="Create">
+                <span class="fa-solid fa-plus" aria-hidden="true"></span>
+                <span>@T["Add"]</span>
+            </a>
+        </div>
+    </header>
+
     <div class="table-wrap">
-        <table>
+        <table class="table-nowrap">
             <thead>
                 <tr>
                     <th>@T["DiscountCode"]</th>
@@ -26,7 +36,9 @@
                             <bdi>@code.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</bdi>
                         </td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@code.Id">@T["Edit"]</a>
+                            <a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-id="@code.Id" aria-label="@T["Edit"]" title="@T["Edit"]">
+                                <span class="fa-solid fa-pen-to-square" aria-hidden="true"></span>
+                            </a>
                         </td>
                     </tr>
                 }
@@ -34,3 +46,4 @@
         </table>
     </div>
     <partial name="_AdminPagination" model="Model.Pager" />
+</section>

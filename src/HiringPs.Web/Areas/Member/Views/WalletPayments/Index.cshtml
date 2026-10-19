@@ -1,60 +1,11 @@
 @model WalletCheckoutPage
-@{
-    ViewData["Title"] = T["WalletEnterMobile"];
-}
+@{ ViewData["Title"] = T["WalletEnterMobile"]; }
 <h1>@T["WalletEnterMobile"]</h1>
 @if (Model.IsSandbox)
 {
     <p class="notice">@T["WalletSandboxNotice"]</p>
 }
-<section class="membership-card">
-    <partial name="_PaymentSummary" model="Model.Order" />
-    <partial name="_PaymentTraceReference" />
-    <p>@T["NoRefundNotice"]</p>
-    @if (Model.CanInitiate)
-    {
-        <form asp-controller="WalletPayments" asp-action="Initiate" method="post">
-            <input name="id" type="hidden" value="@Model.Order.Id" />
-            <label for="wallet-mobile">@T["WalletMobileLabel"]</label>
-            <input id="wallet-mobile" name="phone" type="tel" inputmode="tel" dir="ltr"
-                   autocomplete="tel-national" required pattern="05[0-9]{8}" maxlength="10" placeholder="05XXXXXXXX" value="@(Model.IsSandbox ? "0599123456" : "")" />
-            @if (Model.IsSandbox)
-            {
-                <p>@T["WalletSandboxPhone"] <bdi>0599123456</bdi></p>
-            }
-            <p>@T["WalletLiveMobileHelp"]</p>
-            <button type="submit">@T["WalletSendCode"]</button>
-        </form>
-    }
-    else if (Model.CanConfirm)
-    {
-        <p>@T["WalletCodeSentTo"] <bdi>@Model.PhoneHint</bdi></p>
-        <p>@T["WalletCodeExpiresPalestineTime"] <bdi>@PaymentDisplay.Time(Model.ExpiresAt)</bdi></p>
-        <form asp-controller="WalletPayments" asp-action="Confirm" method="post" autocomplete="off">
-            <input name="id" type="hidden" value="@Model.Order.Id" />
-            <label for="wallet-otp">@T["WalletOtpLabel"]</label>
-            <input id="wallet-otp" name="otp" type="text" inputmode="numeric" dir="ltr"
-                   autocomplete="one-time-code" required pattern="[0-9]{1,32}" maxlength="32" placeholder="@(Model.IsSandbox ? "123456" : null)" />
-            @if (Model.IsSandbox)
-            {
-                <p>@T["WalletSandboxCode"] <bdi>123456</bdi></p>
-            }
-            <p>@T["WalletOtpHelp"]</p>
-            <p class="notice">@T["WalletSingleConfirmation"]</p>
-            <button type="submit">@T["WalletConfirmPayment"]</button>
-        </form>
-    }
-    else
-    {
-        <p class="notice">@T[Model.Rejected ? "WalletConfirmRejected" : Model.ConfirmationStarted ? "PaymentUncertain" : "WalletSessionUnavailable"]</p>
-    }
-    <form asp-controller="Payments" asp-action="Check" method="post">
-        <input name="id" type="hidden" value="@Model.Order.Id" />
-        <button class="secondary" type="submit">@T["CheckPayment"]</button>
-    </form>
-    <a asp-controller="Payments" asp-action="Details" asp-route-id="@Model.Order.Id">@T["PaymentDetails"]</a>
-    @if (Model.CanRetryOrder)
-    {
-        <a class="button secondary" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.Order.PlanVersion.PlanId">@T["RetryPayment"]</a>
-    }
-</section>
+<partial name="/Areas/Member/Views/WalletPayments/_WalletCheckout.cshtml" model="Model" />
+@section Scripts {
+    <script src="~/js/checkout.js" asp-append-version="true" defer></script>
+}

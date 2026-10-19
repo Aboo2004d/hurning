@@ -1,0 +1,90 @@
+@model WalletCheckoutPage
+<section class="checkout-grid" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">
+    <aside class="membership-card checkout-summary">
+        <h2>@T["OrderSummary"]</h2>
+        <partial name="_PaymentSummary" model="Model.Order" />
+    </aside>
+    <section class="membership-card checkout-panel">
+        <header class="gateway-heading">
+            <span class="gateway-icon" aria-hidden="true"><span class="fa-solid fa-wallet"></span></span>
+            <h2>@T["JawwalPay"]</h2>
+        </header>
+        @if (ViewData["CheckoutNotice"] is string notice)
+        {
+            <p class="notice" role="status">@T[notice]</p>
+        }
+        <partial name="_PaymentTraceReference" />
+        @if (Model.CanInitiate)
+        {
+            <form asp-controller="WalletPayments" asp-action="Initiate" method="post" data-checkout-form data-wallet-form
+                  data-refresh-url="@Url.Action("Index", "WalletPayments", new { id = Model.Order.Id })">
+                <input name="id" type="hidden" value="@Model.Order.Id" />
+                <label for="wallet-mobile">@T["WalletMobileLabel"]</label>
+                <input id="wallet-mobile" name="phone" type="tel" inputmode="tel" dir="ltr"
+                       autocomplete="tel-national" required pattern="05[0-9]{8}" maxlength="10" placeholder="05XXXXXXXX" value="@(Model.IsSandbox ? "0599123456" : "")" />
+                @if (Model.IsSandbox)
+                {
+                    <p class="muted">@T["WalletSandboxPhone"] <bdi>0599123456</bdi></p>
+                }
+                <p class="muted">@T["WalletLiveMobileHelp"]</p>
+                <p class="notice">@T["NoRefundNotice"]</p>
+                <div class="checkout-actions">
+                    <button class="button button-outline checkout-action" type="submit">
+                        <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["WalletSendCode"]</span>
+                    </button>
+                </div>
+            </form>
+        }
+        else if (Model.CanConfirm)
+        {
+            <p>@T["WalletCodeSentTo"] <bdi>@Model.PhoneHint</bdi></p>
+            <p class="muted">@T["WalletCodeExpiresPalestineTime"] <bdi>@PaymentDisplay.Time(Model.ExpiresAt)</bdi></p>
+            <form asp-controller="WalletPayments" asp-action="Confirm" method="post" autocomplete="off" data-checkout-form data-wallet-form
+                  data-refresh-url="@Url.Action("Index", "WalletPayments", new { id = Model.Order.Id })">
+                <input name="id" type="hidden" value="@Model.Order.Id" />
+                <label for="wallet-otp">@T["WalletOtpLabel"]</label>
+                <input class="wallet-otp" id="wallet-otp" name="otp" type="text" inputmode="numeric" dir="ltr"
+                       autocomplete="one-time-code" required pattern="[0-9]{1,32}" maxlength="32" placeholder="@(Model.IsSandbox ? "123456" : null)" />
+                @if (Model.IsSandbox)
+                {
+                    <p class="muted">@T["WalletSandboxCode"] <bdi>123456</bdi></p>
+                }
+                <p class="muted">@T["WalletOtpHelp"]</p>
+                <p class="notice">@T["WalletSingleConfirmation"]</p>
+                <div class="checkout-actions">
+                    <button class="button button-outline checkout-action" type="submit">
+                        <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["WalletConfirmPayment"]</span>
+                    </button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <p class="notice">@T[Model.Order.State == PaymentState.Cancelled ? "WalletCancelled" : Model.Rejected ? "WalletConfirmRejected" : Model.ConfirmationStarted ? "PaymentUncertain" : "WalletSessionUnavailable"]</p>
+            @if (Model.ConfirmationStarted && !Model.Rejected && Model.Order.State != PaymentState.Cancelled)
+            {
+                <div class="checkout-actions">
+                    <form asp-controller="Payments" asp-action="Check" method="post" data-checkout-form>
+                        <input name="id" type="hidden" value="@Model.Order.Id" />
+                        <button class="button button-outline checkout-action" type="submit">
+                            <span class="fa-solid fa-rotate-right" aria-hidden="true"></span><span>@T["CheckPayment"]</span>
+                        </button>
+                    </form>
+                    <a class="button button-outline checkout-action" asp-controller="Payments" asp-action="Details" asp-route-id="@Model.Order.Id" asp-fragment="payment-support">
+                        <span class="fa-solid fa-list" aria-hidden="true"></span><span>@T["RequestReview"]</span>
+                    </a>
+                </div>
+            }
+        }
+        @if (Model.CanCancel)
+        {
+            <form class="checkout-cancel" asp-controller="WalletPayments" asp-action="Cancel" method="post" data-checkout-form data-wallet-form
+                  data-refresh-url="@Url.Action("Index", "WalletPayments", new { id = Model.Order.Id })">
+                <input name="id" type="hidden" value="@Model.Order.Id" />
+                <button class="button button-outline checkout-action" type="submit">
+                    <span class="fa-solid fa-circle-pause" aria-hidden="true"></span><span>@T["CancelPayment"]</span>
+                </button>
+            </form>
+        }
+    </section>
+</section>

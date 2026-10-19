@@ -1,0 +1,77 @@
+@model PurchaseInput
+<section class="checkout-grid" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">
+    <aside class="membership-card checkout-summary">
+        <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
+        <p class="plan-price">
+            <strong><bdi dir="ltr">@MembershipRules.Money(Model.Plan.PriceIls)</bdi></strong>
+            <span aria-hidden="true">/</span>
+            <span><bdi>@Model.Plan.Days</bdi> @T["Days"]</span>
+        </p>
+        <p class="muted">@T["StartsPalestineTime"]: <bdi>@PaymentDisplay.Time(Model.StartsAt)</bdi></p>
+        <partial name="_PlanBenefits" model="Model.Plan" />
+        <dl class="checkout-totals">
+            <div><dt>@T["OriginalAmount"]</dt><dd><bdi dir="ltr">@MembershipRules.Money(Model.Plan.PriceIls)</bdi></dd></div>
+            @if (Model.FinalAmount < Model.Plan.PriceIls)
+            {
+                <div class="discount-saving"><dt>@T["DiscountSaving"]</dt><dd><bdi dir="ltr">@MembershipRules.Money(Model.Plan.PriceIls - Model.FinalAmount)</bdi></dd></div>
+            }
+            <div class="checkout-total"><dt>@T["FinalAmount"]</dt><dd><bdi dir="ltr">@MembershipRules.Money(Model.FinalAmount)</bdi></dd></div>
+        </dl>
+    </aside>
+    <section class="membership-card checkout-panel">
+        <h2>@T["PaymentGateway"]</h2>
+        <form asp-controller="Plans" asp-action="Review" method="post" data-checkout-form>
+            <partial name="_MemberValidation" />
+            <input asp-for="PlanId" type="hidden" />
+            <input asp-for="PresentedAmount" type="hidden" />
+            <input asp-for="PresentedVersionId" type="hidden" />
+            <input asp-for="RequestId" type="hidden" />
+            @if (Model.FinalAmount > 0)
+            {
+                <fieldset class="gateway-options">
+                    <legend>@T["ChoosePaymentGateway"]</legend>
+                    @foreach (var gateway in Model.Gateways)
+                    {
+                        <label class="gateway-choice">
+                            <input asp-for="Gateway" id="@("gateway-" + gateway)" type="radio" value="@gateway" />
+                            <span class="gateway-choice-body">
+                                <span class="gateway-brand" dir="ltr">@(gateway == "Lahza" ? "lahza" : "Jawwal Pay")</span>
+                                <span class="gateway-choice-title">
+                                    <span class="fa-solid @(gateway == "Lahza" ? "fa-credit-card" : "fa-wallet")" aria-hidden="true"></span>
+                                    <span>@T[gateway]</span>
+                                </span>
+                                <span class="muted">@T[gateway == "Lahza" ? "LahzaCardDescription" : "JawwalWalletDescription"]</span>
+                            </span>
+                        </label>
+                    }
+                </fieldset>
+                @if (Model.Gateways.Length == 0)
+                {
+                    <p class="notice">@T["GatewayUnavailable"]</p>
+                }
+            }
+            else
+            {
+                <p class="notice">@T["DiscountCoversPayment"]</p>
+            }
+            <div class="checkout-discount">
+                <label for="checkout-discount">@T["DiscountCode"]</label>
+                <div class="checkout-field-row">
+                    <input asp-for="DiscountCode" id="checkout-discount" dir="ltr" maxlength="50" autocomplete="off" />
+                    <button class="button button-outline checkout-action" type="submit" name="checkout" value="false" formnovalidate>
+                        <span class="fa-solid fa-check" aria-hidden="true"></span>
+                        <span>@T["ApplyDiscount"]</span>
+                    </button>
+                </div>
+            </div>
+            <p class="notice checkout-refund">@T["NoRefundNotice"]</p>
+            <label class="check checkout-terms"><input asp-for="AcceptTerms" />@T["AcceptTerms"]</label>
+            <div class="checkout-actions">
+                <button class="button button-outline checkout-action" type="submit" name="checkout" value="true" disabled="@(Model.FinalAmount > 0 && Model.Gateways.Length == 0)">
+                    <span class="fa-solid fa-credit-card" aria-hidden="true"></span>
+                    <span>@T["CompletePayment"]</span>
+                </button>
+            </div>
+        </form>
+    </section>
+</section>

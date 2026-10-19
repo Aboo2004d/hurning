@@ -1,0 +1,38 @@
+@model AdminPage<PaymentOrder>
+<section id="payment-results" data-payment-results tabindex="-1">
+    <div class="table-wrap">
+        <table class="table-nowrap payment-table">
+            <thead>
+                <tr>
+                    <th>@T["OrderId"]</th>
+                    <th>@T["Plan"]</th>
+                    <th>@T["Amount"]</th>
+                    <th>@T["PaymentGateway"]</th>
+                    <th>@T["CreatedPalestineTime"]</th>
+                    <th>@T["Status"]</th>
+                    <th>@T["Details"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model.Items)
+                {
+                    <tr>
+                        <td><bdi>@order.Id</bdi></td>
+                        <td>@order.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
+                        <td><bdi dir="ltr">@MembershipRules.Money(order.AmountIls)</bdi></td>
+                        <td>@T[order.Gateway == "discount" ? "DiscountPayment" : order.Gateway]</td>
+                        <td><bdi dir="ltr">@PaymentDisplay.Time(order.CreatedAt)</bdi></td>
+                        <td>@T["Payment" + order.State]</td>
+                        <td>
+                            <a class="button button-outline payment-details" asp-action="Details" asp-route-id="@order.Id"
+                               aria-label="@T["Details"]" title="@T["Details"]">
+                                <span class="fa-solid fa-eye" aria-hidden="true"></span>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />
+</section>

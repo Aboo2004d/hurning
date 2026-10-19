@@ -1,5 +1,6 @@
 @model PlanInput
-<h1>@T[Model.Id is null ? "AddPlan" : "EditPlan"]</h1>
+@{ ViewData["Title"] = T[Model.Id is null ? "AddPlan" : "EditPlan"].Value; }
+<h1>@ViewData["Title"]</h1>
 <p class="notice">@T["PlanVersionAdvice"]</p>
 <form asp-area="Admin" asp-controller="Plans" asp-action="@(Model.Id is null ? "Create" : "Edit")" asp-route-id="@Model.Id" method="post" class="membership-card">
     <partial name="_MemberValidation" />

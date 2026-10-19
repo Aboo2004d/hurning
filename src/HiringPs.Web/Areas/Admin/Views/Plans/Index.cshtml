@@ -1,32 +1,47 @@
 @model AdminPage<MembershipPlan>
-    @{ var versions = (List<MembershipPlanVersion>)ViewBag.Versions; }
+@{
+    ViewData["Title"] = T["Plans"].Value;
+    var versions = (List<MembershipPlanVersion>)ViewBag.Versions;
+}
+<section class="admin-list-page">
+    <header class="admin-page-heading">
         <h1>@T["Plans"]</h1>
         <div class="actions">
-            <a class="button" asp-action="Create">@T["AddPlan"]</a>
-            <a asp-action="Access">@T["TypeAccess"]</a>
+            <a class="button button-outline admin-action" asp-action="Create">
+                <span class="fa-solid fa-plus" aria-hidden="true"></span>
+                <span>@T["AddPlan"]</span>
+            </a>
+            <a class="button button-outline admin-action" asp-action="Access">
+                <span class="fa-solid fa-list" aria-hidden="true"></span>
+                <span>@T["TypeAccess"]</span>
+            </a>
         </div>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>@T["PlanId"]</th>
-                        <th>@T["Plan"]</th>
-                        <th>@T["Amount"]</th>
-                        <th>@T["Visible"]</th>
-                        <th>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var plan in Model.Items)
-                    { var version = versions.Single(x => x.Id == plan.CurrentVersionId);
+    </header>
+    <div class="table-wrap">
+        <table class="table-nowrap">
+            <thead>
+                <tr>
+                    <th>@T["PlanId"]</th>
+                    <th>@T["Plan"]</th>
+                    <th>@T["Amount"]</th>
+                    <th>@T["Visible"]</th>
+                    <th>@T["Edit"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var plan in Model.Items)
+                {
+                    var version = versions.Single(x => x.Id == plan.CurrentVersionId);
                     <tr>
                         <td>@plan.Id</td>
                         <td>@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
-                        <td>@MembershipRules.Money(version.PriceIls)</td>
+                        <td><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></td>
                         <td>@T[plan.Visible ? "Yes" : "No"]</td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@plan.Id">@T["Edit"]</a>
+                            <a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-id="@plan.Id"
+                               aria-label="@T["Edit"]" title="@T["Edit"]">
+                                <span class="fa-solid fa-pen-to-square" aria-hidden="true"></span>
+                            </a>
                         </td>
                     </tr>
                 }
@@ -34,3 +49,4 @@
         </table>
     </div>
     <partial name="_AdminPagination" model="Model.Pager" />
+</section>

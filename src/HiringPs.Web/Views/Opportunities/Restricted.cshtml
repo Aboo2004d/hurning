@@ -2,6 +2,7 @@
 @{ ViewData["Title"] = T["SubscriberContent"]; }
 <section class="error-panel">
     <h1>@T["SubscriberContent"]</h1>
+    <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
     <p>@T["RestrictedAdvice"] — @T[Model.ToString()]</p>
     @if (User.Identity?.IsAuthenticated == true)
     {

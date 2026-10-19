@@ -48,43 +48,45 @@ public sealed class WalletPaymentsController(
             .SingleOrDefaultAsync(ct);
         var now = DateTimeOffset.UtcNow;
         var available = (await registry.AvailableAsync(ct)).Any(x => x.Key == "JawwalPay");
-        return View(
-            new WalletCheckoutPage
-            {
-                Order = order,
-                IsSandbox = environment.ShowDevelopmentHints,
-                CanInitiate = session is null && available && order.ExpiresAt > now,
-                CanConfirm =
-                    gateway.Ready
-                    && session
-                        is { HasKey: true, ConfirmationStartedAt: null, InitiationRejected: false }
-                    && session.ExpiresAt > now
-                    && order.ExpiresAt > now,
-                ConfirmationStarted = session?.ConfirmationStartedAt != null,
-                Rejected =
-                    session?.ConfirmationRejected == true
-                    || session?.InitiationRejected == true
-                    || order.State == PaymentState.Failed,
-                CanRetryOrder =
-                    session?.ConfirmationRejected == true
-                    || order.State == PaymentState.Failed
-                    || session?.ConfirmationStartedAt == null
-                        && (session is not null || order.ExpiresAt <= now),
-                PhoneHint = session is null ? null : "05••••" + session.Phone[^4..],
-                ExpiresAt = session?.ExpiresAt,
-            }
-        );
+        var page = new WalletCheckoutPage
+        {
+            Order = order,
+            IsSandbox = environment.ShowDevelopmentHints,
+            CanInitiate =
+                session is null
+                && available
+                && order.ExpiresAt > now
+                && order.State is PaymentState.AwaitingPayment or PaymentState.Pending,
+            CanConfirm =
+                gateway.Ready
+                && session
+                    is { HasKey: true, ConfirmationStartedAt: null, InitiationRejected: false }
+                && session.ExpiresAt > now
+                && order.ExpiresAt > now
+                && order.State == PaymentState.Pending,
+            CanCancel =
+                !MembershipRules.Paid(order.State)
+                && order.State != PaymentState.Cancelled
+                && (session?.ConfirmationStartedAt is null || session.ConfirmationRejected),
+            ConfirmationStarted = session?.ConfirmationStartedAt != null,
+            Rejected =
+                session?.ConfirmationRejected == true
+                || session?.InitiationRejected == true
+                || order.State == PaymentState.Failed,
+            PhoneHint = session is null ? null : "05••••" + session.Phone[^4..],
+            ExpiresAt = session?.ExpiresAt,
+        };
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Checkout-Async"] == "true"
+            ? PartialView("_WalletCheckout", page)
+            : View(page);
     }
 
     [HttpPost, RequestSizeLimit(2048)]
     public async Task<IActionResult> Initiate(Guid id, string? phone, CancellationToken ct)
     {
         var outcome = await checkout.InitiateAsync(id, MemberId, phone, ct);
-        if (outcome == "PaymentNotFound")
-            return NotFound();
-        TempData["Notice"] = outcome;
-        TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
-        return RedirectToAction(nameof(Index), new { id });
+        return await ReplyAsync(id, outcome, ct);
     }
 
     [HttpPost, RequestSizeLimit(2048)]
@@ -92,12 +94,40 @@ public sealed class WalletPaymentsController(
     {
         ModelState.Clear();
         var outcome = await checkout.ConfirmAsync(id, MemberId, otp, ct);
+        return await ReplyAsync(id, outcome, ct);
+    }
+
+    [HttpPost, RequestSizeLimit(2048)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var outcome = await checkout.CancelAsync(id, MemberId, ct);
+        if (outcome == "WalletCancelled")
+        {
+            TempData["Notice"] = outcome;
+            return Navigate("Index", "Plans", null);
+        }
+        return await ReplyAsync(id, outcome, ct);
+    }
+
+    private async Task<IActionResult> ReplyAsync(Guid id, string outcome, CancellationToken ct)
+    {
         if (outcome == "PaymentNotFound")
             return NotFound();
-        TempData["Notice"] = outcome;
         TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
-        return outcome == "PaymentConfirmed"
-            ? RedirectToAction("Details", "Payments", new { id })
-            : RedirectToAction(nameof(Index), new { id });
+        if (outcome == "PaymentConfirmed")
+        {
+            TempData["Notice"] = outcome;
+            return Navigate("Details", "Payments", id);
+        }
+        if (Request.Headers["X-Checkout-Async"] == "true")
+            ViewData["CheckoutNotice"] = outcome;
+        else
+            TempData["Notice"] = outcome;
+        return await Index(id, ct);
     }
+
+    private IActionResult Navigate(string action, string controller, Guid? id) =>
+        Request.Headers["X-Checkout-Async"] == "true"
+            ? Json(new { redirectUrl = Url.Action(action, controller, new { id }) })
+            : RedirectToAction(action, controller, new { id });
 }

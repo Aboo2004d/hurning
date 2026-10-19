@@ -1832,4 +1832,24 @@
     <data name="EndsPalestineTime" xml:space="preserve"><value>النهاية (توقيت فلسطين)</value></data>
     <data name="WalletCodeExpiresPalestineTime" xml:space="preserve"><value>صلاحية الرمز حتى (توقيت فلسطين)</value></data>
     <data name="WalletBalanceFetchedPalestineTime" xml:space="preserve"><value>آخر استعلام عن الرصيد (توقيت فلسطين)</value></data>
+    <data name="PaymentsLahza" xml:space="preserve"><value>مدفوعات لحظة</value></data>
+    <data name="PaymentsJawwalPay" xml:space="preserve"><value>مدفوعات جوال باي</value></data>
+    <data name="AddDiscount" xml:space="preserve"><value>إضافة كود خصم</value></data>
+    <data name="EditDiscount" xml:space="preserve"><value>تعديل كود خصم</value></data>
+    <data name="MemberDetails" xml:space="preserve"><value>تفاصيل المستخدم</value></data>
+    <data name="AddSource" xml:space="preserve"><value>إضافة مصدر</value></data>
+    <data name="EditSource" xml:space="preserve"><value>تعديل مصدر</value></data>
+    <data name="AddOpportunity" xml:space="preserve"><value>إضافة فرصة</value></data>
+    <data name="EditOpportunity" xml:space="preserve"><value>تعديل فرصة</value></data>
+    <data name="SubscribeForDetails" xml:space="preserve"><value>للمزيد من التفاصيل، يرجى الاشتراك بالباقة المناسبة.</value></data>
+    <data name="ChoosePaymentGateway" xml:space="preserve"><value>اختر طريقة الدفع المناسبة لك</value></data>
+    <data name="LahzaCardDescription" xml:space="preserve"><value>دفع آمن بالبطاقة عبر بوابة لحظة</value></data>
+    <data name="JawwalWalletDescription" xml:space="preserve"><value>ادفع من محفظة جوال باي برمز التحقق</value></data>
+    <data name="DiscountSaving" xml:space="preserve"><value>قيمة الخصم</value></data>
+    <data name="DiscountCoversPayment" xml:space="preserve"><value>يغطي الخصم كامل المبلغ؛ لا حاجة إلى بوابة دفع.</value></data>
+    <data name="CheckoutRequestFailed" xml:space="preserve"><value>تعذر تحديث الطلب. تحقق من الاتصال ثم حدّث حالة الطلب قبل إعادة المحاولة.</value></data>
+    <data name="OrderSummary" xml:space="preserve"><value>ملخص الطلب</value></data>
+    <data name="CancelPayment" xml:space="preserve"><value>إلغاء العملية</value></data>
+    <data name="WalletCancelled" xml:space="preserve"><value>أُلغيت العملية وأُبطلت جلسة الدفع في الموقع.</value></data>
+    <data name="WalletCancellationUnavailable" xml:space="preserve"><value>بدأ تأكيد الدفع؛ لا يمكن إلغاء جلسة قد نُفّذ خصمها. تحقق من النتيجة أولًا.</value></data>
 </root>

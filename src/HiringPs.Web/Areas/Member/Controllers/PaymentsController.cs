@@ -14,18 +14,20 @@ public class PaymentsController(
     PaymentTraceWriter? diagnostics = null
 ) : MemberControllerBase(db)
 {
-    public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default) =>
-        View(
-            await Db
-                .PaymentOrders.AsNoTracking()
-                .Include(x => x.PlanVersion)
-                .Where(x =>
-                    x.UserId == MemberId && x.GatewayEnvironment == Db.ActivePaymentEnvironment
-                )
-                .OrderByDescending(x => x.CreatedAt)
-                .ThenByDescending(x => x.Id)
-                .PageAsync(page, ct)
-        );
+    public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
+    {
+        var model = await Db
+            .PaymentOrders.AsNoTracking()
+            .Include(x => x.PlanVersion)
+            .Where(x => x.UserId == MemberId && x.GatewayEnvironment == Db.ActivePaymentEnvironment)
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .PageAsync(page, ct);
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Payment-Page"] == "true"
+            ? PartialView("_PaymentTable", model)
+            : View(model);
+    }
 
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
@@ -38,15 +40,24 @@ public class PaymentsController(
         ViewBag.Review = await Db
             .PaymentReviews.AsNoTracking()
             .SingleOrDefaultAsync(x => x.OrderId == id, ct);
-        ViewBag.Ready = (await registry.AvailableAsync(ct)).Any(x => x.Key == order.Gateway);
-        ViewBag.WalletUncertain =
-            order.Gateway == "JawwalPay"
-            && order.State != PaymentState.Failed
-            && await Db.WalletPaymentSessions.AnyAsync(
-                x => x.OrderId == id && x.ConfirmationStartedAt != null && !x.ConfirmationRejected,
-                ct
-            );
-        return View(order);
+        var ready = (await registry.AvailableAsync(ct)).Any(x => x.Key == order.Gateway);
+        var session = await Db
+            .WalletPaymentSessions.AsNoTracking()
+            .Where(x => x.OrderId == id)
+            .Select(x => new { x.ConfirmationStartedAt, x.ConfirmationRejected })
+            .SingleOrDefaultAsync(ct);
+        var returned = TempData.Peek("ReturnedPayment") as string == id.ToString("N");
+        ViewBag.PaymentActions = PaymentActions.For(
+            order,
+            ready,
+            session?.ConfirmationStartedAt is not null,
+            session?.ConfirmationRejected == true,
+            returned
+        );
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Checkout-Async"] == "true"
+            ? PartialView("_PaymentDetails", order)
+            : View(order);
     }
 
     [HttpPost]
@@ -58,7 +69,11 @@ public class PaymentsController(
         );
         if (order is null)
             return NotFound();
-        if (MembershipRules.Paid(order.State) || order.ExpiresAt <= DateTimeOffset.UtcNow)
+        if (
+            MembershipRules.Paid(order.State)
+            || order.ExpiresAt <= DateTimeOffset.UtcNow
+            || order.State is PaymentState.Failed or PaymentState.Cancelled
+        )
         {
             TempData["Notice"] = "PaymentExpired";
             return RedirectToAction(nameof(Details), new { id });
@@ -137,6 +152,7 @@ public class PaymentsController(
     [HttpGet]
     public async Task<IActionResult> Returned(Guid id, CancellationToken ct)
     {
+        TempData["ReturnedPayment"] = id.ToString("N");
         TempData["Notice"] = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
         TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
         return RedirectToAction(nameof(Details), new { id });
@@ -145,8 +161,14 @@ public class PaymentsController(
     [HttpPost]
     public async Task<IActionResult> Check(Guid id, CancellationToken ct)
     {
-        TempData["Notice"] = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
+        var outcome = await reconciliation.CheckAsync(id, MemberId, MemberId, ct);
         TempData["PaymentTraceId"] = diagnostics?.LastTraceId;
+        if (Request.Headers["X-Checkout-Async"] == "true")
+        {
+            ViewData["CheckoutNotice"] = outcome;
+            return await Details(id, ct);
+        }
+        TempData["Notice"] = outcome;
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -158,12 +180,35 @@ public class PaymentsController(
         CancellationToken ct
     )
     {
-        if (!await Db.PaymentOrders.AnyAsync(x => x.Id == id && x.UserId == MemberId, ct))
+        var order = await Db
+            .PaymentOrders.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == MemberId, ct);
+        if (order is null)
             return NotFound();
+        var session = await Db
+            .WalletPaymentSessions.AsNoTracking()
+            .Where(x => x.OrderId == id)
+            .Select(x => new { x.ConfirmationStartedAt, x.ConfirmationRejected })
+            .SingleOrDefaultAsync(ct);
+        var returned = TempData.Peek("ReturnedPayment") as string == id.ToString("N");
+        if (
+            !PaymentActions
+                .For(
+                    order,
+                    false,
+                    session?.ConfirmationStartedAt is not null,
+                    session?.ConfirmationRejected == true,
+                    returned
+                )
+                .CanReport
+        )
+            return BadRequest();
         if (note?.Length > 2000)
             return BadRequest();
         if (await Db.PaymentReviews.AnyAsync(x => x.OrderId == id, ct))
-            return RedirectToAction(nameof(Details), new { id });
+            return Request.Headers["X-Checkout-Async"] == "true"
+                ? await Details(id, ct)
+                : RedirectToAction(nameof(Details), new { id });
         try
         {
             var name = await evidenceStore.SaveAsync(evidence, ct);
@@ -182,6 +227,11 @@ public class PaymentsController(
         catch (InvalidOperationException ex)
         {
             TempData["Notice"] = ex.Message;
+        }
+        if (Request.Headers["X-Checkout-Async"] == "true")
+        {
+            ViewData["CheckoutNotice"] = TempData["Notice"];
+            return await Details(id, ct);
         }
         return RedirectToAction(nameof(Details), new { id });
     }

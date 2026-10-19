@@ -1,24 +1,55 @@
 @model List<PaymentGatewaySetting>
-    @{ var ready = (string[])ViewBag.Ready; var available = (string[])ViewBag.Available; }
-    <h1>@T["PaymentGateways"]</h1>
+@{
+    ViewData["Title"] = T["PaymentGateways"].Value;
+    var ready = (string[])ViewBag.Ready;
+    var available = (string[])ViewBag.Available;
+}
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <h1>@T["PaymentGateways"]</h1>
+    </header>
     <p class="notice">@T["GatewayConfigurationAdvice"]</p>
-    <div class="membership-grid">
+    <div class="membership-grid gateway-grid">
         @foreach (var setting in Model)
         {
-            <section class="membership-card">
-                <h2>@(setting.Key == "Lahza" ? T["Lahza"] : T["JawwalPay"])</h2>
-                <p>@T[available.Contains(setting.Key) ? "GatewayAvailable" : ready.Contains(setting.Key) ? "GatewayDisabled" : "GatewayAdapterMissing"]</p>
-                <form asp-action="Update" method="post">
+            var isAvailable = available.Contains(setting.Key);
+            var isReady = ready.Contains(setting.Key);
+            <section class="membership-card gateway-card">
+                <header class="gateway-heading">
+                    <span class="gateway-icon" aria-hidden="true">
+                        <span class="fa-solid @(setting.Key == "Lahza" ? "fa-credit-card" : "fa-wallet")"></span>
+                    </span>
+                    <h2>@T[setting.Key]</h2>
+                </header>
+                <p class="gateway-status @(isAvailable ? "is-available" : "")">
+                    @T[isAvailable ? "GatewayAvailable" : isReady ? "GatewayDisabled" : "GatewayAdapterMissing"]
+                </p>
+                <form class="gateway-controls" asp-action="Update" method="post">
                     <input name="key" value="@setting.Key" type="hidden" />
                     <label class="check">
-                        <input name="enabled" type="checkbox" value="true" checked="@setting.Enabled" disabled="@(setting.Key == "JawwalPay" && !ready.Contains(setting.Key))" />@T["Enabled"]</label>
-                    <button type="submit">@T["Save"]</button>
+                        <input name="enabled" type="checkbox" value="true" checked="@setting.Enabled"
+                               disabled="@(setting.Key == "JawwalPay" && !isReady)" />
+                        @T["Enabled"]
+                    </label>
+                    <button class="button button-outline admin-action" type="submit">
+                        <span class="fa-solid fa-floppy-disk" aria-hidden="true"></span>
+                        <span>@T["Save"]</span>
+                    </button>
                 </form>
-                <a asp-controller="Payments" asp-action="Index" asp-route-gateway="@setting.Key">@T["PaymentOperations"]</a>
-                @if (setting.Key == "JawwalPay")
-                {
-                    <a class="button secondary" asp-controller="JawwalPay" asp-action="Index">@T["JawwalPaySetup"]</a>
-                }
+                <div class="gateway-actions">
+                    <a class="button button-outline admin-action" asp-controller="Payments" asp-action="Index" asp-route-gateway="@setting.Key">
+                        <span class="fa-solid fa-list" aria-hidden="true"></span>
+                        <span>@T["PaymentOperations"]</span>
+                    </a>
+                    @if (setting.Key == "JawwalPay")
+                    {
+                        <a class="button button-outline admin-action" asp-controller="JawwalPay" asp-action="Index">
+                            <span class="fa-solid fa-gear" aria-hidden="true"></span>
+                            <span>@T["JawwalPaySetup"]</span>
+                        </a>
+                    }
+                </div>
             </section>
         }
     </div>
+</section>

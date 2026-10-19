@@ -249,6 +249,7 @@ public static class MembershipSqlChecks
                 "Outbox rowversion claim can deliver a message tracked in the same scope"
             );
             await WalletSqlChecks.RunAsync(options, version.Id);
+            await CheckoutSqlChecks.RunAsync(options, version.Id);
             var frozenVersion = await db.MembershipPlanVersions.SingleAsync(x =>
                 x.Id == version.Id
             );

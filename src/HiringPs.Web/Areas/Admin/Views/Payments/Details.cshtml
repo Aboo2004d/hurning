@@ -1,4 +1,5 @@
 @model PaymentOrder
+@{ ViewData["Title"] = T["PaymentDetails"].Value; }
 @{ var review = ViewBag.Review as PaymentReview; }
 <h1>@T["PaymentDetails"]</h1>
 <section class="membership-card">

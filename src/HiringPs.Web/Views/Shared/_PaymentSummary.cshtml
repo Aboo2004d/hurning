@@ -21,10 +21,13 @@
         <dt>@T["Status"]</dt>
         <dd>@T["Payment" + Model.State]</dd>
     </div>
-    <div>
-        <dt>@T["Reference"]</dt>
-        <dd dir="auto">@Model.ProviderReference</dd>
-    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.ProviderReference))
+    {
+        <div>
+            <dt>@T["Reference"]</dt>
+            <dd dir="auto">@Model.ProviderReference</dd>
+        </div>
+    }
     <div>
         <dt>@T["CreatedPalestineTime"]</dt>
         <dd>

@@ -25,6 +25,36 @@ public sealed class WalletCheckoutService(
     public Task<string> ConfirmAsync(Guid id, string owner, string? otp, CancellationToken ct) =>
         TraceAsync(id, "WalletConfirm", trace => ConfirmCoreAsync(id, owner, otp, trace, ct));
 
+    // Cancel locally before any debit claim. The supplied provider contract has no cancel endpoint.
+    public async Task<string> CancelAsync(Guid id, string owner, CancellationToken ct)
+    {
+        if (!await OwnedAsync(id, owner, ct))
+            return "PaymentNotFound";
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        await membership.LockMemberAsync(owner, ct);
+        var order = await db.PaymentOrders.SingleAsync(x => x.Id == id, ct);
+        if (MembershipRules.Paid(order.State))
+            return "PaymentConfirmed";
+        var session = await db.WalletPaymentSessions.SingleOrDefaultAsync(x => x.OrderId == id, ct);
+        if (session?.ConfirmationStartedAt is not null && !session.ConfirmationRejected)
+            return "WalletCancellationUnavailable";
+        var now = DateTimeOffset.UtcNow;
+        order.State = PaymentState.Cancelled;
+        order.ExpiresAt = now;
+        if (session is not null)
+        {
+            session.ProtectedSessionKey = null;
+            session.ExpiresAt = now;
+        }
+        membership.Audit(owner, "Wallet.Cancel", "Order " + id);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return "WalletCancelled";
+    }
+
     private async Task<string> TraceAsync(
         Guid id,
         string operation,
@@ -94,6 +124,8 @@ public sealed class WalletCheckoutService(
             if (MembershipRules.Paid(order.State))
                 return "PaymentConfirmed";
             var now = DateTimeOffset.UtcNow;
+            if (order.State == PaymentState.Cancelled)
+                return "WalletCancelled";
             if (order.ExpiresAt <= now)
                 return "PaymentExpired";
             if (order.Currency != "ILS" || !gateway.SupportsAmount(order.AmountIls))
@@ -144,8 +176,12 @@ public sealed class WalletCheckoutService(
             var keyHash = Convert.ToHexString(
                 SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(result.SessionKey))
             );
-            await db
-                .WalletPaymentSessions.Where(x => x.OrderId == id)
+            var saved = await db
+                .WalletPaymentSessions.Where(x =>
+                    x.OrderId == id
+                    && x.Order.State != PaymentState.Cancelled
+                    && x.ExpiresAt > DateTimeOffset.UtcNow
+                )
                 .ExecuteUpdateAsync(
                     update =>
                         update
@@ -154,6 +190,13 @@ public sealed class WalletCheckoutService(
                             .SetProperty(x => x.ExpiresAt, expires),
                     CancellationToken.None
                 );
+            if (saved == 0)
+                return await db.PaymentOrders.AnyAsync(
+                    x => x.Id == id && x.State == PaymentState.Cancelled,
+                    CancellationToken.None
+                )
+                    ? "WalletCancelled"
+                    : "PaymentExpired";
             trace?.Step("Session", "Saved");
             return "WalletOtpSent";
         }
@@ -319,6 +362,7 @@ public sealed class WalletCheckoutService(
                 x.Id == id
                 && x.State != PaymentState.Paid
                 && x.State != PaymentState.ManuallyApproved
+                && x.State != PaymentState.Cancelled
             )
             .ExecuteUpdateAsync(
                 update => update.SetProperty(x => x.State, PaymentState.Failed),

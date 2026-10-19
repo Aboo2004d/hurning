@@ -1,5 +1,6 @@
 @model MemberProfile
-<h1>@Model.Name</h1>
+@{ ViewData["Title"] = T["MemberDetails"].Value + " — " + Model.Name; }
+<h1>@ViewData["Title"]</h1>
 @if (TempData["RecoveryLink"] is string recoveryLink)
 {
     <div class="notice">

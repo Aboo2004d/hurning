@@ -84,10 +84,57 @@ public static class WalletSqlChecks
                 protection
             ).ConfirmAsync(order.Id, order.UserId, code, default);
         }
+        async Task<string> Cancel(PaymentOrder order, string? owner = null)
+        {
+            await using var db = new HiringDb(options);
+            var membership = new MembershipService(db);
+            var gateway = new JawwalPayGateway(new HttpClient(transport, false), configuration, db);
+            var registry = new PaymentGatewayRegistry(db, configuration, [gateway]);
+            return await new WalletCheckoutService(
+                db,
+                membership,
+                registry,
+                gateway,
+                protection
+            ).CancelAsync(order.Id, owner ?? order.UserId, default);
+        }
+        var cancelled = await Order();
+        await Initiate(cancelled);
+        var debitCalls = transport.Confirmations;
+        Check(
+            await Cancel(cancelled, "another-member") == "PaymentNotFound",
+            "Wallet cancellation enforces order ownership"
+        );
+        Check(
+            await Cancel(cancelled) == "WalletCancelled",
+            "Wallet cancellation invalidates an unconfirmed OTP session"
+        );
+        await using (var db = new HiringDb(options))
+        {
+            var session = await db.WalletPaymentSessions.SingleAsync(x =>
+                x.OrderId == cancelled.Id
+            );
+            var order = await db.PaymentOrders.SingleAsync(x => x.Id == cancelled.Id);
+            Check(
+                order.State == PaymentState.Cancelled
+                    && order.ExpiresAt <= DateTimeOffset.UtcNow
+                    && session.ProtectedSessionKey is null
+                    && session.ExpiresAt <= DateTimeOffset.UtcNow,
+                "Cancelled order expires and erases its encrypted session key without deleting the audit trail"
+            );
+        }
+        await Confirm(cancelled, "123456");
+        Check(transport.Confirmations == debitCalls, "Cancelled OTP cannot send a debit request");
+        Check(
+            await Initiate(cancelled) == "WalletCancelled",
+            "Cancelled order cannot open another OTP session"
+        );
+
+        var initialInitiations = transport.Initiations;
         var first = await Order();
         var requested = await Task.WhenAll(Initiate(first), Initiate(first));
         Check(
-            transport.Initiations == 1 && requested.Contains("WalletOtpSent"),
+            transport.Initiations == initialInitiations + 1 && requested.Contains("WalletOtpSent"),
             "concurrent OTP requests initialize one partner session"
         );
         await using (var db = new HiringDb(options))
@@ -147,6 +194,10 @@ public static class WalletSqlChecks
             "reset after debit remains unresolved rather than retried"
         );
         before = transport.Confirmations;
+        Check(
+            await Cancel(interrupted) == "WalletCancellationUnavailable",
+            "An uncertain debit cannot be cancelled or made retryable"
+        );
         await using (var db = new HiringDb(options))
         {
             await db

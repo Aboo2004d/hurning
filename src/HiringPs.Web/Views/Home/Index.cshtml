@@ -122,6 +122,10 @@
                             {
                                 <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.Id">@T["Details"] ←</a>
                             }
+                            else
+                            {
+                                <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
+                            }
                             @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
                             {
                                 <button class="secondary" type="submit" form="save-@item.Id">@T["SaveOpportunity"]</button>

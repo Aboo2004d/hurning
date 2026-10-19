@@ -1,70 +1,58 @@
 @model AdminPage<PaymentOrder>
-<h1>@T["Payments"]</h1>
-<form method="get" class="membership-card">
-    <label>@T["ReferenceOrOrder"]
-        <input name="q" value="@Context.Request.Query["q"]" />
-    </label>
-    <label>@T["PaymentGateway"]
-        <select name="gateway">
-            <option value="">@T["All"]</option>
-            @foreach (var gateway in new[] { "Lahza", "JawwalPay", "discount" })
-            {
-                <option value="@gateway" selected="@(Context.Request.Query["gateway"] == gateway)">@T[gateway == "discount" ? "DiscountPayment" : gateway]</option>
-            }
-        </select>
-    </label>
-    <label>@T["PaymentEnvironment"]
-        <select name="environment">
-            <option value="">@T["All"]</option>
-            @foreach (var environment in new[] { "Sandbox", "Production" })
-            {
-                <option value="@environment" selected="@(Context.Request.Query["environment"] == environment)">@T["PaymentEnvironment" + environment]</option>
-            }
-        </select>
-    </label>
-    <label>@T["Status"]
-        <select name="state">
-            <option value="">@T["All"]</option>
-            @foreach (var state in Enum.GetValues<PaymentState>())
-            {
-                <option value="@state" selected="@(Context.Request.Query["state"] == state.ToString())">@T["Payment" + state]</option>
-            }
-        </select>
-    </label>
-    <label class="check">
-        <input name="review" type="checkbox" value="true" checked="@(Context.Request.Query["review"] == "true")" />@T["ReviewPending"]
-    </label>
-    <button type="submit">@T["Filter"]</button>
-</form>
-<div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>@T["OrderId"]</th>
-                <th>@T["Amount"]</th>
-                <th>@T["PaymentGateway"]</th>
-                <th>@T["CreatedPalestineTime"]</th>
-                <th>@T["PaymentEnvironment"]</th>
-                <th>@T["Status"]</th>
-                <th>@T["Reference"]</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var order in Model.Items)
-            {
-                <tr>
-                    <td><bdi>@order.Id</bdi></td>
-                    <td><bdi dir="ltr">@MembershipRules.Money(order.AmountIls)</bdi></td>
-                    <td>@T[order.Gateway == "discount" ? "DiscountPayment" : order.Gateway]</td>
-                    <td><bdi dir="ltr">@PaymentDisplay.Time(order.CreatedAt)</bdi></td>
-                    <td>@T["PaymentEnvironment" + order.GatewayEnvironment]</td>
-                    <td>@T["Payment" + order.State]</td>
-                    <td dir="auto">@order.ProviderReference</td>
-                    <td><a asp-action="Details" asp-route-id="@order.Id">@T["Details"]</a></td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-<partial name="_AdminPagination" model="Model.Pager" />
+@{
+    var titleKey = Context.Request.Query["gateway"].ToString() switch
+    {
+        "Lahza" => "PaymentsLahza",
+        "JawwalPay" => "PaymentsJawwalPay",
+        _ => "Payments"
+    };
+    ViewData["Title"] = T[titleKey].Value;
+}
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <h1>@T[titleKey]</h1>
+    </header>
+    <form method="get" class="membership-card admin-filters">
+        <label>@T["ReferenceOrOrder"]
+            <input name="q" value="@Context.Request.Query["q"]" />
+        </label>
+        <label>@T["PaymentGateway"]
+            <select name="gateway">
+                <option value="">@T["All"]</option>
+                @foreach (var gateway in new[] { "Lahza", "JawwalPay", "discount" })
+                {
+                    <option value="@gateway" selected="@(Context.Request.Query["gateway"] == gateway)">@T[gateway == "discount" ? "DiscountPayment" : gateway]</option>
+                }
+            </select>
+        </label>
+        <label>@T["PaymentEnvironment"]
+            <select name="environment">
+                <option value="">@T["All"]</option>
+                @foreach (var environment in new[] { "Sandbox", "Production" })
+                {
+                    <option value="@environment" selected="@(Context.Request.Query["environment"] == environment)">@T["PaymentEnvironment" + environment]</option>
+                }
+            </select>
+        </label>
+        <label>@T["Status"]
+            <select name="state">
+                <option value="">@T["All"]</option>
+                @foreach (var state in Enum.GetValues<PaymentState>())
+                {
+                    <option value="@state" selected="@(Context.Request.Query["state"] == state.ToString())">@T["Payment" + state]</option>
+                }
+            </select>
+        </label>
+        <label class="check">
+            <input name="review" type="checkbox" value="true" checked="@(Context.Request.Query["review"] == "true")" />@T["ReviewPending"]
+        </label>
+        <button class="button button-outline admin-action" type="submit">
+            <span class="fa-solid fa-filter" aria-hidden="true"></span>
+            <span>@T["Filter"]</span>
+        </button>
+    </form>
+    <partial name="/Areas/Admin/Views/Payments/_PaymentTable.cshtml" model="Model" />
+</section>
+@section Scripts {
+    <script src="~/js/payment-list.js" asp-append-version="true" defer></script>
+}

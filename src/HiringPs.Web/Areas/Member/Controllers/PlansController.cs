@@ -47,10 +47,14 @@ public class PlansController(
         await FillAsync(input, ct);
         input.PresentedVersionId = input.Plan?.Id ?? 0;
         input.PresentedAmount = input.FinalAmount;
-        return input.Plan is null ? NotFound() : View(input);
+        return input.Plan is null ? NotFound() : ReviewResult(input);
     }
 
-    private async Task FillAsync(PurchaseInput input, CancellationToken ct)
+    private async Task FillAsync(
+        PurchaseInput input,
+        CancellationToken ct,
+        bool chooseGateway = true
+    )
     {
         var plan = await Db
             .MembershipPlans.AsNoTracking()
@@ -70,24 +74,48 @@ public class PlansController(
         );
         if (input.Plan is not null && !string.IsNullOrWhiteSpace(input.DiscountCode))
         {
-            var code = input.DiscountCode.Trim().ToUpperInvariant();
-            var discount = await Db
-                .DiscountCodes.AsNoTracking()
-                .SingleOrDefaultAsync(
-                    x =>
-                        x.Code == code
-                        && x.PlanId == input.Plan.PlanId
-                        && x.Enabled
-                        && x.ExpiresAt > DateTimeOffset.UtcNow,
-                    ct
-                );
-            if (discount is not null)
+            var discount = await DiscountAsync(input.DiscountCode, input.Plan.PlanId, ct);
+            if (discount is null)
+                ModelState.AddModelError(nameof(input.DiscountCode), "DiscountInvalid");
+            else
                 input.FinalAmount = MembershipRules.Amount(input.Plan.PriceIls, discount.Percent);
         }
         input.Gateways = (await registry.AvailableAsync(ct))
             .Where(x => x.SupportsAmount(input.FinalAmount))
             .Select(x => x.Key)
             .ToArray();
+        if (chooseGateway && !input.Gateways.Contains(input.Gateway))
+        {
+            input.Gateway = input.Gateways.FirstOrDefault() ?? "";
+            ModelState.Remove(nameof(input.Gateway));
+        }
+    }
+
+    // Preview and purchase share all eligibility conditions; checkout runs under the existing serializable lock.
+    private async Task<DiscountCode?> DiscountAsync(string value, int planId, CancellationToken ct)
+    {
+        var code = value.Trim().ToUpperInvariant();
+        var discount = await Db
+            .DiscountCodes.AsNoTracking()
+            .SingleOrDefaultAsync(
+                x =>
+                    x.Code == code
+                    && x.PlanId == planId
+                    && x.Enabled
+                    && x.ExpiresAt > DateTimeOffset.UtcNow,
+                ct
+            );
+        if (discount is null)
+            return null;
+        var reservations = Db.PaymentOrders.Where(x =>
+            x.DiscountCodeId == discount.Id && x.GatewayEnvironment == Db.ActivePaymentEnvironment
+        );
+        if (
+            await reservations.CountAsync(ct) >= discount.MaximumUses
+            || await reservations.AnyAsync(x => x.UserId == MemberId, ct)
+        )
+            return null;
+        return discount;
     }
 
     [HttpPost]
@@ -97,7 +125,20 @@ public class PlansController(
         CancellationToken ct = default
     )
     {
-        await FillAsync(input, ct);
+        // A completed request remains replayable even after its discount was reserved.
+        if (checkout && input.RequestId != Guid.Empty)
+        {
+            var replay = await Db
+                .PaymentOrders.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == input.RequestId, ct);
+            if (replay is not null)
+                return
+                    replay.UserId == MemberId
+                    && replay.GatewayEnvironment == Db.ActivePaymentEnvironment
+                    ? PaymentDestination(replay.Id)
+                    : BadRequest();
+        }
+        await FillAsync(input, ct, chooseGateway: !checkout);
         if (input.Plan is null)
             return NotFound();
         if (!checkout)
@@ -106,7 +147,8 @@ public class PlansController(
             input.PresentedAmount = input.FinalAmount;
             ModelState.Remove(nameof(input.PresentedVersionId));
             ModelState.Remove(nameof(input.PresentedAmount));
-            return View(input);
+            Response.Headers.CacheControl = "no-store";
+            return ReviewResult(input);
         }
         if (input.RequestId == Guid.Empty)
             return BadRequest();
@@ -117,12 +159,12 @@ public class PlansController(
             input.PresentedAmount = input.FinalAmount;
             ModelState.Remove(nameof(input.PresentedVersionId));
             ModelState.Remove(nameof(input.PresentedAmount));
-            return View(input);
+            return ReviewResult(input);
         }
         if (!input.AcceptTerms)
             ModelState.AddModelError("", "AcceptTermsRequired");
         if (!ModelState.IsValid)
-            return View(input);
+            return ReviewResult(input);
         Guid orderId;
         await using (
             var transaction = await Db.Database.BeginTransactionAsync(
@@ -139,50 +181,23 @@ public class PlansController(
                 ct
             );
             if (replay is not null)
-                return replay.UserId == MemberId
-                    ? RedirectToAction("Details", "Payments", new { id = replay.Id })
-                    : BadRequest();
+                return replay.UserId == MemberId ? PaymentDestination(replay.Id) : BadRequest();
             // Re-read the plan under the transaction: an edit cannot silently change the displayed terms.
             var current = await Db.MembershipPlans.SingleAsync(x => x.Id == input.PlanId, ct);
             if (!current.Visible || current.CurrentVersionId != input.Plan.Id)
             {
                 ModelState.AddModelError("", "PlanChanged");
-                return View(input);
+                return ReviewResult(input);
             }
             DiscountCode? discount = null;
             if (!string.IsNullOrWhiteSpace(input.DiscountCode))
             {
-                var code = input.DiscountCode.Trim().ToUpperInvariant();
-                discount = await Db.DiscountCodes.SingleOrDefaultAsync(
-                    x =>
-                        x.Code == code
-                        && x.PlanId == current.Id
-                        && x.Enabled
-                        && x.ExpiresAt > DateTimeOffset.UtcNow,
-                    ct
-                );
-                // Reserve the discount when the order is created. A reservation remains attached
-                // even for a late provider confirmation, avoiding oversubscription of code limits.
-                if (
-                    discount is null
-                    || discount.MaximumUses
-                        <= await Db.PaymentOrders.CountAsync(
-                            x =>
-                                x.DiscountCodeId == discount.Id
-                                && x.GatewayEnvironment == Db.ActivePaymentEnvironment,
-                            ct
-                        )
-                    || await Db.PaymentOrders.AnyAsync(
-                        x =>
-                            x.DiscountCodeId == discount.Id
-                            && x.UserId == MemberId
-                            && x.GatewayEnvironment == Db.ActivePaymentEnvironment,
-                        ct
-                    )
-                )
+                discount = await DiscountAsync(input.DiscountCode, current.Id, ct);
+                // The reservation remains attached even after expiration/cancellation, including late verification.
+                if (discount is null)
                 {
                     ModelState.AddModelError("", "DiscountInvalid");
-                    return View(input);
+                    return ReviewResult(input);
                 }
             }
             var amount = MembershipRules.Amount(input.Plan.PriceIls, discount?.Percent ?? 0);
@@ -194,7 +209,7 @@ public class PlansController(
             )
             {
                 ModelState.AddModelError("", "GatewayUnavailable");
-                return View(input);
+                return ReviewResult(input);
             }
             var now = DateTimeOffset.UtcNow;
             var order = new PaymentOrder
@@ -227,6 +242,19 @@ public class PlansController(
                 "ILS",
                 ct
             );
-        return RedirectToAction("Details", "Payments", new { id = orderId });
+        return PaymentDestination(orderId);
     }
+
+    private IActionResult ReviewResult(PurchaseInput input)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Checkout-Async"] == "true"
+            ? PartialView("_CheckoutReview", input)
+            : View("Review", input);
+    }
+
+    private IActionResult PaymentDestination(Guid id) =>
+        Request.Headers["X-Checkout-Async"] == "true"
+            ? Json(new { redirectUrl = Url.Action("Details", "Payments", new { id }) })
+            : RedirectToAction("Details", "Payments", new { id });
 }

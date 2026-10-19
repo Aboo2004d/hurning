@@ -1490,3 +1490,220 @@ footer {
     .payment-actions > form, .payment-actions > .button { flex: 1 1 100%; }
     .payment-actions button { width: 100%; }
 }
+
+/* Payment rows stay tabular on phones; only the wrapper scrolls horizontally. */
+.payment-table .payment-details {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 10px;
+}
+
+[data-payment-results][aria-busy="true"] {
+    opacity: 0.65;
+    cursor: progress;
+}
+
+/* Local Font Awesome Free SVGs, with text labels supplied by the calling control. */
+.fa-solid {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 1.1em;
+    height: 1.1em;
+    background-color: currentColor;
+    mask: var(--fa-icon) center / contain no-repeat;
+    -webkit-mask: var(--fa-icon) center / contain no-repeat;
+}
+.fa-eye { --fa-icon: url("../vendor/fontawesome/eye.svg"); }
+.fa-filter { --fa-icon: url("../vendor/fontawesome/filter.svg"); }
+.fa-plus { --fa-icon: url("../vendor/fontawesome/plus.svg"); }
+.fa-pen-to-square { --fa-icon: url("../vendor/fontawesome/pen-to-square.svg"); }
+.fa-floppy-disk { --fa-icon: url("../vendor/fontawesome/floppy-disk.svg"); }
+.fa-rotate-right { --fa-icon: url("../vendor/fontawesome/rotate-right.svg"); }
+.fa-circle-pause { --fa-icon: url("../vendor/fontawesome/circle-pause.svg"); }
+.fa-check { --fa-icon: url("../vendor/fontawesome/check.svg"); }
+.fa-list { --fa-icon: url("../vendor/fontawesome/list.svg"); }
+.fa-gear { --fa-icon: url("../vendor/fontawesome/gear.svg"); }
+.fa-credit-card { --fa-icon: url("../vendor/fontawesome/credit-card.svg"); }
+.fa-wallet { --fa-icon: url("../vendor/fontawesome/wallet.svg"); }
+
+/* Shared administrator list tools: adjacent fields that wrap at their natural width. */
+.admin-page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-block-end: 1.25rem;
+}
+.admin-page-heading h1, .admin-page-heading .actions { margin: 0; }
+.membership-card.admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+.membership-card.admin-filters > label {
+    flex: 1 1 12rem;
+    min-width: 0;
+    margin: 0;
+}
+.membership-card.admin-filters > .check {
+    flex: 0 1 auto;
+    min-height: 44px;
+}
+.admin-filters input:not([type="checkbox"]), .admin-filters select {
+    min-height: 44px;
+}
+.admin-action, .admin-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    min-height: 44px;
+    line-height: 1.5;
+    font-size: .95rem;
+    white-space: nowrap;
+    border-radius: .7rem;
+}
+.admin-icon-button { width: 44px; padding: 0; }
+.admin-filters > button { flex: 0 0 auto; }
+.admin-list-page .table-wrap {
+    border: 1px solid var(--line);
+    border-radius: .9rem;
+}
+.admin-list-page .table-nowrap td { padding-block: .8rem; }
+.admin-list-page .admin-message-cell {
+    width: 28rem;
+    max-width: 28rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.admin-list-page .admin-inline-form {
+    display: flex;
+    align-items: end;
+    gap: .75rem;
+}
+.admin-inline-form label { margin: 0; min-width: 12rem; }
+.membership-card.admin-grant-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+}
+.admin-grant-form h2, .admin-grant-form .admin-wide { flex-basis: 100%; }
+.admin-grant-form h2 { margin: 0; }
+.admin-grant-form > label { flex: 1 1 12rem; min-width: 0; margin: 0; }
+.gateway-grid { align-items: stretch; }
+.gateway-card { display: flex; flex-direction: column; gap: 1.25rem; }
+.gateway-heading { display: flex; align-items: center; gap: .85rem; }
+.gateway-heading h2 { margin: 0; }
+.gateway-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: .9rem;
+    background: var(--soft);
+    color: var(--accent);
+    font-size: 1.4rem;
+}
+.gateway-status {
+    margin: 0;
+    padding: .75rem 1rem;
+    border-radius: .7rem;
+    background: var(--bg);
+    color: var(--muted);
+}
+.gateway-status.is-available { background: var(--soft); color: var(--accent); }
+.gateway-controls, .gateway-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+}
+.gateway-card .gateway-controls .check { margin: 0; margin-inline-end: auto; }
+.gateway-actions { margin-block-start: auto; padding-block-start: 1rem; border-top: 1px solid var(--line); }
+
+/* Subscription checkout: summary and payment steps share the site's calm green identity. */
+.subscriber-details-hint {
+    color: var(--accent);
+    background: var(--soft);
+    border-inline-start: 3px solid var(--accent);
+    border-radius: .5rem;
+    padding: .55rem .8rem;
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.9;
+    margin: .5rem 0;
+}
+.checkout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: 1.5rem;
+    margin-block: 1.5rem;
+}
+.checkout-grid > .membership-card { margin: 0; }
+.checkout-summary h2, .checkout-panel > h2 { margin-block-start: 0; }
+.checkout-summary .detail-grid { grid-template-columns: 1fr; }
+.checkout-summary .detail-grid dd { margin: 0; }
+.checkout-totals { margin: 1.5rem 0 0; border-block-start: 1px solid var(--line); }
+.checkout-totals > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding-block: .8rem; }
+.checkout-totals dd { margin: 0; }
+.checkout-totals .checkout-total { border-block-start: 1px solid var(--line); font-size: 1.2rem; font-weight: 700; }
+.discount-saving { color: var(--accent); }
+.checkout-panel .gateway-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem;
+    padding: 0;
+    margin-block: 1rem 1.5rem;
+    border: 0;
+}
+.gateway-options legend { margin-block-end: .75rem; color: var(--muted); font-size: .9rem; }
+.gateway-options .gateway-choice { position: relative; display: block; margin: 0; cursor: pointer; min-width: 0; }
+.gateway-choice > input {
+    position: absolute;
+    inset-block-start: 1rem;
+    inset-inline-end: .85rem;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+}
+.gateway-choice-body {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+    height: 100%;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: .9rem;
+    background: var(--surface);
+}
+.gateway-brand { align-self: start; padding-inline-end: 1rem; font-size: 1.45rem; font-weight: 700; color: var(--accent); line-height: 1.5; }
+.gateway-choice-title { display: flex; align-items: center; gap: .5rem; color: var(--ink); font-weight: 600; }
+.gateway-choice:hover .gateway-choice-body, .gateway-choice > input:checked + .gateway-choice-body { border-color: var(--accent); background: var(--soft); }
+.gateway-choice > input:focus-visible + .gateway-choice-body { outline: 3px solid #84b9a7; outline-offset: 3px; }
+.checkout-field-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.checkout-field-row > input { flex: 1 1 10rem; width: auto; min-width: 0; }
+.checkout-panel .checkout-discount > label { margin-block-end: .5rem; }
+.checkout-action { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 44px; padding: .7rem 1rem; border-radius: .75rem; line-height: 1.6; }
+.checkout-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: 1.25rem 0; }
+.checkout-actions form { margin: 0; }
+.checkout-panel .checkout-terms { align-items: start; margin-block: 1rem; }
+.checkout-terms input { margin-block-start: .35rem; accent-color: var(--accent); }
+.checkout-cancel { margin-block-start: 1rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
+.checkout-panel .wallet-otp { font-size: 1.4rem; letter-spacing: .3em; text-align: center; }
+.checkout-support { padding-block-start: 1rem; border-block-start: 1px solid var(--line); margin-block-start: 1.5rem; }
+.checkout-support summary { color: var(--accent); font-weight: 600; cursor: pointer; }
+[data-checkout-region][aria-busy="true"] { opacity: .65; cursor: progress; }
+@media (max-width: 820px) {
+    .checkout-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+    .checkout-panel .gateway-options { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,8 +1,8 @@
 @model Opportunity
 @{
-    ViewData["Title"] = T["Edit"];
+    ViewData["Title"] = T[Model.Id == 0 ? "AddOpportunity" : "EditOpportunity"].Value;
 }
-<h1>@T["Edit"]</h1>
+<h1>@ViewData["Title"]</h1>
 @if (ViewBag.OriginalSources is IEnumerable<string> originalSources)
 {
     <div class="actions">

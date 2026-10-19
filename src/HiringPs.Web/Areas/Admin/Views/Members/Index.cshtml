@@ -1,6 +1,10 @@
 @model AdminPage<MemberProfile>
-    <h1>@T["Members"]</h1>
-    <form method="get" class="membership-card">
+@{ ViewData["Title"] = T["Members"].Value; }
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <h1>@T["Members"]</h1>
+    </header>
+    <form method="get" class="membership-card admin-filters">
         <label>@T["Search"]<input name="q" value="@Context.Request.Query["q"]" />
         </label>
         <label>@T["AccountState"]<select name="suspended">
@@ -17,10 +21,13 @@
         </label>
         <label>@T["PlanId"]<input name="planId" type="number" min="1" value="@Context.Request.Query["planId"]" />
         </label>
-        <button type="submit">@T["Filter"]</button>
+        <button class="button button-outline admin-action" type="submit">
+            <span class="fa-solid fa-filter" aria-hidden="true"></span>
+            <span>@T["Filter"]</span>
+        </button>
     </form>
     <div class="table-wrap">
-        <table>
+        <table class="table-nowrap">
             <thead>
                 <tr>
                     <th>@T["Name"]</th>
@@ -40,7 +47,9 @@
                         </td>
                         <td>@T[member.Suspended ? "Suspended" : member.Activated ? "Active" : "AwaitingVerification"]</td>
                         <td>
-                            <a asp-action="Details" asp-route-id="@member.UserId">@T["Details"]</a>
+                            <a class="button button-outline admin-icon-button" asp-action="Details" asp-route-id="@member.UserId" aria-label="@T["Details"]" title="@T["Details"]">
+                                <span class="fa-solid fa-eye" aria-hidden="true"></span>
+                            </a>
                         </td>
                     </tr>
                 }
@@ -48,3 +57,4 @@
         </table>
     </div>
     <partial name="_AdminPagination" model="Model.Pager" />
+</section>

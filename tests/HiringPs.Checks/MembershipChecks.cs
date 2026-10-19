@@ -163,6 +163,7 @@ public static class MembershipChecks
             );
         }
         PaymentDisplayChecks.Run();
+        CheckoutStateChecks.Run();
         await ShellAsync();
         Console.WriteLine(
             $"Membership checks passed: {count}. No SQL connection, Telegram request or real payment was made."
@@ -524,6 +525,8 @@ public static class MembershipChecks
                 Check(
                     payment.Contains("payment-actions")
                         && payment.Contains("button button-outline")
+                        && !payment.Contains("id=\"payment-support\"")
+                        && !payment.Contains("/Payments/Check")
                         && payment.Contains("11112222333344445555666677778888"),
                     "Payment controls and safe trace reference render in " + language
                 );

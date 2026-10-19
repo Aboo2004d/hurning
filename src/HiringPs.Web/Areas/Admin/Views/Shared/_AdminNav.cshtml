@@ -84,13 +84,17 @@
     </details>
 }
 
-<details class="admin-nav-group">
+<details class="admin-nav-group @(currentController == "Payments" ? "has-current" : null)">
     <summary><span>@T["Payments"]</span><span aria-hidden="true">⌄</span></summary>
     <div class="admin-nav-dropdown">
-        <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="Lahza">@T["Lahza"]</a>
+        <a asp-area="Admin" asp-controller="Payments" asp-action="Index"
+           aria-current="@(currentController == "Payments" && string.IsNullOrEmpty(Context.Request.Query["gateway"]) ? "page" : null)">@T["All"]</a>
+        <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="Lahza"
+           aria-current="@(currentController == "Payments" && Context.Request.Query["gateway"] == "Lahza" ? "page" : null)">@T["Lahza"]</a>
         @if (Configuration.GetValue<bool>("Payments:JawwalPay:Enabled"))
         {
-            <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="JawwalPay">@T["JawwalPay"]</a>
+            <a asp-area="Admin" asp-controller="Payments" asp-action="Index" asp-route-gateway="JawwalPay"
+               aria-current="@(currentController == "Payments" && Context.Request.Query["gateway"] == "JawwalPay" ? "page" : null)">@T["JawwalPay"]</a>
         }
     </div>
 </details>

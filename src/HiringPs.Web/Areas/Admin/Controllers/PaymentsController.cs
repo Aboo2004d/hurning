@@ -51,12 +51,14 @@ public class PaymentsController(
             query = query.Where(x =>
                 db.PaymentReviews.Any(r => r.OrderId == x.Id && r.ResolvedAt == null)
             );
-        return View(
-            await query
-                .OrderByDescending(x => x.CreatedAt)
-                .ThenByDescending(x => x.Id)
-                .PageAsync(page, ct)
-        );
+        var model = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .PageAsync(page, ct);
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Payment-Page"] == "true"
+            ? PartialView("_PaymentTable", model)
+            : View(model);
     }
 
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)

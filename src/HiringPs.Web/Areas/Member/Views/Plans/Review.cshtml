@@ -2,38 +2,7 @@
 @{ ViewData["Title"] = T["ReviewOrder"]; }
 <h1>@T["ReviewOrder"]</h1>
 <partial name="_PaymentEnvironmentNotice" />
-<section class="membership-card">
-    <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
-    <p><bdi>@Model.Plan.Days</bdi> @T["Days"] · @T["StartsPalestineTime"]: <bdi>@PaymentDisplay.Time(Model.StartsAt)</bdi>
-    </p>
-    <partial name="_PlanBenefits" model="Model.Plan" />
-    <p>@T["OriginalAmount"]: <bdi dir="ltr">@MembershipRules.Money(Model.Plan.PriceIls)</bdi></p>
-    <p>
-        <strong>@T["FinalAmount"]: <bdi dir="ltr">@MembershipRules.Money(Model.FinalAmount)</bdi></strong>
-    </p>
-    <form method="post">
-        <partial name="_MemberValidation" />
-        <input asp-for="PlanId" type="hidden" />
-        <input asp-for="PresentedAmount" type="hidden" />
-        <input asp-for="PresentedVersionId" type="hidden" />
-        <input asp-for="RequestId" type="hidden" />
-        <label>@T["DiscountCode"]<input asp-for="DiscountCode" dir="ltr" maxlength="50" />
-        </label>
-        <button class="secondary" type="submit" name="checkout" value="false">@T["ApplyDiscount"]</button>
-        <label>@T["PaymentGateway"]<select asp-for="Gateway">
-                @foreach (var gateway in Model.Gateways)
-                {
-                    <option value="@gateway">@T[gateway]</option>
-                }
-            </select>
-        </label>
-        <p class="notice">@T["NoRefundNotice"]</p>
-        <label class="check">
-            <input asp-for="AcceptTerms" />@T["AcceptTerms"]</label>
-        <button type="submit" name="checkout" value="true" disabled="@(Model.FinalAmount > 0 && Model.Gateways.Length == 0)">@T["CompletePayment"]</button>
-        @if (Model.FinalAmount > 0 && Model.Gateways.Length == 0)
-        {
-            <p>@T["GatewayUnavailable"]</p>
-        }
-    </form>
-</section>
+<partial name="/Areas/Member/Views/Plans/_CheckoutReview.cshtml" model="Model" />
+@section Scripts {
+    <script src="~/js/checkout.js" asp-append-version="true" defer></script>
+}

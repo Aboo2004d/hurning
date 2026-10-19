@@ -1,0 +1,66 @@
+@model PaymentOrder
+@{
+    var review = ViewBag.Review as PaymentReview;
+    var actions = ViewBag.PaymentActions as PaymentActions ?? PaymentActions.For(Model, ViewBag.Ready is true);
+}
+<section class="membership-card checkout-panel" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">
+    @if (ViewData["CheckoutNotice"] is string notice)
+    {
+        <p class="notice" role="status">@T[notice]</p>
+    }
+    <partial name="_PaymentSummary" model="Model" />
+    <partial name="_PaymentTraceReference" />
+    @if (!MembershipRules.Paid(Model.State))
+    {
+        <div class="payment-actions checkout-actions">
+            @if (actions.CanPay)
+            {
+                <form asp-controller="Payments" asp-action="Pay" method="post">
+                    <input name="id" type="hidden" value="@Model.Id" />
+                    <button class="button button-outline checkout-action" type="submit">
+                        <span class="fa-solid fa-credit-card" aria-hidden="true"></span><span>@T["CompletePayment"]</span>
+                    </button>
+                </form>
+            }
+            @if (actions.CanCheck)
+            {
+                <form asp-controller="Payments" asp-action="Check" method="post" data-checkout-form>
+                    <input name="id" type="hidden" value="@Model.Id" />
+                    <button class="button button-outline checkout-action" type="submit">
+                        <span class="fa-solid fa-rotate-right" aria-hidden="true"></span><span>@T["CheckPayment"]</span>
+                    </button>
+                </form>
+            }
+            @if (actions.CanRetry)
+            {
+                <a class="button button-outline checkout-action" asp-controller="Plans" asp-action="Review" asp-route-id="@Model.PlanVersion.PlanId">
+                    <span class="fa-solid fa-plus" aria-hidden="true"></span><span>@T["RetryPayment"]</span>
+                </a>
+            }
+        </div>
+    }
+    @if (review is null && actions.CanReport)
+    {
+        <details class="checkout-support" id="payment-support">
+            <summary>@T["ChargedNotActivated"]</summary>
+            <form asp-controller="Payments" asp-action="Review" method="post" enctype="multipart/form-data" data-checkout-form>
+                <input name="id" type="hidden" value="@Model.Id" />
+                <label>@T["OptionalNote"]<textarea name="note" maxlength="2000"></textarea></label>
+                <label>@T["OptionalEvidence"]<input name="evidence" type="file" accept="image/png,image/jpeg" /></label>
+                <button class="button button-outline checkout-action" type="submit">
+                    <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["RequestReview"]</span>
+                </button>
+            </form>
+        </details>
+    }
+    else if (review is not null)
+    {
+        <p>@T[review.ResolvedAt is null ? "ReviewPending" : "ReviewResolved"]</p>
+        <p dir="auto">@review.Note</p>
+        <p dir="auto">@review.Resolution</p>
+        @if (review.AttachmentName is not null)
+        {
+            <a class="button button-outline checkout-action" asp-controller="Payments" asp-action="Evidence" asp-route-id="@Model.Id">@T["ViewEvidence"]</a>
+        }
+    }
+</section>
