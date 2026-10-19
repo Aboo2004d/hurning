@@ -166,6 +166,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 // ========================================
 // 6. MVC Configuration
 // ========================================
+builder.Services.AddSiteAntiforgery(builder.Environment.IsDevelopment());
 builder.Services.AddControllersWithViews(options =>
 {
     options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
@@ -299,6 +300,7 @@ app.Use(
             "/Account",
             "/Member",
             "/Registration",
+            "/Google",
             "/PasswordReset",
             "/integrations",
         }.Any(prefix =>

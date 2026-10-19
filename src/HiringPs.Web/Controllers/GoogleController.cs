@@ -25,6 +25,7 @@ public sealed class GoogleProfileInput
 }
 
 [EnableRateLimiting("public")]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class GoogleController(
     SignInManager<IdentityUser> signIn,
     UserManager<IdentityUser> users,

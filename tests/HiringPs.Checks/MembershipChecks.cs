@@ -222,6 +222,7 @@ public static class MembershipChecks
             x.Cookie.Name = "HiringPs.Admin";
             x.Cookie.Path = "/";
         });
+        builder.Services.AddSiteAntiforgery(environmentName == "Development");
         builder.Services.AddLocalization(x => x.ResourcesPath = "Resources");
         builder
             .Services.AddControllersWithViews(x =>
