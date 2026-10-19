@@ -8,6 +8,11 @@
         </PackageReference>
         <ProjectReference Include="..\HiringPs.Core\HiringPs.Core.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Update="Resources\Labels.resx">
+        <Generator></Generator>
+      </EmbeddedResource>
+    </ItemGroup>
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>

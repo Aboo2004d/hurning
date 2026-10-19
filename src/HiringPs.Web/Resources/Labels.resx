@@ -160,7 +160,7 @@
         <value>الإدارة</value>
     </data>
     <data name="Login" xml:space="preserve">
-        <value>تسجيل دخول الإدارة</value>
+        <value>تسجيل الدخول</value>
     </data>
     <data name="Logout" xml:space="preserve">
         <value>تسجيل الخروج</value>
