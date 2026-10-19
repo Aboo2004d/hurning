@@ -6,6 +6,21 @@ public enum ToolCheckKind
 {
     Standard,
     AiLive,
+    GoogleLogin,
+    Facebook,
+    LinkedIn,
+    All,
+    Collector,
+    AiConfiguration,
+    Chromium,
+    PdfText,
+    PdfRender,
+    PdfOcr,
+    PdfLanguages,
+    PdfWorkspace,
+    PdfPipeline,
+    LahzaPayment,
+    JawwalPayPayment,
 }
 
 public enum ToolRequestStatus
@@ -141,6 +156,12 @@ public sealed class ToolWorkerRuntime
 
 public static class ToolMonitoringRules
 {
+    public static string[] KeysFor(ToolCheckKind kind) => kind switch
+    {
+        ToolCheckKind.Standard => StandardTools,
+        ToolCheckKind.All => ["Collector", .. StandardTools, "AiLive"],
+        _ => [kind.ToString()]
+    };
     public static readonly string[] StandardTools =
     [
         "AiConfiguration",
@@ -153,6 +174,9 @@ public static class ToolMonitoringRules
         "PdfPipeline",
         "LahzaPayment",
         "JawwalPayPayment",
+        "GoogleLogin",
+        "Facebook",
+        "LinkedIn",
     ];
 
     public static bool WorkerFresh(ToolWorkerState? worker, DateTimeOffset now) =>

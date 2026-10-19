@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 // تهيئة عامل الجمع المستقل واختيار وضع التشغيل المطلوب من وسائط الأمر.
 using HiringPs.Core;
 using HiringPs.Worker;
@@ -91,6 +92,10 @@ if (!isProbe)
     builder.Services.AddScoped<PaymentGatewayRegistry>();
     builder.Services.AddSingleton<PaymentEnvironment>();
     builder.Services.AddScoped<PaymentToolProbes>();
+    builder.Services.AddSocialPublishing();
+    var socialKeys = builder.Services.AddDataProtection().SetApplicationName("HiringPs");
+    if (!string.IsNullOrWhiteSpace(builder.Configuration["DataProtection:KeyPath"]))
+        socialKeys.PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["DataProtection:KeyPath"]!));
     builder.Services.AddLahza();
     builder.Services.AddJawwalPay();
     builder.Services.AddScoped<TelegramCommands>();

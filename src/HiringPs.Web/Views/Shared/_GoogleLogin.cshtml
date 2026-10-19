@@ -1,0 +1,9 @@
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider Schemes
+@inject HiringDb Database
+@using Microsoft.EntityFrameworkCore
+@if (await Schemes.GetSchemeAsync("Google") is not null && !User.IsInRole("Admin") && !await Database.SocialConnections.AnyAsync(x => x.Provider == "Google" && !x.Enabled))
+{
+    <form asp-area="" asp-controller="Google" asp-action="Start" method="post">
+        <button type="submit" class="button-outline">@T["GoogleLogin"]</button>
+    </form>
+}

@@ -46,6 +46,8 @@ builder.Services.AddScoped<WalletCheckoutService>();
 builder.Services.AddScoped<PaymentGatewayRegistry>();
 builder.Services.AddSingleton<PaymentEnvironment>();
 builder.Services.AddScoped<PaymentToolProbes>();
+builder.Services.AddSocialPublishing();
+builder.Services.AddSocialAuthentication(builder.Configuration);
 builder.Services.AddLahza();
 builder.Services.AddJawwalPay();
 builder
@@ -77,6 +79,26 @@ builder
     })
     .AddEntityFrameworkStores<HiringDb>()
     .AddDefaultTokenProviders();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientId"])
+    && builder.Configuration["Authentication:Google:ClientId"] != "***"
+    && !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientSecret"])
+    && builder.Configuration["Authentication:Google:ClientSecret"] != "***")
+{
+    builder.Services.AddAuthentication().AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.SaveTokens = false;
+        options.Events.OnRemoteFailure = context =>
+        {
+            context.HandleResponse();
+            var diagnostic = context.Properties?.Items.TryGetValue("GoogleAdminTest", out var test) == true && test == "true";
+            context.Response.Redirect(context.Request.PathBase + (diagnostic ? "/Admin/Integrations/Index?googleTest=failed" : "/Account/Login"));
+            return Task.CompletedTask;
+        };
+    });
+}
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";

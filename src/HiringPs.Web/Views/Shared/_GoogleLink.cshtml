@@ -1,0 +1,24 @@
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider Schemes
+@inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> Users
+@if (await Schemes.GetSchemeAsync("Google") is not null && User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+{
+    var user = await Users.GetUserAsync(User);
+    if (user is not null)
+    {
+        var linked = (await Users.GetLoginsAsync(user)).Any(x => x.LoginProvider == "Google");
+        if (!linked)
+        {
+            <form asp-area="" asp-controller="Google" asp-action="Start" method="post">
+                <input type="hidden" name="link" value="true" /><button class="button-outline">@T["GoogleLink"]</button>
+            </form>
+        }
+        else
+        {
+            <p>@T["GoogleLinked"]</p>
+            if (await Users.HasPasswordAsync(user))
+            {
+                <form asp-area="" asp-controller="Google" asp-action="Disconnect" method="post"><button class="button-outline">@T["IntegrationDisconnect"] Google</button></form>
+            }
+        }
+    }
+}

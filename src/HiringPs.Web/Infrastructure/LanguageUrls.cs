@@ -79,7 +79,8 @@ public static class LanguageUrls
     }
 
     public static bool IsInfrastructure(PathString path) =>
-        path.StartsWithSegments("/images")
+        path.StartsWithSegments("/signin-google")
+        || path.StartsWithSegments("/images")
         || path.StartsWithSegments("/css")
         || path.StartsWithSegments("/js")
         || path.StartsWithSegments("/lib")

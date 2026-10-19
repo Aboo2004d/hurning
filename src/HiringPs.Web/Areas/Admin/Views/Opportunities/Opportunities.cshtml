@@ -6,36 +6,15 @@
     <h1>@T["Opportunities"]</h1>
     <a class="button button-outline" asp-controller="Opportunities" asp-action="Create">@T["Add"]</a>
 </div>
-<div class="table-wrap">
-    <table class="table-nowrap">
-        <thead>
-            <tr>
-                <th>@T["Title"]</th>
-                <th>@T["Kind"]</th>
-                <th>@T["Organization"]</th>
-                <th>@T["Status"]</th>
-                <th>@T["Error"]</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td dir="auto">@item.Title</td>
-                    <td>@T[item.Kind.ToString()]</td>
-                    <td dir="auto">@item.Organization</td>
-                    <td>@T[item.Status.ToString()]</td>
-                    <td>
-                        <partial name="_Diagnostic" model="item.ReviewReason"/>
-                    </td>
-                    <td>
-                        <a class="button button-outline" asp-controller="Opportunities" asp-action="Edit" asp-route-id="@item.Id">@T["Edit"]</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-<partial name="_AdminPagination" model="Model.Pager" />
+<nav class="message-tabs" aria-label="@T["Status"]" id="opportunity-tabs">
+@foreach (var state in new[] { PublicationStatus.Published, PublicationStatus.NeedsReview, PublicationStatus.Archived, PublicationStatus.Draft })
+{
+    var counts = ViewBag.Counts as Dictionary<PublicationStatus, int>;
+    <a asp-action="Opportunities" asp-route-status="@state" asp-route-page="1" class="@(ViewBag.Status == state ? "is-current" : null)" aria-current="@(ViewBag.Status == state ? "page" : null)">@T[state.ToString()] (<span data-tab-total="@state">@(counts?.GetValueOrDefault(state) ?? 0)</span>)</a>
+}
+</nav>
+<p id="opportunity-load-error" class="notice" role="alert" hidden>@T["LoadFailed"]</p>
+<div id="opportunity-results" aria-live="polite"><partial name="/Areas/Admin/Views/Opportunities/_OpportunityRows.cshtml" model="Model" /></div>
+<script src="~/js/opportunity-tabs.js" asp-append-version="true" defer></script>
+<dialog id="social-dialog" class="social-dialog"><form method="dialog"><button aria-label="@T["Close"]">×</button></form><div data-social-host></div></dialog>
+<script src="~/js/social-compose.js" asp-append-version="true" defer></script>

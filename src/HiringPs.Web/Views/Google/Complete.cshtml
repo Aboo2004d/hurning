@@ -1,0 +1,11 @@
+@model HiringPs.Web.Controllers.GoogleProfileInput
+@{ ViewData["Title"] = T["GoogleComplete"]; }
+<section class="login-panel">
+<h1>@T["GoogleComplete"]</h1><p>@T["GoogleTelegramRequired"]</p>
+<form method="post">
+<partial name="_MemberValidation" />
+<label>@T["Name"]<input asp-for="Name" required autocomplete="name" /></label>
+<label>@T["TelegramMobile"]<input asp-for="Mobile" required type="tel" dir="ltr" autocomplete="tel" /></label>
+<button type="submit">@T["Continue"]</button>
+</form>
+</section>

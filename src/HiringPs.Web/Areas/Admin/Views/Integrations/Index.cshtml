@@ -1,0 +1,55 @@
+@model List<SocialConnection>
+@inject IConfiguration Configuration
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider Schemes
+@{
+    ViewData["Title"] = T["Integrations"];
+    var googleReady = await Schemes.GetSchemeAsync("Google") is not null;
+    var googleEnabled = Model.SingleOrDefault(x => x.Provider == "Google")?.Enabled ?? true;
+    var googleTest = ViewBag.GoogleTest as ToolCheckResult;
+    var origin = Configuration["Seo:PublicOrigin"]?.TrimEnd('/') ?? "";
+}
+<div class="heading-row integrations-heading">
+    <div><h1>@T["Integrations"]</h1><p class="muted">@T["IntegrationsIntro"]</p></div>
+    <a class="button button-outline" asp-controller="Tools" asp-action="Tools">@T["IntegrationResults"]</a>
+</div>
+@if(Context.Request.Query["googleTest"] == "failed") { <p class="notice" role="alert">@T["GoogleFailed"]</p> }
+<div class="integrations-grid">
+<section class="tool-card integration-card" id="google-integration">
+    <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true">G</span><div><h2>Google</h2><p class="muted">@T["GoogleIntegrationPurpose"]</p></div></header>
+    <span class="tool-status @(googleReady && googleEnabled ? "tool-ready" : "tool-neutral")">@(googleReady ? (googleEnabled ? T["ToolState_Configured"] : T["ToolState_Disabled"]) : T["ToolState_NotConfigured"])</span>
+    <form asp-action="GoogleEnabled" method="post" class="integration-settings-form">
+        <label class="integration-toggle"><input type="checkbox" name="enabled" value="true" checked="@googleEnabled" /><span>@T["GoogleEnableLabel"]</span></label>
+        <button type="submit" class="button-outline">@T["Save"]</button>
+    </form>
+    <div class="integration-test-panel">
+        <h3>@T["GoogleTestLabel"]</h3><p class="muted">@T["GoogleTestHelp"]</p>
+        <form asp-action="TestGoogle" method="post"><button type="submit" disabled="@(!googleReady)">@T["GoogleTestLabel"]</button></form>
+        @if(googleTest is not null) { <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@TimeZoneInfo.ConvertTime(googleTest.CheckedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></p> }
+    </div>
+    <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Authentication:Google:ClientId<br />Authentication:Google:ClientSecret</code><p>@T["IntegrationCallback"]</p><code>@origin/signin-google</code></details>
+</section>
+@foreach(var provider in new[] { "Facebook", "LinkedIn" })
+{
+    var connection = Model.SingleOrDefault(x => x.Provider == provider);
+    var configured = await Schemes.GetSchemeAsync("Publish" + provider) is not null;
+    var expired = connection?.ExpiresAt <= DateTimeOffset.UtcNow;
+    var connected = connection is not null && !expired;
+    <section class="tool-card integration-card" id="@(provider.ToLowerInvariant())-integration">
+        <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true">@(provider == "Facebook" ? "f" : "in")</span><div><h2>@provider</h2><p class="muted">@T["SocialIntegrationPurpose"]</p></div></header>
+        <span class="tool-status @(connected ? "tool-ready" : expired ? "tool-problem" : "tool-neutral")">@(connected ? T["IntegrationConnectedLabel"] : expired ? T["IntegrationExpiredLabel"] : T["IntegrationDisconnectedLabel"])</span>
+        @if(connection is not null) {
+            <dl class="integration-facts"><dt>@T["IntegrationPageName"]</dt><dd>@connection.PageName</dd><dt>@T["IntegrationPageId"]</dt><dd><bdi>@connection.PageId</bdi></dd><dt>@T["IntegrationLinkedAt"]</dt><dd><bdi>@TimeZoneInfo.ConvertTime(connection.ConnectedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></dd></dl>
+        }
+        @if(!configured) { <p class="notice">@T["IntegrationNotConfigured"]</p> }
+        <form asp-action="Connect" method="post" class="integration-connect-form">
+            <input type="hidden" name="provider" value="@provider" />
+            <label>@T["IntegrationPageId"]<input name="pageId" value="@connection?.PageId" pattern="[0-9]{1,40}" required dir="ltr" inputmode="numeric" autocomplete="off" /></label>
+            <button type="submit" disabled="@(!configured)">@T["IntegrationConnect"]</button>
+        </form>
+        @if(connection is not null) {
+            <form asp-action="Disconnect" method="post" class="integration-disconnect-form"><input type="hidden" name="provider" value="@provider" /><button type="submit" class="button-outline">@T["IntegrationDisconnect"]</button></form>
+        }
+        <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Integrations:@provider:ClientId<br />Integrations:@provider:ClientSecret<br />Integrations:@provider:ApiVersion</code><p>@T["IntegrationCallback"]</p><code>@origin/integrations/@provider.ToLowerInvariant()/callback</code></details>
+    </section>
+}
+</div>

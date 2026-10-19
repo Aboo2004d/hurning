@@ -68,11 +68,29 @@ public class ToolsController : AdminControllerBase
 
     [HttpPost]
     public Task<IActionResult> CheckTools(CancellationToken ct) =>
-        QueueToolCheckAsync(ToolCheckKind.Standard, ct);
+        QueueToolCheckAsync(ToolCheckKind.All, ct);
+
+    [HttpPost]
+    public Task<IActionResult> CheckTool(string tool, CancellationToken ct)
+    {
+        if (tool != "Collector" && tool != "AiLive" && !ToolMonitoringRules.StandardTools.Contains(tool))
+            return Task.FromResult<IActionResult>(BadRequest());
+        return Enum.TryParse<ToolCheckKind>(tool, out var kind)
+            ? QueueToolCheckAsync(kind, ct) : Task.FromResult<IActionResult>(BadRequest());
+    }
 
     [HttpPost]
     public Task<IActionResult> CheckAi(CancellationToken ct) =>
         QueueToolCheckAsync(ToolCheckKind.AiLive, ct);
+
+    [HttpPost]
+    public Task<IActionResult> CheckIntegration(string provider, CancellationToken ct) => provider switch
+    {
+        "GoogleLogin" => QueueToolCheckAsync(ToolCheckKind.GoogleLogin, ct),
+        "Facebook" => QueueToolCheckAsync(ToolCheckKind.Facebook, ct),
+        "LinkedIn" => QueueToolCheckAsync(ToolCheckKind.LinkedIn, ct),
+        _ => Task.FromResult<IActionResult>(BadRequest())
+    };
 
     private async Task<IActionResult> QueueToolCheckAsync(ToolCheckKind kind, CancellationToken ct)
     {
@@ -87,3 +105,4 @@ public class ToolsController : AdminControllerBase
         return RedirectToAction(nameof(Tools));
     }
 }
+

@@ -21,14 +21,17 @@ public class OpportunitiesController : AdminControllerBase
         CancellationToken ct = default
     )
     {
+        status ??= PublicationStatus.Published;
+        if (status is not (PublicationStatus.Published or PublicationStatus.NeedsReview or PublicationStatus.Archived or PublicationStatus.Draft)) return BadRequest();
         ViewBag.Status = status;
-        return View(
-            await db
+        ViewBag.Counts = await db.Opportunities.AsNoTracking().GroupBy(x => x.Status)
+            .Select(x => new { Status = x.Key, Count = x.Count() }).ToDictionaryAsync(x => x.Status, x => x.Count, ct);
+        var model = await db
                 .Opportunities.AsNoTracking()
                 .Where(x => status == null || x.Status == status)
                 .OrderByDescending(x => x.Id)
-                .PageAsync(page, ct)
-        );
+                .PageAsync(page, ct);
+        return Request.Headers["X-Requested-With"] == "fetch" ? PartialView("_OpportunityRows", model) : View(model);
     }
 
     [HttpGet]

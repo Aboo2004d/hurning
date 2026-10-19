@@ -99,8 +99,7 @@ public static class ToolCheckQueue
         request.WorkerId = runtime.Id;
         request.StartedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        var keys =
-            request.Kind == ToolCheckKind.Standard ? ToolMonitoringRules.StandardTools : ["AiLive"];
+        var keys = ToolMonitoringRules.KeysFor(request.Kind);
         var failed = false;
         foreach (var key in keys)
         {
@@ -109,7 +108,13 @@ public static class ToolCheckQueue
             ToolProbe result;
             try
             {
-                if (key == "AiLive")
+                if (key == "Collector")
+                {
+                    var worker = await db.ToolWorkers.AsNoTracking().OrderByDescending(x => x.At).FirstOrDefaultAsync(ct);
+                    result = new(key, ToolMonitoringRules.WorkerFresh(worker, DateTimeOffset.UtcNow) ? ToolState.Ready : ToolState.Problem,
+                        ToolMonitoringRules.WorkerFresh(worker, DateTimeOffset.UtcNow) ? "CollectorResponded" : "CollectorUnavailable");
+                }
+                else if (key == "AiLive")
                 {
                     var active = await db
                         .WorkflowSettings.AsNoTracking()
@@ -132,6 +137,8 @@ public static class ToolCheckQueue
                         ? new(key, ToolState.Problem, "AiInvalidResponse")
                         : new(key, ToolState.Ready, "AiResponded");
                 }
+                else if (key is "GoogleLogin" or "Facebook" or "LinkedIn")
+                    result = await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<SocialPublishing>(services).ProbeAsync(key, ct);
                 else if (key is "LahzaPayment" or "JawwalPayPayment")
                     result = await Microsoft
                         .Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PaymentToolProbes>(

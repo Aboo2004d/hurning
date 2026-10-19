@@ -13,6 +13,8 @@ public class HiringDb(
 ) : IdentityDbContext<IdentityUser>(options)
 {
     public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
+    public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
+    public DbSet<SocialPublication> SocialPublications => Set<SocialPublication>();
 
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<SourceItem> SourceItems => Set<SourceItem>();
@@ -60,6 +62,8 @@ public class HiringDb(
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<SocialPublication>().HasIndex(x => new { x.OpportunityId, x.Provider, x.CreatedAt });
+        b.Entity<SocialPublication>().HasOne(x => x.Opportunity).WithMany().HasForeignKey(x => x.OpportunityId).OnDelete(DeleteBehavior.Restrict);
         MembershipSchema.Configure(b);
         b.Entity<MemberSubscription>()
             .HasQueryFilter(x => x.GatewayEnvironment == ActivePaymentEnvironment);

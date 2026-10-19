@@ -1,0 +1,32 @@
+@model HiringPs.Web.Areas.Admin.Controllers.SocialCompose
+@{
+var item = Model.Opportunity!;
+var english = item.OriginalLanguage.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+var fields = new[] {
+    (Key:"Title", Text:item.Title), (Key:"Organization", Text:item.Organization),
+    (Key:"Summary", Text:item.Summary), (Key:"Locations", Text:item.Locations),
+    (Key:"Deadline", Text:item.Deadline is {} date ? (english ? "Apply by: " : "آخر موعد للتقديم: ") + date.ToString("yyyy-MM-dd") : "")
+};
+}
+<section data-social-compose>
+<h2>@T["SocialCompose"] · @Model.Provider</h2>
+<form asp-controller="Social" asp-action="Publish" method="post">
+<input type="hidden" name="Id" value="@Model.Id" />
+<input type="hidden" name="OpportunityId" value="@Model.OpportunityId" />
+<input type="hidden" name="Provider" value="@Model.Provider" />
+<fieldset><legend>@T["SocialFields"]</legend>
+@foreach(var field in fields) {
+<label><input type="checkbox" data-social-field data-text="@field.Text" checked />@T[field.Key]</label>
+}
+</fieldset>
+<label>@T["SocialPreview"]<textarea name="Text" data-social-text rows="12" dir="auto" required maxlength="@(Model.Provider == "LinkedIn" ? 2800 : 50000)">@Model.Text</textarea></label>
+<p dir="ltr"><a href="@Model.Link" target="_blank" rel="noopener">@Model.Link</a></p>
+@if(Model.PreviouslyPublished) { <label class="notice"><input type="checkbox" name="ConfirmRepeat" value="true" required />@T["SocialRepeatRequired"]</label> }
+<button type="submit">@T["SocialPublish"] @Model.Provider</button>
+</form>
+@if(Model.History.Count > 0) {
+<h3>@T["SocialHistory"]</h3><ul>
+@foreach(var post in Model.History) { <li>@post.CreatedAt.ToString("u") · @T["Social" + post.Status] @if(!string.IsNullOrEmpty(post.Url)){<a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a>}</li> }
+</ul>
+}
+</section>

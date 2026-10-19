@@ -1,0 +1,46 @@
+@model AdminPage<Opportunity>
+@if(ViewBag.Counts is Dictionary<PublicationStatus, int> totals)
+{
+    <div hidden>
+    @foreach(var state in new[] { PublicationStatus.Published, PublicationStatus.NeedsReview, PublicationStatus.Archived, PublicationStatus.Draft })
+    { <span data-tab-count="@state" data-count="@totals.GetValueOrDefault(state)"></span> }
+    </div>
+}
+<div class="table-wrap">
+    <table class="table-nowrap">
+        <thead>
+            <tr>
+                <th>@T["Title"]</th>
+                <th>@T["Kind"]</th>
+                <th>@T["Organization"]</th>
+                <th>@T["Status"]</th>
+                <th>@T["Error"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td dir="auto">@item.Title</td>
+                    <td>@T[item.Kind.ToString()]</td>
+                    <td dir="auto">@item.Organization</td>
+                    <td>@T[item.Status.ToString()]</td>
+                    <td>
+                        <partial name="_Diagnostic" model="item.ReviewReason"/>
+                    </td>
+                    <td>
+                        <a class="button button-outline" asp-controller="Opportunities" asp-action="Edit" asp-route-id="@item.Id">@T["Edit"]</a>                        @if(SocialPublishing.Eligible(item, TextRules.PalestineToday())) {
+                        <a class="button button-outline" asp-controller="Social" asp-action="Compose" asp-route-id="@item.Id" asp-route-provider="Facebook" data-social-open>Facebook</a>
+                        <a class="button button-outline" asp-controller="Social" asp-action="Compose" asp-route-id="@item.Id" asp-route-provider="LinkedIn" data-social-open>LinkedIn</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_AdminPagination" model="Model.Pager" />
+
+

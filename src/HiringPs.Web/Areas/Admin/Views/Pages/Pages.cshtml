@@ -24,7 +24,7 @@
                 {
                     @T["PageLastUpdated"]
                     <span>
-                        @TimeZoneInfo.ConvertTime(page.UpdatedAt,TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron")).ToString("yyyy-MM-dd HH:mm")
+                        @TimeZoneInfo.ConvertTime(page.UpdatedAt,TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")
                     </span>
                 }
             </p>
@@ -50,3 +50,4 @@
         </div>
     </article>
 </div>
+
