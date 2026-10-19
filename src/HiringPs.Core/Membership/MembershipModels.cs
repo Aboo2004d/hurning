@@ -139,7 +139,9 @@ public sealed class DiscountCode
 
     [MaxLength(50)]
     public string Code { get; set; } = "";
-    public int PlanId { get; set; }
+
+    // A null plan means this discount is available for every subscription plan.
+    public int? PlanId { get; set; }
 
     [Range(0, 100)]
     public int Percent { get; set; }

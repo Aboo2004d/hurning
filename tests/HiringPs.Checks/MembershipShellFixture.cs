@@ -4,6 +4,7 @@ using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,6 +36,60 @@ public sealed class FixtureAuthentication(
             )
         );
     }
+}
+
+// Render the public listing for responsive checks without touching production data.
+public class ListingShellFixtureController : Controller
+{
+    public IActionResult Index(
+        string? q = null,
+        string? city = null,
+        string? category = null,
+        string? employment = null,
+        string? experience = null,
+        OpportunityKind kind = OpportunityKind.Job,
+        bool archive = false,
+        bool restricted = false,
+        bool saved = false,
+        int page = 1
+    ) =>
+        View(
+            "/Views/Home/Index.cshtml",
+            new ListingModel
+            {
+                Kind = kind,
+                Archive = archive,
+                Query = q ?? "",
+                City = city ?? "",
+                Category = category ?? "",
+                Employment = employment ?? "",
+                Experience = experience ?? "",
+                Page = Math.Clamp(page, 1, 2),
+                Count = 24,
+                Cities = ["رام الله", "غزة"],
+                Categories = ["برمجة", "هندسة"],
+                EmploymentTypes = ["دوام كامل", "دوام جزئي"],
+                ExperienceLevels = ["مبتدئ", "متوسط"],
+                AllowedDetails = restricted ? [] : [kind],
+                SavedIds = saved ? [1] : [],
+                Items =
+                [
+                    new Opportunity
+                    {
+                        Id = 1,
+                        Kind = kind,
+                        Title = "فرصة عمل في مجال تطوير البرمجيات",
+                        Organization = "مؤسسة تجريبية",
+                        OriginalLanguage = "ar",
+                        Locations = "رام الله",
+                        Category = "برمجة",
+                        Summary =
+                            "بيانات عرض تجريبية للتأكد من تنسيق بطاقات الفرص والأزرار والفلاتر.",
+                        Deadline = new DateOnly(2026, 11, 1),
+                    },
+                ],
+            }
+        );
 }
 
 [Area("Admin"), Authorize(Roles = "Admin")]
@@ -69,14 +124,107 @@ public class MemberShellFixtureController : Controller
             "/Areas/Member/Views/Dashboard/Index.cshtml",
             new MemberDashboard
             {
-                Member = new MemberProfile
-                {
-                    UserId = "fixture",
-                    Name = "Fixture",
-                    Activated = true,
-                },
+                Member = Profile(),
+                SavedCount = 11,
+                BotReady = true,
+                Subscriptions =
+                [
+                    new MemberSubscription
+                    {
+                        StartsAt = DateTimeOffset.UtcNow.AddDays(-1),
+                        EndsAt = DateTimeOffset.UtcNow.AddDays(29),
+                        PlanVersion = new MembershipPlanVersion
+                        {
+                            NameAr = "باقة شهرية",
+                            NameEn = "Monthly plan",
+                        },
+                    },
+                ],
             }
         );
+
+    public IActionResult Preferences(
+        PreferenceInput input,
+        string? addCategory,
+        string? removeCategory,
+        string? addLocation,
+        string? removeLocation
+    )
+    {
+        if (HttpMethods.IsGet(Request.Method))
+        {
+            input.Categories = ["برمجة", "فئة سابقة لم تعد في القائمة"];
+            input.Locations = ["رام الله"];
+            input.Kinds = [OpportunityKind.Job];
+        }
+        input.AvailableCategories = ["برمجة", "هندسة", "Design & UX <sample>"];
+        input.AvailableLocations = ["رام الله", "غزة", "القدس"];
+        if (addCategory is not null)
+            input.Categories = input.Categories.Append(addCategory).Distinct().ToArray();
+        if (removeCategory is not null)
+            input.Categories = input.Categories.Where(x => x != removeCategory).ToArray();
+        if (addLocation is not null)
+            input.Locations = input.Locations.Append(addLocation).Distinct().ToArray();
+        if (removeLocation is not null)
+            input.Locations = input.Locations.Where(x => x != removeLocation).ToArray();
+        return Request.Headers["X-Member-Async"] == "true"
+            ? PartialView("/Areas/Member/Views/Preferences/_PreferenceEditor.cshtml", input)
+            : View("/Areas/Member/Views/Preferences/Index.cshtml", input);
+    }
+
+    public IActionResult Settings(bool enabled = true)
+    {
+        var profile = Profile();
+        profile.NotificationsEnabled = enabled;
+        return View("/Areas/Member/Views/Settings/Index.cshtml", profile);
+    }
+
+    public IActionResult Saved(int page = 1, int total = 11, int removed = 0)
+    {
+        page = AdminPager.Normalize(page, total);
+        ViewBag.AllowedDetails = new HashSet<OpportunityKind> { OpportunityKind.Job };
+        var ids = Enumerable
+            .Range(1, 12)
+            .Where(id => id != removed)
+            .Take(total)
+            .OrderByDescending(id => id);
+        var model = new AdminPage<SavedOpportunity>
+        {
+            Pager = new AdminPager { Page = page, TotalRecords = total },
+            Items = ids.Skip((page - 1) * AdminPager.PageSize)
+                .Take(AdminPager.PageSize)
+                .Select(id => new SavedOpportunity
+                {
+                    Id = id,
+                    OpportunityId = id,
+                    SavedAt = DateTimeOffset.UtcNow,
+                    Opportunity = new Opportunity
+                    {
+                        Id = id,
+                        Kind = id % 2 == 0 ? OpportunityKind.Training : OpportunityKind.Job,
+                        Title = "فرصة محفوظة للتجربة " + id,
+                        Organization = "مؤسسة تجريبية",
+                        Locations = "رام الله",
+                        Status = PublicationStatus.Published,
+                    },
+                })
+                .ToList(),
+        };
+        return Request.Headers["X-Member-Async"] == "true"
+            ? PartialView("/Areas/Member/Views/Saved/_SavedResults.cshtml", model)
+            : View("/Areas/Member/Views/Saved/Index.cshtml", model);
+    }
+
+    private static MemberProfile Profile() =>
+        new()
+        {
+            UserId = "fixture",
+            Name = "Test Member — عضو تجريبي",
+            Mobile = "+970599123456",
+            Activated = true,
+            TelegramChatId = 1,
+            NotificationsEnabled = true,
+        };
 }
 
 public class TimeoutShellFixtureController : Controller
@@ -390,7 +538,7 @@ public class AdminFormShellFixtureController : Controller
         );
     }
 
-    public IActionResult EditPreview(string kind)
+    public IActionResult EditPreview(string kind, bool allPlans = false, bool create = false)
     {
         ViewBag.OriginalSources = Array.Empty<string>();
         ViewBag.Plans = new List<MembershipPlanVersion>
@@ -410,7 +558,7 @@ public class AdminFormShellFixtureController : Controller
             ),
             "Discounts" => View(
                 "/Areas/Admin/Views/Discounts/DiscountForm.cshtml",
-                new DiscountCode { Id = 42, PlanId = 42 }
+                new DiscountCode { Id = create ? 0 : 42, PlanId = allPlans || create ? null : 42 }
             ),
             "Sources" => View(
                 "/Areas/Admin/Views/Sources/SourceForm.cshtml",

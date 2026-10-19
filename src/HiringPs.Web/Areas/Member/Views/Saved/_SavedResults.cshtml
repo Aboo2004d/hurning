@@ -1,0 +1,59 @@
+@model AdminPage<SavedOpportunity>
+@{ var allowed = ViewBag.AllowedDetails as HashSet<OpportunityKind> ?? []; }
+<section data-saved-results tabindex="-1" data-current-url="@Url.Action("Index", "Saved", new { page = Model.Pager.Page })"
+         data-error="@T["SavedUpdateFailed"]" aria-live="polite">
+    <p class="member-lead">@T["SavedItemCount", Model.Pager.TotalRecords]</p>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="membership-card member-panel member-empty-state">
+            <span class="member-icon" aria-hidden="true"><span class="fa-solid fa-bookmark"></span></span>
+            <h2>@T["NoSavedOpportunities"]</h2>
+            <p class="member-lead">@T["SaveFromListingsAdvice"]</p>
+            <a class="button button-outline member-action" asp-area="" asp-controller="Home" asp-action="Index">
+                <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span><span>@T["Opportunities"]</span>
+            </a>
+        </div>
+    }
+    <div class="member-saved-grid">
+        @foreach (var saved in Model.Items)
+        {
+            var item = saved.Opportunity;
+            var visible = item.Status is PublicationStatus.Published or PublicationStatus.Archived;
+            <article class="membership-card member-panel member-saved-card">
+                <div class="member-section-heading">
+                    <span class="badge">@T[item.Kind.ToString()]</span>
+                    <span class="member-saved-date">@T["SavedOn"] <bdi dir="ltr">@PaymentDisplay.Time(saved.SavedAt)</bdi></span>
+                </div>
+                <h2 dir="auto">@(visible ? item.Title : T["SavedOpportunityUnavailable"].Value)</h2>
+                @if (visible)
+                {
+                    <p class="member-lead" dir="auto">@item.Organization</p>
+                    @if (!string.IsNullOrWhiteSpace(item.Locations))
+                    {
+                        <p class="member-lead"><span class="fa-solid fa-location-dot" aria-hidden="true"></span> <bdi>@item.Locations</bdi></p>
+                    }
+                }
+                <div class="member-card-actions">
+                    @if (visible && allowed.Contains(item.Kind))
+                    {
+                        <a class="button button-outline member-action" asp-area="" asp-controller="Opportunities" asp-action="Details" asp-route-id="@saved.OpportunityId">
+                            <span class="fa-solid fa-eye" aria-hidden="true"></span><span>@T["Details"]</span>
+                        </a>
+                    }
+                    else if (visible)
+                    {
+                        <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
+                    }
+                    <form asp-controller="Saved" asp-action="Remove" method="post" data-saved-remove>
+                        <input name="id" type="hidden" value="@saved.Id" />
+                        <input name="page" type="hidden" value="@Model.Pager.Page" />
+                        <button class="button button-outline member-action" type="submit">
+                            <span class="fa-solid fa-trash-can" aria-hidden="true"></span><span>@T["Remove"]</span>
+                        </button>
+                    </form>
+                </div>
+            </article>
+        }
+    </div>
+    <partial name="_AdminPagination" model="Model.Pager" />
+</section>

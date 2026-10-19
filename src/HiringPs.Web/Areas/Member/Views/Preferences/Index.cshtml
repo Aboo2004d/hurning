@@ -1,31 +1,8 @@
 @model PreferenceInput
 @{ ViewData["Title"] = T["Preferences"]; }
-<h1>@T["Preferences"]</h1>
+<header class="member-page-heading">
+    <h1>@T["Preferences"]</h1>
+    <p class="member-lead">@T["PreferenceCardsAdvice"]</p>
+</header>
 <p class="notice">@T["PreferencesAdvice"]</p>
-<form method="post" class="membership-card">
-    <fieldset>
-        <legend>@T["OpportunityTypes"]</legend>
-        @foreach (var kind in Enum.GetValues<OpportunityKind>())
-            {
-                <label class="check">
-                    <input type="checkbox" name="Kinds" value="@kind" checked="@Model.Kinds.Contains(kind)" />@T[kind.ToString()]</label>
-            }
-        </fieldset>
-        <label>@T["Category"]<select asp-for="Categories" multiple size="6">
-                @foreach (var value in Model.AvailableCategories)
-                {
-                    <option value="@value" selected="@Model.Categories.Contains(value)">@value</option>
-                }
-            </select>
-        </label>
-        <label>@T["Location"]<select asp-for="Locations" multiple size="6">
-                @foreach (var value in Model.AvailableLocations)
-                {
-                    <option value="@value" selected="@Model.Locations.Contains(value)">@value</option>
-                }
-            </select>
-        </label>
-        <label class="check">
-            <input asp-for="SavedReminders" />@T["SavedReminders"]</label>
-        <button type="submit">@T["Save"]</button>
-    </form>
+<partial name="/Areas/Member/Views/Preferences/_PreferenceEditor.cshtml" model="Model" />

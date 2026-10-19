@@ -1,24 +1,62 @@
 @model MemberProfile
 @{ ViewData["Title"] = T["AccountSettings"]; }
-<h1>@T["AccountSettings"]</h1>
-<section class="membership-card">
-    <p>@Model.Name · <bdi>@Model.Mobile</bdi>
-    </p>
-    <p>@T["Notifications"]: @(Model.NotificationsEnabled ? T["Enabled"] : T["Disabled"])</p>
-    @if (Model.NotificationsEnabled)
-    {
-        <form asp-action="Stop" method="post">
-            <button class="secondary" type="submit">@T["StopNotifications"]</button>
-        </form>
-    }
-    else
-    {
-        <form asp-action="Enable" method="post">
-            <button type="submit">@T["EnableNotifications"]</button>
-        </form>
-    }
-    <form asp-action="ChangeTelegram" method="post">
-        <button class="secondary" type="submit">@T["ChangeTelegram"]</button>
-    </form>
-    <a asp-area="" asp-controller="Account" asp-action="ChangePassword">@T["ChangePassword"]</a>
-</section>
+<header class="member-page-heading">
+    <h1>@T["AccountSettings"]</h1>
+    <p class="member-lead">@T["MemberSettingsHelp"]</p>
+</header>
+<div class="member-settings-grid">
+    <section class="membership-card member-panel member-identity-card">
+        <div class="member-tile-heading">
+            <span class="member-icon" aria-hidden="true"><span class="fa-solid fa-user"></span></span>
+            <h2>@T["MemberProfile"]</h2>
+        </div>
+        <dl class="member-profile-details">
+            <div><dt>@T["Name"]</dt><dd><bdi>@Model.Name</bdi></dd></div>
+            <div><dt>@T["Mobile"]</dt><dd><bdi dir="ltr">@Model.Mobile</bdi></dd></div>
+            <div><dt>@T["TelegramLinked"]</dt><dd>@T[Model.TelegramChatId.HasValue ? "Yes" : "No"]</dd></div>
+        </dl>
+    </section>
+    <section class="membership-card member-panel">
+        <div class="member-tile-heading">
+            <span class="member-icon" aria-hidden="true"><span class="fa-solid fa-bell"></span></span>
+            <h2>@T["Notifications"]</h2>
+        </div>
+        <p><span class="member-state @(Model.NotificationsEnabled ? "is-active" : "")">@T[Model.NotificationsEnabled ? "Enabled" : "Disabled"]</span></p>
+        <p class="member-lead">@T["MemberNotificationHelp"]</p>
+        <div class="member-card-actions">
+            @if (Model.NotificationsEnabled)
+            {
+                <form asp-controller="Settings" asp-action="Stop" method="post">
+                    <button class="button button-outline member-action" type="submit">
+                        <span class="fa-solid fa-bell-slash" aria-hidden="true"></span><span>@T["StopNotifications"]</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-controller="Settings" asp-action="Enable" method="post">
+                    <button class="button button-outline member-action" type="submit">
+                        <span class="fa-solid fa-bell" aria-hidden="true"></span><span>@T["EnableNotifications"]</span>
+                    </button>
+                </form>
+            }
+        </div>
+    </section>
+    <section class="membership-card member-panel">
+        <div class="member-tile-heading">
+            <span class="member-icon" aria-hidden="true"><span class="fa-solid fa-key"></span></span>
+            <h2>@T["MemberSecurity"]</h2>
+        </div>
+        <p class="member-lead">@T["MemberSecurityHelp"]</p>
+        <div class="member-card-actions">
+            <form asp-controller="Settings" asp-action="ChangeTelegram" method="post">
+                <button class="button button-outline member-action" type="submit">
+                    <span class="fa-solid fa-paper-plane" aria-hidden="true"></span><span>@T["ChangeTelegram"]</span>
+                </button>
+            </form>
+            <a class="button button-outline member-action" asp-area="" asp-controller="Account" asp-action="ChangePassword">
+                <span class="fa-solid fa-key" aria-hidden="true"></span><span>@T["ChangePassword"]</span>
+            </a>
+        </div>
+    </section>
+</div>

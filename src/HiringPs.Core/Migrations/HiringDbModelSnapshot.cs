@@ -188,7 +188,7 @@ namespace HiringPs.Core.Migrations
                     b.Property<int>("Percent")
                         .HasColumnType("int");
 
-                    b.Property<int>("PlanId")
+                    b.Property<int?>("PlanId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -2200,8 +2200,7 @@ namespace HiringPs.Core.Migrations
                     b.HasOne("HiringPs.Core.MembershipPlan", null)
                         .WithMany()
                         .HasForeignKey("PlanId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("HiringPs.Core.MemberChallenge", b =>

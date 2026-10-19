@@ -1,6 +1,22 @@
 @model MemberDashboard
-@{ ViewData["Title"] = T["MyAccount"]; }
-<h1>@T["Welcome"]، @Model.Member.Name</h1>
+@{
+    ViewData["Title"] = T["MyAccount"];
+    var now = DateTimeOffset.UtcNow;
+    var current = Model.Subscriptions.FirstOrDefault(x => !x.Cancelled && x.StartsAt <= now && x.EndsAt > now);
+    var language = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var tiles = new[]
+    {
+        (Controller: "Plans", Label: "MyPlan", Icon: "credit-card", Help: "MemberPlanHelp"),
+        (Controller: "Payments", Label: "MyPayments", Icon: "wallet", Help: "MemberPaymentsHelp"),
+        (Controller: "Preferences", Label: "Preferences", Icon: "sliders", Help: "MemberPreferencesHelp"),
+        (Controller: "Saved", Label: "Saved", Icon: "bookmark", Help: "MemberSavedHelp"),
+        (Controller: "Settings", Label: "AccountSettings", Icon: "gear", Help: "MemberSettingsHelp")
+    };
+}
+<header class="member-page-heading">
+    <h1>@T["Welcome"]، <bdi>@Model.Member.Name</bdi></h1>
+    <p class="member-lead">@T["MemberDashboardAdvice"]</p>
+</header>
 @if (!Model.BotReady)
 {
     <p class="notice">@T["TelegramUnavailable"]</p>
@@ -9,22 +25,28 @@
 {
     <p class="notice">@T["TelegramDeliveryProblem"]</p>
 }
-<div class="membership-grid">
-    <a class="membership-card" asp-controller="Plans" asp-action="Index">
-        <h2>@T["MyPlan"]</h2>
-        <p>@(Model.Subscriptions.FirstOrDefault()?.PlanVersion.Name(Model.Member.Language) ?? T["FreePlan"].Value)</p>
-    </a>
-    <a class="membership-card" asp-controller="Payments" asp-action="Index">
-        <h2>@T["MyPayments"]</h2>
-    </a>
-    <a class="membership-card" asp-controller="Preferences" asp-action="Index">
-        <h2>@T["Preferences"]</h2>
-    </a>
-    <a class="membership-card" asp-controller="Saved" asp-action="Index">
-        <h2>@T["Saved"]</h2>
-        <p>@Model.SavedCount</p>
-    </a>
-    <a class="membership-card" asp-controller="Settings" asp-action="Index">
-        <h2>@T["AccountSettings"]</h2>
-    </a>
+<div class="member-dashboard-grid">
+    @foreach (var tile in tiles)
+    {
+        <a class="member-tile @(tile.Controller == "Plans" ? "member-tile-plan" : "")" asp-controller="@tile.Controller" asp-action="Index">
+            <div class="member-tile-heading">
+                <span class="member-icon" aria-hidden="true"><span class="fa-solid fa-@tile.Icon"></span></span>
+                <h2>@T[tile.Label]</h2>
+            </div>
+            @if (tile.Controller == "Plans")
+            {
+                <strong class="member-metric">@(current?.PlanVersion.Name(language) ?? T["FreePlan"].Value)</strong>
+                @if (current is not null)
+                {
+                    <p class="member-lead">@T["EndsPalestineTime"]: <bdi dir="ltr">@PaymentDisplay.Time(current.EndsAt)</bdi></p>
+                }
+            }
+            else if (tile.Controller == "Saved")
+            {
+                <strong class="member-metric"><bdi>@Model.SavedCount</bdi></strong>
+            }
+            <p class="member-lead">@T[tile.Help]</p>
+            <span class="member-tile-link">@T["OpenSection"] <span class="fa-solid fa-eye" aria-hidden="true"></span></span>
+        </a>
+    }
 </div>

@@ -100,7 +100,7 @@ public class PlansController(
             .SingleOrDefaultAsync(
                 x =>
                     x.Code == code
-                    && x.PlanId == planId
+                    && (x.PlanId == null || x.PlanId == planId)
                     && x.Enabled
                     && x.ExpiresAt > DateTimeOffset.UtcNow,
                 ct

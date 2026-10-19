@@ -166,7 +166,8 @@
         setTimeout(hide, 12000);
     }
     document.addEventListener('submit', event => {
-        if (!event.defaultPrevented && !event.target.target) {
+        if (!event.defaultPrevented && !event.target.target
+            && !event.target.matches('[data-save-opportunity], [data-preferences-form], [data-saved-remove], [data-checkout-form]')) {
             show();
             setTimeout(hide, 12000);
         }

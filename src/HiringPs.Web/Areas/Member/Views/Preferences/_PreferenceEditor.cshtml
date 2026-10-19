@@ -1,0 +1,25 @@
+@model PreferenceInput
+<section data-preference-editor tabindex="-1" aria-live="polite" data-error="@T["PreferenceSaveFailed"]">
+    @if (ViewData["PreferenceNotice"] is string notice)
+    {
+        <p class="notice" role="status">@T[notice]</p>
+    }
+    <form asp-controller="Preferences" asp-action="Index" method="post" class="membership-card member-panel preference-editor" data-preferences-form>
+        <fieldset class="preference-kinds">
+            <legend>@T["OpportunityTypes"]</legend>
+            @foreach (var kind in Enum.GetValues<OpportunityKind>())
+            {
+                <label class="preference-kind">
+                    <input type="checkbox" name="Kinds" value="@kind" checked="@Model.Kinds.Contains(kind)" />
+                    <span>@T[kind.ToString()]</span>
+                </label>
+            }
+        </fieldset>
+        <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Categories", "Category", Model.Categories, Model.AvailableCategories)' />
+        <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Locations", "Location", Model.Locations, Model.AvailableLocations)' />
+        <label class="check member-reminders"><input asp-for="SavedReminders" />@T["SavedReminders"]</label>
+        <button class="button button-outline member-action" type="submit">
+            <span class="fa-solid fa-floppy-disk" aria-hidden="true"></span><span>@T["Save"]</span>
+        </button>
+    </form>
+</section>

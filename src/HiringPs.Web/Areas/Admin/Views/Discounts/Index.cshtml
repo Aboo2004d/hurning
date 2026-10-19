@@ -30,7 +30,7 @@
                         <td>
                             <bdi>@code.Code</bdi>
                         </td>
-                        <td>@code.PlanId</td>
+                        <td>@(code.PlanId is null ? T["AllPlans"].Value : code.PlanId.Value.ToString())</td>
                         <td>@code.Percent</td>
                         <td>
                             <bdi>@code.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</bdi>

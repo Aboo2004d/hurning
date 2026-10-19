@@ -56,12 +56,13 @@ public class SourcesController : AdminControllerBase
             "Id,Name,Url,Connector,Enabled,UsageApproved,ApprovalNote,ConfigurationJson,IntervalHours,CollectionStartTime,Version"
         )]
             Source input,
-        CancellationToken ct
+        CancellationToken ct,
+        SourceClock? clock = null
     )
     {
         if (input.Id != 0)
             return Task.FromResult<IActionResult>(BadRequest());
-        return SaveAsync(input, ct);
+        return SaveAsync(input, ct, clock);
     }
 
     [HttpPost]
@@ -71,16 +72,27 @@ public class SourcesController : AdminControllerBase
             "Id,Name,Url,Connector,Enabled,UsageApproved,ApprovalNote,ConfigurationJson,IntervalHours,CollectionStartTime,Version"
         )]
             Source input,
-        CancellationToken ct
+        CancellationToken ct,
+        SourceClock? clock = null
     )
     {
         if (id <= 0 || input.Id != id)
             return Task.FromResult<IActionResult>(BadRequest());
-        return SaveAsync(input, ct);
+        return SaveAsync(input, ct, clock);
     }
 
-    private async Task<IActionResult> SaveAsync(Source input, CancellationToken ct)
+    private async Task<IActionResult> SaveAsync(
+        Source input,
+        CancellationToken ct,
+        SourceClock? clock
+    )
     {
+        if (clock is not null)
+        {
+            if (!TryValidateModel(clock, "Clock"))
+                return View("SourceForm", input);
+            input.CollectionStartTime = clock.ToTime();
+        }
         NormalizeStrings(input);
         var previous =
             input.Id == 0

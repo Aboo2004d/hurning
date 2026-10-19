@@ -35,6 +35,14 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
             Response.StatusCode = 403;
             return View("Restricted", item.Kind);
         }
+        if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+        {
+            var memberId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            ViewBag.IsSaved = await db
+                .SavedOpportunities.AsNoTracking()
+                .AnyAsync(x => x.UserId == memberId && x.OpportunityId == id, ct);
+            Response.Headers.CacheControl = "no-store";
+        }
         ViewData["ListingKind"] = item.Kind;
         ViewBag.VerifiedDates = await db
             .OpportunityDates.AsNoTracking()

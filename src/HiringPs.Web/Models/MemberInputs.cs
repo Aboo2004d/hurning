@@ -39,8 +39,11 @@ public sealed class VerificationInput
 
 public sealed class ResetInput
 {
-    [Required(ErrorMessage = "FieldRequired"), EmailAddress(ErrorMessage = "EmailInvalid")]
-    public string Email { get; set; } = "";
+    [
+        Required(ErrorMessage = "FieldRequired"),
+        RegularExpression("^[1-9][0-9]{7,14}$", ErrorMessage = "MobileInternational")
+    ]
+    public string Mobile { get; set; } = "";
 }
 
 public sealed class ResetPasswordInput

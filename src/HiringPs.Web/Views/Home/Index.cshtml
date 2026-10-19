@@ -14,20 +14,19 @@
 <form method="get" asp-action="Index" id="listing-form">
     <input type="hidden" name="archive" value="@Model.Archive.ToString().ToLowerInvariant()"/>
     <input type="hidden" name="kind" value="@Model.Kind"/>
-    <div class="searchbar">
-        <input
-            type="search"
-            name="q"
-            value="@Model.Query"
-            placeholder="@T["SearchPlaceholder"]"
-            aria-label="@T["Search"]"
-        />
-        <button type="submit">@T["Search"]</button>
-    </div>
     <div class="listing-layout">
         <aside class="filter-panel">
             <details open>
                 <summary>@T["Filters"]</summary>
+                <div class="listing-search">
+                    <label for="listing-query">@T["Search"]</label>
+                    <input id="listing-query" type="search" name="q" value="@Model.Query"
+                           placeholder="@T["SearchPlaceholder"]" />
+                    <button class="button button-outline listing-action" type="submit">
+                        <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>
+                        <span>@T["Search"]</span>
+                    </button>
+                </div>
                 <label>
                     @T["Location"]
                     <select name="city">
@@ -70,10 +69,16 @@
                         </select>
                     </label>
                 </div>
-                <button type="submit">@T["Filters"]</button>
-                <a class="textlink" asp-action="Index" asp-route-kind="@Model.Kind" asp-route-archive="@Model.Archive">
-                    @T["Clear"]
-                </a>
+                <div class="listing-filter-actions">
+                    <button class="button button-outline listing-action" type="submit">
+                        <span class="fa-solid fa-filter" aria-hidden="true"></span>
+                        <span>@T["Filters"]</span>
+                    </button>
+                    <a class="button button-outline listing-action" asp-action="Index" asp-route-kind="@Model.Kind" asp-route-archive="@Model.Archive">
+                        <span class="fa-solid fa-rotate-right" aria-hidden="true"></span>
+                        <span>@T["Clear"]</span>
+                    </a>
+                </div>
             </details>
         </aside>
         <section>
@@ -115,21 +120,26 @@
                             }
                         </div>
                         <div class="card-bottom">
-                            <span>
+                            <span class="opportunity-deadline">
                                 @(Model.Archive?T["Expired"]:item.Deadline is {} deadline?T["Deadline"]+": "+deadline.ToString("yyyy-MM-dd"):T["UnknownDeadline"])
                             </span>
-                            @if (Model.AllowedDetails.Contains(item.Kind))
-                            {
-                                <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.Id">@T["Details"] ←</a>
-                            }
-                            else
-                            {
-                                <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
-                            }
-                            @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
-                            {
-                                <button class="secondary" type="submit" form="save-@item.Id">@T["SaveOpportunity"]</button>
-                            }
+                            <div class="opportunity-actions">
+                                @if (Model.AllowedDetails.Contains(item.Kind))
+                                {
+                                    <a class="button button-outline listing-action" asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.Id">
+                                        <span class="fa-solid fa-eye" aria-hidden="true"></span>
+                                        <span>@T["Details"]</span>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
+                                }
+                                @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+                                {
+                                    <partial name="_SaveOpportunityButton" model="new SaveButton(item.Id, Model.SavedIds.Contains(item.Id))" />
+                                }
+                            </div>
                         </div>
                     </article>
                 }
@@ -175,7 +185,8 @@
 {
     @foreach (var item in Model.Items)
     {
-        <form id="save-@item.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post">
+        <form id="save-@item.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post" data-save-opportunity>
+            <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
             <input type="hidden" name="id" value="@item.Id" />
         </form>
     }

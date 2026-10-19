@@ -250,6 +250,8 @@ public static class MembershipSqlChecks
             );
             await WalletSqlChecks.RunAsync(options, version.Id);
             await CheckoutSqlChecks.RunAsync(options, version.Id);
+            await MemberWorkspaceSqlChecks.RunAsync(options);
+            await PasswordRecoverySqlChecks.RunAsync(options);
             var frozenVersion = await db.MembershipPlanVersions.SingleAsync(x =>
                 x.Id == version.Id
             );

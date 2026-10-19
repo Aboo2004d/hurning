@@ -85,11 +85,25 @@
             @T["Interval"]
             <input asp-for="IntervalHours" type="number" min="1" max="168"/>
         </label>
-        <label>
-            @T["StartTime"]
-            <input asp-for="CollectionStartTime" type="time" asp-format="{0:HH:mm}" required/>
-            <span class="muted">@T["ScheduleZone"]</span>
-        </label>
+        <fieldset class="source-clock">
+            <legend>@T["StartTime"]</legend>
+            <div class="source-clock-fields">
+                <label for="Clock_Hour">@T["ClockHour"]
+                    @Html.TextBox("Clock.Hour", Model.CollectionStartTime.Hour % 12 == 0 ? 12 : Model.CollectionStartTime.Hour % 12, new { type = "number", min = "1", max = "12", required = "required", dir = "ltr" })
+                </label>
+                <label for="Clock_Minute">@T["ClockMinute"]
+                    @Html.TextBox("Clock.Minute", Model.CollectionStartTime.Minute, new { type = "number", min = "0", max = "59", required = "required", dir = "ltr" })
+                </label>
+                <label for="Clock_Period">@T["ClockPeriod"]
+                    @Html.DropDownList("Clock.Period", new[] {
+                        new SelectListItem(T["ClockAM"].Value, "AM", Model.CollectionStartTime.Hour < 12),
+                        new SelectListItem(T["ClockPM"].Value, "PM", Model.CollectionStartTime.Hour >= 12)
+                    })
+                </label>
+            </div>
+            <p class="muted">@T["ScheduleZone"]</p>
+            <p class="muted">@T["SourceScheduleHelp"]</p>
+        </fieldset>
     </div>
     <label class="checkbox">
         <input asp-for="Enabled"/>

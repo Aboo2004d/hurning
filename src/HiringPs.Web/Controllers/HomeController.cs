@@ -1,4 +1,5 @@
 // مسارات الزائر: عرض الفرص وتفاصيلها وصفحات الموقع واللغة وخرائط البحث.
+using System.Security.Claims;
 using System.Xml.Linq;
 using HiringPs.Core;
 using HiringPs.Web.Models;
@@ -101,6 +102,19 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
             Experience = experience ?? "",
             Archive = archive,
         };
+        if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+        {
+            var memberId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var ids = model.Items.Select(x => x.Id).ToArray();
+            model.SavedIds = (
+                await db
+                    .SavedOpportunities.AsNoTracking()
+                    .Where(x => x.UserId == memberId && ids.Contains(x.OpportunityId))
+                    .Select(x => x.OpportunityId)
+                    .ToListAsync(ct)
+            ).ToHashSet();
+            Response.Headers.CacheControl = "no-store";
+        }
         var published = scoped;
         model.Cities = new[]
         {

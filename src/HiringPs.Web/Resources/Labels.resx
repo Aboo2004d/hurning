@@ -1583,7 +1583,7 @@
     <data name="SendCode" xml:space="preserve"><value>إرسال الرمز</value></data>
     <data name="Confirm" xml:space="preserve"><value>تأكيد</value></data>
     <data name="ResetPassword" xml:space="preserve"><value>استعادة كلمة المرور</value></data>
-    <data name="ResetRequested" xml:space="preserve"><value>إذا كان الحساب مؤهلًا، أُرسل رمز إلى تليجرام المرتبط به.</value></data>
+    <data name="ResetRequested" xml:space="preserve"><value>إذا كان الرقم المدخل مسجلًا والحساب مفعّلًا، فسيُرسل رمز التحقق إلى حساب تليجرام المرتبط به.</value></data>
     <data name="PasswordUpdated" xml:space="preserve"><value>تم تحديث كلمة المرور. سجّل الدخول بكلمتك الجديدة.</value></data>
     <data name="PasswordInvalid" xml:space="preserve"><value>لم تُقبل كلمة المرور. استخدم كلمة مرور أقوى ومتطابقة.</value></data>
     <data name="RegistrationFailed" xml:space="preserve"><value>تعذّر إنشاء الحساب. تحقق من البيانات أو جرّب تسجيل الدخول.</value></data>
@@ -1852,4 +1852,45 @@
     <data name="CancelPayment" xml:space="preserve"><value>إلغاء العملية</value></data>
     <data name="WalletCancelled" xml:space="preserve"><value>أُلغيت العملية وأُبطلت جلسة الدفع في الموقع.</value></data>
     <data name="WalletCancellationUnavailable" xml:space="preserve"><value>بدأ تأكيد الدفع؛ لا يمكن إلغاء جلسة قد نُفّذ خصمها. تحقق من النتيجة أولًا.</value></data>
+    <data name="AllPlans" xml:space="preserve"><value>كل الباقات</value></data>
+    <data name="AllPlansDiscountHelp" xml:space="preserve"><value>اختيار «الكل» يجعل الكود متاحًا لجميع الباقات الحالية والجديدة، مع بقاء شروط الاستخدام نفسها.</value></data>
+    <data name="OpportunitySaved" xml:space="preserve"><value>محفوظة</value></data>
+    <data name="SaveOpportunityFailed" xml:space="preserve"><value>تعذّر حفظ الفرصة. تأكد من تسجيل الدخول وحاول مجددًا.</value></data>
+    <data name="PreferenceCardsAdvice" xml:space="preserve"><value>أضف الفئات والأماكن أو أزلها من البطاقات. تُحفظ التغييرات دون مغادرة الصفحة.</value></data>
+    <data name="SelectedPreferences" xml:space="preserve"><value>مختارة</value></data>
+    <data name="AvailablePreferences" xml:space="preserve"><value>عرض الخيارات غير المختارة</value></data>
+    <data name="RemovePreference" xml:space="preserve"><value>إزالة من التفضيلات</value></data>
+    <data name="AddPreference" xml:space="preserve"><value>إضافة إلى التفضيلات</value></data>
+    <data name="AllCategoriesSelected" xml:space="preserve"><value>لم تحدد فئات؛ ستشمل التفضيلات جميع المجالات.</value></data>
+    <data name="AllLocationsSelected" xml:space="preserve"><value>لم تحدد أماكن؛ ستشمل التفضيلات جميع الأماكن.</value></data>
+    <data name="NoMorePreferences" xml:space="preserve"><value>لا توجد خيارات أخرى متاحة حاليًا.</value></data>
+    <data name="PreferenceSaveFailed" xml:space="preserve"><value>تعذّر حفظ التفضيلات. بقيت الاختيارات السابقة؛ حاول مجددًا.</value></data>
+    <data name="MemberDashboardAdvice" xml:space="preserve"><value>كل ما يخص اشتراكك وفرصك المفضلة في مكان واحد.</value></data>
+    <data name="MemberPlanHelp" xml:space="preserve"><value>عرض مزايا باقتك ومدة الاشتراك أو اختيار باقة تناسبك.</value></data>
+    <data name="MemberPaymentsHelp" xml:space="preserve"><value>متابعة حالة طلباتك وعمليات الدفع.</value></data>
+    <data name="MemberPreferencesHelp" xml:space="preserve"><value>خصص أنواع الفرص والفئات والأماكن التي تهمك.</value></data>
+    <data name="MemberSavedHelp" xml:space="preserve"><value>عد إلى الفرص التي حفظتها وراجعها في أي وقت.</value></data>
+    <data name="MemberSettingsHelp" xml:space="preserve"><value>إدارة بيانات حسابك والتنبيهات وخيارات الأمان.</value></data>
+    <data name="OpenSection" xml:space="preserve"><value>فتح القسم</value></data>
+    <data name="SavedPageAdvice" xml:space="preserve"><value>فرصك المفضلة، جاهزة للعودة إليها ومتابعتها.</value></data>
+    <data name="SavedItemCount" xml:space="preserve"><value>{0} فرصة محفوظة</value></data>
+    <data name="NoSavedOpportunities" xml:space="preserve"><value>لا توجد فرص محفوظة بعد</value></data>
+    <data name="SaveFromListingsAdvice" xml:space="preserve"><value>احفظ الفرص التي تهمك من الصفحة الرئيسية لتجدها هنا.</value></data>
+    <data name="SavedOn" xml:space="preserve"><value>حُفظت في</value></data>
+    <data name="SavedOpportunityUnavailable" xml:space="preserve"><value>هذه الفرصة لم تعد متاحة للعرض</value></data>
+    <data name="SavedUpdateFailed" xml:space="preserve"><value>تعذّر تحديث المحفوظات. حاول مجددًا.</value></data>
+    <data name="MemberProfile" xml:space="preserve"><value>بيانات الحساب</value></data>
+    <data name="MemberNotificationHelp" xml:space="preserve"><value>تنبيهات الفرص تصل عبر تليجرام وفق باقتك وتفضيلاتك. تفعيلها يخضع للتحقق المعتمد في الموقع.</value></data>
+    <data name="MemberSecurity" xml:space="preserve"><value>الأمان والربط</value></data>
+    <data name="MemberSecurityHelp" xml:space="preserve"><value>تغيير كلمة المرور أو حساب تليجرام المرتبط مع الحفاظ على خطوات التحقق.</value></data>
+    <data name="TelegramMobileHelp" xml:space="preserve"><value>يُستخدم حساب تليجرام المرتبط بهذا الرقم لاستقبال أكواد التحقق ومتابعة الاشتراك، وللمشتركين تصله تنبيهات الفرص.</value></data>
+    <data name="RegisteredTelegramMobile" xml:space="preserve"><value>رقم تليجرام المسجل في حسابك</value></data>
+    <data name="ResetMobileHelp" xml:space="preserve"><value>أدخل الرقم الدولي كاملًا مع رمز الدولة؛ علامة + مضافة مسبقًا. إذا كان الرقم مسجلًا والحساب مفعّلًا، فسيُرسل رمز التحقق إلى حساب تليجرام المرتبط به.</value></data>
+    <data name="ClockHour" xml:space="preserve"><value>الساعة</value></data>
+    <data name="ClockMinute" xml:space="preserve"><value>الدقيقة</value></data>
+    <data name="ClockPeriod" xml:space="preserve"><value>الفترة</value></data>
+    <data name="ClockAM" xml:space="preserve"><value>صباحًا</value></data>
+    <data name="ClockPM" xml:space="preserve"><value>مساءً</value></data>
+    <data name="SourceClockInvalid" xml:space="preserve"><value>أدخل ساعة من 1 إلى 12 ودقيقة من 0 إلى 59، واختر صباحًا أو مساءً.</value></data>
+    <data name="SourceScheduleHelp" xml:space="preserve"><value>الوقت حسب فلسطين، والتكرار لكل مصدر بالساعات. مثال: 8 صباحًا مع تكرار 12 ساعة يعني 8 صباحًا و8 مساءً؛ ومع 24 ساعة يعني مرة يوميًا.</value></data>
 </root>

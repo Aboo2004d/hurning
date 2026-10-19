@@ -1,9 +1,10 @@
 @model VerificationInput
 @{ ViewData["Title"] = T["ChangeTelegram"].Value; }
-<h1>@T["ChangeTelegram"]</h1>
-<form method="post" class="membership-card">
+<header class="member-page-heading"><h1>@T["ChangeTelegram"]</h1></header>
+<form method="post" class="membership-card member-panel member-security-form">
     <partial name="_MemberValidation" />
-    <label>@T["TelegramMobile"]<input asp-for="NewMobile" type="tel" dir="ltr" required />
-    </label>
-    <button type="submit">@T["Continue"]</button>
+    <label>@T["TelegramMobile"]<input asp-for="NewMobile" type="tel" dir="ltr" required /></label>
+    <button class="button button-outline member-action" type="submit">
+        <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["Continue"]</span>
+    </button>
 </form>

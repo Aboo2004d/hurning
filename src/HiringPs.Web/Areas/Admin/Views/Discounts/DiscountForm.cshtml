@@ -1,22 +1,38 @@
 @model DiscountCode
 @{ ViewData["Title"] = T[Model.Id == 0 ? "AddDiscount" : "EditDiscount"].Value; }
 <h1>@ViewData["Title"]</h1>
-<form asp-area="Admin" asp-controller="Discounts" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? (int?)null : Model.Id)" method="post" class="membership-card">
+<form asp-area="Admin" asp-controller="Discounts" asp-action="@(Model.Id == 0 ? "Create" : "Edit")"
+      asp-route-id="@(Model.Id == 0 ? (int?)null : Model.Id)" method="post" class="membership-card">
     <input asp-for="Id" type="hidden" />
-    <label>@T["DiscountCode"]<input asp-for="Code" required dir="ltr" maxlength="50" />
+    <label>
+        @T["DiscountCode"]
+        <input asp-for="Code" required dir="ltr" maxlength="50" />
     </label>
-    <label>@T["Plan"]<select asp-for="PlanId">@foreach (var plan in (List<MembershipPlanVersion>)ViewBag.Plans)
-                {
-                    <option value="@plan.PlanId">@plan.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
-                    }</select>
-            </label>
-            <label>@T["DiscountPercent"]<input asp-for="Percent" type="number" min="0" max="100" required />
-            </label>
-            <label>@T["MaximumUses"]<input asp-for="MaximumUses" type="number" min="1" required />
-            </label>
-            <label>@T["EndsUtc"]<input asp-for="ExpiresAt" type="datetime-local" required />
-            </label>
-            <label class="check">
-                <input asp-for="Enabled" />@T["Enabled"]</label>
-            <button type="submit">@T["Save"]</button>
-        </form>
+    <label>
+        @T["Plan"]
+        <select asp-for="PlanId" aria-describedby="discount-plan-help">
+            <option value="">@T["All"]</option>
+            @foreach (var plan in (List<MembershipPlanVersion>)ViewBag.Plans)
+            {
+                <option value="@plan.PlanId">@plan.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
+            }
+        </select>
+    </label>
+    <p id="discount-plan-help" class="muted">@T["AllPlansDiscountHelp"]</p>
+    <label>
+        @T["DiscountPercent"]
+        <input asp-for="Percent" type="number" min="0" max="100" required />
+    </label>
+    <label>
+        @T["MaximumUses"]
+        <input asp-for="MaximumUses" type="number" min="1" required />
+    </label>
+    <label>
+        @T["EndsUtc"]
+        <input asp-for="ExpiresAt" type="datetime-local" required />
+    </label>
+    <label class="check"><input asp-for="Enabled" />@T["Enabled"]</label>
+    <button class="button button-outline admin-action" type="submit">
+        <span class="fa-solid fa-floppy-disk" aria-hidden="true"></span><span>@T["Save"]</span>
+    </button>
+</form>

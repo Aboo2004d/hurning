@@ -1583,7 +1583,7 @@
     <data name="SendCode" xml:space="preserve"><value>Send code</value></data>
     <data name="Confirm" xml:space="preserve"><value>Confirm</value></data>
     <data name="ResetPassword" xml:space="preserve"><value>Reset password</value></data>
-    <data name="ResetRequested" xml:space="preserve"><value>If the account is eligible, a code has been sent to its linked Telegram account.</value></data>
+    <data name="ResetRequested" xml:space="preserve"><value>If the entered number is registered and the account is active, a verification code will be sent to its linked Telegram account.</value></data>
     <data name="PasswordUpdated" xml:space="preserve"><value>Password updated. Sign in with your new password.</value></data>
     <data name="PasswordInvalid" xml:space="preserve"><value>The password was not accepted. Use a stronger, matching password.</value></data>
     <data name="RegistrationFailed" xml:space="preserve"><value>Unable to create the account. Check your details or try signing in.</value></data>
@@ -1852,4 +1852,45 @@
     <data name="CancelPayment" xml:space="preserve"><value>Cancel payment</value></data>
     <data name="WalletCancelled" xml:space="preserve"><value>The payment was cancelled and the website payment session was invalidated.</value></data>
     <data name="WalletCancellationUnavailable" xml:space="preserve"><value>Payment confirmation has started. A possibly debited session cannot be cancelled; check its status first.</value></data>
+    <data name="AllPlans" xml:space="preserve"><value>All plans</value></data>
+    <data name="AllPlansDiscountHelp" xml:space="preserve"><value>Choose All to allow this code on every current and future plan, with the same usage limits.</value></data>
+    <data name="OpportunitySaved" xml:space="preserve"><value>Saved</value></data>
+    <data name="SaveOpportunityFailed" xml:space="preserve"><value>Could not save this opportunity. Check that you are signed in and try again.</value></data>
+    <data name="PreferenceCardsAdvice" xml:space="preserve"><value>Add or remove categories and locations using the cards. Changes are saved without leaving this page.</value></data>
+    <data name="SelectedPreferences" xml:space="preserve"><value>selected</value></data>
+    <data name="AvailablePreferences" xml:space="preserve"><value>Show unselected options</value></data>
+    <data name="RemovePreference" xml:space="preserve"><value>Remove from preferences</value></data>
+    <data name="AddPreference" xml:space="preserve"><value>Add to preferences</value></data>
+    <data name="AllCategoriesSelected" xml:space="preserve"><value>No categories selected; preferences include all categories.</value></data>
+    <data name="AllLocationsSelected" xml:space="preserve"><value>No locations selected; preferences include all locations.</value></data>
+    <data name="NoMorePreferences" xml:space="preserve"><value>No more options are currently available.</value></data>
+    <data name="PreferenceSaveFailed" xml:space="preserve"><value>Preferences could not be saved. Your previous selections are still shown; try again.</value></data>
+    <data name="MemberDashboardAdvice" xml:space="preserve"><value>Your subscription and favorite opportunities in one place.</value></data>
+    <data name="MemberPlanHelp" xml:space="preserve"><value>View your plan benefits and subscription period, or choose a suitable plan.</value></data>
+    <data name="MemberPaymentsHelp" xml:space="preserve"><value>Track your orders and payments.</value></data>
+    <data name="MemberPreferencesHelp" xml:space="preserve"><value>Choose the opportunity types, categories and locations that interest you.</value></data>
+    <data name="MemberSavedHelp" xml:space="preserve"><value>Return to the opportunities you saved at any time.</value></data>
+    <data name="MemberSettingsHelp" xml:space="preserve"><value>Manage your profile, notifications and security options.</value></data>
+    <data name="OpenSection" xml:space="preserve"><value>Open section</value></data>
+    <data name="SavedPageAdvice" xml:space="preserve"><value>Your favorite opportunities, ready to revisit.</value></data>
+    <data name="SavedItemCount" xml:space="preserve"><value>{0} saved opportunities</value></data>
+    <data name="NoSavedOpportunities" xml:space="preserve"><value>No saved opportunities yet</value></data>
+    <data name="SaveFromListingsAdvice" xml:space="preserve"><value>Save interesting opportunities from the listings to find them here.</value></data>
+    <data name="SavedOn" xml:space="preserve"><value>Saved on</value></data>
+    <data name="SavedOpportunityUnavailable" xml:space="preserve"><value>This opportunity is no longer available</value></data>
+    <data name="SavedUpdateFailed" xml:space="preserve"><value>Could not update saved opportunities. Try again.</value></data>
+    <data name="MemberProfile" xml:space="preserve"><value>Profile</value></data>
+    <data name="MemberNotificationHelp" xml:space="preserve"><value>Opportunity alerts arrive via Telegram according to your plan and preferences. Enabling them follows the existing account verification.</value></data>
+    <data name="MemberSecurity" xml:space="preserve"><value>Security and connections</value></data>
+    <data name="MemberSecurityHelp" xml:space="preserve"><value>Change your password or linked Telegram account using the existing verification steps.</value></data>
+    <data name="TelegramMobileHelp" xml:space="preserve"><value>Your linked Telegram account receives verification codes and subscription updates. Subscribers also receive opportunity alerts.</value></data>
+    <data name="RegisteredTelegramMobile" xml:space="preserve"><value>Telegram phone number registered to your account</value></data>
+    <data name="ResetMobileHelp" xml:space="preserve"><value>Enter your full international number with the country code; + is already provided. If the number is registered and the account is active, a verification code will be sent to its linked Telegram account.</value></data>
+    <data name="ClockHour" xml:space="preserve"><value>Hour</value></data>
+    <data name="ClockMinute" xml:space="preserve"><value>Minute</value></data>
+    <data name="ClockPeriod" xml:space="preserve"><value>Period</value></data>
+    <data name="ClockAM" xml:space="preserve"><value>AM</value></data>
+    <data name="ClockPM" xml:space="preserve"><value>PM</value></data>
+    <data name="SourceClockInvalid" xml:space="preserve"><value>Enter an hour from 1 to 12, a minute from 0 to 59, and select AM or PM.</value></data>
+    <data name="SourceScheduleHelp" xml:space="preserve"><value>Palestine local time; each source repeats at its own hourly interval. For example, 8 AM every 12 hours runs at 8 AM and 8 PM; every 24 hours runs daily.</value></data>
 </root>

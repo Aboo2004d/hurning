@@ -23,13 +23,20 @@ public class PasswordResetController(
     {
         if (!ModelState.IsValid)
             return View(input);
-        var user = await users.FindByEmailAsync(input.Email.Trim());
-        var member = user is null
-            ? null
-            : await db.MemberProfiles.SingleOrDefaultAsync(
-                x => x.UserId == user.Id && x.Activated && !x.Suspended,
-                ct
-            );
+        pendingCookie.Clear(HttpContext);
+        var mobile = MembershipRules.Mobile(input.Mobile);
+        var matches = await db
+            .MemberProfiles.Where(x =>
+                x.Mobile == mobile
+                && x.Activated
+                && !x.Suspended
+                && x.TelegramChatId != null
+                && x.TelegramUserId != null
+            )
+            .Take(2)
+            .ToListAsync(ct);
+        // A verified number must identify exactly one account; never guess if data is ambiguous.
+        var member = matches.Count == 1 ? matches[0] : null;
         if (member is not null)
         {
             try
@@ -48,7 +55,7 @@ public class PasswordResetController(
             catch (Exception ex) when (ex is InvalidOperationException or TelegramDeliveryException)
             { }
         }
-        // Same visible result for unknown and known addresses.
+        // Same visible result for unknown, inactive and eligible numbers.
         TempData["Notice"] = "ResetRequested";
         return RedirectToAction(nameof(Code));
     }

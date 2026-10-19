@@ -4,8 +4,12 @@
     <h1>@T["ResetPassword"]</h1>
     <form method="post">
         <partial name="_MemberValidation" />
-        <label>@T["Email"]<input asp-for="Email" dir="ltr" autocomplete="username" required />
-        </label>
-        <button type="submit">@T["SendCode"]</button>
+        <p id="reset-mobile-help" class="muted auth-field-help">@T["ResetMobileHelp"]</p>
+        <label for="Mobile">@T["RegisteredTelegramMobile"]</label>
+        <div class="international-phone" dir="ltr">
+            <span aria-hidden="true">+</span>
+            <input asp-for="Mobile" type="tel" inputmode="numeric" autocomplete="tel-national" pattern="[1-9][0-9]{7,14}" minlength="8" maxlength="15" placeholder="970599123456" aria-describedby="reset-mobile-help" required />
+        </div>
+        <button class="button button-outline auth-submit" type="submit"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["SendCode"]</button>
     </form>
 </section>

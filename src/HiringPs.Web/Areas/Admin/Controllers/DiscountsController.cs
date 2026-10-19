@@ -68,6 +68,12 @@ public class DiscountsController(HiringDb db, MembershipService membership) : Co
             || input.Code.Length > 50
         )
             return BadRequest();
+        if (
+            input.PlanId is <= 0
+            || input.PlanId is int planId
+                && !await db.MembershipPlans.AnyAsync(x => x.Id == planId, ct)
+        )
+            return BadRequest();
         input.Code = input.Code.Trim().ToUpperInvariant();
         var code =
             input.Id == 0

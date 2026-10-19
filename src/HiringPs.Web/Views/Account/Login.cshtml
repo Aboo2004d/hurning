@@ -19,8 +19,10 @@
             @T["Password"]
             <input asp-for="Password" autocomplete="current-password"/>
         </label>
-        <button type="submit">@T["Login"]</button>
+        <button class="button button-outline auth-submit" type="submit"><span class="fa-solid fa-key" aria-hidden="true"></span>@T["Login"]</button>
     </form>
-    <p><a asp-controller="Registration" asp-action="Index">@T["Register"]</a></p>
-    <p><a asp-controller="PasswordReset" asp-action="Index">@T["ResetPassword"]</a></p>
+    <nav class="auth-actions" aria-label="@T["AccountSettings"]">
+        <a class="button button-outline" asp-controller="Registration" asp-action="Index"><span class="fa-solid fa-user" aria-hidden="true"></span>@T["Register"]</a>
+        <a class="button button-outline" asp-controller="PasswordReset" asp-action="Index"><span class="fa-solid fa-key" aria-hidden="true"></span>@T["ResetPassword"]</a>
+    </nav>
 </section>

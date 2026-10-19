@@ -1,0 +1,8 @@
+@model SaveButton
+<button class="button button-outline listing-action @(Model.Saved ? "is-saved" : "")" type="submit" form="@Model.FormId"
+        data-save-button="@Model.OpportunityId" data-saved-text="@T["OpportunitySaved"]"
+        data-save-error="@T["SaveOpportunityFailed"]" aria-pressed="@(Model.Saved ? "true" : "false")" disabled="@Model.Saved">
+    <span class="fa-solid @(Model.Saved ? "fa-check" : "fa-bookmark")" aria-hidden="true"></span>
+    <span data-save-label>@T[Model.Saved ? "OpportunitySaved" : "SaveOpportunity"]</span>
+</button>
+<span class="save-feedback" data-save-feedback="@Model.OpportunityId" role="status" hidden></span>

@@ -628,6 +628,7 @@ public static class MembershipChecks
                     "Logout removes root and both legacy language cookies for " + role
                 );
             }
+            await AccountScheduleChecks.RunAsync(client, origin);
             response = await client.GetAsync(origin + "/en/TimeoutShellFixture");
             html = await response.Content.ReadAsStringAsync();
             Check(

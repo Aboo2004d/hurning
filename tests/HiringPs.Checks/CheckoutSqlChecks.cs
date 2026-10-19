@@ -23,6 +23,8 @@ public static class CheckoutSqlChecks
         }
         var owner = Guid.NewGuid().ToString();
         int planId;
+        int otherPlanId;
+        int otherVersionId;
         await using (var db = new HiringDb(options))
         {
             planId = (await db.MembershipPlanVersions.SingleAsync(x => x.Id == versionId)).PlanId;
@@ -41,10 +43,31 @@ public static class CheckoutSqlChecks
             var otherPlan = new MembershipPlan();
             db.MembershipPlans.Add(otherPlan);
             await db.SaveChangesAsync();
+            otherPlanId = otherPlan.Id;
+            var otherVersion = new MembershipPlanVersion
+            {
+                PlanId = otherPlan.Id,
+                NameAr = "باقة أخرى",
+                NameEn = "Other plan",
+                PriceIls = 10,
+                Days = 90,
+            };
+            db.MembershipPlanVersions.Add(otherVersion);
+            await db.SaveChangesAsync();
+            otherVersionId = otherVersion.Id;
+            otherPlan.CurrentVersionId = otherVersion.Id;
             foreach (
-                var (code, percent, enabled, expired, uses, scope) in new[]
+                var (code, percent, enabled, expired, uses, scope) in new (
+                    string,
+                    int,
+                    bool,
+                    bool,
+                    int,
+                    int?
+                )[]
                 {
                     ("CHECKOUT20", 20, true, false, 10, planId),
+                    ("CHECKOUTALL", 20, true, false, 10, null),
                     ("CHECKOUTFREE", 100, true, false, 10, planId),
                     ("CHECKOUTOFF", 20, false, false, 10, planId),
                     ("CHECKOUTOLD", 20, true, true, 10, planId),
@@ -94,7 +117,8 @@ public static class CheckoutSqlChecks
         async Task<(PurchaseInput Input, IActionResult Result, bool Invalid)> Preview(
             string code,
             bool checkout = false,
-            Guid? requestId = null
+            Guid? requestId = null,
+            int? selectedPlanId = null
         )
         {
             await using var db = new HiringDb(options);
@@ -114,12 +138,12 @@ public static class CheckoutSqlChecks
             };
             var input = new PurchaseInput
             {
-                PlanId = planId,
+                PlanId = selectedPlanId ?? planId,
                 DiscountCode = code,
                 Gateway = "Lahza",
                 AcceptTerms = true,
                 PresentedAmount = 4,
-                PresentedVersionId = versionId,
+                PresentedVersionId = selectedPlanId == otherPlanId ? otherVersionId : versionId,
                 RequestId = requestId ?? Guid.NewGuid(),
             };
             var result = await controller.Review(input, checkout);
@@ -129,6 +153,20 @@ public static class CheckoutSqlChecks
         Check(
             valid.Input.FinalAmount == 4 && !valid.Invalid && valid.Result is PartialViewResult,
             "Discount preview normalizes code and returns server-priced partial without checkout"
+        );
+        var allFirst = await Preview("CHECKOUTALL");
+        var allSecond = await Preview("CHECKOUTALL", selectedPlanId: otherPlanId);
+        Check(
+            !allFirst.Invalid
+                && allFirst.Input.FinalAmount == 4
+                && !allSecond.Invalid
+                && allSecond.Input.FinalAmount == 8,
+            "One global discount applies to two differently priced plans"
+        );
+        var scopedOnOther = await Preview("CHECKOUT20", selectedPlanId: otherPlanId);
+        Check(
+            scopedOnOther.Invalid && scopedOnOther.Input.FinalAmount == 10,
+            "A plan-specific discount still rejects a different plan"
         );
         var free = await Preview("CHECKOUTFREE");
         Check(
@@ -179,6 +217,16 @@ public static class CheckoutSqlChecks
                     && (await db.PaymentOrders.SingleAsync(x => x.Id == request)).AmountIls == 4,
                 "Request replay cannot create a second order or change its charged amount"
             );
+        var globalPurchase = await Preview("CHECKOUTALL", checkout: true);
+        Check(
+            globalPurchase.Result is JsonResult && !globalPurchase.Invalid,
+            "Global discount can be reserved by checkout"
+        );
+        var globalReuse = await Preview("CHECKOUTALL", selectedPlanId: otherPlanId);
+        Check(
+            globalReuse.Invalid && globalReuse.Input.FinalAmount == 10,
+            "Global discount keeps a single member usage limit across plans"
+        );
     }
 
     private sealed class NoChargeGateway : IPaymentGateway

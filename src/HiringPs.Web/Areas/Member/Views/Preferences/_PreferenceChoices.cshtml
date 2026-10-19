@@ -1,0 +1,48 @@
+@model PreferenceChoices
+@{
+    var available = Model.Available.Except(Model.Selected).ToArray();
+    var addName = Model.Field == "Categories" ? "addCategory" : "addLocation";
+    var removeName = Model.Field == "Categories" ? "removeCategory" : "removeLocation";
+}
+<section class="preference-group" aria-labelledby="preference-@Model.Field">
+    <div class="member-section-heading">
+        <h2 id="preference-@Model.Field">@T[Model.LabelKey]</h2>
+        <span class="badge">@Model.Selected.Length @T["SelectedPreferences"]</span>
+    </div>
+    <div class="preference-chips" data-preference-selected="@Model.Field">
+        @foreach (var value in Model.Selected)
+        {
+            <div class="preference-chip is-selected">
+                <span dir="auto">@value</span>
+                <input type="hidden" name="@Model.Field" value="@value" />
+                <button class="preference-chip-action" type="submit" name="@removeName" value="@value"
+                        aria-label="@T["RemovePreference"]: @value" title="@T["RemovePreference"]">
+                    <span class="fa-solid fa-trash-can" aria-hidden="true"></span>
+                </button>
+            </div>
+        }
+        @if (Model.Selected.Length == 0)
+        {
+            <p class="member-empty-hint">@T[Model.Field == "Categories" ? "AllCategoriesSelected" : "AllLocationsSelected"]</p>
+        }
+    </div>
+    <details class="member-disclosure" data-preference-list="@Model.Field">
+        <summary><span>@T["AvailablePreferences"]</span><span class="badge">@available.Length</span></summary>
+        <div class="preference-chips">
+            @foreach (var value in available)
+            {
+                <div class="preference-chip">
+                    <span dir="auto">@value</span>
+                    <button class="preference-chip-action" type="submit" name="@addName" value="@value"
+                            aria-label="@T["AddPreference"]: @value" title="@T["AddPreference"]">
+                        <span class="fa-solid fa-check" aria-hidden="true"></span>
+                    </button>
+                </div>
+            }
+            @if (available.Length == 0)
+            {
+                <p class="member-empty-hint">@T["NoMorePreferences"]</p>
+            }
+        </div>
+    </details>
+</section>

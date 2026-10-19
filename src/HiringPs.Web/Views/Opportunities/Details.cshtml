@@ -177,8 +177,9 @@
 
 @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
 {
-    <form asp-area="Member" asp-controller="Saved" asp-action="Add" method="post">
+    <form id="save-@Model.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post" data-save-opportunity>
         <input type="hidden" name="id" value="@Model.Id" />
-        <button class="secondary" type="submit">@T["SaveOpportunity"]</button>
+        <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
+        <partial name="_SaveOpportunityButton" model="new SaveButton(Model.Id, ViewBag.IsSaved is true)" />
     </form>
 }
