@@ -15,6 +15,7 @@ public class ToolsController : AdminControllerBase
     public ToolsController(HiringDb database, UrlPolicy urls, IConfiguration settings)
         : base(database, urls, settings) { }
 
+    [HttpGet]
     public async Task<IActionResult> Tools(int page = 1, CancellationToken ct = default)
     {
         var requests = await db
@@ -102,7 +103,12 @@ public class ToolsController : AdminControllerBase
             ct
         );
         TempData["Notice"] = queued ? "ToolsCheckQueued" : "ToolsCheckAlreadyQueued";
-        return RedirectToAction(nameof(Tools));
+        // A check changes state; always display its result with a separate GET.
+        // 303 explicitly prevents refresh from submitting the check again.
+        var destination = Url.Action(nameof(Tools), "Tools", new { area = "Admin" })
+            ?? throw new InvalidOperationException("Unable to generate the tools dashboard URL.");
+        Response.Headers.Location = destination;
+        return StatusCode(StatusCodes.Status303SeeOther);
     }
 }
 
