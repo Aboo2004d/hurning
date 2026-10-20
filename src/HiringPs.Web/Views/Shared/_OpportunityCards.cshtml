@@ -1,0 +1,92 @@
+@model CardListModel
+@* بطاقات الفرص المشتركة بين القائمة وصفحات التصفح: العنوان رابط للتفاصيل مع شارات الإغلاق والجديد. *@
+@{
+    var listing = Model.Listing;
+    var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+    var member = User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin");
+    var plansUrl = User.Identity?.IsAuthenticated == true
+        ? Url.Action("Index", "Plans", new { area = "Member" })
+        : Url.Action("Index", "Registration", new { area = "" });
+}
+<div class="opportunity-grid">
+    @if (!Model.Items.Any())
+    {
+        <div class="empty-state">@T["Empty"]</div>
+    }
+    @foreach (var item in Model.Items)
+    {
+        var titleId = "opportunity-title-" + item.Id.ToString(CultureInfo.InvariantCulture);
+        var allowed = listing.AllowedDetails.Contains(item.Kind);
+        var detailsUrl = Url.Content("~" + PublicListing.DetailsPath(item));
+        var closing = listing.Archive ? null : PublicListing.ClosingInDays(item, listing.Today);
+        var isNew = !listing.Archive && PublicListing.IsNew(item);
+        <article class="opportunity-card">
+            <div class="card-top">
+                <span class="organization" dir="auto">@item.Organization</span>
+                <span class="card-badges">
+                    @if (isNew)
+                    {
+                        <span class="badge badge-new">@T["NewBadge"]</span>
+                    }
+                    <span class="badge">@T[item.Kind.ToString()]</span>
+                </span>
+            </div>
+            <h2 id="@titleId" dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">
+                @if (allowed)
+                {
+                    <a class="card-title-link" href="@detailsUrl">@item.Title</a>
+                }
+                else
+                {
+                    @item.Title
+                }
+            </h2>
+            <p class="metadata" dir="auto">
+                @item.Locations
+                @if (item.Kind == OpportunityKind.Job && item.EmploymentType.Length > 0)
+                {
+                    <span> · @FilterLabels.Employment(item.EmploymentType, english)</span>
+                }
+            </p>
+            <p class="summary" dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">
+                @item.Summary
+            </p>
+            <div class="tags">
+                @if (item.Category.Length > 0)
+                {
+                    <span>@FilterLabels.Category(item.Category, english)</span>
+                }
+                @if (item.ReferenceNumber.Length > 0)
+                {
+                    <span dir="auto">@item.ReferenceNumber</span>
+                }
+            </div>
+            <div class="card-bottom">
+                <span class="opportunity-deadline">
+                    @(listing.Archive ? T["Expired"] : item.Deadline is { } deadline ? T["Deadline"] + ": " + deadline.ToString("yyyy-MM-dd") : T["UnknownDeadline"])
+                    @if (closing is { } days)
+                    {
+                        <partial name="_ClosingBadge" model="days" />
+                    }
+                </span>
+                <div class="opportunity-actions">
+                    @if (allowed)
+                    {
+                        <a class="button button-outline listing-action" href="@detailsUrl" aria-describedby="@titleId">
+                            <span class="fa-solid fa-eye" aria-hidden="true"></span>
+                            <span>@T["Details"]</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="subscriber-details-hint"><a href="@plansUrl">@T["SubscribeForDetails"]</a></p>
+                    }
+                    @if (member)
+                    {
+                        <partial name="_SaveOpportunityButton" model="new SaveButton(item.Id, listing.SavedIds.Contains(item.Id))" />
+                    }
+                </div>
+            </div>
+        </article>
+    }
+</div>

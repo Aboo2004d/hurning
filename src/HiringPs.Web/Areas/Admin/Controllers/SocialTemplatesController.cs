@@ -25,7 +25,7 @@ public sealed class SocialTemplateInput
 public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publishing) : Controller
 {
     private static bool ValidScope(string provider, string scope) =>
-        (provider is "Facebook" or "LinkedIn")
+        SocialPublishing.IsTemplateProvider(provider)
         && (scope == "general" || Enum.GetNames<OpportunityKind>().Contains(scope));
 
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default) =>

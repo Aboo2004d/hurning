@@ -1,0 +1,82 @@
+@model AdminPage<DuplicateCandidate>
+@{
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var status = (DuplicateCandidateStatus)ViewBag.Status;
+    ViewData["Title"] = ar ? "التكرارات المحتملة" : "Possible duplicates";
+    string Label(DuplicateCandidateStatus value) => value switch
+    {
+        DuplicateCandidateStatus.Open => ar ? "مفتوحة" : "Open",
+        DuplicateCandidateStatus.Merged => ar ? "مدمجة" : "Merged",
+        _ => ar ? "مستبعدة" : "Dismissed",
+    };
+}
+<h1>@ViewData["Title"]</h1>
+@if (TempData["PipelineNotice"] is string notice)
+{
+    <p class="notice" role="status">@notice</p>
+}
+<p class="muted">
+    @(ar ? "أزواج متشابهة (الجهة نفسها والنوع نفسه وعنوان قريب وموعد متوافق) رُصدت أثناء الاستخراج. الدمج يخفي السجل الأحدث ويمكن التراجع عنه من سجل الدمج. للأسماء المختلفة للجهة نفسها استخدم صفحة أسماء الجهات." : "Similar pairs (same organisation and kind, close title, compatible deadline) found during extraction. Merging hides the newer record and can be undone in merge history. Use organisation aliases for differently spelled organisations.")
+</p>
+<p class="source-actions">
+    @foreach (var value in Enum.GetValues<DuplicateCandidateStatus>())
+    {
+        <a class="button @(value == status ? "" : "button-outline")" asp-controller="Duplicates" asp-action="Index" asp-route-status="@value">@Label(value)</a>
+    }
+    <a class="button button-outline" asp-controller="OrganizationAliases" asp-action="Index">@(ar ? "أسماء الجهات" : "Organisation aliases")</a>
+</p>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>@(ar ? "الإعلان الجديد" : "New record")</th>
+                <th>@(ar ? "الإعلان المشابه" : "Similar record")</th>
+                <th>@(ar ? "السبب" : "Reason")</th>
+                <th>@T["Status"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pair in Model.Items)
+            {
+                <tr>
+                    @foreach (var record in new[] { pair.Opportunity, pair.Candidate })
+                    {
+                        <td>
+                            <a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@record.Id">#@record.Id @record.Title</a>
+                            <br /><span class="muted">@record.Organization · @T[record.Status.ToString()] · @(record.Deadline?.ToString("yyyy-MM-dd") ?? "—")</span>
+                        </td>
+                    }
+                    <td>@pair.Reason</td>
+                    <td>@Label(pair.Status)</td>
+                    <td>
+                        @if (pair.Status == DuplicateCandidateStatus.Open)
+                        {
+                            <div class="source-actions">
+                                <form asp-controller="Duplicates" asp-action="Merge" method="post">
+                                    <input type="hidden" name="id" value="@pair.Id" />
+                                    <button class="button-outline" type="submit">@(ar ? $"دمج #{pair.OpportunityId} في #{pair.CandidateId}" : $"Merge #{pair.OpportunityId} into #{pair.CandidateId}")</button>
+                                </form>
+                                <form asp-controller="Duplicates" asp-action="Merge" method="post">
+                                    <input type="hidden" name="id" value="@pair.Id" />
+                                    <input type="hidden" name="reverse" value="true" />
+                                    <button class="button-outline" type="submit">@(ar ? $"دمج #{pair.CandidateId} في #{pair.OpportunityId}" : $"Merge #{pair.CandidateId} into #{pair.OpportunityId}")</button>
+                                </form>
+                                <form asp-controller="Duplicates" asp-action="Dismiss" method="post">
+                                    <input type="hidden" name="id" value="@pair.Id" />
+                                    <button class="button-outline" type="submit">@(ar ? "ليسا تكرارًا" : "Not a duplicate")</button>
+                                </form>
+                            </div>
+                        }
+                        else if (pair.MergeOperationId is not null)
+                        {
+                            <a class="textlink" asp-controller="Merges" asp-action="Merges" asp-route-opportunityId="@pair.CandidateId">@T["MergeHistory"]</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_AdminPagination" model="Model.Pager" />

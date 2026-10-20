@@ -4,7 +4,11 @@
     var activeKind = ViewData["ListingKind"] as OpportunityKind?;
     var archive = ViewData["ListingArchive"] is true;
     var action = ViewContext.RouteData.Values["action"]?.ToString();
-    var listing = ViewContext.RouteData.Values["controller"]?.ToString() is "Home" or "Opportunities";
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var listing = controller is "Home" or "Opportunities" or "Browse";
+    var mount = Context.Items["MountPath"] is PathString mountPath ? mountPath : PathString.Empty;
+    var otherCulture = ar ? "en" : "ar";
+    var alternateUrl = HiringPs.Web.Infrastructure.LanguageUrls.Switch(returnUrl, mount, otherCulture);
     var adminArea = ViewData["HeaderKind"] as string == "Admin";
     var memberArea = ViewData["HeaderKind"] as string == "Member";
 }
@@ -13,7 +17,7 @@
                 class="brand"
                 asp-area="" asp-controller="Home"
                 asp-action="Index"
-                aria-label="@(T["SiteName"].Value + (ar ? " — الرئيسية" : " — Home"))"
+                aria-label="@(T["SiteName"].Value + " — " + T["HomeLink"].Value)"
             >
                 <img
                     class="brand-logo"
@@ -84,22 +88,20 @@
                         >
                             @T["Archive"]
                         </a>
-                        <a asp-area="" asp-controller="About" asp-action="Index" aria-current="@(action=="About"?"page":null)">
+                        <a asp-area="" asp-controller="About" asp-action="Index" aria-current="@(controller=="About"?"page":null)">
                             @T["About"]
                         </a>
-                        <a asp-area="" asp-controller="Contact" asp-action="Index" aria-current="@(action=="Contact"?"page":null)">
+                        <a asp-area="" asp-controller="Contact" asp-action="Index" aria-current="@(controller=="Contact"?"page":null)">
                             @T["Contact"]
                         </a>
                     }
                 </nav>
                 <div class="header-actions">
-                    <form asp-area="" asp-controller="Language" asp-action="Switch" method="post">
-                        <input type="hidden" name="culture" value="@(ar?"en":"ar")"/>
-                        <input type="hidden" name="returnUrl" value="@returnUrl"/>
-                        <button class="secondary" type="submit">
-                            @(ar?"English":"العربية")
-                        </button>
-                    </form>
+                    @* A plain link to the same page in the other language; visiting it updates the
+                       culture cookie and, for members, the stored language preference. *@
+                    <a class="language-toggle" href="@alternateUrl" hreflang="@otherCulture" lang="@otherCulture">
+                        @(ar?"English":"العربية")
+                    </a>
                     @if (adminArea || memberArea)
                     {
                         <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">

@@ -217,8 +217,9 @@ public sealed class PdfTextReader(IConfiguration configuration)
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new ContentNeedsReviewException(
-                $"PDF document {hash}: processing exceeded the 3 minute budget."
+            // Often caused by a busy server; repeated failures reach review through the attempt limit.
+            throw new ContentRetryableException(
+                $"PDF document {hash}: processing exceeded the 3 minute budget; retry scheduled."
             );
         }
         catch (ContentNeedsReviewException ex)

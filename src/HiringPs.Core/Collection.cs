@@ -71,14 +71,38 @@ public class UrlPolicy
     }
 }
 
+// Text used for change detection: main content only, so reordered or rotating link lists
+// (SOURCE LINKS, related listings) do not force a new AI extraction.
+public static class ContentFingerprint
+{
+    public const string LinksMarker = "SOURCE LINKS:";
+
+    public static string MainText(string content)
+    {
+        var links = content.IndexOf(LinksMarker, StringComparison.Ordinal);
+        var main = links >= 0 ? content[..links] : content;
+        return Regex.Replace(main.Normalize(), @"\s+", " ").Trim();
+    }
+
+    public static string Hash(string content) => TextRules.Hash(MainText(content));
+
+    // Hashes stored before this rule covered the complete text; accept either for reuse.
+    public static bool Matches(string storedHash, string content) =>
+        storedHash.Length > 0
+        && (storedHash == Hash(content) || storedHash == TextRules.Hash(content));
+}
+
 public partial class BrowserCollector(
     UrlPolicy policy,
     IConfiguration configuration,
-    AttachmentReader attachmentReader
+    AttachmentReader attachmentReader,
+    BrowserHost? host = null
 ) : IAsyncDisposable
 {
-    private IPlaywright? playwright;
-    private IBrowser? browser;
+    // Without a shared host (web scopes, probes) this collector owns its browser as before.
+    private BrowserHost? ownedHost;
+
+    private BrowserHost Host => host ?? (ownedHost ??= new BrowserHost(configuration));
 
     private async Task<IBrowserContext> ContextAsync(Source source, CancellationToken ct, bool setup = false) =>
         await CollectorDiagnosticFiles.WithoutPageAsync(
@@ -102,17 +126,7 @@ public partial class BrowserCollector(
             )
             .ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
-        playwright ??= await BrowserSettings.CreateAsync(configuration);
-        browser ??= await playwright.Chromium.LaunchAsync(
-            new()
-            {
-                Headless = true,
-                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
-                Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
-                    ? channel
-                    : null,
-            }
-        );
+        var browser = await Host.GetAsync(ct);
         var context = await browser.NewContextAsync(
             new()
             {
@@ -122,6 +136,25 @@ public partial class BrowserCollector(
             }
         );
         context.SetDefaultTimeout(20000);
+        try
+        {
+            await RouteAsync(context, hosts, setup, ct);
+        }
+        catch
+        {
+            await context.DisposeAsync();
+            throw;
+        }
+        return context;
+    }
+
+    private async Task RouteAsync(
+        IBrowserContext context,
+        string[] hosts,
+        bool setup,
+        CancellationToken ct
+    )
+    {
         await context.RouteAsync(
             "**/*",
             async route =>
@@ -157,7 +190,6 @@ public partial class BrowserCollector(
                 }
             }
         );
-        return context;
     }
 
     private DiscoverySession? discovery;
@@ -267,6 +299,7 @@ public partial class BrowserCollector(
             );
         var conf =
             JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
+        var maxPages = Math.Clamp(conf.MaxPages, 1, 50);
         if (source.Connector == ConnectorKind.Automatic)
         {
             await using var automaticContext = await ContextAsync(source, ct);
@@ -294,7 +327,7 @@ public partial class BrowserCollector(
                         : source.Url;
                     for (
                         var n = discovery?.Checkpoint.CompletedPages ?? 0;
-                        current is not null && n < Math.Clamp(conf.MaxPages, 1, 50);
+                        current is not null && n < maxPages;
                         n++
                     )
                     {
@@ -400,13 +433,9 @@ public partial class BrowserCollector(
                             continue;
                         if (
                             entry.TryGetProperty("byDate", out var date)
-                            && DateTime.TryParse(
-                                date.GetString(),
-                                System.Globalization.CultureInfo.InvariantCulture,
-                                System.Globalization.DateTimeStyles.None,
-                                out var deadline
-                            )
-                            && DateOnly.FromDateTime(deadline) < TextRules.PalestineToday()
+                            && date.ValueKind == JsonValueKind.String
+                            && GpcListingDate(date.GetString()) is { } deadline
+                            && deadline < TextRules.PalestineToday()
                         )
                             continue;
                         found[id] = new Uri(
@@ -434,7 +463,7 @@ public partial class BrowserCollector(
                     }
                     for (
                         var n = discovery?.Checkpoint.CompletedPages ?? 0;
-                        n < Math.Clamp(conf.MaxPages, 1, 50);
+                        n < maxPages;
                         n++
                     )
                     {
@@ -499,7 +528,7 @@ public partial class BrowserCollector(
                             new(pageEntries, resumeBase, n + 1, replayClicks),
                             ct
                         );
-                        if (n + 1 >= conf.MaxPages)
+                        if (n + 1 >= maxPages)
                             throw new InvalidOperationException(
                                 "Pagination limit reached; increase the limit after reviewing this source."
                             );
@@ -559,7 +588,8 @@ public partial class BrowserCollector(
                 configuration,
                 async () =>
                 {
-                    var entries = await OpportunityRss.ReadAsync(source, policy, ct);
+                    // One feed download serves every item of the run instead of one per item.
+                    var entries = await OpportunityRss.ReadCachedAsync(source, policy, ct);
                     if (!entries.TryGetValue(url, out var content))
                         throw new ContentNeedsReviewException(
                             "Job is no longer in the RSS window; not evidence of closure."
@@ -668,13 +698,17 @@ public partial class BrowserCollector(
                         links.Add(uri.ToString());
                 }
 
-                var pdfs = links
+                var linkedPdfs = links
                     .Distinct()
                     .Where(x =>
                         Uri.TryCreate(x, UriKind.Absolute, out var uri)
                         && uri.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
                     )
                     .ToArray();
+                // Attachments on unapproved hosts can never pass the URL policy; skip them up front
+                // instead of failing the item into repeated retries.
+                var pdfs = linkedPdfs.Where(x => ApprovedHost(x, hosts)).ToArray();
+                var skippedPdfs = linkedPdfs.Except(pdfs).ToArray();
                 if (pdfs.Length > 3)
                     throw new ContentNeedsReviewException(
                         "More than 3 PDF attachments; configure or review this source."
@@ -692,6 +726,10 @@ public partial class BrowserCollector(
 
                 diagnostics.Step("ValidateContent");
                 text += "\nSOURCE LINKS:\n" + string.Join('\n', links.Distinct().Take(50));
+                foreach (var skipped in skippedPdfs.Take(10))
+                    text +=
+                        "\nNOTE: PDF attachment on a host not approved for this source was not read: "
+                        + skipped;
                 if (
                     text.Length < 80
                     || text.Contains("Verify you are human", StringComparison.OrdinalIgnoreCase)
@@ -704,6 +742,39 @@ public partial class BrowserCollector(
             ct
         );
     }
+
+    // GPC (Diwan) is a Palestinian site: numeric dates are day-first or ISO, never US month-first.
+    // An unrecognised value never skips a listing; the detail page and AI decide instead.
+    private static readonly string[] GpcDateFormats =
+    [
+        "yyyy-MM-dd",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss.f",
+        "yyyy-MM-dd HH:mm:ss.fff",
+        "yyyy-MM-ddTHH:mm:ss",
+        "yyyy-MM-ddTHH:mm:ss.fff",
+        "yyyy/MM/dd",
+        "yyyy/M/d",
+        "dd/MM/yyyy",
+        "d/M/yyyy",
+        "dd/MM/yyyy HH:mm",
+        "dd/MM/yyyy HH:mm:ss",
+        "dd-MM-yyyy",
+        "d-M-yyyy",
+        "dd.MM.yyyy",
+    ];
+
+    public static DateOnly? GpcListingDate(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && DateTime.TryParseExact(
+            value.Trim(),
+            GpcDateFormats,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var parsed
+        )
+            ? DateOnly.FromDateTime(parsed)
+            : null;
 
     public static JsonElement ExtractEmbeddedArray(string html, string key)
     {
@@ -758,11 +829,15 @@ public partial class BrowserCollector(
         }
     }
 
+    private static bool ApprovedHost(string url, IEnumerable<string> hosts) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && hosts.Any(h => string.Equals(h, uri.IdnHost, StringComparison.OrdinalIgnoreCase));
+
     public async ValueTask DisposeAsync()
     {
-        if (browser is not null)
-            await browser.DisposeAsync();
-        playwright?.Dispose();
+        // A shared host belongs to the worker container and is disposed at shutdown.
+        if (ownedHost is not null)
+            await ownedHost.DisposeAsync();
     }
 }
 

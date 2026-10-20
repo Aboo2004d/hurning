@@ -48,6 +48,10 @@
                         }
                     </td>
                     <td>
+                        @if (source.HealthWarning.Length > 0)
+                        {
+                            <p class="notice">@source.HealthWarning</p>
+                        }
                         <partial name="_Diagnostic" model="source.LastError"/>
                         @if (request is not null)
                         {

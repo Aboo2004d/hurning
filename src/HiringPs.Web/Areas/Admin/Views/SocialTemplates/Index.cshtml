@@ -3,7 +3,7 @@
 <section class="admin-list-page" data-template-list>
 <header class="admin-page-heading"><h1>@T["SocialTemplates"]</h1></header>
 <form asp-action="Edit" method="get" class="actions template-tokens">
-<select name="provider" aria-label="@T["Platform"]"><option>Facebook</option><option>LinkedIn</option></select>
+<select name="provider" aria-label="@T["Platform"]"><option>Facebook</option><option>LinkedIn</option><option>Telegram</option></select>
 <select name="scope" aria-label="@T["Kind"]"><option value="general">@T["GeneralTemplate"]</option>@foreach (var kind in Enum.GetValues<OpportunityKind>()) { <option value="@kind">@T[kind.ToString()]</option> }</select>
 <button type="submit" class="button-outline admin-action">@T["Edit"]</button>
 </form>

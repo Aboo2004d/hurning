@@ -12,7 +12,42 @@ public static class OpportunityRss
     public static string Endpoint(ConnectorKind kind) =>
         kind == ConnectorKind.JobsRss ? JobsUrl : ReliefUrl;
 
+    // Parsed feeds are reused for a short window: discovery fills it and each item's detail
+    // read in the same run takes its entry from memory. Failures are never cached.
+    public static readonly TimeSpan CacheAge = TimeSpan.FromMinutes(10);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<
+        string,
+        (DateTimeOffset At, Dictionary<string, ContentBundle> Entries)
+    > Cache = new();
+
+    public static async Task<Dictionary<string, ContentBundle>> ReadCachedAsync(
+        Source source,
+        UrlPolicy policy,
+        CancellationToken ct
+    )
+    {
+        if (
+            Cache.TryGetValue(CacheKey(source), out var hit)
+            && hit.At > DateTimeOffset.UtcNow - CacheAge
+        )
+            return hit.Entries;
+        return await ReadAsync(source, policy, ct);
+    }
+
+    private static string CacheKey(Source source) => $"{source.Connector}|{source.Url}";
+
     public static async Task<Dictionary<string, ContentBundle>> ReadAsync(
+        Source source,
+        UrlPolicy policy,
+        CancellationToken ct
+    )
+    {
+        var entries = await ReadFeedAsync(source, policy, ct);
+        Cache[CacheKey(source)] = (DateTimeOffset.UtcNow, entries);
+        return entries;
+    }
+
+    private static async Task<Dictionary<string, ContentBundle>> ReadFeedAsync(
         Source source,
         UrlPolicy policy,
         CancellationToken ct

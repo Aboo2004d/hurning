@@ -2,12 +2,15 @@ using System.Threading.RateLimiting;
 using HiringPs.Core;
 using HiringPs.Web;
 using HiringPs.Web.Infrastructure;
+using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +26,45 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         options.KnownProxies.Add(System.Net.IPAddress.Parse(address));
 });
 builder.Services.AddSingleton<HiringPs.Web.Models.SiteSeo>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<HiringPs.Web.Models.PublicCatalog>();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["image/svg+xml", "application/rss+xml", "application/xml"]
+    );
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = System.IO.Compression.CompressionLevel.Fastest
+);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = System.IO.Compression.CompressionLevel.Fastest
+);
+// The framework's default output-cache policy already skips authenticated requests,
+// non-GET/HEAD requests and responses that set cookies.
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy(
+        SiteCache.Files,
+        policy => policy.Expire(TimeSpan.FromMinutes(10)).SetVaryByQuery("*")
+    );
+    options.AddPolicy(
+        SiteCache.Listing,
+        policy =>
+            policy
+                .Expire(TimeSpan.FromSeconds(60))
+                .SetVaryByQuery("*")
+                .VaryByValue(context =>
+                    new(
+                        "culture",
+                        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
+                    )
+                )
+    );
+});
 
 // ======================================
 // Database
@@ -151,6 +193,16 @@ builder.Services.ConfigureApplicationCookie(options =>
             || context.Principal.IsInRole("Admin")
         )
             return;
+        // Re-check activation/suspension at most every five minutes. The member area
+        // (MemberControllerBase) still re-reads the profile on every member request.
+        const string checkedKey = "MemberCheckedAt";
+        var now = DateTimeOffset.UtcNow;
+        if (
+            context.Properties.Items.TryGetValue(checkedKey, out var checkedValue)
+            && long.TryParse(checkedValue, out var checkedTicks)
+            && now.UtcTicks - checkedTicks is >= 0 and < 5 * TimeSpan.TicksPerMinute
+        )
+            return;
         var id = context
             .Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
             ?.Value;
@@ -163,7 +215,12 @@ builder.Services.ConfigureApplicationCookie(options =>
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+            return;
         }
+        context.Properties.Items[checkedKey] = now.UtcTicks.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+        context.ShouldRenew = true;
     };
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
@@ -241,6 +298,19 @@ var app = builder.Build();
 // Restore the public HTTPS scheme before redirects and OAuth correlation cookies are created.
 app.UseForwardedHeaders();
 
+if (app.Environment.IsProduction())
+{
+    // Canonicals, sitemaps and feeds use Seo:PublicOrigin; warn when production points elsewhere.
+    var publicOrigin = app.Services.GetRequiredService<HiringPs.Web.Models.SiteSeo>().Origin;
+    var expectedOrigin = (app.Configuration["Seo:ProductionOrigin"] ?? "https://hiring.ps").TrimEnd('/');
+    if (!string.Equals(publicOrigin, expectedOrigin, StringComparison.OrdinalIgnoreCase))
+        app.Logger.LogWarning(
+            "Seo:PublicOrigin is {Origin} in Production, expected {Expected}. Set Seo__PublicOrigin on the host.",
+            publicOrigin,
+            expectedOrigin
+        );
+}
+
 // ========================================
 // 11. Database Migrations & Seed
 // ========================================
@@ -271,12 +341,12 @@ app.Use(
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; "
             + "script-src 'self'; "
-            + "style-src 'self' https://fonts.googleapis.com; "
-            + "font-src 'self' https://fonts.gstatic.com; "
+            + "style-src 'self'; "
+            + "font-src 'self'; "
             + "img-src 'self' data:; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
-            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com";
+            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com https://www.linkedin.com";
         await next();
     }
 );
@@ -289,6 +359,52 @@ app.UseExceptionHandler(
     {
         ExceptionHandlingPath = "/Errors/Status",
         StatusCodeSelector = exception => exception is TimeoutException ? 504 : 500,
+    }
+);
+
+app.UseResponseCompression();
+// Views build asset URLs under the language PathBase (/ar/css/...); drop that prefix here
+// so the early static files middleware can serve them.
+app.Use(
+    async (context, next) =>
+    {
+        var path = context.Request.Path;
+        var first = path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (!LanguageUrls.IsSupported(first))
+        {
+            await next(context);
+            return;
+        }
+        var rest = new PathString(LanguageUrls.WithoutLanguage(path.Value!));
+        if (!LanguageUrls.IsStaticAsset(rest))
+        {
+            await next(context);
+            return;
+        }
+        context.Request.Path = rest;
+        try
+        {
+            await next(context);
+        }
+        finally
+        {
+            context.Request.Path = path;
+        }
+    }
+);
+// Static assets are served before authentication, language redirects and database work.
+// asp-append-version URLs carry ?v=hash, so they can be cached as immutable.
+app.UseStaticFiles(
+    new StaticFileOptions
+    {
+        OnPrepareResponse = context =>
+        {
+            var request = context.Context.Request;
+            context.Context.Response.Headers.CacheControl =
+                request.Query.ContainsKey("v") ? "public,max-age=31536000,immutable"
+                : request.Path.StartsWithSegments("/vendor") ? "public,max-age=604800"
+                : "public,max-age=3600";
+        },
     }
 );
 
@@ -326,7 +442,6 @@ app.Use(
     }
 );
 app.UseStatusCodePagesWithReExecute("/Errors/Status", "?code={0}");
-app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
 app.Use(
@@ -342,18 +457,26 @@ app.Use(
             var id = context
                 .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
                 ?.Value;
-            var db = context.RequestServices.GetRequiredService<HiringDb>();
-            await db
-                .MemberProfiles.Where(x => x.UserId == id && x.Language != language)
-                .ExecuteUpdateAsync(
-                    x => x.SetProperty(y => y.Language, language),
-                    context.RequestAborted
-                );
+            // Update the stored language only when it differs from the last value seen for this member.
+            var cache = context.RequestServices.GetRequiredService<IMemoryCache>();
+            var key = "member-language:" + id;
+            if (id is not null && cache.Get<string>(key) != language)
+            {
+                var db = context.RequestServices.GetRequiredService<HiringDb>();
+                await db
+                    .MemberProfiles.Where(x => x.UserId == id && x.Language != language)
+                    .ExecuteUpdateAsync(
+                        x => x.SetProperty(y => y.Language, language),
+                        context.RequestAborted
+                    );
+                cache.Set(key, language, TimeSpan.FromMinutes(30));
+            }
         }
         await next();
     }
 );
 app.UseAuthorization();
+app.UseOutputCache();
 
 // ========================================
 // 15. Routes

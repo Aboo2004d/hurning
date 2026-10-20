@@ -65,6 +65,8 @@ if (installBrowser)
 // ========================================
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<AttachmentReader>();
+// One Chromium process for the worker; each item still gets its own context and page.
+builder.Services.AddSingleton<BrowserHost>();
 builder.Services.AddScoped<BrowserCollector>();
 
 // ========================================
@@ -125,6 +127,7 @@ if (!isOnce && !isProbe)
     builder.Services.AddHostedService<Worker>();
     builder.Services.AddHostedService<ToolMonitor>();
     builder.Services.AddHostedService<MembershipWorker>();
+    builder.Services.AddHostedService<DistributionWorker>();
 }
 
 // ========================================

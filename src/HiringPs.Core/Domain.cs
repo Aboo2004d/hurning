@@ -72,6 +72,14 @@ public class Source
     [MaxLength(2000)]
     public string LastError { get; set; } = "";
 
+    // Reset by a successful discovery; drives exponential retry backoff.
+    public int ConsecutiveFailures { get; set; }
+
+    // Collector health note for administrators (repeated failures or possible template change).
+    [MaxLength(500)]
+    public string HealthWarning { get; set; } = "";
+    public DateTimeOffset? HealthWarningAt { get; set; }
+
     [Timestamp]
     public byte[] Version { get; set; } = [];
 }
@@ -125,6 +133,9 @@ public class SourceItem
     public ProcessingStatus Status { get; set; }
     public DateTimeOffset FirstSeenAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset LastSeenAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // Last successful fetch of the original page; published items are re-verified after an interval.
+    public DateTimeOffset? LastVerifiedAt { get; set; }
     public DateTimeOffset? RetryAt { get; set; }
     public int Attempts { get; set; }
 
@@ -177,8 +188,17 @@ public class Opportunity
     public string LocationSearchText { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset LastVerifiedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Persisted COALESCE(SourcePublishedAt, CreatedAt) used for public ordering; computed by SQL Server.</summary>
+    public DateTimeOffset SortDate { get; private set; }
     public PublicationStatus Status { get; set; } = PublicationStatus.NeedsReview;
     public bool AdminOverride { get; set; }
+
+    // Other records were merged into this one; extraction keeps its text but still applies verified dates.
+    public bool IsMergeTarget { get; set; }
+
+    [MaxLength(200)]
+    public string NormalizedReference { get; set; } = "";
 
     [MaxLength(64)]
     public string Fingerprint { get; set; } = "";
@@ -266,6 +286,63 @@ public class WorkerHeartbeat
     public string State { get; set; } = "";
 }
 
+// Single global row (Id = 1) for collector decisions shared across ticks and worker restarts.
+public class PipelineState
+{
+    [Key]
+    public int Id { get; set; } = 1;
+    public DateTimeOffset? AiPausedUntil { get; set; }
+
+    [MaxLength(300)]
+    public string AiPauseReason { get; set; } = "";
+    public int? LastRequeuedPromptVersionId { get; set; }
+    public DateTimeOffset? LastRequeuedAt { get; set; }
+}
+
+// Maps a normalised organisation spelling to its canonical normalised key for duplicate matching.
+public class OrganizationAlias
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(200)]
+    public string Alias { get; set; } = "";
+
+    [Required, MaxLength(200)]
+    public string Canonical { get; set; } = "";
+
+    [MaxLength(256)]
+    public string CreatedBy { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public enum DuplicateCandidateStatus
+{
+    Open,
+    Merged,
+    Dismissed,
+}
+
+// A near-match found during extraction; administrators merge or dismiss it.
+public class DuplicateCandidate
+{
+    public long Id { get; set; }
+    public long OpportunityId { get; set; }
+    public Opportunity Opportunity { get; set; } = null!;
+    public long CandidateId { get; set; }
+    public Opportunity Candidate { get; set; } = null!;
+    public double Score { get; set; }
+
+    [MaxLength(300)]
+    public string Reason { get; set; } = "";
+    public DuplicateCandidateStatus Status { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? ResolvedAt { get; set; }
+
+    [MaxLength(256)]
+    public string ResolvedBy { get; set; } = "";
+    public long? MergeOperationId { get; set; }
+}
+
 public static class TextRules
 {
     public static int CharacterCount(string text) => new StringInfo(text).LengthInTextElements;
@@ -301,34 +378,51 @@ public static class TextRules
             TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, PalestineTimeZone).DateTime
         );
 
+    // Set when the server lacks a Palestinian zone; the worker logs it once.
+    public static string? PalestineTimeZoneWarning { get; private set; }
+
     private static TimeZoneInfo ResolvePalestineTimeZone()
     {
-        // Keep the project's existing IANA/Windows resolution order in one place.
-        string[] candidates =
+        // Palestinian zones first (Windows id, then IANA); Israeli zones differ around DST changes.
+        string[] palestinian = ["West Bank Standard Time", "Asia/Hebron", "Asia/Gaza"];
+        string[] fallbacks =
         [
-            "Asia/Hebron",
             "Israel Standard Time",
             "Palestine Standard Time",
             "Jerusalem",
             "Middle East Standard Time",
         ];
-        foreach (var id in candidates)
+        foreach (var id in palestinian.Concat(fallbacks))
         {
             try
             {
-                return TimeZoneInfo.FindSystemTimeZoneById(id);
+                var zone = TimeZoneInfo.FindSystemTimeZoneById(id);
+                if (!palestinian.Contains(id))
+                    Fallback($"Palestinian time zone not found; using {id}.");
+                return zone;
             }
             catch (TimeZoneNotFoundException) { }
             catch (InvalidTimeZoneException) { }
         }
-        return TimeZoneInfo
-                .GetSystemTimeZones()
-                .FirstOrDefault(zone =>
-                    zone.Id.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
-                    || zone.Id.Contains("Israel", StringComparison.OrdinalIgnoreCase)
-                    || zone.DisplayName.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
-                    || zone.DisplayName.Contains("Israel", StringComparison.OrdinalIgnoreCase)
-                )
-            ?? TimeZoneInfo.Utc;
+        var match = TimeZoneInfo
+            .GetSystemTimeZones()
+            .FirstOrDefault(zone =>
+                zone.Id.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                || zone.Id.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+                || zone.DisplayName.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                || zone.DisplayName.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+            );
+        Fallback(
+            match is null
+                ? "No Palestinian time zone found; using UTC."
+                : $"Palestinian time zone not found; using {match.Id}."
+        );
+        return match ?? TimeZoneInfo.Utc;
+    }
+
+    private static void Fallback(string warning)
+    {
+        PalestineTimeZoneWarning = warning;
+        System.Diagnostics.Trace.TraceWarning(warning);
     }
 }

@@ -1,0 +1,15 @@
+@model int
+@* شارة "يغلق خلال N أيام"؛ تصبح عاجلة قبل يومين أو أقل. *@
+@{
+    var text = Model switch
+    {
+        0 => T["ClosesToday"].Value,
+        1 => T["ClosesTomorrow"].Value,
+        2 => T["ClosesInTwoDays"].Value,
+        _ => string.Format(CultureInfo.CurrentCulture, T["ClosesInDays"].Value, Model),
+    };
+}
+<span class="badge badge-closing @(Model <= 2 ? "is-urgent" : null)">
+    <span class="fa-solid fa-clock" aria-hidden="true"></span>
+    <span>@text</span>
+</span>

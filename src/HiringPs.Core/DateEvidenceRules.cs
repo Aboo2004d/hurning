@@ -135,7 +135,7 @@ public static class DateEvidenceRules
         );
         foreach (Match date in dates)
         {
-            if (!OpportunityService.DateEvidenceMatches(date.Value, entry.Date))
+            if (!ExtractionValidator.DateEvidenceMatches(date.Value, entry.Date))
                 continue;
             var preceding = quote[..date.Index];
             var role = Regex
@@ -176,6 +176,12 @@ public static class DateEvidenceRules
         return false;
     }
 
-    public static DateTimeOffset AtPalestineMidnight(DateOnly date) =>
-        new(TimeZoneInfo.ConvertTimeToUtc(date.ToDateTime(TimeOnly.MinValue), SourceSchedule.Zone));
+    public static DateTimeOffset AtPalestineMidnight(DateOnly date)
+    {
+        // Palestinian DST can start at midnight; use the first valid local minute of that day.
+        var local = date.ToDateTime(TimeOnly.MinValue);
+        for (var m = 0; SourceSchedule.Zone.IsInvalidTime(local) && m < 180; m++)
+            local = local.AddMinutes(1);
+        return new(TimeZoneInfo.ConvertTimeToUtc(local, SourceSchedule.Zone));
+    }
 }

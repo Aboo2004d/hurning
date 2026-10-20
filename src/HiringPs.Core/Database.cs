@@ -16,6 +16,8 @@ public class HiringDb(
     public DbSet<SocialTemplateVersion> SocialTemplateVersions => Set<SocialTemplateVersion>();
     public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
     public DbSet<SocialPublication> SocialPublications => Set<SocialPublication>();
+    public DbSet<TelegramChannelSetting> TelegramChannelSettings => Set<TelegramChannelSetting>();
+    public DbSet<IndexNowEntry> IndexNowEntries => Set<IndexNowEntry>();
 
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<SourceItem> SourceItems => Set<SourceItem>();
@@ -26,6 +28,9 @@ public class HiringDb(
     public DbSet<UserReport> Reports => Set<UserReport>();
     public DbSet<AuditEntry> Audit => Set<AuditEntry>();
     public DbSet<WorkerHeartbeat> Heartbeats => Set<WorkerHeartbeat>();
+    public DbSet<PipelineState> PipelineStates => Set<PipelineState>();
+    public DbSet<OrganizationAlias> OrganizationAliases => Set<OrganizationAlias>();
+    public DbSet<DuplicateCandidate> DuplicateCandidates => Set<DuplicateCandidate>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<SitePage> SitePages => Set<SitePage>();
 
@@ -68,6 +73,11 @@ public class HiringDb(
         b.Entity<SocialPublication>().HasOne<SocialTemplateVersion>().WithMany().HasForeignKey(x => x.TemplateVersionId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<SocialPublication>().HasIndex(x => new { x.OpportunityId, x.Provider, x.CreatedAt });
         b.Entity<SocialPublication>().HasOne(x => x.Opportunity).WithMany().HasForeignKey(x => x.OpportunityId).OnDelete(DeleteBehavior.Restrict);
+        // Automatic Telegram channel posts: one record per opportunity and channel, ever.
+        b.Entity<SocialPublication>().HasIndex(x => new { x.OpportunityId, x.Provider, x.PageId }).IsUnique().HasFilter("[Provider] = N'Telegram'");
+        b.Entity<SocialPublication>().HasIndex(x => new { x.Provider, x.Status, x.NextAttemptAt });
+        b.Entity<IndexNowEntry>().HasOne(x => x.Opportunity).WithOne().HasForeignKey<IndexNowEntry>(x => x.OpportunityId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<IndexNowEntry>().HasIndex(x => new { x.ProcessedAt, x.QueuedAt });
         MembershipSchema.Configure(b);
         b.Entity<MemberSubscription>()
             .HasQueryFilter(x => x.GatewayEnvironment == ActivePaymentEnvironment);
@@ -143,6 +153,28 @@ public class HiringDb(
             });
         b.Entity<SourceItem>().HasIndex(x => new { x.SourceId, x.ExternalId }).IsUnique();
         b.Entity<SourceItem>().HasIndex(x => new { x.Status, x.RetryAt });
+        b.Entity<SourceItem>().HasIndex(x => x.RequestedPromptVersionId);
+        b.Entity<SourceItemRevision>().HasIndex(x => new { x.SourceItemId, x.CapturedAt });
+        b.Entity<SourceItemRevision>().HasIndex(x => x.CapturedAt);
+        b.Entity<ScrapeRun>().HasIndex(x => new { x.SourceId, x.Status, x.StartedAt });
+        b.Entity<PipelineState>().Property(x => x.Id).ValueGeneratedNever();
+        b.Entity<PipelineState>().HasData(new PipelineState { Id = 1 });
+        b.Entity<OrganizationAlias>().HasIndex(x => x.Alias).IsUnique();
+        b.Entity<OrganizationAlias>().HasIndex(x => x.Canonical);
+        b.Entity<DuplicateCandidate>()
+            .HasIndex(x => new { x.OpportunityId, x.CandidateId })
+            .IsUnique();
+        b.Entity<DuplicateCandidate>().HasIndex(x => new { x.Status, x.CreatedAt });
+        b.Entity<DuplicateCandidate>()
+            .HasOne(x => x.Opportunity)
+            .WithMany()
+            .HasForeignKey(x => x.OpportunityId)
+            .OnDelete(DeleteBehavior.Restrict);
+        b.Entity<DuplicateCandidate>()
+            .HasOne(x => x.Candidate)
+            .WithMany()
+            .HasForeignKey(x => x.CandidateId)
+            .OnDelete(DeleteBehavior.Restrict);
         b.Entity<Opportunity>()
             .HasIndex(x => new
             {
@@ -150,8 +182,19 @@ public class HiringDb(
                 x.Kind,
                 x.Deadline,
             });
+        b.Entity<Opportunity>()
+            .Property(x => x.SortDate)
+            .HasComputedColumnSql("COALESCE([SourcePublishedAt], [CreatedAt])", stored: true);
+        b.Entity<Opportunity>().HasIndex(x => new { x.Status, x.Kind, x.SortDate });
         b.Entity<Opportunity>().HasIndex(x => x.Fingerprint);
         b.Entity<Opportunity>().HasIndex(x => new { x.Kind, x.NormalizedOrganization });
+        b.Entity<Opportunity>()
+            .HasIndex(x => new
+            {
+                x.Kind,
+                x.NormalizedOrganization,
+                x.NormalizedReference,
+            });
         b.Entity<OpportunitySourceLink>()
             .HasIndex(x => new { x.SourceItemId, x.ChildKey })
             .IsUnique();
@@ -169,7 +212,48 @@ public class HiringDb(
             );
     }
 
-    private void NormalizeRecords()
+    private void NormalizeRecords() =>
+        NormalizeRecords(ids =>
+            OpportunityPublications
+                .Where(x => ids.Contains(x.OpportunityId))
+                .Select(x => x.OpportunityId)
+                .ToList()
+        );
+
+    private async Task NormalizeRecordsAsync(CancellationToken ct)
+    {
+        var ids = SavedIds(NewlyPublished());
+        var recorded =
+            ids.Length == 0
+                ? []
+                : await OpportunityPublications
+                    .Where(x => ids.Contains(x.OpportunityId))
+                    .Select(x => x.OpportunityId)
+                    .ToListAsync(ct);
+        NormalizeRecords(_ => recorded);
+    }
+
+    private static long[] SavedIds(
+        IEnumerable<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Opportunity>> entries
+    ) => entries.Select(x => x.Entity.Id).Where(x => x != 0).Distinct().ToArray();
+
+    private List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Opportunity>> NewlyPublished() =>
+        ChangeTracker
+            .Entries<Opportunity>()
+            .Where(x =>
+                x.Entity.Status == PublicationStatus.Published
+                && (
+                    x.State == EntityState.Added
+                    || (
+                        x.State == EntityState.Modified
+                        && x.Property(y => y.Status).OriginalValue != PublicationStatus.Published
+                    )
+                )
+            )
+            .ToList();
+
+    // Publication records are looked up in one batched query, never per entity.
+    private void NormalizeRecords(Func<long[], List<long>> recordedPublications)
     {
         if (ChangeTracker.Entries<SocialTemplateVersion>().Any(x => x.State == EntityState.Deleted
             || (x.State == EntityState.Modified && x.Properties.Any(p => p.IsModified && p.Metadata.Name != nameof(SocialTemplateVersion.Active)))))
@@ -194,31 +278,16 @@ public class HiringDb(
             );
 
         // Capture only a first publication. Existing records are not backfilled on deployment.
-        foreach (
-            var entry in ChangeTracker
-                .Entries<Opportunity>()
-                .Where(x =>
-                    x.Entity.Status == PublicationStatus.Published
-                    && (
-                        x.State == EntityState.Added
-                        || (
-                            x.State == EntityState.Modified
-                            && x.Property(y => y.Status).OriginalValue
-                                != PublicationStatus.Published
-                        )
-                    )
-                )
-                .ToList()
-        )
+        var published = NewlyPublished();
+        var savedIds = SavedIds(published);
+        var recorded = (savedIds.Length == 0 ? [] : recordedPublications(savedIds)).ToHashSet();
+        foreach (var entry in published)
         {
             if (
-                (
-                    entry.Entity.Id == 0
-                    || !OpportunityPublications.Local.Any(x => x.OpportunityId == entry.Entity.Id)
-                )
-                && (
-                    entry.Entity.Id == 0
-                    || !OpportunityPublications.Any(x => x.OpportunityId == entry.Entity.Id)
+                entry.Entity.Id == 0
+                || (
+                    !OpportunityPublications.Local.Any(x => x.OpportunityId == entry.Entity.Id)
+                    && !recorded.Contains(entry.Entity.Id)
                 )
             )
                 OpportunityPublications.Add(
@@ -230,6 +299,10 @@ public class HiringDb(
                 );
         }
 
+        // Queue public URL changes for IndexNow; the worker submits them in batches.
+        foreach (var entry in ChangeTracker.Entries<Opportunity>().Where(IndexNowQueue.Affects).ToList())
+            IndexNowQueue.Touch(this, entry.Entity);
+
         foreach (
             var entry in ChangeTracker
                 .Entries<Opportunity>()
@@ -238,6 +311,9 @@ public class HiringDb(
         {
             entry.Entity.NormalizedOrganization = TextRules.OrganizationKey(
                 entry.Entity.Organization
+            );
+            entry.Entity.NormalizedReference = DuplicateMatcher.ReferenceKey(
+                entry.Entity.ReferenceNumber
             );
             entry.Entity.LocationSearchText = LocationSearch.Index(entry.Entity.Locations);
             entry.Entity.SearchText = LocationSearch.Normalize(
@@ -252,12 +328,12 @@ public class HiringDb(
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
-    public override Task<int> SaveChangesAsync(
+    public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default
     )
     {
-        NormalizeRecords();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        await NormalizeRecordsAsync(cancellationToken);
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 }

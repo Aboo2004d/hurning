@@ -80,6 +80,15 @@ public static class PromptWorkflow
         var active = await db
             .PromptVersions.AsNoTracking()
             .SingleAsync(x => x.Id == settings.ActivePromptVersionId, ct);
+        // The full requeue scan runs only after an activation (plus an hourly sweep for
+        // re-enabled sources), not on every few-second tick.
+        var state = await AiGovernor.StateAsync(db, ct);
+        var now = DateTimeOffset.UtcNow;
+        if (
+            state.LastRequeuedPromptVersionId == active.Id
+            && state.LastRequeuedAt > now.AddHours(-1)
+        )
+            return active;
         // Published, archived and manual decisions are not queued for prompt changes.
         var eligible = db.SourceItems.Where(item =>
             item.RequestedPromptVersionId != active.Id
@@ -110,6 +119,9 @@ public static class PromptWorkflow
                     .SetProperty(x => x.Error, ""),
             ct
         );
+        state.LastRequeuedPromptVersionId = active.Id;
+        state.LastRequeuedAt = now;
+        await db.SaveChangesAsync(ct);
         return active;
     }
 

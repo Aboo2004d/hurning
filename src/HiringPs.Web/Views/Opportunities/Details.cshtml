@@ -5,12 +5,33 @@
     ViewData["Description"] = Model.Summary;
     var expired = Model.Status == PublicationStatus.Archived || (Model.Deadline is { } d && d < TextRules.PalestineToday());
     var sourceUrl = Model.SourceLinks.FirstOrDefault()?.SourceItem.Url;
+    var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+    var organizationFacet = ViewBag.OrganizationFacet as OrganizationFacet;
+    var cityLinks = ViewBag.CityFacets as List<City> ?? [];
+    var attachments = ViewBag.Attachments as List<string> ?? [];
+    var closing = expired ? null : PublicListing.ClosingInDays(Model, TextRules.PalestineToday());
 }
-<a class="textlink" asp-controller="Home" asp-action="Index" asp-route-kind="@Model.Kind">→ @T["Back"]</a>
+<a class="textlink back-link" asp-controller="Home" asp-action="Index" asp-route-kind="@Model.Kind">
+    <span class="fa-solid @(english ? "fa-arrow-left" : "fa-arrow-right")" aria-hidden="true"></span>
+    <span>@T["Back"]</span>
+</a>
 <article class="detail-panel">
     <div class="card-top">
-        <span dir="auto">@Model.Organization</span>
-        <span class="badge">@T[Model.Kind.ToString()]</span>
+        @if (organizationFacet is not null)
+        {
+            <a dir="auto" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organizationFacet.Slug))">@Model.Organization</a>
+        }
+        else
+        {
+            <span dir="auto">@Model.Organization</span>
+        }
+        <span class="card-badges">
+            @if (closing is { } days)
+            {
+                <partial name="_ClosingBadge" model="days" />
+            }
+            <span class="badge">@T[Model.Kind.ToString()]</span>
+        </span>
     </div>
     <h1 dir="auto" lang="@Model.OriginalLanguage">@Model.Title</h1>
     @if (expired)
@@ -20,11 +41,20 @@
     <dl class="detail-grid">
         <div>
             <dt>@T["Location"]</dt>
-            <dd dir="auto">@Model.Locations</dd>
+            <dd dir="auto">
+                @Model.Locations
+                @foreach (var city in cityLinks)
+                {
+                    var kindLabel = T[Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind.ToString()].Value;
+                    <a class="detail-browse-link" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(Model.Kind, city))">
+                        @string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, city.Name(english))
+                    </a>
+                }
+            </dd>
         </div>
         <div>
             <dt>@T["Category"]</dt>
-            <dd dir="auto">@Model.Category</dd>
+            <dd dir="auto">@FilterLabels.Category(Model.Category, english)</dd>
         </div>
         <div>
             <dt>@T["Deadline"]</dt>
@@ -50,17 +80,17 @@
         }
         <div>
             <dt>@T["Verified"]</dt>
-            <dd>@Model.LastVerifiedAt.ToString("yyyy-MM-dd")</dd>
+            <dd>@TimeZoneInfo.ConvertTime(Model.LastVerifiedAt, SourceSchedule.Zone).ToString("yyyy-MM-dd")</dd>
         </div>
         @if (Model.Kind == OpportunityKind.Job)
         {
             <div>
                 <dt>@T["Employment"]</dt>
-                <dd>@Model.EmploymentType</dd>
+                <dd dir="auto">@FilterLabels.Employment(Model.EmploymentType, english)</dd>
             </div>
             <div>
                 <dt>@T["Experience"]</dt>
-                <dd>@Model.ExperienceLevel</dd>
+                <dd dir="auto">@FilterLabels.Experience(Model.ExperienceLevel, english)</dd>
             </div>
         }
         else if (Model.Kind == OpportunityKind.Training)
@@ -108,21 +138,25 @@
             <a href="@link.SourceItem.Url" rel="noopener noreferrer">@link.SourceItem.Source.Name</a>
         }
     </div>
-    @{
-        var files = System.Text.Json.JsonSerializer.Deserialize<string[]>(Model.AttachmentsJson) ?? [];
-    }
-    @if (files.Length > 0)
+    @if (attachments.Count > 0)
     {
         <div class="sources">
-            @foreach (var file in files)
+            @foreach (var file in attachments)
             {
-                if (Uri.TryCreate(file, UriKind.Absolute, out var fileUri) && fileUri.Scheme == "https")
-                {
-                    <a href="@file" rel="noopener noreferrer">
-                        @(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar"?"وثيقة الإعلان":"Listing attachment")
-                    </a>
-            } }
+                <a href="@file" rel="noopener noreferrer">@T["ListingAttachment"]</a>
+            }
         </div>
+    }
+    <partial name="_ShareButtons" model="Model" />
+    @if (organizationFacet is not null)
+    {
+        <p class="detail-more">
+            <a class="textlink" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organizationFacet.Slug))">
+                <span class="fa-solid fa-building" aria-hidden="true"></span>
+                <span>@T["MoreFromOrganization"]</span>
+                <bdi>@organizationFacet.Name</bdi>
+            </a>
+        </p>
     }
     <details class="report-panel">
         <summary>@T["Report"]</summary>
@@ -182,4 +216,8 @@
         <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
         <partial name="_SaveOpportunityButton" model="new SaveButton(Model.Id, ViewBag.IsSaved is true)" />
     </form>
+}
+
+@section Scripts {
+    <script src="~/js/share.js" asp-append-version="true" defer></script>
 }

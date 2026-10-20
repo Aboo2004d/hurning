@@ -34,6 +34,10 @@ public sealed class SocialPublication
     [MaxLength(1500)] public string Url { get; set; } = "";
     [MaxLength(256)] public string Actor { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    // Queue fields used by automatic providers (Telegram channel); manual posts keep the defaults.
+    public int Attempts { get; set; }
+    public DateTimeOffset? NextAttemptAt { get; set; }
+    [MaxLength(200)] public string Error { get; set; } = "";
 }
 
 // Read-only probes and publishing use the same page identity and protected credentials.
@@ -52,6 +56,9 @@ public sealed class SocialPublishing(HiringDb db, IConfiguration config,
         return !string.IsNullOrWhiteSpace(value) && value != "***" ? value
             : throw new InvalidOperationException("IntegrationNotConfigured");
     }
+    // Telegram channel posts are automatic, but share the versioned template store.
+    public static bool IsTemplateProvider(string provider) =>
+        provider is "Facebook" or "LinkedIn" || provider == TelegramChannelTargets.Provider;
     public string Protect(string token) => protector.Protect(token);
     public static bool Eligible(Opportunity item, DateOnly today) =>
         item.Status == PublicationStatus.Published && (item.Deadline is null || item.Deadline >= today) && string.IsNullOrWhiteSpace(item.ClosureEvidence);

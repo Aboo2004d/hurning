@@ -1,19 +1,76 @@
 @model ListingModel
-@* صفحة قائمة الفرص: العنوان والبحث والفلاتر والبطاقات ثم التنقل بين الصفحات. *@
+@* صفحة قائمة الفرص: العنوان وما يغلق هذا الأسبوع والبحث والفلاتر والترتيب والبطاقات ثم الترقيم وروابط التصفح. *@
 @{
+    var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
     var kindHeading = Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind?.ToString() ?? "Headline";
     var heading = Model.Archive ? T["Archive"].Value + (Model.Kind is null ? "" : " · " + T[kindHeading].Value) : T[kindHeading].Value;
     var subtitle = Model.Kind is null ? "Subtitle" : Model.Kind + "Subtitle";
     ViewData["Title"] = heading;
     ViewData["Description"] = T[subtitle].Value;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var member = signedIn && !User.IsInRole("Admin");
+    var currentUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    var facets = ViewBag.Facets as BrowseFacets;
+    string ListingUrl(int page, string? sort = null)
+    {
+        var values = Model.RouteValues(page);
+        if (sort is not null)
+        {
+            values.Remove("sort");
+            if (sort != ListingSort.Newest)
+                values["sort"] = sort;
+        }
+        return Url.Action("Index", "Home", values.ToDictionary(x => x.Key, x => (object?)x.Value))!;
+    }
 }
 <section class="intro">
     <h1>@heading</h1>
     <p>@T[subtitle]</p>
 </section>
+@if (Model.ClosingSoon.Count > 0)
+{
+    <section class="closing-week" aria-labelledby="closing-week-title">
+        <h2 id="closing-week-title">
+            <span class="fa-solid fa-clock" aria-hidden="true"></span>
+            <span>@T["ClosingThisWeek"]</span>
+        </h2>
+        <ul class="closing-week-list">
+            @foreach (var item in Model.ClosingSoon)
+            {
+                <li>
+                    @if (Model.AllowedDetails.Contains(item.Kind))
+                    {
+                        <a href="@Url.Content("~" + PublicListing.DetailsPath(item))" dir="auto" lang="@item.OriginalLanguage">@item.Title</a>
+                    }
+                    else
+                    {
+                        <span dir="auto" lang="@item.OriginalLanguage">@item.Title</span>
+                    }
+                    <span class="closing-week-meta">
+                        <bdi>@item.Organization</bdi>
+                        @if (PublicListing.ClosingInDays(item, Model.Today) is { } days)
+                        {
+                            <partial name="_ClosingBadge" model="days" />
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    </section>
+}
 <form method="get" asp-action="Index" id="listing-form">
-    <input type="hidden" name="archive" value="@Model.Archive.ToString().ToLowerInvariant()"/>
-    <input type="hidden" name="kind" value="@Model.Kind"/>
+    @if (Model.Archive)
+    {
+        <input type="hidden" name="archive" value="true"/>
+    }
+    @if (Model.Kind is not null)
+    {
+        <input type="hidden" name="kind" value="@Model.Kind"/>
+    }
+    @if (Model.Sort != ListingSort.Newest)
+    {
+        <input type="hidden" name="sort" value="@Model.Sort"/>
+    }
     <div class="listing-layout">
         <aside class="filter-panel">
             <details open>
@@ -33,7 +90,7 @@
                         <option value="">@T["All"]</option>
                         @foreach (var city in Model.Cities)
                         {
-                            <option selected="@(Model.City==city)" value="@city">@city</option>
+                            <option selected="@(Model.City == city.Value)" value="@city.Value">@city.Label</option>
                         }
                     </select>
                 </label>
@@ -43,7 +100,7 @@
                         <option value="">@T["All"]</option>
                         @foreach (var category in Model.Categories)
                         {
-                            <option selected="@(Model.Category==category)">@category</option>
+                            <option selected="@(FilterLabels.Category(Model.Category, english) == category.Label)" value="@category.Value">@category.Label</option>
                         }
                     </select>
                 </label>
@@ -54,7 +111,7 @@
                             <option value="">@T["All"]</option>
                             @foreach (var value in Model.EmploymentTypes)
                             {
-                                <option selected="@(Model.Employment==value)">@value</option>
+                                <option selected="@(FilterLabels.Employment(Model.Employment, english) == value.Label)" value="@value.Value">@value.Label</option>
                             }
                         </select>
                     </label>
@@ -64,7 +121,7 @@
                             <option value="">@T["All"]</option>
                             @foreach (var value in Model.ExperienceLevels)
                             {
-                                <option selected="@(Model.Experience==value)">@value</option>
+                                <option selected="@(FilterLabels.Experience(Model.Experience, english) == value.Label)" value="@value.Value">@value.Label</option>
                             }
                         </select>
                     </label>
@@ -74,7 +131,7 @@
                         <span class="fa-solid fa-filter" aria-hidden="true"></span>
                         <span>@T["Filters"]</span>
                     </button>
-                    <a class="button button-outline listing-action" asp-action="Index" asp-route-kind="@Model.Kind" asp-route-archive="@Model.Archive">
+                    <a class="button button-outline listing-action" asp-action="Index" asp-route-kind="@Model.Kind" asp-route-archive="@(Model.Archive ? "true" : null)">
                         <span class="fa-solid fa-rotate-right" aria-hidden="true"></span>
                         <span>@T["Clear"]</span>
                     </a>
@@ -84,109 +141,100 @@
         <section>
             <div class="results-header">
                 <strong>@Model.Count @T["Results"]</strong>
-                <span>@T["Newest"]</span>
+                <nav class="sort-links" aria-label="@T["SortBy"]">
+                    <span class="sort-label" aria-hidden="true">@T["SortBy"]:</span>
+                    <a href="@ListingUrl(1, ListingSort.Newest)" aria-current="@(Model.Sort == ListingSort.Newest ? "true" : null)">@T["Newest"]</a>
+                    <a href="@ListingUrl(1, ListingSort.Closing)" aria-current="@(Model.Sort == ListingSort.Closing ? "true" : null)">@T["SortClosing"]</a>
+                </nav>
             </div>
-            <div class="opportunity-grid">
-                @if (Model.Items.Count == 0)
-                {
-                    <div class="empty-state">@T["Empty"]</div>
-                }
-                @foreach (var item in Model.Items)
-                {
-                    <article class="opportunity-card">
-                        <div class="card-top">
-                            <span class="organization" dir="auto">@item.Organization</span>
-                            <span class="badge">@T[item.Kind.ToString()]</span>
-                        </div>
-                        <h2 dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">@item.Title</h2>
-                        <p class="metadata" dir="auto">
-                            @item.Locations
-                            @if (item.Kind == OpportunityKind.Job && item.EmploymentType.Length > 0)
-                            {
-                                <span> · @item.EmploymentType</span>
-                            }
-                        </p>
-                        <p class="summary" dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">
-                            @item.Summary
-                        </p>
-                        <div class="tags">
-                            @if (item.Category.Length > 0)
-                            {
-                                <span>@item.Category</span>
-                            }
-                            @if (item.ReferenceNumber.Length > 0)
-                            {
-                                <span dir="auto">@item.ReferenceNumber</span>
-                            }
-                        </div>
-                        <div class="card-bottom">
-                            <span class="opportunity-deadline">
-                                @(Model.Archive?T["Expired"]:item.Deadline is {} deadline?T["Deadline"]+": "+deadline.ToString("yyyy-MM-dd"):T["UnknownDeadline"])
-                            </span>
-                            <div class="opportunity-actions">
-                                @if (Model.AllowedDetails.Contains(item.Kind))
-                                {
-                                    <a class="button button-outline listing-action" asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.Id">
-                                        <span class="fa-solid fa-eye" aria-hidden="true"></span>
-                                        <span>@T["Details"]</span>
-                                    </a>
-                                }
-                                else
-                                {
-                                    <p class="subscriber-details-hint">@T["SubscribeForDetails"]</p>
-                                }
-                                @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
-                                {
-                                    <partial name="_SaveOpportunityButton" model="new SaveButton(item.Id, Model.SavedIds.Contains(item.Id))" />
-                                }
-                            </div>
-                        </div>
-                    </article>
-                }
-            </div>
-            <nav class="pagination" aria-label="Pagination">
-                @if (Model.Page > 1)
-                {
-                    <a
-                        asp-route-page="@(Model.Page-1)"
-                        asp-route-q="@Model.Query"
-                        asp-route-kind="@Model.Kind"
-                        asp-route-city="@Model.City"
-                        asp-route-category="@Model.Category"
-                        asp-route-employment="@Model.Employment"
-                        asp-route-experience="@Model.Experience"
-                        asp-route-archive="@Model.Archive"
-                    >
-                        @T["Previous"]
-                    </a>
-                }
-                <span>@Model.Page / @Math.Max(1,(Model.Count+11)/12)</span>
-                @if (Model.Page * 12 < Model.Count)
-                {
-                    <a
-                        asp-route-page="@(Model.Page+1)"
-                        asp-route-q="@Model.Query"
-                        asp-route-kind="@Model.Kind"
-                        asp-route-city="@Model.City"
-                        asp-route-category="@Model.Category"
-                        asp-route-employment="@Model.Employment"
-                        asp-route-experience="@Model.Experience"
-                        asp-route-archive="@Model.Archive"
-                    >
-                        @T["Next"]
-                    </a>
-                }
-            </nav>
+            @if (Model.CanAlert && !User.IsInRole("Admin"))
+            {
+                <div class="alert-search" data-alert-search>
+                    @if (member)
+                    {
+                        <button class="button button-outline listing-action" type="submit" form="alert-search-form"
+                                data-saved-text="@T["AlertSearchSaved"]" data-error-text="@T["AlertSearchFailed"]">
+                            <span class="fa-solid fa-bell" aria-hidden="true"></span>
+                            <span>@T["AlertSearch"]</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <a class="button button-outline listing-action" asp-controller="Registration" asp-action="Index">
+                            <span class="fa-solid fa-bell" aria-hidden="true"></span>
+                            <span>@T["AlertSearch"]</span>
+                        </a>
+                        <a class="textlink" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@currentUrl">@T["HaveAccountLogin"]</a>
+                    }
+                    <p class="muted alert-search-hint">@T["AlertSearchHint"]</p>
+                    <p class="save-feedback" data-alert-feedback role="status" hidden></p>
+                </div>
+            }
+            <partial name="_OpportunityCards" model="new CardListModel(Model, Model.Items)" />
+            <partial name="_Pagination" model="new PaginationModel(Model.Page, Model.PageCount, page => ListingUrl(page))" />
         </section>
     </div>
 </form>
 
-@if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+@if (facets is not null)
 {
+    var cities = facets.Cities.Where(x => Model.Kind is null || x.Kind == Model.Kind).Take(12).ToList();
+    var organizations = facets.Organizations.Take(12).ToList();
+    @if (cities.Count > 0 || organizations.Count > 0)
+    {
+        <section class="browse-links">
+            @if (cities.Count > 0)
+            {
+                <div>
+                    <h2>@T["BrowseByCity"]</h2>
+                    <ul>
+                        @foreach (var facet in cities)
+                        {
+                            var kindLabel = T[facet.Kind == OpportunityKind.Job ? "Jobs" : facet.Kind.ToString()].Value;
+                            <li>
+                                <a href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(facet.Kind, facet.City))">
+                                    @string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, facet.City.Name(english))
+                                </a>
+                                <span class="muted">(@facet.Count)</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (organizations.Count > 0)
+            {
+                <div>
+                    <h2>@T["BrowseByOrganization"]</h2>
+                    <ul>
+                        @foreach (var organization in organizations)
+                        {
+                            <li>
+                                <a href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organization.Slug))" dir="auto">@organization.Name</a>
+                                <span class="muted">(@organization.Count)</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </section>
+    }
+}
+
+@if (member)
+{
+    @if (Model.CanAlert)
+    {
+        <form id="alert-search-form" asp-area="Member" asp-controller="Preferences" asp-action="AddSearch" method="post" data-alert-search-form>
+            <input type="hidden" name="kind" value="@Model.Kind" />
+            <input type="hidden" name="city" value="@Model.City" />
+            <input type="hidden" name="category" value="@Model.Category" />
+            <input type="hidden" name="returnUrl" value="@currentUrl" />
+        </form>
+    }
     @foreach (var item in Model.Items)
     {
         <form id="save-@item.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post" data-save-opportunity>
-            <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
+            <input type="hidden" name="returnUrl" value="@currentUrl" />
             <input type="hidden" name="id" value="@item.Id" />
         </form>
     }

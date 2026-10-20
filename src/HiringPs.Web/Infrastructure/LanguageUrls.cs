@@ -20,13 +20,18 @@ public static class LanguageUrls
     private static bool IsMistypedLanguage(string value) =>
         value.Length == 2 && value.All(char.IsAsciiLetter);
 
-    public static string Select(HttpContext context)
+    public static string? Saved(HttpContext context)
     {
         var cookie = context.Request.Cookies[CookieRequestCultureProvider.DefaultCookieName];
-        var saved = CookieRequestCultureProvider
+        return CookieRequestCultureProvider
             .ParseCookieValue(cookie ?? "")
             ?.UICultures.FirstOrDefault()
             .Value;
+    }
+
+    public static string Select(HttpContext context)
+    {
+        var saved = Saved(context);
         if (IsSupported(saved))
             return saved!;
         Microsoft.Net.Http.Headers.StringWithQualityHeaderValue.TryParseList(
@@ -78,15 +83,33 @@ public static class LanguageUrls
             + uri.Fragment;
     }
 
+    public static bool IsStaticAsset(PathString path) =>
+        path.StartsWithSegments("/images")
+        || path.StartsWithSegments("/css")
+        || path.StartsWithSegments("/js")
+        || path.StartsWithSegments("/lib")
+        || path.StartsWithSegments("/vendor")
+        || path.Value is "/favicon.ico";
+
     public static bool IsInfrastructure(PathString path) =>
         path.StartsWithSegments("/signin-google")
         || path.StartsWithSegments("/images")
         || path.StartsWithSegments("/css")
         || path.StartsWithSegments("/js")
         || path.StartsWithSegments("/lib")
+        || path.StartsWithSegments("/vendor")
+        || path.StartsWithSegments("/feeds")
         || path.StartsWithSegments("/sitemaps")
         || path.StartsWithSegments("/integrations")
-        || path.Value is "/robots.txt" or "/sitemap.xml" or "/llms.txt" or "/favicon.ico";
+        || path.Value is "/robots.txt" or "/sitemap.xml" or "/llms.txt" or "/favicon.ico"
+        || IsRootKeyFile(path.Value);
+
+    // IndexNow key file: /{key}.txt with the key's own character set; served without a language prefix.
+    private static bool IsRootKeyFile(string? path) =>
+        path is { Length: > 5 }
+        && path.EndsWith(".txt", StringComparison.Ordinal)
+        && path.LastIndexOf('/') == 0
+        && HiringPs.Core.IndexNowSettings.IsKeyFormat(path[1..^4]);
 }
 
 public sealed class LanguagePathMiddleware(RequestDelegate next)
@@ -117,7 +140,9 @@ public sealed class LanguagePathMiddleware(RequestDelegate next)
         }
         context.Items["MountPath"] = originalBase;
         context.Items["Language"] = first;
-        LanguageUrls.Save(context, first!);
+        // Only rewrite the culture cookie when the URL language differs from the saved one.
+        if (LanguageUrls.Saved(context) != first)
+            LanguageUrls.Save(context, first!);
         request.PathBase = originalBase.Add(new PathString("/" + first));
         request.Path = new PathString(LanguageUrls.WithoutLanguage(originalPath.Value!));
         try

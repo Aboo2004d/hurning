@@ -1,0 +1,36 @@
+@model Opportunity
+@inject SiteSeo Seo
+@* أزرار مشاركة الفرصة: روابط عادية تعمل دون JavaScript، وزر نسخ الرابط يظهر عبر share.js. *@
+@{
+    var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+    var url = Seo.Url(PublicListing.DetailsPath(Model), english);
+    var text = Model.Title + (Model.Organization.Length > 0 ? " — " + Model.Organization : "");
+    var encodedUrl = Uri.EscapeDataString(url);
+    var encodedText = Uri.EscapeDataString(text);
+    var links = new[]
+    {
+        ("whatsapp", "ShareWhatsApp", "https://wa.me/?text=" + Uri.EscapeDataString(text + "\n" + url)),
+        ("telegram", "ShareTelegram", "https://t.me/share/url?url=" + encodedUrl + "&text=" + encodedText),
+        ("facebook-f", "ShareFacebook", "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl),
+        ("linkedin-in", "ShareLinkedIn", "https://www.linkedin.com/sharing/share-offsite/?url=" + encodedUrl),
+    };
+}
+<section class="share-panel" aria-labelledby="share-title">
+    <h2 id="share-title">
+        <span class="fa-solid fa-share-nodes" aria-hidden="true"></span>
+        <span>@T["Share"]</span>
+    </h2>
+    <div class="share-buttons">
+        @foreach (var (icon, label, href) in links)
+        {
+            <a class="share-button share-@icon" href="@href" target="_blank" rel="noopener noreferrer" aria-label="@T[label]" title="@T[label]">
+                <span class="fa-solid fa-@icon" aria-hidden="true"></span>
+            </a>
+        }
+        <button class="share-button share-copy" type="button" hidden data-copy-link="@url"
+                data-copied-text="@T["LinkCopied"]" data-copy-error="@T["CopyFailed"]" aria-label="@T["CopyLink"]" title="@T["CopyLink"]">
+            <span class="fa-solid fa-link" aria-hidden="true"></span>
+        </button>
+        <span class="share-feedback" data-copy-feedback role="status"></span>
+    </div>
+</section>

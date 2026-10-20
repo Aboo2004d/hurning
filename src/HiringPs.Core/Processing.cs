@@ -1,8 +1,5 @@
 // استخراج البيانات بالنموذج، ثم التحقق من الأدلة وتحديد النشر أو المراجعة أو الأرشفة.
-using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,350 +7,30 @@ using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-public record ExtractionResult(bool InScope, List<ExtractedOpportunity> Opportunities)
-{
-    [JsonIgnore]
-    public int? PromptVersionId { get; set; }
-}
-
-public class ExtractedOpportunity
-{
-    public string ChildKey { get; set; } = "";
-    public OpportunityKind Kind { get; set; }
-    public string Title { get; set; } = "";
-    public string Organization { get; set; } = "";
-    public string OriginalLanguage { get; set; } = "ar";
-    public string Summary { get; set; } = "";
-    public string Locations { get; set; } = "";
-    public string Category { get; set; } = "";
-    public string EmploymentType { get; set; } = "";
-    public string ExperienceLevel { get; set; } = "";
-    public string WorkMode { get; set; } = "";
-    public string ReferenceNumber { get; set; } = "";
-    public string Duration { get; set; } = "";
-    public string Eligibility { get; set; } = "";
-    public string Cost { get; set; } = "";
-    public string ApplyUrl { get; set; } = "";
-    public DateOnly? Deadline { get; set; }
-    public string DeadlineEvidence { get; set; } = "";
-    public DateOnly? PublicationDate { get; set; }
-    public string PublicationEvidence { get; set; } = "";
-    public DateOnly? ModificationDate { get; set; }
-    public string ModificationEvidence { get; set; } = "";
-    public bool DeadlineIsExtension { get; set; }
-    public List<ExtractedDate> OtherDates { get; set; } = [];
-    public string LocationEvidence { get; set; } = "";
-    public bool? IsInPalestine { get; set; }
-    public string ReviewReason { get; set; } = "";
-}
-
-public class AiUnavailableException(string message) : Exception(message);
-
-public class AiTransientException(string message) : Exception(message);
-
-public class AiExtractor
-{
-    private readonly HttpClient client;
-    private readonly IConfiguration config;
-    private readonly IServiceScopeFactory? scopes;
-    private readonly ILogger<AiExtractor>? logger;
-
-    public AiExtractor(
-        HttpClient client,
-        IConfiguration config,
-        IServiceScopeFactory? scopes = null,
-        ILogger<AiExtractor>? logger = null
-    )
-    {
-        this.client = client;
-        this.config = config;
-        this.scopes = scopes;
-        this.logger = logger;
-        client.Timeout = TimeSpan.FromSeconds(
-            Math.Clamp(config.GetValue<int?>("Ai:TimeoutSeconds") ?? 180, 30, 300)
-        );
-    }
-
-    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter() },
-    };
-
-    public async Task<ExtractionResult> ExtractAsync(
-        string content,
-        CancellationToken ct,
-        AiExecution? execution = null
-    )
-    {
-        var telemetry = new AiTelemetry();
-        long? usageId = null;
-        var started = System.Diagnostics.Stopwatch.StartNew();
-        if (scopes is not null && execution is not null)
-            usageId = await AiUsageRecorder.StartAsync(
-                scopes,
-                execution,
-                config["Ai:Model"] ?? "",
-                ct
-            );
-        string? error = null;
-        try
-        {
-            var result = await SendAsync(content, execution, telemetry, ct);
-            result.PromptVersionId = execution?.Version.Id;
-            return result;
-        }
-        catch (Exception ex)
-        {
-            error = ex.GetType().Name;
-            throw;
-        }
-        finally
-        {
-            if (usageId is { } id && scopes is not null)
-            {
-                try
-                {
-                    await AiUsageRecorder.FinishAsync(
-                        scopes,
-                        id,
-                        telemetry,
-                        error,
-                        started.ElapsedMilliseconds
-                    );
-                }
-                catch (Exception)
-                {
-                    logger?.LogWarning(
-                        "AI usage record {Id} remains unfinished; result was not discarded.",
-                        id
-                    );
-                }
-            }
-        }
-    }
-
-    private async Task<ExtractionResult> SendAsync(
-        string content,
-        AiExecution? execution,
-        AiTelemetry telemetry,
-        CancellationToken ct
-    )
-    {
-        var key = config["Ai:ApiKey"];
-        if (string.IsNullOrWhiteSpace(key) || key == "***")
-            throw new AiUnavailableException("AI key is not configured; item remains queued.");
-        var model = config["Ai:Model"];
-        if (string.IsNullOrWhiteSpace(model))
-            throw new AiUnavailableException("AI model is not configured; item remains queued.");
-        if (!System.Text.RegularExpressions.Regex.IsMatch(model, @"\A[a-zA-Z0-9._-]+\z"))
-            throw new AiUnavailableException("AI model is invalid; item remains queued.");
-        var prompt = execution?.Version ?? PromptDefaults.Initial();
-        var aiInstructions = prompt.Render();
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        );
-        request.Headers.Add("x-goog-api-key", key);
-        request.Content = JsonContent.Create(
-            new
-            {
-                systemInstruction = new { parts = new[] { new { text = aiInstructions } } },
-                contents = new[]
-                {
-                    new
-                    {
-                        role = "user",
-                        parts = new[] { new { text = "SOURCE DATA:\n" + content } },
-                    },
-                },
-                generationConfig = new { temperature = 0, responseMimeType = "application/json" },
-            }
-        );
-        HttpResponseMessage received;
-        try
-        {
-            received = await client.SendAsync(request, ct);
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            throw new AiTransientException(
-                $"AI request timed out after {client.Timeout.TotalSeconds:0} seconds; retry scheduled, saved content retained."
-            );
-        }
-        catch (HttpRequestException)
-        {
-            throw new AiTransientException(
-                "AI network connection failed; retry scheduled, saved content retained."
-            );
-        }
-
-        using var response = received;
-        telemetry.HttpStatus = (int)response.StatusCode;
-        if (
-            response.StatusCode
-            is HttpStatusCode.ServiceUnavailable
-                or HttpStatusCode.BadGateway
-                or HttpStatusCode.GatewayTimeout
-                or HttpStatusCode.InternalServerError
-                or HttpStatusCode.RequestTimeout
-        )
-            throw new AiTransientException(
-                $"AI HTTP {(int)response.StatusCode}: temporary provider error; retry scheduled, saved content retained."
-            );
-        if (
-            response.StatusCode == HttpStatusCode.TooManyRequests
-            || response.StatusCode == HttpStatusCode.Unauthorized
-            || response.StatusCode == HttpStatusCode.Forbidden
-        )
-            throw new AiUnavailableException(
-                $"AI HTTP {(int)response.StatusCode}: quota/credentials unavailable; no paid fallback used."
-            );
-        if (response.StatusCode == HttpStatusCode.BadRequest)
-        {
-            // Inspect only for a limit classification; never store the provider body or echoed source/key.
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (
-                System.Text.RegularExpressions.Regex.IsMatch(
-                    body,
-                    @"(?is)(?:input token|context length|context window).{0,160}(?:exceed|maximum|limit)|(?:exceed|too many).{0,120}(?:input token|context length)"
-                )
-            )
-                throw new ContentNeedsReviewException(
-                    "AI input exceeds the provider context limit; original text is saved. Use a model with a larger supported context or review manually."
-                );
-        }
-
-        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
-            throw new AiUnavailableException(
-                $"AI HTTP {(int)response.StatusCode}: check configured model {model} and request compatibility."
-            );
-        response.EnsureSuccessStatusCode();
-        using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        telemetry.Read(result.RootElement);
-        var text = result
-            .RootElement.GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString();
-        return JsonSerializer.Deserialize<ExtractionResult>(text ?? "", JsonOptions)
-            ?? throw new InvalidOperationException("Empty AI result.");
-    }
-}
-
 public class OpportunityService(HiringDb db)
 {
-    public static string VerifiedOptionalApplyUrl(string? value, string sourceContent)
-    {
-        var url = value?.Trim() ?? "";
-        return
-            url.Length is > 0 and <= 1500
-            && Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            && uri.Scheme is "https" or "mailto" or "tel"
-            && (
-                uri.Scheme != "https"
-                || (string.IsNullOrEmpty(uri.UserInfo) && !IsWhatsAppHost(uri.IdnHost))
-            )
-            && sourceContent.Contains(url, StringComparison.OrdinalIgnoreCase)
-            ? url
-            : "";
-    }
+    // Validation and duplicate rules live in ExtractionValidator/DuplicateMatcher; these keep callers stable.
+    public static string VerifiedOptionalApplyUrl(string? value, string sourceContent) =>
+        ExtractionValidator.VerifiedOptionalApplyUrl(value, sourceContent);
 
-    public static bool IsWhatsAppHost(string host) =>
-        host.Equals("wa.me", StringComparison.OrdinalIgnoreCase)
-        || host.Equals("whatsapp.com", StringComparison.OrdinalIgnoreCase)
-        || host.EndsWith(".whatsapp.com", StringComparison.OrdinalIgnoreCase);
+    public static bool IsWhatsAppHost(string host) => ExtractionValidator.IsWhatsAppHost(host);
 
-    public static string ResolveApplyUrl(string? aiUrl, SourceItem item)
-    {
-        // Always identify the actual collected announcement, never an inferred contact link.
-        var originalUrl = item.Url?.Trim() ?? "";
-        return
-            Uri.TryCreate(originalUrl, UriKind.Absolute, out var uri)
-            && uri.Scheme == "https"
-            && string.IsNullOrEmpty(uri.UserInfo)
-            ? originalUrl
-            : "";
-    }
+    public static string ResolveApplyUrl(string? aiUrl, SourceItem item) =>
+        ExtractionValidator.ResolveApplyUrl(aiUrl, item);
 
     public static List<string> Validate(
         Opportunity o,
         string? sourceContent = null,
         bool allowUnrecognizedLocation = false,
         IEnumerable<string>? approvedLocations = null
-    )
-    {
-        var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(o.Title))
-            errors.Add("Title required.");
-        if (string.IsNullOrWhiteSpace(o.Organization))
-            errors.Add("Organization required.");
-        if (string.IsNullOrWhiteSpace(o.Summary))
-            errors.Add("Summary required.");
-        if (!Enum.IsDefined(o.Kind))
-            errors.Add("Invalid opportunity kind.");
-        if (o.OriginalLanguage is not ("ar" or "en"))
-            errors.Add("Language must be ar or en.");
-        if (
-            o.Kind != OpportunityKind.Job
-            && (o.EmploymentType.Length > 0 || o.ExperienceLevel.Length > 0)
-        )
-            errors.Add("Employment fields belong to jobs only.");
-        if (o.Locations.Length == 0)
-            errors.Add("Location needs review.");
-        var localPlaces = new[]
-        {
-            "غزة",
-            "القدس",
-            "رام الله",
-            "البيرة",
-            "الخليل",
-            "نابلس",
-            "جنين",
-            "بيت لحم",
-            "أريحا",
-            "اريحا",
-            "طولكرم",
-            "قلقيلية",
-            "طوباس",
-            "سلفيت",
-            "فلسطين",
-            "الضفة",
-            "Gaza",
-            "Jerusalem",
-            "Ramallah",
-            "Hebron",
-            "Nablus",
-            "Jenin",
-            "Bethlehem",
-            "Jericho",
-            "Tulkarm",
-            "Qalqilya",
-            "Tubas",
-            "Salfit",
-            "Palestine",
-            "West Bank",
-        };
-        if (
-            !allowUnrecognizedLocation
-            && !localPlaces.Any(place =>
-                o.Locations.Contains(place, StringComparison.OrdinalIgnoreCase)
-            )
-            && !LocationCatalog.Matches(o.Locations, approvedLocations ?? [])
-        )
-            errors.Add("Local geographic scope needs review.");
-        if (
-            o.ApplyUrl.Length > 0
-            && (
-                !Uri.TryCreate(o.ApplyUrl, UriKind.Absolute, out var uri)
-                || uri.Scheme is not ("https" or "mailto" or "tel")
-            )
-        )
-            errors.Add("Invalid application link.");
-        if (sourceContent is not null && !TextEvidence.TitleContains(sourceContent, o.Title))
-            errors.Add("Original title not found in source text.");
-        return errors;
-    }
+    ) =>
+        ExtractionValidator.Validate(o, sourceContent, allowUnrecognizedLocation, approvedLocations);
+
+    public static bool DateEvidenceMatches(string evidence, DateOnly claimed) =>
+        ExtractionValidator.DateEvidenceMatches(evidence, claimed);
+
+    public static bool PotentialDuplicate(Opportunity incoming, Opportunity existing) =>
+        DuplicateMatcher.PotentialDuplicate(incoming, existing);
 
     public async Task ApplyExtractionAsync(
         SourceItem item,
@@ -361,52 +38,51 @@ public class OpportunityService(HiringDb db)
         CancellationToken ct
     )
     {
-        if (result.Opportunities is null)
-            throw new InvalidOperationException("AI returned no opportunity array.");
-        foreach (var value in result.Opportunities)
-        foreach (
-            var property in typeof(ExtractedOpportunity)
-                .GetProperties()
-                .Where(p => p.PropertyType == typeof(string))
-        )
-            if (property.GetValue(value) is null)
-                property.SetValue(value, "");
-        foreach (var opportunity in result.Opportunities)
-            if (opportunity.ChildKey.Length > 100)
-                opportunity.ChildKey = TextRules.Hash(opportunity.ChildKey);
+        ExtractionValidator.EnsureShape(result);
         if (!result.InScope)
         {
             item.Status = ProcessingStatus.NeedsReview;
             item.Error = "AI marked out of scope; verify before excluding.";
+            item.ExtractionPromptVersionId = result.PromptVersionId;
             await db.SaveChangesAsync(ct);
             return;
         }
 
-        if (result.Opportunities.Count is 0 or > 30)
-            throw new InvalidOperationException("Invalid extracted opportunity count.");
-        if (
-            result.Opportunities.Any(x =>
-                string.IsNullOrWhiteSpace(x.ChildKey) || x.ChildKey.Length > 100
-            )
-            || result.Opportunities.Select(x => x.ChildKey).Distinct().Count()
-                != result.Opportunities.Count
-        )
-            throw new InvalidOperationException(
-                "Missing/duplicate stable child keys; review source."
-            );
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var allReviewed = true;
         var reviewReasons = new List<string>();
         var approvedLocations = await LocationCatalog.ApprovedAsync(db, ct);
         var sourceContent = SourceEvidence.ForItem(item);
+        var activeRules = result.PromptVersionId is { } versionId
+            ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
+            : null;
+        var aliases = await DuplicateMatcher.AliasesAsync(db, ct);
+        // One query for this item's links and one for their known dates, not one per child/date.
+        var links = await db
+            .SourceLinks.Include(x => x.Opportunity)
+            .Where(x => x.SourceItemId == item.Id)
+            .ToListAsync(ct);
+        var linkByKey = links.ToDictionary(x => x.ChildKey, StringComparer.OrdinalIgnoreCase);
+        var ownIds = links.Select(x => x.OpportunityId).Distinct().ToArray();
+        var knownDates = (
+            await db
+                .OpportunityDates.AsNoTracking()
+                .Where(x => ownIds.Contains(x.OpportunityId))
+                .Select(x => new
+                {
+                    x.OpportunityId,
+                    x.Kind,
+                    x.EvidenceHash,
+                })
+                .ToListAsync(ct)
+        )
+            .Select(x => (x.OpportunityId, x.Kind, x.EvidenceHash))
+            .ToHashSet();
+        var nearMatches = new List<(Opportunity, long, double, string)>();
+        var now = DateTimeOffset.UtcNow;
         foreach (var e in result.Opportunities)
         {
-            var link = await db
-                .SourceLinks.Include(x => x.Opportunity)
-                .SingleOrDefaultAsync(
-                    x => x.SourceItemId == item.Id && x.ChildKey == e.ChildKey,
-                    ct
-                );
+            linkByKey.TryGetValue(e.ChildKey, out var link);
             if (
                 link is not null
                 && PromptWorkflow.Protected(link.Opportunity, result.PromptVersionId)
@@ -432,7 +108,7 @@ public class OpportunityService(HiringDb db)
                 Deadline = e.Deadline,
                 AttachmentsJson = item.AttachmentsJson,
             };
-            candidate.ApplyUrl = ResolveApplyUrl(e.ApplyUrl, item);
+            candidate.ApplyUrl = ExtractionValidator.ResolveApplyUrl(e.ApplyUrl, item);
             if (
                 item.Source.Connector == ConnectorKind.PalCareer
                 && result.Opportunities.Count == 1
@@ -465,7 +141,7 @@ public class OpportunityService(HiringDb db)
                 );
                 candidate.Deadline = null;
             }
-            var errors = Validate(
+            var errors = ExtractionValidator.Validate(
                 candidate,
                 sourceContent,
                 allowUnrecognizedLocation: e.IsInPalestine == true,
@@ -481,9 +157,6 @@ public class OpportunityService(HiringDb db)
                 errors.Add(
                     "PDF OCR transcription requires visual verification of the original page before publication."
                 );
-            var activeRules = result.PromptVersionId is { } versionId
-                ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
-                : null;
             if (activeRules is not null)
             {
                 if (!activeRules.AllowedKinds.Split(',').Contains(candidate.Kind.ToString()))
@@ -524,7 +197,7 @@ public class OpportunityService(HiringDb db)
                 errors.Add("Deadline evidence missing.");
             if (
                 candidate.Deadline is { } claimed
-                && !DateEvidenceMatches(e.DeadlineEvidence, claimed)
+                && !ExtractionValidator.DateEvidenceMatches(e.DeadlineEvidence, claimed)
             )
                 errors.Add("Deadline quotation does not independently confirm the date.");
             var relevantReason = SourceEvidence.RelevantReviewReason(e.ReviewReason);
@@ -535,12 +208,29 @@ public class OpportunityService(HiringDb db)
                     $"{candidate.Kind}|{candidate.Title}|{candidate.Organization}|{candidate.Locations}|{candidate.ReferenceNumber}|{candidate.Deadline}"
                 )
             );
-            var exact = await db.Opportunities.FirstOrDefaultAsync(
-                x =>
-                    x.Fingerprint == candidate.Fingerprint
-                    && x.Id != (link == null ? 0 : link.OpportunityId),
+            var organizationKeys = aliases.Keys(TextRules.OrganizationKey(candidate.Organization));
+            // Records of this same announcement (other lots/roles) are never its duplicates.
+            var excluded = ownIds.Append(link?.OpportunityId ?? 0).Distinct().ToArray();
+            var reference = await DuplicateMatcher.ExactReferenceAsync(
+                db,
+                candidate,
+                organizationKeys,
+                excluded,
                 ct
             );
+            var exact =
+                reference.Exact
+                ?? (
+                    reference.Ambiguous.Count > 0
+                        ? null
+                        : await db.Opportunities.FirstOrDefaultAsync(
+                            x =>
+                                x.Fingerprint == candidate.Fingerprint
+                                && x.Status != PublicationStatus.Hidden
+                                && !excluded.Contains(x.Id),
+                            ct
+                        )
+                );
             // Only deterministic identifiers justify automatic cross-source merging.
             if (
                 exact is not null
@@ -561,22 +251,32 @@ public class OpportunityService(HiringDb db)
                 else
                     link.OpportunityId = exact.Id;
                 if (!PromptWorkflow.Protected(exact, result.PromptVersionId))
-                    exact.LastVerifiedAt = DateTimeOffset.UtcNow;
+                    exact.LastVerifiedAt = now;
                 continue;
             }
 
+            var peers = new List<(long Id, double Score, string Reason)>();
             if (exact is not null)
+            {
                 errors.Add(
                     "Possible duplicate without a unique reference; administrator review required."
                 );
+                peers.Add((exact.Id, 1, "Same fingerprint or reference; validation needs review."));
+            }
+            foreach (var ambiguous in reference.Ambiguous)
+                peers.Add((ambiguous, 1, "Same organisation and reference number on several records."));
+            if (reference.Ambiguous.Count > 0)
+                errors.Add(
+                    "Reference number matches several records; compare and merge in administration."
+                );
             if (exact is null && link is null)
             {
-                var normalizedOrganization = TextRules.OrganizationKey(candidate.Organization);
-                var peers = await db
+                var similar = await db
                     .Opportunities.AsNoTracking()
                     .Where(x =>
                         x.Kind == candidate.Kind
-                        && x.NormalizedOrganization == normalizedOrganization
+                        && organizationKeys.Contains(x.NormalizedOrganization)
+                        && !excluded.Contains(x.Id)
                         && (
                             x.Status == PublicationStatus.Published
                             || x.Status == PublicationStatus.NeedsReview
@@ -586,10 +286,13 @@ public class OpportunityService(HiringDb db)
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(100)
                     .ToListAsync(ct);
-                if (peers.Any(x => PotentialDuplicate(candidate, x)))
+                if (similar.Any(x => DuplicateMatcher.PotentialDuplicate(candidate, x, sameOrganization: true)))
                     errors.Add(
                         "Possible repost or similar role across sources; compare and merge in administration if identical."
                     );
+                foreach (var peer in similar)
+                    if (DuplicateMatcher.NearMatch(candidate, peer) is { } match)
+                        peers.Add((peer.Id, match.Score, match.Reason));
             }
 
             var target = link?.Opportunity;
@@ -605,6 +308,12 @@ public class OpportunityService(HiringDb db)
                         ChildKey = e.ChildKey,
                     }
                 );
+            }
+            else if (target.IsMergeTarget)
+            {
+                // A merged record keeps its reviewed text; a verified deadline extension still applies.
+                if (candidate.Deadline is not null && errors.Count == 0)
+                    target.Deadline = candidate.Deadline;
             }
             else
             {
@@ -628,6 +337,8 @@ public class OpportunityService(HiringDb db)
                 target.Fingerprint = candidate.Fingerprint;
                 target.AttachmentsJson = candidate.AttachmentsJson;
             }
+            foreach (var peer in peers)
+                nearMatches.Add((target, peer.Id, peer.Score, peer.Reason));
 
             target.PromptVersionId = result.PromptVersionId;
             foreach (var date in checkedDates.Dates)
@@ -635,55 +346,58 @@ public class OpportunityService(HiringDb db)
                 var evidenceHash = TextRules.Hash(
                     $"{date.Kind}|{date.Date:yyyy-MM-dd}|{date.Label}|{date.Evidence}"
                 );
-                var exists =
-                    target.Id != 0
-                    && await db.OpportunityDates.AnyAsync(
-                        x =>
-                            x.OpportunityId == target.Id
-                            && x.Kind == date.Kind
-                            && x.EvidenceHash == evidenceHash,
-                        ct
-                    );
-                if (!exists)
-                    db.OpportunityDates.Add(
-                        new()
-                        {
-                            Opportunity = target,
-                            SourceItemId = item.Id,
-                            PromptVersionId = result.PromptVersionId,
-                            Kind = date.Kind,
-                            Date = date.Date,
-                            Evidence = date.Evidence,
-                            Label = date.Label.Truncate(300),
-                            EvidenceHash = evidenceHash,
-                            IsExtension =
-                                date.Kind == OpportunityDateKind.Deadline && e.DeadlineIsExtension,
-                        }
-                    );
+                if (target.Id != 0 && !knownDates.Add((target.Id, date.Kind, evidenceHash)))
+                    continue;
+                db.OpportunityDates.Add(
+                    new()
+                    {
+                        Opportunity = target,
+                        SourceItemId = item.Id,
+                        PromptVersionId = result.PromptVersionId,
+                        Kind = date.Kind,
+                        Date = date.Date,
+                        Evidence = date.Evidence,
+                        Label = date.Label.Truncate(300),
+                        EvidenceHash = evidenceHash,
+                        IsExtension =
+                            date.Kind == OpportunityDateKind.Deadline && e.DeadlineIsExtension,
+                    }
+                );
                 if (date.Kind == OpportunityDateKind.Publication)
                     target.SourcePublishedAt = DateEvidenceRules.AtPalestineMidnight(date.Date);
                 if (date.Kind == OpportunityDateKind.Modification)
                     target.SourceModifiedAt = DateEvidenceRules.AtPalestineMidnight(date.Date);
             }
-            target.LastVerifiedAt = DateTimeOffset.UtcNow;
-            target.ReviewReason = string.Join(" ", errors);
-            target.Status =
-                errors.Count > 0 ? PublicationStatus.NeedsReview
-                : target.Deadline is { } deadline && deadline < TextRules.PalestineToday()
-                    ? PublicationStatus.Archived
-                : PublicationStatus.Published;
-            if (target.Status == PublicationStatus.Archived)
-                target.ClosureEvidence = "Published source deadline has passed.";
+            target.LastVerifiedAt = now;
+            var expired = target.Deadline is { } deadline && deadline < TextRules.PalestineToday();
+            if (target.IsMergeTarget)
+            {
+                // Problems of one merged source are reported on its item, not on the merged record.
+                if (expired && target.Status == PublicationStatus.Published)
+                {
+                    target.Status = PublicationStatus.Archived;
+                    target.ClosureEvidence = "Published source deadline has passed.";
+                }
+            }
+            else
+            {
+                target.ReviewReason = string.Join(" ", errors);
+                target.Status =
+                    errors.Count > 0 ? PublicationStatus.NeedsReview
+                    : expired ? PublicationStatus.Archived
+                    : PublicationStatus.Published;
+                if (target.Status == PublicationStatus.Archived)
+                    target.ClosureEvidence = "Published source deadline has passed.";
+            }
             if (errors.Count > 0)
                 allReviewed = false;
             reviewReasons.AddRange(errors);
         }
 
-        var currentKeys = result.Opportunities.Select(x => x.ChildKey).ToArray();
-        var removed = await db
-            .SourceLinks.Include(x => x.Opportunity)
-            .Where(x => x.SourceItemId == item.Id && !currentKeys.Contains(x.ChildKey))
-            .ToListAsync(ct);
+        var currentKeys = result
+            .Opportunities.Select(x => x.ChildKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removed = links.Where(x => !currentKeys.Contains(x.ChildKey)).ToList();
         foreach (
             var link in removed.Where(x =>
                 !PromptWorkflow.Protected(x.Opportunity, result.PromptVersionId)
@@ -713,138 +427,12 @@ public class OpportunityService(HiringDb db)
                 .Truncate(1800);
         item.ExtractionJson = JsonSerializer.Serialize(result, AiExtractor.JsonOptions);
         await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-    }
-
-    public static bool DateEvidenceMatches(string evidence, DateOnly claimed)
-    {
-        evidence = string.Concat(
-            TextEvidence
-                .Normalize(evidence)
-                .Select(c =>
-                    char.GetUnicodeCategory(c)
-                    == System.Globalization.UnicodeCategory.DecimalDigitNumber
-                        ? ((int)char.GetNumericValue(c)).ToString(
-                            System.Globalization.CultureInfo.InvariantCulture
-                        )
-                        : c.ToString()
-                )
-        );
-        foreach (
-            System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
-                evidence,
-                @"(?<![\d/\-])(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})(?![\d/\-])"
-            )
-        )
-            if (
-                DateOnly.TryParseExact(
-                    match.Value,
-                    new[]
-                    {
-                        "yyyy-MM-dd",
-                        "yyyy-M-d",
-                        "yyyy/MM/dd",
-                        "yyyy/M/d",
-                        "dd/MM/yyyy",
-                        "d/M/yyyy",
-                        "dd-MM-yyyy",
-                        "d-M-yyyy",
-                    },
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.None,
-                    out var parsed
-                )
-                && parsed == claimed
-            )
-                return true;
-        // Extract the date itself: the evidence can include a weekday, deadline label and time.
-        string[] monthNames =
-        [
-            "January|Jan|يناير|كانون الثاني",
-            "February|Feb|فبراير|شباط",
-            "March|Mar|مارس|اذار",
-            "April|Apr|ابريل|نيسان",
-            "May|مايو|ايار",
-            "June|Jun|يونيو|حزيران",
-            "July|Jul|يوليو|تموز",
-            "August|Aug|اغسطس|اب",
-            "September|Sept|Sep|سبتمبر|ايلول",
-            "October|Oct|اكتوبر|تشرين الاول",
-            "November|Nov|نوفمبر|تشرين الثاني",
-            "December|Dec|ديسمبر|كانون الاول",
-        ];
-        for (var month = 1; month <= monthNames.Length; month++)
+        if (nearMatches.Count > 0)
         {
-            var name = "(?:" + monthNames[month - 1] + ")";
-            var pattern =
-                @"\b(?:(?<day>\d{1,2})\s+"
-                + name
-                + @"\.?[\s,،]+(?<year>\d{4})|"
-                + name
-                + @"\.?\s+(?<day>\d{1,2})(?:st|nd|rd|th)?[\s,،]+(?<year>\d{4}))\b";
-            foreach (
-                System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
-                    evidence,
-                    pattern,
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
-                )
-            )
-                if (
-                    int.Parse(
-                        match.Groups["day"].Value,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ) == claimed.Day
-                    && int.Parse(
-                        match.Groups["year"].Value,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ) == claimed.Year
-                    && month == claimed.Month
-                )
-                    return true;
+            await DuplicateMatcher.RecordAsync(db, nearMatches, ct);
+            await db.SaveChangesAsync(ct);
         }
-
-        foreach (
-            var culture in new[]
-            {
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.CultureInfo.GetCultureInfo("ar-PS"),
-            }
-        )
-            if (
-                DateOnly.TryParse(
-                    evidence,
-                    culture,
-                    System.Globalization.DateTimeStyles.AllowWhiteSpaces,
-                    out var parsed
-                )
-                && parsed == claimed
-            )
-                return true;
-        return false;
-    }
-
-    public static bool PotentialDuplicate(Opportunity incoming, Opportunity existing)
-    {
-        if (
-            incoming.Kind != existing.Kind
-            || TextRules.Normalize(incoming.Organization)
-                != TextRules.Normalize(existing.Organization)
-        )
-            return false;
-        if (incoming.ReferenceNumber.Length > 0 && existing.ReferenceNumber.Length > 0)
-            return TextRules.Normalize(incoming.ReferenceNumber)
-                == TextRules.Normalize(existing.ReferenceNumber);
-        var a = TextRules
-            .Normalize(incoming.Title)
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet();
-        var b = TextRules
-            .Normalize(existing.Title)
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet();
-        if (a.Count == 0 || b.Count == 0)
-            return false;
-        return (double)a.Intersect(b).Count() / a.Union(b).Count() >= 0.6;
+        await tx.CommitAsync(ct);
     }
 
     public async Task ArchiveExpiredAsync(CancellationToken ct, int? sourceId = null)
@@ -879,14 +467,19 @@ public class CollectionPipeline(
     IServiceScopeFactory scopes
 )
 {
+    private static int zoneWarningLogged;
+
     public async Task TickAsync(CancellationToken ct)
     {
         await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!);
         if (!await gate.AcquireAsync(ct))
             return;
-        var activePrompt = await PromptWorkflow.ActivateAsync(db, ct);
-        await RetentionCleanup.RunAsync(db, config, ct);
-        var now = DateTimeOffset.UtcNow;
+        _ = TextRules.PalestineTimeZone; // resolve once so a fallback warning is known
+        if (
+            TextRules.PalestineTimeZoneWarning is { } zoneWarning
+            && Interlocked.Exchange(ref zoneWarningLogged, 1) == 0
+        )
+            log.LogWarning("{Warning}", zoneWarning);
         var heartbeat = await db.Heartbeats.OrderBy(x => x.Id).FirstOrDefaultAsync(ct);
         if (heartbeat is null)
         {
@@ -894,9 +487,49 @@ public class CollectionPipeline(
             db.Heartbeats.Add(heartbeat);
         }
 
-        heartbeat.At = now;
+        heartbeat.At = DateTimeOffset.UtcNow;
         heartbeat.State = "Running";
         await db.SaveChangesAsync(ct);
+        var finalState = "Failed";
+        try
+        {
+            await RunAsync(gate, ct);
+            finalState = "Idle";
+        }
+        finally
+        {
+            // A failed save must never leave the heartbeat claiming "Running".
+            await FinishHeartbeatAsync(heartbeat.Id, finalState);
+        }
+    }
+
+    private async Task FinishHeartbeatAsync(int id, string state)
+    {
+        try
+        {
+            using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await using var scope = scopes.CreateAsyncScope();
+            var heartbeatDb = scope.ServiceProvider.GetRequiredService<HiringDb>();
+            await heartbeatDb
+                .Heartbeats.Where(x => x.Id == id)
+                .ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(x => x.At, DateTimeOffset.UtcNow)
+                            .SetProperty(x => x.State, state),
+                    budget.Token
+                );
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning("Heartbeat update failed ({Type}).", ex.GetType().Name);
+        }
+    }
+
+    private async Task RunAsync(SqlRunLock gate, CancellationToken ct)
+    {
+        var activePrompt = await PromptWorkflow.ActivateAsync(db, ct);
+        await RetentionCleanup.RunAsync(db, config, ct);
+        var now = DateTimeOffset.UtcNow;
         var requests = db.Set<SourceCollectionRequest>();
         await requests
             .Where(x =>
@@ -938,331 +571,9 @@ public class CollectionPipeline(
                 .Take(3)
                 .ToListAsync(ct);
         foreach (var source in selectedSources)
-        {
-            await gate.VerifyAsync(ct);
-            var run = new ScrapeRun { SourceId = source.Id };
-            db.Runs.Add(run);
-            await db.SaveChangesAsync(ct);
-            try
-            {
-                var configurationHash = TextRules.Hash(
-                    $"{source.Connector}|{source.Url}|{source.ConfigurationJson}"
-                );
-                var checkpoint = await db.DiscoveryCheckpoints.SingleOrDefaultAsync(
-                    x => x.SourceId == source.Id,
-                    ct
-                );
-                if (checkpoint is null)
-                {
-                    checkpoint = new()
-                    {
-                        SourceId = source.Id,
-                        ConfigurationHash = configurationHash,
-                        NextUrl = source.Url,
-                    };
-                    db.DiscoveryCheckpoints.Add(checkpoint);
-                    await db.SaveChangesAsync(ct);
-                }
-                else if (checkpoint.ConfigurationHash != configurationHash)
-                {
-                    // Configuration changes explicitly start a fresh cursor; saved items remain intact.
-                    checkpoint.ConfigurationHash = configurationHash;
-                    checkpoint.NextUrl = source.Url;
-                    checkpoint.CompletedPages = checkpoint.ReplayClicks = checkpoint.Found = 0;
-                    checkpoint.Completed = false;
-                    checkpoint.VisitedUrlsJson = "[]";
-                    await db.SaveChangesAsync(ct);
-                }
-                run.Found = checkpoint.Found;
-                await browser.DiscoverResumableAsync(
-                    source,
-                    checkpoint,
-                    async (batch, token) =>
-                    {
-                        await gate.VerifyAsync(token);
-                        // Keep failed batch tracking isolated: a later error save must never commit a partial page.
-                        await using var pageScope = scopes.CreateAsyncScope();
-                        var pageDb = pageScope.ServiceProvider.GetRequiredService<HiringDb>();
-                        var savedCheckpoint = await pageDb.DiscoveryCheckpoints.SingleAsync(
-                            x => x.SourceId == source.Id,
-                            token
-                        );
-                        var savedRun = await pageDb.Runs.SingleAsync(x => x.Id == run.Id, token);
-                        await using var pageTransaction =
-                            await pageDb.Database.BeginTransactionAsync(token);
-                        foreach (var entry in batch.Items.DistinctBy(x => x.Id))
-                        {
-                            var item = await pageDb.SourceItems.SingleOrDefaultAsync(
-                                x => x.SourceId == source.Id && x.ExternalId == entry.Id,
-                                token
-                            );
-                            if (item is null)
-                            {
-                                pageDb.SourceItems.Add(
-                                    new()
-                                    {
-                                        SourceId = source.Id,
-                                        ExternalId = entry.Id,
-                                        Url = entry.Url,
-                                        Status = ProcessingStatus.Discovered,
-                                        RequestedPromptVersionId = activePrompt.Id,
-                                    }
-                                );
-                                savedRun.Changed++;
-                            }
-                            else
-                            {
-                                item.LastSeenAt = DateTimeOffset.UtcNow;
-                                if (item.Status == ProcessingStatus.Published)
-                                {
-                                    item.Status = ProcessingStatus.Discovered;
-                                    item.RetryAt = null;
-                                }
-                            }
-                        }
-                        var visited =
-                            JsonSerializer.Deserialize<List<string>>(
-                                savedCheckpoint.VisitedUrlsJson
-                            ) ?? [];
-                        if (
-                            source.Connector == ConnectorKind.Automatic
-                            && savedCheckpoint.NextUrl.Length > 0
-                        )
-                            visited.Add(savedCheckpoint.NextUrl);
-                        savedCheckpoint.VisitedUrlsJson = JsonSerializer.Serialize(
-                            visited.Distinct()
-                        );
-                        savedCheckpoint.CompletedPages = batch.CompletedPages;
-                        savedCheckpoint.NextUrl = batch.NextUrl ?? "";
-                        savedCheckpoint.ReplayClicks = batch.ReplayClicks;
-                        savedCheckpoint.Completed = batch.NextUrl is null;
-                        savedCheckpoint.Found += batch.Items.Count;
-                        savedCheckpoint.UpdatedAt = DateTimeOffset.UtcNow;
-                        savedRun.Found = savedCheckpoint.Found;
-                        await pageDb.SaveChangesAsync(token);
-                        await pageTransaction.CommitAsync(token);
-                        await db.Entry(checkpoint).ReloadAsync(token);
-                        await db.Entry(run).ReloadAsync(token);
-                    },
-                    ct
-                );
-                db.DiscoveryCheckpoints.Remove(checkpoint);
-                await db.Entry(source).ReloadAsync(ct);
-                var finished = DateTimeOffset.UtcNow;
-                source.LastSuccessAt = finished;
-                source.LastError = "";
-                source.CollectionRetryAt = null;
-                source.ScheduleAnchorDate ??= SourceSchedule.LocalDate(finished);
-                if (manual is null || source.NextDueAt <= finished)
-                    source.NextDueAt = SourceSchedule.NextAfter(source, finished);
-                if (manual is not null)
-                    manual.DiscoveryFinished = true;
-                run.Status = "Success";
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                if (ex is CollectorDiagnosticException detail)
-                    db.Audit.Add(
-                        new()
-                        {
-                            Actor = "Collector",
-                            Action = "Collector.Diagnostic",
-                            Detail = CollectorDiagnosticFiles.AuditDetail(detail.Diagnostic),
-                        }
-                    );
-                await db.Entry(source).ReloadAsync(ct);
-                source.LastError = SafeError(ex);
-                source.CollectionRetryAt = DateTimeOffset.UtcNow.AddMinutes(30);
-                run.Status = "Failed";
-                run.Error = source.LastError;
-                if (manual is not null)
-                {
-                    manual.Status = "Failed";
-                    manual.Error = source.LastError.Truncate(1000);
-                    manual.FinishedAt = DateTimeOffset.UtcNow;
-                }
+            await DiscoverSourceAsync(gate, source, manual, activePrompt, ct);
 
-                log.LogWarning(
-                    "Source {Id} collection failed: {Type}",
-                    source.Id,
-                    ex.GetType().Name
-                );
-            }
-
-            run.FinishedAt = DateTimeOffset.UtcNow;
-            await gate.VerifyAsync(ct);
-            await db.SaveChangesAsync(ct);
-        }
-
-        var pendingQuery = db
-            .SourceItems.AsNoTracking()
-            .Where(x =>
-                x.Source.Enabled
-                && x.Source.UsageApproved
-                && (
-                    x.Status == ProcessingStatus.Discovered
-                    || x.Status == ProcessingStatus.AwaitingAi
-                    || x.Status == ProcessingStatus.Retry
-                )
-                && (x.RetryAt == null || x.RetryAt <= now)
-            );
-        if (manual is not null)
-            pendingQuery = pendingQuery.Where(x => x.SourceId == manual.SourceId);
-        var pending = await pendingQuery
-            .OrderBy(x => x.FirstSeenAt)
-            .Select(x => x.Id)
-            .Take(15)
-            .ToListAsync(ct);
-        foreach (var itemId in pending)
-        {
-            await gate.VerifyAsync(ct);
-            await using var scope = scopes.CreateAsyncScope();
-            var itemDb = scope.ServiceProvider.GetRequiredService<HiringDb>();
-            var item = await itemDb
-                .SourceItems.Include(x => x.Source)
-                .SingleAsync(x => x.Id == itemId, ct);
-            var itemBrowser = scope.ServiceProvider.GetRequiredService<BrowserCollector>();
-            var ai = scope.ServiceProvider.GetRequiredService<AiExtractor>();
-            var processor = scope.ServiceProvider.GetRequiredService<OpportunityService>();
-            try
-            {
-                var linked = await itemDb
-                    .SourceLinks.AsNoTracking()
-                    .Include(x => x.Opportunity)
-                    .Where(x => x.SourceItemId == item.Id)
-                    .ToListAsync(ct);
-                if (
-                    linked.Count > 0
-                    && linked.All(x => PromptWorkflow.Protected(x.Opportunity, activePrompt.Id))
-                )
-                {
-                    item.Status = ProcessingStatus.Published;
-                    item.RetryAt = null;
-                    await itemDb.SaveChangesAsync(ct);
-                    continue;
-                }
-                if (item.Status != ProcessingStatus.AwaitingAi)
-                {
-                    var bundle = await itemBrowser.FetchBundleAsync(item.Source, item.Url, ct);
-                    var content = bundle.Text;
-                    var hash = TextRules.Hash(content);
-                    await gate.VerifyAsync(ct);
-                    if (
-                        item.ContentHash == hash
-                        && item.ExtractionJson.Length > 0
-                        && item.ExtractionPromptVersionId == activePrompt.Id
-                    )
-                    {
-                        var saved =
-                            JsonSerializer.Deserialize<ExtractionResult>(
-                                item.ExtractionJson,
-                                AiExtractor.JsonOptions
-                            )
-                            ?? throw new ContentNeedsReviewException(
-                                "Saved extraction is unreadable; original text retained for review."
-                            );
-                        saved.PromptVersionId = item.ExtractionPromptVersionId;
-                        await processor.ApplyExtractionAsync(item, saved, ct);
-                        item.RetryAt = null;
-                        await itemDb.SaveChangesAsync(ct);
-                        continue;
-                    }
-
-                    if (item.Content.Length > 0)
-                        itemDb.Revisions.Add(
-                            new()
-                            {
-                                SourceItemId = item.Id,
-                                ContentHash = item.ContentHash,
-                                Content = item.Content,
-                            }
-                        );
-                    item.Content = content;
-                    item.ContentHash = hash;
-                    item.AttachmentsJson = JsonSerializer.Serialize(bundle.Attachments);
-                    item.Status = ProcessingStatus.AwaitingAi;
-                    item.ExtractionJson = "";
-                    await itemDb.SaveChangesAsync(ct);
-                }
-
-                var result = await ai.ExtractAsync(
-                    SourceEvidence.ForItem(item),
-                    ct,
-                    new AiExecution(activePrompt, item.Id)
-                );
-                await gate.VerifyAsync(ct);
-                item.ExtractionJson = JsonSerializer.Serialize(result, AiExtractor.JsonOptions);
-                await itemDb.SaveChangesAsync(ct);
-                await processor.ApplyExtractionAsync(item, result, ct);
-                item.RetryAt = null;
-            }
-            catch (AiUnavailableException ex)
-            {
-                item.Status = ProcessingStatus.AwaitingAi;
-                item.Error = ex.Message;
-                item.RetryAt = DateTimeOffset.UtcNow.AddHours(6);
-            }
-            catch (AiTransientException ex)
-            {
-                item.Status = ProcessingStatus.AwaitingAi;
-                item.Error = ex.Message;
-                item.RetryAt = DateTimeOffset.UtcNow.AddMinutes(15);
-            }
-            catch (CollectorDiagnosticException ex)
-            {
-                itemDb.ChangeTracker.Clear();
-                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
-                itemDb.Audit.Add(
-                    new()
-                    {
-                        Actor = "Collector",
-                        Action = "Collector.Diagnostic",
-                        Detail = CollectorDiagnosticFiles.AuditDetail(ex.Diagnostic, itemId),
-                    }
-                );
-                if (ex.InnerException is ContentNeedsReviewException)
-                    item.Status = ProcessingStatus.NeedsReview;
-                else
-                {
-                    item.Attempts++;
-                    item.Status =
-                        item.Attempts >= 5 ? ProcessingStatus.NeedsReview : ProcessingStatus.Retry;
-                    item.RetryAt = DateTimeOffset.UtcNow.AddMinutes(
-                        Math.Min(240, 10 * item.Attempts)
-                    );
-                }
-
-                item.Error = SafeError(ex);
-            }
-            catch (ContentNeedsReviewException ex)
-            {
-                itemDb.ChangeTracker.Clear();
-                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
-                item.Status = ProcessingStatus.NeedsReview;
-                item.Error = ex.Message;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                itemDb.ChangeTracker.Clear();
-                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
-                item.Attempts++;
-                item.Status =
-                    item.Attempts >= 5 ? ProcessingStatus.NeedsReview : ProcessingStatus.Retry;
-                item.RetryAt = DateTimeOffset.UtcNow.AddMinutes(Math.Min(240, 10 * item.Attempts));
-                item.Error = SafeError(ex);
-            }
-
-            await gate.VerifyAsync(ct);
-            await itemDb.SaveChangesAsync(ct);
-        }
+        await ProcessPendingAsync(gate, manual, activePrompt, ct);
 
         if (manual is not null && manual.Status != "Failed")
         {
@@ -1295,9 +606,489 @@ public class CollectionPipeline(
         }
 
         await opportunities.ArchiveExpiredAsync(ct, manual?.SourceId);
-        heartbeat.At = DateTimeOffset.UtcNow;
-        heartbeat.State = "Idle";
         await db.SaveChangesAsync(ct);
+    }
+
+    private async Task DiscoverSourceAsync(
+        SqlRunLock gate,
+        Source source,
+        SourceCollectionRequest? manual,
+        PromptVersion activePrompt,
+        CancellationToken ct
+    )
+    {
+        await gate.VerifyAsync(ct);
+        var run = new ScrapeRun { SourceId = source.Id };
+        db.Runs.Add(run);
+        await db.SaveChangesAsync(ct);
+        var succeeded = false;
+        var reverifyBefore = DateTimeOffset.UtcNow - SourceHealth.ReverifyInterval(config);
+        try
+        {
+            var configurationHash = TextRules.Hash(
+                $"{source.Connector}|{source.Url}|{source.ConfigurationJson}"
+            );
+            var checkpoint = await db.DiscoveryCheckpoints.SingleOrDefaultAsync(
+                x => x.SourceId == source.Id,
+                ct
+            );
+            if (checkpoint is null)
+            {
+                checkpoint = new()
+                {
+                    SourceId = source.Id,
+                    ConfigurationHash = configurationHash,
+                    NextUrl = source.Url,
+                };
+                db.DiscoveryCheckpoints.Add(checkpoint);
+                await db.SaveChangesAsync(ct);
+            }
+            else if (checkpoint.ConfigurationHash != configurationHash)
+            {
+                // Configuration changes explicitly start a fresh cursor; saved items remain intact.
+                checkpoint.ConfigurationHash = configurationHash;
+                checkpoint.NextUrl = source.Url;
+                checkpoint.CompletedPages = checkpoint.ReplayClicks = checkpoint.Found = 0;
+                checkpoint.Completed = false;
+                checkpoint.VisitedUrlsJson = "[]";
+                await db.SaveChangesAsync(ct);
+            }
+            run.Found = checkpoint.Found;
+            await browser.DiscoverResumableAsync(
+                source,
+                checkpoint,
+                async (batch, token) =>
+                {
+                    await gate.VerifyAsync(token);
+                    // Keep failed batch tracking isolated: a later error save must never commit a partial page.
+                    await using var pageScope = scopes.CreateAsyncScope();
+                    var pageDb = pageScope.ServiceProvider.GetRequiredService<HiringDb>();
+                    var savedCheckpoint = await pageDb.DiscoveryCheckpoints.SingleAsync(
+                        x => x.SourceId == source.Id,
+                        token
+                    );
+                    var savedRun = await pageDb.Runs.SingleAsync(x => x.Id == run.Id, token);
+                    await using var pageTransaction =
+                        await pageDb.Database.BeginTransactionAsync(token);
+                    await SaveDiscoveredAsync(
+                        pageDb,
+                        source.Id,
+                        batch,
+                        savedRun,
+                        activePrompt.Id,
+                        reverifyBefore,
+                        token
+                    );
+                    var visited =
+                        JsonSerializer.Deserialize<List<string>>(
+                            savedCheckpoint.VisitedUrlsJson
+                        ) ?? [];
+                    if (
+                        source.Connector == ConnectorKind.Automatic
+                        && savedCheckpoint.NextUrl.Length > 0
+                    )
+                        visited.Add(savedCheckpoint.NextUrl);
+                    savedCheckpoint.VisitedUrlsJson = JsonSerializer.Serialize(
+                        visited.Distinct()
+                    );
+                    savedCheckpoint.CompletedPages = batch.CompletedPages;
+                    savedCheckpoint.NextUrl = batch.NextUrl ?? "";
+                    savedCheckpoint.ReplayClicks = batch.ReplayClicks;
+                    savedCheckpoint.Completed = batch.NextUrl is null;
+                    savedCheckpoint.Found += batch.Items.Count;
+                    savedCheckpoint.UpdatedAt = DateTimeOffset.UtcNow;
+                    savedRun.Found = savedCheckpoint.Found;
+                    await pageDb.SaveChangesAsync(token);
+                    await pageTransaction.CommitAsync(token);
+                    await db.Entry(checkpoint).ReloadAsync(token);
+                    await db.Entry(run).ReloadAsync(token);
+                },
+                ct
+            );
+            db.DiscoveryCheckpoints.Remove(checkpoint);
+            await db.Entry(source).ReloadAsync(ct);
+            var finished = DateTimeOffset.UtcNow;
+            source.LastSuccessAt = finished;
+            source.LastError = "";
+            source.CollectionRetryAt = null;
+            await SourceHealth.RecordSuccessAsync(db, source, run, config, ct);
+            source.ScheduleAnchorDate ??= SourceSchedule.LocalDate(finished);
+            if (manual is null || source.NextDueAt <= finished)
+                source.NextDueAt = SourceSchedule.NextAfter(source, finished);
+            if (manual is not null)
+                manual.DiscoveryFinished = true;
+            run.Status = "Success";
+            succeeded = true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            if (ex is CollectorDiagnosticException detail)
+                db.Audit.Add(
+                    new()
+                    {
+                        Actor = "Collector",
+                        Action = "Collector.Diagnostic",
+                        Detail = CollectorDiagnosticFiles.AuditDetail(detail.Diagnostic),
+                    }
+                );
+            await db.Entry(source).ReloadAsync(ct);
+            source.LastError = SafeError(ex);
+            // Exponential backoff (30 min doubling, 24 h cap); flagged for review after N failures.
+            SourceHealth.RecordFailure(source, config, DateTimeOffset.UtcNow);
+            run.Status = "Failed";
+            run.Error = source.LastError;
+            if (manual is not null)
+            {
+                manual.Status = "Failed";
+                manual.Error = source.LastError.Truncate(1000);
+                manual.FinishedAt = DateTimeOffset.UtcNow;
+            }
+
+            log.LogWarning(
+                "Source {Id} collection failed ({Failures} in a row): {Type}",
+                source.Id,
+                source.ConsecutiveFailures,
+                ex.GetType().Name
+            );
+        }
+
+        run.FinishedAt = DateTimeOffset.UtcNow;
+        await gate.VerifyAsync(ct);
+        await db.SaveChangesAsync(ct);
+        if (!succeeded)
+            return;
+        try
+        {
+            await using var healthScope = scopes.CreateAsyncScope();
+            var flagged = await SourceHealth.FlagUnseenAsync(
+                healthScope.ServiceProvider.GetRequiredService<HiringDb>(),
+                source,
+                config,
+                ct
+            );
+            if (flagged > 0)
+                log.LogInformation(
+                    "Source {Id}: {Count} published records not seen in the listing moved to review.",
+                    source.Id,
+                    flagged
+                );
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            log.LogWarning("Source {Id} listing check failed: {Type}", source.Id, ex.GetType().Name);
+        }
+    }
+
+    private static async Task SaveDiscoveredAsync(
+        HiringDb pageDb,
+        int sourceId,
+        DiscoveryBatch batch,
+        ScrapeRun savedRun,
+        int activePromptId,
+        DateTimeOffset reverifyBefore,
+        CancellationToken token
+    )
+    {
+        var entries = batch.Items.DistinctBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
+        var ids = entries.Select(x => x.Id).ToArray();
+        // One lookup per page instead of one query per listing row.
+        var existing = await pageDb
+            .SourceItems.Where(x => x.SourceId == sourceId && ids.Contains(x.ExternalId))
+            .ToDictionaryAsync(x => x.ExternalId, StringComparer.OrdinalIgnoreCase, token);
+        var seen = DateTimeOffset.UtcNow;
+        foreach (var entry in entries)
+        {
+            if (!existing.TryGetValue(entry.Id, out var item))
+            {
+                pageDb.SourceItems.Add(
+                    new()
+                    {
+                        SourceId = sourceId,
+                        ExternalId = entry.Id,
+                        Url = entry.Url,
+                        Status = ProcessingStatus.Discovered,
+                        RequestedPromptVersionId = activePromptId,
+                    }
+                );
+                savedRun.Changed++;
+                continue;
+            }
+            item.LastSeenAt = seen;
+            // Published items are re-fetched only once their last verification is old enough.
+            if (
+                item.Status == ProcessingStatus.Published
+                && (item.LastVerifiedAt is null || item.LastVerifiedAt < reverifyBefore)
+            )
+            {
+                item.Status = ProcessingStatus.Discovered;
+                item.RetryAt = null;
+            }
+        }
+    }
+
+    private async Task ProcessPendingAsync(
+        SqlRunLock gate,
+        SourceCollectionRequest? manual,
+        PromptVersion activePrompt,
+        CancellationToken ct
+    )
+    {
+        var now = DateTimeOffset.UtcNow;
+        var aiPausedUntil = await AiGovernor.PausedUntilAsync(db, now, ct);
+        if (aiPausedUntil is null && await AiGovernor.BudgetExceededAsync(db, config, now, ct))
+            aiPausedUntil = await PauseForBudgetAsync(now, ct);
+        var pendingQuery = db
+            .SourceItems.AsNoTracking()
+            .Where(x =>
+                x.Source.Enabled
+                && x.Source.UsageApproved
+                && (
+                    x.Status == ProcessingStatus.Discovered
+                    || x.Status == ProcessingStatus.AwaitingAi
+                    || x.Status == ProcessingStatus.Retry
+                )
+                && (x.RetryAt == null || x.RetryAt <= now)
+            );
+        // While AI is paused, items still get fetched and stored, but nothing waits only on AI.
+        if (aiPausedUntil is not null)
+            pendingQuery = pendingQuery.Where(x => x.Status != ProcessingStatus.AwaitingAi);
+        if (manual is not null)
+            pendingQuery = pendingQuery.Where(x => x.SourceId == manual.SourceId);
+        // New announcements first; re-verifications of known items follow.
+        var pending = await pendingQuery
+            .OrderBy(x => x.ExtractionPromptVersionId == null ? 0 : 1)
+            .ThenBy(x => x.FirstSeenAt)
+            .Select(x => x.Id)
+            .Take(15)
+            .ToListAsync(ct);
+        foreach (var itemId in pending)
+        {
+            await gate.VerifyAsync(ct);
+            await using var scope = scopes.CreateAsyncScope();
+            var itemDb = scope.ServiceProvider.GetRequiredService<HiringDb>();
+            var item = await itemDb
+                .SourceItems.Include(x => x.Source)
+                .SingleAsync(x => x.Id == itemId, ct);
+            var itemBrowser = scope.ServiceProvider.GetRequiredService<BrowserCollector>();
+            var ai = scope.ServiceProvider.GetRequiredService<AiExtractor>();
+            var processor = scope.ServiceProvider.GetRequiredService<OpportunityService>();
+            var stopAi = false;
+            try
+            {
+                var linked = await itemDb
+                    .SourceLinks.AsNoTracking()
+                    .Include(x => x.Opportunity)
+                    .Where(x => x.SourceItemId == item.Id)
+                    .ToListAsync(ct);
+                if (
+                    linked.Count > 0
+                    && linked.All(x => PromptWorkflow.Protected(x.Opportunity, activePrompt.Id))
+                )
+                {
+                    item.Status = ProcessingStatus.Published;
+                    item.RetryAt = null;
+                    // Protected decisions are not re-fetched; wait a full interval before checking again.
+                    item.LastVerifiedAt = DateTimeOffset.UtcNow;
+                    await itemDb.SaveChangesAsync(ct);
+                    continue;
+                }
+                if (item.Status != ProcessingStatus.AwaitingAi)
+                {
+                    var bundle = await itemBrowser.FetchBundleAsync(item.Source, item.Url, ct);
+                    var content = bundle.Text;
+                    var hash = ContentFingerprint.Hash(content);
+                    await gate.VerifyAsync(ct);
+                    item.LastVerifiedAt = DateTimeOffset.UtcNow;
+                    // Unchanged main text with a saved extraction for this prompt: no new AI call.
+                    if (
+                        ContentFingerprint.Matches(item.ContentHash, content)
+                        && item.ExtractionJson.Length > 0
+                        && item.ExtractionPromptVersionId == activePrompt.Id
+                    )
+                    {
+                        var saved =
+                            JsonSerializer.Deserialize<ExtractionResult>(
+                                item.ExtractionJson,
+                                AiExtractor.JsonOptions
+                            )
+                            ?? throw new ContentNeedsReviewException(
+                                "Saved extraction is unreadable; original text retained for review."
+                            );
+                        saved.PromptVersionId = item.ExtractionPromptVersionId;
+                        item.ContentHash = hash;
+                        await processor.ApplyExtractionAsync(item, saved, ct);
+                        item.RetryAt = null;
+                        item.Attempts = 0;
+                        await itemDb.SaveChangesAsync(ct);
+                        continue;
+                    }
+
+                    if (item.Content.Length > 0)
+                        itemDb.Revisions.Add(
+                            new()
+                            {
+                                SourceItemId = item.Id,
+                                ContentHash = item.ContentHash,
+                                Content = item.Content,
+                            }
+                        );
+                    item.Content = content;
+                    item.ContentHash = hash;
+                    item.AttachmentsJson = JsonSerializer.Serialize(bundle.Attachments);
+                    item.Status = ProcessingStatus.AwaitingAi;
+                    item.ExtractionJson = "";
+                    await itemDb.SaveChangesAsync(ct);
+                }
+
+                if (aiPausedUntil is null && await AiGovernor.BudgetExceededAsync(itemDb, config, DateTimeOffset.UtcNow, ct))
+                    aiPausedUntil = await PauseForBudgetAsync(DateTimeOffset.UtcNow, ct);
+                if (aiPausedUntil is { } pausedUntil)
+                {
+                    item.Status = ProcessingStatus.AwaitingAi;
+                    item.RetryAt = pausedUntil;
+                    item.Error =
+                        $"AI paused until {SourceSchedule.Display(pausedUntil)} (Palestine time); content saved.";
+                    await itemDb.SaveChangesAsync(ct);
+                    continue;
+                }
+
+                var result = await ai.ExtractAsync(
+                    SourceEvidence.ForItem(item),
+                    ct,
+                    new AiExecution(activePrompt, item.Id)
+                );
+                await gate.VerifyAsync(ct);
+                // Save the paid result with its prompt version before applying, so a failed
+                // apply reuses it instead of calling the model again.
+                item.ExtractionJson = JsonSerializer.Serialize(result, AiExtractor.JsonOptions);
+                item.ExtractionPromptVersionId = result.PromptVersionId;
+                await itemDb.SaveChangesAsync(ct);
+                await processor.ApplyExtractionAsync(item, result, ct);
+                item.RetryAt = null;
+                item.Attempts = 0;
+            }
+            catch (AiQuotaException ex)
+            {
+                // Quota or credentials: pause every AI call globally and stop this item loop.
+                var until = DateTimeOffset.UtcNow + AiGovernor.QuotaPause(ex, config);
+                await AiGovernor.PauseAsync(itemDb, until, ex.Message, ct);
+                aiPausedUntil = until;
+                stopAi = true;
+                item.Status = ProcessingStatus.AwaitingAi;
+                item.Error = ex.Message;
+                item.RetryAt = until;
+                log.LogWarning(
+                    "AI paused until {Until} after provider refusal.",
+                    SourceSchedule.Display(until)
+                );
+            }
+            catch (AiUnavailableException ex)
+            {
+                item.Status = ProcessingStatus.AwaitingAi;
+                item.Error = ex.Message;
+                item.RetryAt = DateTimeOffset.UtcNow.AddHours(6);
+            }
+            catch (AiTransientException ex)
+            {
+                item.Attempts++;
+                if (item.Attempts >= AiGovernor.MaxTransientAttempts(config))
+                {
+                    item.Status = ProcessingStatus.NeedsReview;
+                    item.Error = ("AI provider kept failing; saved content retained. " + ex.Message).Truncate(1800);
+                }
+                else
+                {
+                    item.Status = ProcessingStatus.AwaitingAi;
+                    item.Error = ex.Message;
+                    item.RetryAt = DateTimeOffset.UtcNow + AiGovernor.TransientBackoff(item.Attempts);
+                }
+            }
+            catch (CollectorDiagnosticException ex)
+            {
+                itemDb.ChangeTracker.Clear();
+                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
+                itemDb.Audit.Add(
+                    new()
+                    {
+                        Actor = "Collector",
+                        Action = "Collector.Diagnostic",
+                        Detail = CollectorDiagnosticFiles.AuditDetail(ex.Diagnostic, itemId),
+                    }
+                );
+                if (ex.InnerException is ContentNeedsReviewException)
+                    item.Status = ProcessingStatus.NeedsReview;
+                else
+                    ScheduleRetry(item);
+
+                item.Error = SafeError(ex);
+            }
+            catch (ContentNeedsReviewException ex)
+            {
+                itemDb.ChangeTracker.Clear();
+                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
+                item.Status = ProcessingStatus.NeedsReview;
+                item.Error = ex.Message.Truncate(1800);
+            }
+            catch (JsonException)
+            {
+                // Saved or returned extraction cannot be read; repeating it would not change that.
+                itemDb.ChangeTracker.Clear();
+                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
+                item.Status = ProcessingStatus.NeedsReview;
+                item.Error = "Extraction JSON is unreadable; original text retained for review.";
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                itemDb.ChangeTracker.Clear();
+                item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
+                ScheduleRetry(item);
+                item.Error = SafeError(ex);
+            }
+
+            await gate.VerifyAsync(ct);
+            try
+            {
+                await itemDb.SaveChangesAsync(ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                // One item's failed status save (e.g. a concurrent admin edit) must not stop the tick.
+                log.LogWarning("Item {Id} status save failed: {Type}", itemId, ex.GetType().Name);
+            }
+            if (stopAi)
+                break;
+        }
+    }
+
+    private async Task<DateTimeOffset> PauseForBudgetAsync(DateTimeOffset now, CancellationToken ct)
+    {
+        var until = AiGovernor.NextPalestineDay(now);
+        await AiGovernor.PauseAsync(
+            db,
+            until,
+            $"Daily AI token budget ({AiGovernor.DailyTokenBudget(config)}) reached.",
+            ct
+        );
+        log.LogWarning(
+            "Daily AI token budget reached; AI paused until {Until}.",
+            SourceSchedule.Display(until)
+        );
+        return until;
+    }
+
+    private static void ScheduleRetry(SourceItem item)
+    {
+        item.Attempts++;
+        item.Status = item.Attempts >= 5 ? ProcessingStatus.NeedsReview : ProcessingStatus.Retry;
+        item.RetryAt = DateTimeOffset.UtcNow.AddMinutes(Math.Min(240, 10 * item.Attempts));
     }
 
     private static string SafeError(Exception ex) =>
@@ -1306,6 +1097,7 @@ public class CollectionPipeline(
             CollectorDiagnosticException diagnostic => SafeError(diagnostic.InnerException!)
                 + $" Diagnostic ID: {diagnostic.Diagnostic.Id:N}",
             ContentNeedsReviewException => ex.Message.Truncate(1600),
+            ContentRetryableException => ex.Message.Truncate(1600),
             InvalidOperationException => ex.Message.Truncate(1800),
             HttpRequestException http =>
                 $"Source HTTP {(http.StatusCode is { } code ? ((int)code).ToString() : "network error")}; retry scheduled; no source closure inferred.",
