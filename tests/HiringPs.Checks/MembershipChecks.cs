@@ -210,6 +210,7 @@ public static class MembershipChecks
         );
         builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
         builder.Services.AddSingleton<SiteSeo>();
+        builder.Services.AddScoped<OperationReadService>();
         builder.Services.AddScoped<HiringPs.Web.Services.Authentication.GoogleLinkReadService>();
         builder.Services.AddSingleton<UrlPolicy>();
         builder.Services.AddScoped<MembershipService>();
@@ -245,8 +246,10 @@ public static class MembershipChecks
         builder.Services.AddLocalization(x => x.ResourcesPath = "Resources");
         builder
             .Services.AddControllersWithViews(x =>
-                x.Filters.Add(new AutoValidateAntiforgeryTokenAttribute())
-            )
+            {
+                x.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+                x.Filters.Add(new OperationBindingProbe());
+            })
             .AddApplicationPart(typeof(HomeController).Assembly)
             .AddApplicationPart(typeof(AdminShellFixtureController).Assembly);
         builder.Services.AddRateLimiter(x =>
@@ -467,6 +470,27 @@ public static class MembershipChecks
                 );
             }
             client.DefaultRequestHeaders.Add("X-Fixture-Role", "Admin");
+            foreach (var language in new[] { "ar", "en" })
+            {
+                using var bindingRequest = new HttpRequestMessage(HttpMethod.Get, origin + "/" + language + "/Admin/Operations");
+                bindingRequest.Headers.Add("X-Fixture-Inspect", "operation-binding");
+                using var bindingResponse = await client.SendAsync(bindingRequest);
+                var bindingText = await bindingResponse.Content.ReadAsStringAsync();
+                Check(bindingResponse.StatusCode == HttpStatusCode.OK
+                    && bindingText.Contains("\"area\":null"), "Operation filters do not bind the Admin route area: " + language);
+                using var filteredRequest = new HttpRequestMessage(HttpMethod.Get, origin + "/" + language
+                    + "/Admin/Operations?Area=Collection&Outcome=Failed&Search=source&From=2026-10-20");
+                filteredRequest.Headers.Add("X-Fixture-Inspect", "operation-binding");
+                using var filteredResponse = await client.SendAsync(filteredRequest);
+                var filteredText = await filteredResponse.Content.ReadAsStringAsync();
+                Check(filteredResponse.StatusCode == HttpStatusCode.OK && filteredText.Contains("\"area\":\"Collection\"")
+                    && filteredText.Contains("\"outcome\":\"Failed\"") && filteredText.Contains("2026-10-20"),
+                    "Operation query filters bind on the production route: " + language);
+                using var invalidRequest = new HttpRequestMessage(HttpMethod.Get, origin + "/" + language + "/Admin/Operations?Area=invalid");
+                invalidRequest.Headers.Add("X-Fixture-Inspect", "operation-binding");
+                using var invalidResponse = await client.SendAsync(invalidRequest);
+                Check(invalidResponse.StatusCode == HttpStatusCode.BadRequest, "Invalid operation area is rejected: " + language);
+            }
             await AdminFormChecks.RunAsync(client, origin);
             foreach (var language in new[] { "ar", "en" })
             {

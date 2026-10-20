@@ -10,7 +10,7 @@ public sealed class OperationsController(OperationReadService operations) : Cont
 {
     /// <summary>يعرض سجل العمليات بمرشحات SQL وترقيم ثابت دون تغيير أي حالة تشغيلية.</summary>
     [HttpGet]
-    public async Task<IActionResult> Index(OperationFilterDto filter, int page = 1, CancellationToken ct = default)
+    public async Task<IActionResult> Index([FromQuery] OperationFilterDto filter, int page = 1, CancellationToken ct = default)
     {
         if (!ModelState.IsValid || filter.Area is { } area && !Enum.IsDefined(area)
             || filter.Outcome is { } outcome && !Enum.IsDefined(outcome)
