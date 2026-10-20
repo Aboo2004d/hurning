@@ -1,7 +1,11 @@
-@model PaymentOrder
+@model PaymentOrderSummaryDto
 @{ ViewData["Title"] = T["PaymentDetails"].Value; }
-@{ var review = ViewBag.Review as PaymentReview; }
+@{ var review = ViewBag.Review as PaymentReviewSummaryDto; }
 <h1>@T["PaymentDetails"]</h1>
+@if (Model.NeedsReconciliation)
+{
+    <p class="notice" role="status">@T["PaymentRecoveryHelp"]</p>
+}
 <section class="membership-card">
     <partial name="_PaymentSummary" model="Model" />
     <partial name="_PaymentTraceReference" />
@@ -72,7 +76,7 @@
     <h2>@T["PaymentDiagnostics"]</h2>
     <p>@T["PaymentTraceBuild"]: <bdi dir="ltr">@PaymentTraceWriter.BuildMarker</bdi> · <bdi>@ViewBag.TraceHost</bdi></p>
     <p class="muted">@T["PaymentTraceAdvice"]</p>
-    @if (ViewBag.PaymentTraces is IEnumerable<AuditEntry> traces && traces.Any())
+    @if (ViewBag.PaymentTraces is IEnumerable<PaymentTraceSummaryDto> traces && traces.Any())
     {
         foreach (var trace in traces)
         {

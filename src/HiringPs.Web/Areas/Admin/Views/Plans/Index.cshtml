@@ -1,7 +1,6 @@
-@model AdminPage<MembershipPlan>
+@model AdminPage<AdminPlanSummaryDto>
 @{
     ViewData["Title"] = T["Plans"].Value;
-    var versions = (List<MembershipPlanVersion>)ViewBag.Versions;
 }
 <section class="admin-list-page">
     <header class="admin-page-heading">
@@ -17,36 +16,12 @@
             </a>
         </div>
     </header>
-    <div class="table-wrap">
-        <table class="table-nowrap">
-            <thead>
-                <tr>
-                    <th>@T["PlanId"]</th>
-                    <th>@T["Plan"]</th>
-                    <th>@T["Amount"]</th>
-                    <th>@T["Visible"]</th>
-                    <th>@T["Edit"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var plan in Model.Items)
-                {
-                    var version = versions.Single(x => x.Id == plan.CurrentVersionId);
-                    <tr>
-                        <td>@plan.Id</td>
-                        <td>@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
-                        <td><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></td>
-                        <td>@T[plan.Visible ? "Yes" : "No"]</td>
-                        <td>
-                            <a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-id="@plan.Id"
-                               aria-label="@T["Edit"]" title="@T["Edit"]">
-                                <span class="fa-solid fa-pen-to-square" aria-hidden="true"></span>
-                            </a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    <partial name="_AdminPagination" model="Model.Pager" />
+    <section data-plan-catalog data-refresh-url="@Context.Request.PathBase@Context.Request.Path@Context.Request.QueryString"
+             data-events-url="@Url.Action("Stream", "PlanUpdates", new { area = "" })" aria-live="polite">
+        <partial name="_PlanTable" model="Model" />
+    </section>
 </section>
+
+@section Scripts {
+    <script src="~/js/plan-catalog.js" asp-append-version="true" defer></script>
+}

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 namespace HiringPs.Web.Infrastructure;
 
 // Private files are served only through owner/admin endpoints, never static files.
+/// <summary>يحفظ أدلة الدفع كملفات خاصة، ولا يتيح الوصول إليها إلا عبر مسارات المالك أو الإدارة.</summary>
 public sealed class PaymentEvidenceStore(IConfiguration configuration)
 {
     private string DirectoryPath =>
@@ -11,6 +12,7 @@ public sealed class PaymentEvidenceStore(IConfiguration configuration)
             AppContext.BaseDirectory
         );
 
+    /// <summary>يتحقق من حجم وصيغة الصورة ويحفظها باسم مولد؛ لا يثق باسم الملف الذي أرسله المتصفح.</summary>
     public async Task<string?> SaveAsync(IFormFile? file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
@@ -32,6 +34,7 @@ public sealed class PaymentEvidenceStore(IConfiguration configuration)
         return name;
     }
 
+    /// <summary>يحل اسم دليل مولد داخل المجلد الخاص فقط ويرفض أي مسار أو امتداد غير مسموح.</summary>
     public string PathFor(string name)
     {
         if (

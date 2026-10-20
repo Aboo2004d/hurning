@@ -38,6 +38,10 @@
             const updated = fragment.querySelector("[data-checkout-region]");
             if (!updated) throw new Error("Checkout fragment missing");
             region.className = updated.className;
+            for (const key of ["planPreview", "quoteUrl", "eventsUrl", "quoteSignature", "unavailableMessage"]) {
+                if (key in updated.dataset) region.dataset[key] = updated.dataset[key];
+                else delete region.dataset[key];
+            }
             region.replaceChildren(...updated.childNodes);
             region.focus({ preventScroll: true });
         } catch {

@@ -11,7 +11,9 @@ public class MembersController(
     HiringDb db,
     MembershipService membership,
     MemberVerification verification,
-    SiteSeo seo
+    SiteSeo seo,
+    AdminMemberReadService? readService = null,
+    MemberRecoveryService? recoveryService = null
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -23,48 +25,17 @@ public class MembersController(
         CancellationToken ct = default
     )
     {
-        var query = db.MemberProfiles.AsNoTracking().AsQueryable();
-        if (!string.IsNullOrWhiteSpace(q))
-            query = query.Where(x =>
-                x.Name.Contains(q)
-                || x.Mobile.Contains(q)
-                || db.Users.Any(u => u.Id == x.UserId && u.Email!.Contains(q))
-            );
-        if (suspended is not null)
-            query = query.Where(x => x.Suspended == suspended);
-        if (linked is not null)
-            query = query.Where(x => (x.TelegramUserId != null) == linked);
-        if (planId is not null)
-            query = query.Where(x =>
-                db.MemberSubscriptions.Any(s =>
-                    s.UserId == x.UserId
-                    && !s.Cancelled
-                    && s.StartsAt <= DateTimeOffset.UtcNow
-                    && s.EndsAt > DateTimeOffset.UtcNow
-                    && s.PlanVersion.PlanId == planId
-                )
-            );
-        return View(
-            await query
-                .OrderByDescending(x => x.CreatedAt)
-                .ThenBy(x => x.UserId)
-                .PageAsync(page, ct)
-        );
+        var reader = readService ?? new AdminMemberReadService(db);
+        return View(await reader.Members(q, suspended, linked, planId).PageAsync(page, ct));
     }
 
     public async Task<IActionResult> Details(string id, CancellationToken ct)
     {
-        var member = await db
-            .MemberProfiles.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.UserId == id, ct);
-        if (member is null)
-            return NotFound();
-        ViewBag.Email = await db.Users.Where(x => x.Id == id).Select(x => x.Email).SingleAsync(ct);
-        ViewBag.Audit = await db
-            .Audit.AsNoTracking()
-            .Where(x => x.Detail.Contains(id))
-            .OrderByDescending(x => x.At)
-            .ThenByDescending(x => x.Id)
+        var reader = readService ?? new AdminMemberReadService(db);
+        var member = await reader.MemberAsync(id, ct);
+        if (member is null) return NotFound();
+        ViewBag.Email = await reader.EmailAsync(id, ct);
+        ViewBag.Audit = await reader.Audit(id)
             .PageAsync(int.TryParse(Request.Query["page"], out var page) ? page : 1, ct);
         return View(member);
     }
@@ -101,47 +72,14 @@ public class MembersController(
     {
         if (string.IsNullOrWhiteSpace(reason) || reason.Length > 1500)
             return BadRequest();
-        var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == id, ct);
-        if (member is null)
-            return NotFound();
-        member.Mobile = MembershipRules.Mobile(mobile);
-        member.TelegramUserId = null;
-        member.TelegramChatId = null;
-        member.Activated = false;
-        await db
-            .MemberChallenges.Where(x => x.UserId == id && x.ConsumedAt == null)
-            .ExecuteUpdateAsync(x => x.SetProperty(y => y.ConsumedAt, DateTimeOffset.UtcNow), ct);
-        membership.Audit(
-            User.Identity?.Name ?? "Admin",
-            "Member.Recover",
-            $"Member {id}; identity verified by administrator; {reason}"
-        );
-        await db.SaveChangesAsync(ct);
-        try
-        {
-            var request = await verification.CreateAsync(
-                id,
-                ChallengePurpose.Registration,
-                null,
-                ct
-            );
-            TempData["RecoveryLink"] =
-                seo.Origin
-                + Url.Action(
-                    "Recover",
-                    "Registration",
-                    new
-                    {
-                        area = "",
-                        id = request.Id,
-                        token = request.Token,
-                    }
-                );
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["Notice"] = ex.Message;
-        }
+        var service = recoveryService ?? new MemberRecoveryService(db, membership, verification);
+        var result = await service.PrepareAsync(id, mobile, reason, User.Identity?.Name ?? "Admin", ct);
+        if (result.Outcome == MemberRecoveryOutcome.NotFound) return NotFound();
+        if (result.Outcome == MemberRecoveryOutcome.InvalidRequest) return BadRequest();
+        if (result.Notice is not null) TempData["Notice"] = result.Notice;
+        if (result.Request is { } request)
+            TempData["RecoveryLink"] = seo.Origin + Url.Action("Recover", "Registration",
+                new { area = "", id = request.Id, token = request.Token });
         return RedirectToAction(nameof(Details), new { id });
     }
 }

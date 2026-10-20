@@ -35,6 +35,23 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
         }
     }
 
+    /// <summary>يفحص طلبًا داخل نطاق مستقل؛ تعثر طلب لا يمنع بقية الأعضاء ولا يكرر الخصم.</summary>
+    private async Task RecoverPaymentAsync(Guid id, string actor, CancellationToken ct)
+    {
+        await using var paymentScope = scopes.CreateAsyncScope();
+        try
+        {
+            await paymentScope.ServiceProvider.GetRequiredService<PaymentReconciliation>()
+                .CheckAsync(id, null, actor, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            logger.LogWarning("Payment recovery {OrderId} failed ({ExceptionType}); verification will retry.",
+                id, ex.GetType().Name);
+        }
+    }
+
     private async Task TickAsync(CancellationToken ct)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -53,33 +70,13 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
             .Select(x => x.Id)
             .Take(5)
             .ToListAsync(ct);
-        var paymentCheck = scope.ServiceProvider.GetRequiredService<PaymentReconciliation>();
         foreach (var id in zeroOrders)
-            await paymentCheck.CheckAsync(id, null, "Discount recovery", ct);
+            await RecoverPaymentAsync(id, "Discount recovery", ct);
         var now = DateTimeOffset.UtcNow;
-        var reconciliation = scope.ServiceProvider.GetRequiredService<PaymentReconciliation>();
-        var pending = await db
-            .PaymentOrders.AsNoTracking()
-            .Where(x =>
-                x.GatewayEnvironment == db.ActivePaymentEnvironment
-                && (
-                    x.State == PaymentState.Pending
-                    || (
-                        x.Gateway == "JawwalPay"
-                        && x.State == PaymentState.Failed
-                        && db.WalletPaymentSessions.Any(session =>
-                            session.OrderId == x.Id && session.ConfirmationStartedAt != null
-                        )
-                    )
-                )
-                && (x.LastCheckedAt == null || x.LastCheckedAt < now.AddMinutes(-5))
-            )
-            .OrderBy(x => x.LastCheckedAt)
-            .Select(x => x.Id)
-            .Take(5)
-            .ToListAsync(ct);
+        var recovery = scope.ServiceProvider.GetRequiredService<PaymentRecoveryService>();
+        var pending = await recovery.CandidatesAsync(ct);
         foreach (var id in pending)
-            await reconciliation.CheckAsync(id, null, "Payment reconciliation", ct);
+            await RecoverPaymentAsync(id, "Payment reconciliation", ct);
         if (!telegram.Ready)
             return;
         if (

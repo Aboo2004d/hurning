@@ -85,9 +85,13 @@ if (!isProbe)
     // AiExtractor leaves those items awaiting AI instead of stopping the whole service.
     // Processing Services
     builder.Services.AddScoped<OpportunityService>();
+    builder.Services.AddScoped<OpportunityExtractionService>();
+    builder.Services.AddScoped<SourceItemProcessingService>();
+    builder.Services.AddScoped<DiscoveryBatchStore>();
     builder.Services.AddScoped<MembershipService>();
     builder.Services.AddScoped<MemberVerification>();
     builder.Services.AddScoped<PaymentReconciliation>();
+    builder.Services.AddScoped<PaymentRecoveryService>();
     builder.Services.AddScoped<PaymentTraceWriter>();
     builder.Services.AddScoped<PaymentGatewayRegistry>();
     builder.Services.AddSingleton<PaymentEnvironment>();

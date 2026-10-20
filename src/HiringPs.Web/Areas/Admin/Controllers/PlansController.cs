@@ -1,5 +1,6 @@
 using HiringPs.Core;
 using HiringPs.Web.Models;
+using HiringPs.Web.Services.Membership;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,21 +8,15 @@ using Microsoft.EntityFrameworkCore;
 namespace HiringPs.Web.Areas.Admin.Controllers;
 
 [Area("Admin"), Authorize(Roles = "Admin")]
-public class PlansController(HiringDb db, MembershipService membership) : Controller
+public class PlansController(HiringDb db, MembershipService membership, AdminPlanReadService? readService = null,
+    PlanManagementService? managementService = null, PlanCatalogNotifications? notifications = null, OpportunityAccessService? accessService = null) : Controller
 {
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
     {
-        var result = await db
-            .MembershipPlans.AsNoTracking()
-            .OrderBy(x => x.SortOrder)
-            .ThenBy(x => x.Id)
-            .PageAsync(page, ct);
-        var ids = result.Items.Select(x => x.CurrentVersionId).ToArray();
-        ViewBag.Versions = await db
-            .MembershipPlanVersions.AsNoTracking()
-            .Where(x => ids.Contains(x.Id))
-            .ToListAsync(ct);
-        return View(result);
+        var reader = readService ?? new AdminPlanReadService(db);
+        var result = await reader.Plans().PageAsync(page, ct);
+        Response.Headers.CacheControl = "no-store";
+        return Request.Headers["X-Plan-Catalog"] == "true" ? PartialView("_PlanTable", result) : View(result);
     }
 
     [HttpGet]
@@ -32,14 +27,10 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
     {
         if (id is null)
             return RedirectToAction(nameof(Create));
-        var plan = await db
-            .MembershipPlans.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (plan is null)
-            return NotFound();
-        var version = await db
-            .MembershipPlanVersions.AsNoTracking()
-            .SingleAsync(x => x.Id == plan.CurrentVersionId, ct);
+        var reader = readService ?? new AdminPlanReadService(db);
+        var plan = await reader.EditAsync(id.Value, ct);
+        if (plan is null) return NotFound();
+        var version = plan.CurrentVersion;
         return View(
             "PlanForm",
             new PlanInput
@@ -61,7 +52,7 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
                     .ToArray(),
                 Visible = plan.Visible,
                 SortOrder = plan.SortOrder,
-                Version = Convert.ToBase64String(plan.Version),
+                Version = plan.Version,
             }
         );
     }
@@ -88,79 +79,31 @@ public class PlansController(HiringDb db, MembershipService membership) : Contro
             return BadRequest();
         if (!ModelState.IsValid)
             return View("PlanForm", input);
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var plan = input.Id is null
-            ? new MembershipPlan()
-            : await db.MembershipPlans.SingleOrDefaultAsync(x => x.Id == input.Id, ct);
-        if (plan is null)
-            return NotFound();
-        if (input.Id is null)
-            db.MembershipPlans.Add(plan);
-        else
+        var manager = managementService ?? new PlanManagementService(db, membership);
+        var result = await manager.SaveAsync(new PlanSaveCommandDto(input.Id, input.NameAr, input.NameEn,
+            input.DescriptionAr ?? "", input.DescriptionEn ?? "", input.BadgeAr ?? "", input.BadgeEn ?? "",
+            input.PriceIls, input.Days, input.Details, input.Alerts, input.Visible, input.SortOrder,
+            input.Version, User.Identity?.Name ?? "Admin"), ct);
+        if (result.Outcome == PlanSaveOutcome.NotFound) return NotFound();
+        if (result.Outcome == PlanSaveOutcome.InvalidRequest) return BadRequest();
+        if (result.Outcome == PlanSaveOutcome.Conflict)
         {
-            try
-            {
-                db.Entry(plan).Property(x => x.Version).OriginalValue = Convert.FromBase64String(
-                    input.Version ?? ""
-                );
-            }
-            catch (FormatException)
-            {
-                return BadRequest();
-            }
+            Response.StatusCode = StatusCodes.Status409Conflict;
+            ModelState.AddModelError("", "PlanEditConflict");
+            return View("PlanForm", input);
         }
-        plan.Visible = input.Visible;
-        plan.SortOrder = input.SortOrder;
-        await db.SaveChangesAsync(ct);
-        var version = new MembershipPlanVersion
-        {
-            PlanId = plan.Id,
-            NameAr = input.NameAr.Trim(),
-            NameEn = input.NameEn.Trim(),
-            DescriptionAr = (input.DescriptionAr ?? "").Trim(),
-            DescriptionEn = (input.DescriptionEn ?? "").Trim(),
-            BadgeAr = (input.BadgeAr ?? "").Trim(),
-            BadgeEn = (input.BadgeEn ?? "").Trim(),
-            PriceIls = input.PriceIls,
-            Days = input.Days,
-            DetailKinds = input.Details.Aggregate(
-                0,
-                (mask, kind) => mask | MembershipRules.Bit(kind)
-            ),
-            AlertKinds = input.Alerts.Aggregate(
-                0,
-                (mask, kind) => mask | MembershipRules.Bit(kind)
-            ),
-        };
-        db.MembershipPlanVersions.Add(version);
-        await db.SaveChangesAsync(ct);
-        plan.CurrentVersionId = version.Id;
-        membership.Audit(
-            User.Identity?.Name ?? "Admin",
-            "Plan.Version",
-            $"Plan {plan.Id}; version {version.Id}"
-        );
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+        notifications?.Changed();
         return RedirectToAction(nameof(Index));
     }
 
     public async Task<IActionResult> Access(CancellationToken ct) =>
-        View(await db.OpportunityAccessRules.OrderBy(x => x.Kind).ToListAsync(ct));
+        View(await (accessService ?? new OpportunityAccessService(db, membership)).ReadAsync(ct));
 
     [HttpPost]
     public async Task<IActionResult> Access(OpportunityKind[] publicKinds, CancellationToken ct)
     {
-        if (publicKinds.Any(x => !Enum.IsDefined(x)))
-            return BadRequest();
-        foreach (var rule in await db.OpportunityAccessRules.ToListAsync(ct))
-            rule.PublicDetails = publicKinds.Contains(rule.Kind);
-        membership.Audit(
-            User.Identity?.Name ?? "Admin",
-            "Access.Update",
-            string.Join(',', publicKinds)
-        );
-        await db.SaveChangesAsync(ct);
+        if (!await (accessService ?? new OpportunityAccessService(db, membership))
+            .SaveAsync(publicKinds, User.Identity?.Name ?? "Admin", ct)) return BadRequest();
         return RedirectToAction(nameof(Access));
     }
 }

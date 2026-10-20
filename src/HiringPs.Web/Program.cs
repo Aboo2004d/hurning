@@ -49,11 +49,42 @@ if (string.IsNullOrWhiteSpace(aiModel))
 // Application Services
 // ======================================
 builder.Services.AddScoped<OpportunityService>();
+builder.Services.AddScoped<OpportunityExtractionService>();
+builder.Services.AddScoped<SocialComposeReadService>();
+builder.Services.AddScoped<SocialTemplateManagementService>();
+builder.Services.AddScoped<SubscriptionReadService>();
+builder.Services.AddScoped<MemberPlanReadService>();
+builder.Services.AddScoped<AdminPlanReadService>();
+builder.Services.AddScoped<AdminMemberReadService>();
+builder.Services.AddScoped<MemberRecoveryService>();
+builder.Services.AddScoped<PlanManagementService>();
+builder.Services.AddScoped<SourceManagementService>();
+builder.Services.AddScoped<SourceReadService>();
+builder.Services.AddScoped<SourceCollectionRequestService>();
+builder.Services.AddScoped<OpportunityManagementService>();
+builder.Services.AddScoped<AdminOpportunityReadService>();
+builder.Services.AddScoped<OpportunityAccessService>();
+builder.Services.AddScoped<DiscountManagementService>();
+builder.Services.AddSingleton<HiringPs.Web.Services.Membership.PlanCatalogNotifications>();
+builder.Services.AddScoped<MembershipDiscountService>();
+builder.Services.AddScoped<MembershipCheckoutService>();
+builder.Services.AddScoped<SubscriptionManagementService>();
+builder.Services.AddScoped<SocialPublicationService>(services => new(
+    services.GetRequiredService<HiringDb>(), services.GetRequiredService<SocialPublishing>(),
+    services.GetRequiredService<ILogger<SocialPublicationService>>()));
+builder.Services.AddScoped<SourceItemProcessingService>();
+builder.Services.AddScoped<DiscoveryBatchStore>();
 builder.Services.AddScoped<MembershipService>();
 builder.Services.AddScoped<MemberVerification>();
 builder.Services.AddScoped<PendingVerificationCookie>();
 builder.Services.AddScoped<PaymentEvidenceStore>();
 builder.Services.AddScoped<PaymentReconciliation>();
+builder.Services.AddScoped<PaymentRecoveryService>();
+builder.Services.AddScoped<HostedPaymentCheckout>();
+builder.Services.AddScoped<PaymentReviewService>();
+builder.Services.AddScoped<PaymentReadService>();
+builder.Services.AddScoped<HiringPs.Web.Services.Payments.WalletPaymentPageService>();
+builder.Services.AddScoped<LahzaWebhookService>();
 builder.Services.AddScoped<PaymentTraceWriter>();
 builder.Services.AddScoped<WalletCheckoutService>();
 builder.Services.AddScoped<PaymentGatewayRegistry>();
@@ -276,7 +307,7 @@ app.Use(
             + "img-src 'self' data:; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
-            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com";
+            + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com https://www.linkedin.com";
         await next();
     }
 );

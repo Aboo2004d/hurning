@@ -7,31 +7,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Admin.Controllers;
 
-public sealed class SocialTemplateInput
-{
-    public string Provider { get; set; } = "Facebook";
-    public string Scope { get; set; } = "general";
-
-    [Required, MaxLength(50000)]
-    public string Body { get; set; } = "";
-    public long ExpectedActiveId { get; set; }
-}
-
 [
     Area("Admin"),
     Authorize(Roles = "Admin"),
     ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)
 ]
-public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publishing) : Controller
+public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publishing, SocialTemplateManagementService? managementService = null) : Controller
 {
+    private SocialTemplateManagementService Templates => managementService ?? new(db);
+
     private static bool ValidScope(string provider, string scope) =>
-        (provider is "Facebook" or "LinkedIn")
-        && (scope == "general" || Enum.GetNames<OpportunityKind>().Contains(scope));
+        SocialTemplateManagementService.ValidScope(provider, scope);
 
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default) =>
         View(
-            await db
-                .SocialTemplateVersions.AsNoTracking()
+            await Templates.Versions()
                 .Where(x => x.Active)
                 .OrderBy(x => x.Provider)
                 .ThenBy(x => x.Scope)
@@ -47,11 +37,9 @@ public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publ
     {
         if (!ValidScope(provider, scope))
             return BadRequest();
-        var active = await db
-            .SocialTemplateVersions.AsNoTracking()
+        var active = await Templates.Versions()
             .SingleOrDefaultAsync(x => x.Provider == provider && x.Scope == scope && x.Active, ct);
-        ViewBag.History = await db
-            .SocialTemplateVersions.AsNoTracking()
+        ViewBag.History = await Templates.Versions()
             .Where(x => x.Provider == provider && x.Scope == scope)
             .OrderByDescending(x => x.Number)
             .PageAsync(page, ct);
@@ -97,8 +85,7 @@ public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publ
             return BadRequest();
         if (restoreId is { } id)
         {
-            var version = await db
-                .SocialTemplateVersions.AsNoTracking()
+            var version = await Templates.Versions()
                 .SingleOrDefaultAsync(
                     x => x.Id == id && x.Provider == input.Provider && x.Scope == input.Scope,
                     ct
@@ -112,66 +99,20 @@ public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publ
         {
             ModelState.AddModelError(nameof(input.Body), "SocialTemplateInvalid");
             ViewData["TemplateInvalid"] = true;
-            ViewBag.History = await db
-                .SocialTemplateVersions.AsNoTracking()
+            ViewBag.History = await Templates.Versions()
                 .Where(x => x.Provider == input.Provider && x.Scope == input.Scope)
                 .OrderByDescending(x => x.Number)
                 .PageAsync(1, ct);
             return View("Edit", input);
         }
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var resource = "SocialTemplate:" + input.Provider + ":" + input.Scope;
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"DECLARE @r int; EXEC @r=sp_getapplock @Resource={resource}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; IF @r < 0 THROW 51000, 'Template busy', 1;",
-            ct
-        );
-        var active = await db.SocialTemplateVersions.SingleOrDefaultAsync(
-            x => x.Provider == input.Provider && x.Scope == input.Scope && x.Active,
-            ct
-        );
-        if ((active?.Id ?? 0) != input.ExpectedActiveId)
+        var outcome = await Templates.SaveAsync(new SocialTemplateSaveCommandDto(input.Provider,
+            input.Scope, input.ExpectedActiveId, input.Body, User.Identity?.Name ?? "Admin"), ct);
+        if (outcome == SocialTemplateSaveOutcome.InvalidRequest) return BadRequest();
+        if (outcome == SocialTemplateSaveOutcome.Conflict)
         {
             TempData["Notice"] = "SocialTemplateConflict";
-            return RedirectToAction(
-                nameof(Edit),
-                new { provider = input.Provider, scope = input.Scope }
-            );
+            return RedirectToAction(nameof(Edit), new { provider = input.Provider, scope = input.Scope });
         }
-        var number =
-            (
-                await db
-                    .SocialTemplateVersions.Where(x =>
-                        x.Provider == input.Provider && x.Scope == input.Scope
-                    )
-                    .MaxAsync(x => (int?)x.Number, ct)
-                ?? 0
-            ) + 1;
-        if (active is not null)
-        {
-            active.Active = false;
-            await db.SaveChangesAsync(ct);
-        }
-        db.SocialTemplateVersions.Add(
-            new SocialTemplateVersion
-            {
-                Provider = input.Provider,
-                Scope = input.Scope,
-                Number = number,
-                Active = true,
-                Body = input.Body.Trim(),
-                Actor = User.Identity?.Name ?? "Admin",
-            }
-        );
-        db.Audit.Add(
-            new AuditEntry
-            {
-                Actor = User.Identity?.Name ?? "Admin",
-                Action = "SocialTemplate.Version",
-                Detail = input.Provider + ":" + input.Scope + ":" + number,
-            }
-        );
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
         TempData["Notice"] = "SavedChanges";
         return RedirectToAction(
             nameof(Edit),

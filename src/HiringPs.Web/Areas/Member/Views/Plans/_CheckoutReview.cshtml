@@ -1,5 +1,8 @@
 @model PurchaseInput
-<section class="checkout-grid" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">
+<section data-unavailable-message="@T["PlanNoLongerAvailable"]" data-plan-preview data-quote-url="@Url.Action("Quote")"
+         data-events-url="@Url.Action("Stream", "PlanUpdates", new { area = "" })"
+         data-quote-signature="@(Model.Plan!.Id):@(Model.FinalAmount.ToString(CultureInfo.InvariantCulture)):@(string.Join(",", Model.Gateways))"
+         class="checkout-grid" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">
     <aside class="membership-card checkout-summary">
         <h2>@Model.Plan!.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</h2>
         <p class="plan-price">

@@ -1,4 +1,4 @@
-@model AdminPage<PaymentOrder>
+@model AdminPage<PaymentOrderSummaryDto>
 @{ ViewData["Title"] = T["MyPayments"].Value; }
 <h1>@T["MyPayments"]</h1>
 <partial name="/Areas/Member/Views/Payments/_PaymentTable.cshtml" model="Model" />

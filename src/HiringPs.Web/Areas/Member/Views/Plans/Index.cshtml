@@ -3,29 +3,10 @@
 <h1>@T["MyPlan"]</h1>
 <partial name="_SubscriptionList" model="Model.Subscriptions" />
 <h2>@T["ViewPlans"]</h2>
-<div class="membership-grid">
-    @foreach (var plan in Model.Plans)
-    {
-        var version = Model.Versions.Single(x => x.Id == plan.CurrentVersionId);
-        var badge = ar ? version.BadgeAr : version.BadgeEn;
-        <article class="membership-card">
-            @if (!string.IsNullOrWhiteSpace(badge))
-            {
-                <span class="badge">@badge</span>
-            }
-            <h2>@version.Name(ar ? "ar" : "en")</h2>
-            <p>@(ar ? version.DescriptionAr : version.DescriptionEn)</p>
-            <p class="plan-price">
-                <strong><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></strong>
-                <span aria-hidden="true">/</span>
-                <span class="plan-duration"><bdi>@version.Days</bdi> @T["Days"]</span>
-            </p>
-            <partial name="_PlanBenefits" model="version" />
-            <a class="button" asp-action="Review" asp-route-id="@plan.Id">@T["ChoosePlan"]</a>
-        </article>
-    }
-</div>
-@if (Model.Plans.Count == 0)
-{
-    <p class="notice">@T["NoPlans"]</p>
+<section data-plan-catalog data-refresh-url="@Url.Action("Catalog")"
+         data-events-url="@Url.Action("Stream", "PlanUpdates", new { area = "" })" aria-live="polite">
+    <partial name="_Catalog" model="Model.Plans" />
+</section>
+@section Scripts {
+    <script src="~/js/plan-catalog.js" asp-append-version="true" defer></script>
 }

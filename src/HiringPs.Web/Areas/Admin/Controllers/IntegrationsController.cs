@@ -15,9 +15,10 @@ public sealed class IntegrationsController(HiringDb db, SocialPublishing social,
 {
     public async Task<IActionResult> Index()
     {
-        ViewBag.GoogleTest = await db.ToolCheckResults.AsNoTracking().Where(x => x.Tool == "GoogleInteractive")
-            .OrderByDescending(x => x.Id).FirstOrDefaultAsync();
-        return View(await db.SocialConnections.AsNoTracking().ToListAsync());
+        ViewBag.GoogleTestAt = await db.ToolCheckResults.AsNoTracking().Where(x => x.Tool == "GoogleInteractive")
+            .OrderByDescending(x => x.Id).Select(x => (DateTimeOffset?)x.CheckedAt).FirstOrDefaultAsync();
+        return View(await db.SocialConnections.AsNoTracking().Select(x => new SocialIntegrationSummaryDto(
+            x.Provider, x.PageId, x.PageName, x.Enabled, x.ExpiresAt, x.ConnectedAt)).ToListAsync());
     }
     [HttpGet]
     public async Task<IActionResult> TestGoogle(string? returnUrl = null)

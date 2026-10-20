@@ -1,4 +1,4 @@
-@model AdminPage<PaymentOrder>
+@model AdminPage<PaymentOrderSummaryDto>
 <section id="payment-results" data-payment-results tabindex="-1">
     <div class="table-wrap">
         <table class="table-nowrap payment-table">
@@ -23,7 +23,9 @@
                         <td>@T[order.Gateway == "discount" ? "DiscountPayment" : order.Gateway]</td>
                         <td><bdi dir="ltr">@PaymentDisplay.Time(order.CreatedAt)</bdi></td>
                         <td>@T["PaymentEnvironment" + order.GatewayEnvironment]</td>
-                        <td>@T["Payment" + order.State]</td>
+                        <td>@T["Payment" + order.State]
+                            @if (order.NeedsReconciliation) { <span class="badge">@T["PaymentNeedsReconciliation"]</span> }
+                        </td>
                         <td dir="auto">@order.ProviderReference</td>
                         <td>
                             <a class="button button-outline payment-details" asp-action="Details" asp-route-id="@order.Id"

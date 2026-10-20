@@ -1,0 +1,27 @@
+@model List<MembershipPlanVersionSummaryDto>
+@{ var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"; }
+<div class="membership-grid" data-plan-fragment>
+    @foreach (var version in Model)
+    {
+        var badge = ar ? version.BadgeAr : version.BadgeEn;
+        <article class="membership-card">
+            @if (!string.IsNullOrWhiteSpace(badge))
+            {
+                <span class="badge">@badge</span>
+            }
+            <h2>@version.Name(ar ? "ar" : "en")</h2>
+            <p>@(ar ? version.DescriptionAr : version.DescriptionEn)</p>
+            <p class="plan-price">
+                <strong><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></strong>
+                <span aria-hidden="true">/</span>
+                <span class="plan-duration"><bdi>@version.Days</bdi> @T["Days"]</span>
+            </p>
+            <partial name="_PlanBenefits" model="version" />
+            <a class="button" asp-action="Review" asp-route-id="@version.PlanId">@T["ChoosePlan"]</a>
+        </article>
+    }
+</div>
+@if (Model.Count == 0)
+{
+    <p class="notice">@T["NoPlans"]</p>
+}

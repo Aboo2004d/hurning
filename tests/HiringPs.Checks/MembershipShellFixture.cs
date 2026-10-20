@@ -276,7 +276,7 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
         TempData["PaymentTraceId"] = "11112222333344445555666677778888";
         return View(
             "/Areas/Member/Views/Payments/Details.cshtml",
-            new PaymentOrder
+            new PaymentOrderSummaryDto
             {
                 Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
                 State =
@@ -293,7 +293,7 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
                 AmountIls = 5,
                 Gateway = "Lahza",
                 GatewayEnvironment = environment.Name,
-                PlanVersion = new MembershipPlanVersion
+                PlanVersion = new PaymentPlanSummaryDto
                 {
                     PlanId = 1,
                     NameAr = "باقة",
@@ -311,7 +311,7 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
         var input = new PurchaseInput
         {
             PlanId = 1,
-            Plan = new MembershipPlanVersion
+            Plan = new MembershipPlanVersionSummaryDto
             {
                 Id = 1,
                 PlanId = 1,
@@ -348,13 +348,13 @@ public sealed class WalletShellFixtureController(PaymentEnvironment environment)
             "/Areas/Member/Views/WalletPayments/Index.cshtml",
             new WalletCheckoutPage
             {
-                Order = new PaymentOrder
+                Order = new PaymentOrderSummaryDto
                 {
                     Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
                     AmountIls = 5,
                     Gateway = "JawwalPay",
                     GatewayEnvironment = environment.Name,
-                    PlanVersion = new MembershipPlanVersion
+                    PlanVersion = new PaymentPlanSummaryDto
                     {
                         PlanId = 1,
                         NameAr = "باقة",
@@ -440,7 +440,9 @@ public class AdminFormShellFixtureController : Controller
             PriceIls = 5,
         };
         ViewBag.Versions = new List<MembershipPlanVersion> { version };
-        ViewBag.Plans = new List<MembershipPlanVersion> { version };
+        ViewBag.Plans = kind == "Subscriptions"
+            ? (object)new List<MembershipPlanLabelDto> { new(version.Id, version.NameAr, version.NameEn) }
+            : new List<MembershipPlanVersion> { version };
         ViewBag.Inbox = new AdminPage<TelegramInbox>
         {
             Items = [new() { Id = 1, ReceivedAt = DateTimeOffset.UtcNow }],
@@ -452,7 +454,7 @@ public class AdminFormShellFixtureController : Controller
             "Members" => View(
                 "/Areas/Admin/Views/Members/Index.cshtml",
                 PageOf(
-                    new MemberProfile
+                    new AdminMemberSummaryDto
                     {
                         UserId = "fixture",
                         Name = "مستخدم تجريبي",
@@ -463,22 +465,19 @@ public class AdminFormShellFixtureController : Controller
             ),
             "Plans" => View(
                 "/Areas/Admin/Views/Plans/Index.cshtml",
-                PageOf(
-                    new MembershipPlan
-                    {
-                        Id = 1,
-                        CurrentVersionId = 1,
-                        Visible = true,
-                    }
-                )
+                PageOf(new AdminPlanSummaryDto(1, true, new MembershipPlanVersionSummaryDto
+                {
+                    Id = version.Id, PlanId = version.PlanId, NameAr = version.NameAr,
+                    NameEn = version.NameEn, PriceIls = version.PriceIls, Days = version.Days,
+                }))
             ),
             "Subscriptions" => View(
                 "/Areas/Admin/Views/Subscriptions/Index.cshtml",
                 PageOf(
-                    new MemberSubscription
+                    new SubscriptionSummaryDto
                     {
                         UserId = "fixture",
-                        PlanVersion = version,
+                        PlanVersion = new MembershipPlanLabelDto(version.Id, version.NameAr, version.NameEn),
                         StartsAt = DateTimeOffset.UtcNow,
                         EndsAt = DateTimeOffset.UtcNow.AddDays(30),
                     }
@@ -498,7 +497,7 @@ public class AdminFormShellFixtureController : Controller
             "Discounts" => View(
                 "/Areas/Admin/Views/Discounts/Index.cshtml",
                 PageOf(
-                    new DiscountCode
+                    new DiscountSummaryDto
                     {
                         Id = 1,
                         PlanId = 1,
@@ -529,11 +528,10 @@ public class AdminFormShellFixtureController : Controller
 
     public IActionResult PaymentTrace()
     {
-        ViewBag.PaymentTraces = new List<AuditEntry>
+        ViewBag.PaymentTraces = new List<PaymentTraceSummaryDto>
         {
             new()
             {
-                Action = "Payment.VerifyTrace",
                 At = DateTimeOffset.Parse(
                     "2026-10-18T14:34:30Z",
                     System.Globalization.CultureInfo.InvariantCulture
@@ -545,12 +543,12 @@ public class AdminFormShellFixtureController : Controller
         ViewBag.TraceHost = "Development";
         return View(
             "/Areas/Admin/Views/Payments/Details.cshtml",
-            new PaymentOrder
+            new PaymentOrderSummaryDto
             {
                 AmountIls = 5,
                 Gateway = "Lahza",
                 GatewayEnvironment = "Sandbox",
-                PlanVersion = new MembershipPlanVersion
+                PlanVersion = new PaymentPlanSummaryDto
                 {
                     PlanId = 1,
                     NameAr = "باقة",
@@ -564,7 +562,7 @@ public class AdminFormShellFixtureController : Controller
     public IActionResult EditPreview(string kind, bool allPlans = false, bool create = false)
     {
         ViewBag.OriginalSources = Array.Empty<string>();
-        ViewBag.Plans = new List<MembershipPlanVersion>
+        ViewBag.Plans = new List<MembershipPlanVersionSummaryDto>
         {
             new()
             {
@@ -581,15 +579,15 @@ public class AdminFormShellFixtureController : Controller
             ),
             "Discounts" => View(
                 "/Areas/Admin/Views/Discounts/DiscountForm.cshtml",
-                new DiscountCode { Id = create ? 0 : 42, PlanId = allPlans || create ? null : 42 }
+                new DiscountInput { Id = create ? 0 : 42, PlanId = allPlans || create ? null : 42 }
             ),
             "Sources" => View(
                 "/Areas/Admin/Views/Sources/SourceForm.cshtml",
-                new Source { Id = 42 }
+                new SourceInput { Id = 42 }
             ),
             "Opportunities" => View(
                 "/Areas/Admin/Views/Opportunities/OpportunityForm.cshtml",
-                new Opportunity { Id = 42 }
+                new OpportunityInput { Id = 42 }
             ),
             _ => BadRequest(),
         };
@@ -598,9 +596,9 @@ public class AdminFormShellFixtureController : Controller
 
 public static class PaymentListingFixtureData
 {
-    public static AdminPage<PaymentOrder> Page(int page = 1)
+    public static AdminPage<PaymentOrderSummaryDto> Page(int page = 1)
     {
-        var orders = new List<PaymentOrder>
+        var orders = new List<PaymentOrderSummaryDto>
         {
             Order("Lahza", "2026-10-18T14:34:30Z"),
             Order("JawwalPay", "2026-10-18T13:22:00Z"),
@@ -619,7 +617,7 @@ public static class PaymentListingFixtureData
         };
     }
 
-    private static PaymentOrder Order(string gateway, string timestamp) =>
+    private static PaymentOrderSummaryDto Order(string gateway, string timestamp) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -630,7 +628,7 @@ public static class PaymentListingFixtureData
                 timestamp,
                 System.Globalization.CultureInfo.InvariantCulture
             ),
-            PlanVersion = new MembershipPlanVersion
+            PlanVersion = new PaymentPlanSummaryDto
             {
                 PlanId = 1,
                 NameAr = "باقة",
@@ -684,9 +682,9 @@ public class SocialTemplateShellFixtureController : Controller
 {
     public IActionResult Edit()
     {
-        ViewBag.History = new AdminPage<SocialTemplateVersion>
+        ViewBag.History = new AdminPage<SocialTemplateSummaryDto>
         {
-            Items = [new SocialTemplateVersion { Id = 1, Provider = "Facebook", Scope = "general", Number = 1, Active = true, Body = SocialTemplateText.DefaultBody, Actor = "Fixture" }],
+            Items = [new SocialTemplateSummaryDto { Id = 1, Provider = "Facebook", Scope = "general", Number = 1, CreatedAt = DateTimeOffset.UtcNow, Actor = "Fixture", Body = SocialTemplateText.DefaultBody, Active = true }],
             Pager = new AdminPager { TotalRecords = 1 },
         };
         return View("/Areas/Admin/Views/SocialTemplates/Edit.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
@@ -696,7 +694,7 @@ public class SocialTemplateShellFixtureController : Controller
     public IActionResult Compose() => View("/Areas/Admin/Views/Social/Compose.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialCompose
     {
         OpportunityId = 1, Provider = "Facebook", TemplateVersionId = 1, TemplateNumber = 1,
-        Opportunity = new Opportunity { Title = "وظيفة تجريبية", Organization = "جهة تجريبية" },
+        Opportunity = new SocialOpportunitySummaryDto("وظيفة تجريبية"),
         Text = "وظيفة تجريبية", Link = "https://hiring.ps/ar/Opportunities/Details/1",
     });
 }

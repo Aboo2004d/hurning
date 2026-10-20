@@ -1,6 +1,6 @@
-@model PaymentOrder
+@model PaymentOrderSummaryDto
 @{
-    var review = ViewBag.Review as PaymentReview;
+    var review = ViewBag.Review as PaymentReviewSummaryDto;
     var actions = ViewBag.PaymentActions as PaymentActions ?? PaymentActions.For(Model, ViewBag.Ready is true);
 }
 <section class="membership-card checkout-panel" data-checkout-region tabindex="-1" aria-live="polite" data-request-error="@T["CheckoutRequestFailed"]">

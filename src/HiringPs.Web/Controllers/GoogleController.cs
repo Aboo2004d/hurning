@@ -12,18 +12,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public sealed class GoogleProfileInput
-{
-    [Required, MaxLength(160)]
-    public string Name { get; set; } = "";
-
-    [
-        Required(ErrorMessage = "FieldRequired"),
-        RegularExpression("^[1-9][0-9]{7,14}$", ErrorMessage = "MobileInternational")
-    ]
-    public string Mobile { get; set; } = "";
-}
-
 [EnableRateLimiting("public")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class GoogleController(

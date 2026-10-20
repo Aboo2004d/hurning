@@ -1,4 +1,4 @@
-@model AdminPage<MemberSubscription>
+@model AdminPage<SubscriptionSummaryDto>
 @{ ViewData["Title"] = T["Subscriptions"].Value; }
 <section class="admin-list-page">
     <header class="admin-page-heading">
@@ -79,7 +79,7 @@
         <label>
             @T["Plan"]
             <select name="versionId">
-                @foreach (var version in (List<MembershipPlanVersion>)ViewBag.Plans)
+                @foreach (var version in (List<MembershipPlanLabelDto>)ViewBag.Plans)
                 {
                     <option value="@version.Id">@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
                 }

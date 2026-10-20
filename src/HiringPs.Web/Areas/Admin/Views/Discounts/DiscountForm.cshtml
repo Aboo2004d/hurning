@@ -1,4 +1,4 @@
-@model DiscountCode
+@model DiscountInput
 @{ ViewData["Title"] = T[Model.Id == 0 ? "AddDiscount" : "EditDiscount"].Value; }
 <h1>@ViewData["Title"]</h1>
 <form asp-area="Admin" asp-controller="Discounts" asp-action="@(Model.Id == 0 ? "Create" : "Edit")"
@@ -12,7 +12,7 @@
         @T["Plan"]
         <select asp-for="PlanId" aria-describedby="discount-plan-help">
             <option value="">@T["All"]</option>
-            @foreach (var plan in (List<MembershipPlanVersion>)ViewBag.Plans)
+            @foreach (var plan in (List<MembershipPlanVersionSummaryDto>)ViewBag.Plans)
             {
                 <option value="@plan.PlanId">@plan.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</option>
             }

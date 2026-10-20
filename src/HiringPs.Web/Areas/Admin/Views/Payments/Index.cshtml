@@ -1,4 +1,4 @@
-@model AdminPage<PaymentOrder>
+@model AdminPage<PaymentOrderSummaryDto>
 @{
     var titleKey = Context.Request.Query["gateway"].ToString() switch
     {
@@ -45,6 +45,9 @@
         </label>
         <label class="check">
             <input name="review" type="checkbox" value="true" checked="@(Context.Request.Query["review"] == "true")" />@T["ReviewPending"]
+        </label>
+        <label class="check">
+            <input name="unresolved" type="checkbox" value="true" checked="@(Context.Request.Query["unresolved"] == "true")" />@T["PaymentNeedsReconciliation"]
         </label>
         <button class="button button-outline admin-action" type="submit">
             <span class="fa-solid fa-filter" aria-hidden="true"></span>

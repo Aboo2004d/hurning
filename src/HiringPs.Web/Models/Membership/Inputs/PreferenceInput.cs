@@ -1,0 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+using HiringPs.Core;
+
+namespace HiringPs.Web.Models;
+
+public sealed class PreferenceInput
+{
+    public OpportunityKind[] Kinds { get; set; } = [];
+    public string[] Categories { get; set; } = [];
+    public string[] Locations { get; set; } = [];
+    public string[] AvailableCategories { get; set; } = [];
+    public string[] AvailableLocations { get; set; } = [];
+    public bool SavedReminders { get; set; }
+}

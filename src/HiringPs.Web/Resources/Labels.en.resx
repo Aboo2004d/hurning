@@ -3033,4 +3033,8 @@
   <data name="SocialOrganizationPage"><value>Organization page</value></data>
   <data name="SocialPersonalAccount"><value>Personal account</value></data>
   <data name="SocialDestinationNotConnected"><value>Connect this destination to enable publishing</value></data>
+  <data name="PaymentNeedsReconciliation" xml:space="preserve"><value>Payments needing reconciliation</value></data>
+  <data name="PaymentRecoveryHelp" xml:space="preserve"><value>A payment attempt started but has not been confirmed. Check the provider before starting another payment. The worker retries verification; an administrator can verify or review payment evidence manually.</value></data>
+  <data name="PlanEditConflict" xml:space="preserve"><value>Another administrator changed this plan. Reopen the editor to load the current version.</value></data>
+  <data name="PlanNoLongerAvailable" xml:space="preserve"><value>This plan is no longer available. Return to the plan catalog to choose an available plan.</value></data>
 </root>

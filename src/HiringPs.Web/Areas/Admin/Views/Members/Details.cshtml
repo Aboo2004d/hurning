@@ -1,4 +1,4 @@
-@model MemberProfile
+@model AdminMemberSummaryDto
 @{ ViewData["Title"] = T["MemberDetails"].Value + " — " + Model.Name; }
 <h1>@ViewData["Title"]</h1>
 @if (TempData["RecoveryLink"] is string recoveryLink)
@@ -37,7 +37,7 @@
         </label>
         <button type="submit">@T["ConfirmRecovery"]</button>
     </form>
-    @if (ViewBag.Audit is AdminPage<AuditEntry> audit)
+    @if (ViewBag.Audit is AdminPage<AdminAuditSummaryDto> audit)
         {
             <h2>@T["AuditLog"]</h2>
             <div class="table-wrap">

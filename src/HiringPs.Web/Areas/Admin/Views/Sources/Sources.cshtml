@@ -1,4 +1,4 @@
-@model AdminPage<Source>
+@model AdminPage<SourceSummaryDto>
 @{
     ViewData["Title"] = T["Sources"];
 }
@@ -38,7 +38,7 @@
                     <td>@SourceSchedule.Display(source.NextDueAt)</td>
                     <td>@(request is null?T["Never"].Value:T["Request_"+request.Status].Value)</td>
                     <td>
-                        @if (ViewBag.DiscoveryProgress is Dictionary<int, DiscoveryCheckpoint> progress && progress.TryGetValue(source.Id, out var cursor))
+                        @if (ViewBag.DiscoveryProgress is Dictionary<int, DiscoveryProgressSummaryDto> progress && progress.TryGetValue(source.Id, out var cursor))
                         {
                             <span>@cursor.CompletedPages @T["SavedDiscoveryPages"] · @cursor.Found @T["Results"]</span>
                         }

@@ -2,7 +2,6 @@ using HiringPs.Core;
 using HiringPs.Web.Infrastructure;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Member.Controllers;
 
@@ -11,18 +10,18 @@ public class PaymentsController(
     PaymentGatewayRegistry registry,
     PaymentReconciliation reconciliation,
     PaymentEvidenceStore evidenceStore,
-    PaymentTraceWriter? diagnostics = null
+    PaymentTraceWriter? diagnostics = null,
+    HostedPaymentCheckout? checkoutService = null,
+    PaymentReviewService? reviewService = null,
+    PaymentReadService? readService = null
 ) : MemberControllerBase(db)
 {
+    private readonly HostedPaymentCheckout hostedCheckout = checkoutService ?? new(db, registry);
+    private readonly PaymentReviewService reviews = reviewService ?? new(db, new MembershipService(db));
+    private readonly PaymentReadService payments = readService ?? new(db);
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
     {
-        var model = await Db
-            .PaymentOrders.AsNoTracking()
-            .Include(x => x.PlanVersion)
-            .Where(x => x.UserId == MemberId && x.GatewayEnvironment == Db.ActivePaymentEnvironment)
-            .OrderByDescending(x => x.CreatedAt)
-            .ThenByDescending(x => x.Id)
-            .PageAsync(page, ct);
+        var model = await payments.MemberOrders(MemberId).PageAsync(page, ct);
         Response.Headers.CacheControl = "no-store";
         return Request.Headers["X-Payment-Page"] == "true"
             ? PartialView("_PaymentTable", model)
@@ -31,21 +30,11 @@ public class PaymentsController(
 
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
-        var order = await Db
-            .PaymentOrders.AsNoTracking()
-            .Include(x => x.PlanVersion)
-            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == MemberId, ct);
-        if (order is null)
-            return NotFound();
-        ViewBag.Review = await Db
-            .PaymentReviews.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.OrderId == id, ct);
+        var order = await payments.OrderAsync(id, MemberId, ct);
+        if (order is null) return NotFound();
+        ViewBag.Review = await payments.ReviewAsync(id, MemberId, ct);
         var ready = (await registry.AvailableAsync(ct)).Any(x => x.Key == order.Gateway);
-        var session = await Db
-            .WalletPaymentSessions.AsNoTracking()
-            .Where(x => x.OrderId == id)
-            .Select(x => new { x.ConfirmationStartedAt, x.ConfirmationRejected })
-            .SingleOrDefaultAsync(ct);
+        var session = await payments.WalletAsync(id, MemberId, ct);
         var returned = TempData.Peek("ReturnedPayment") as string == id.ToString("N");
         ViewBag.PaymentActions = PaymentActions.For(
             order,
@@ -60,92 +49,20 @@ public class PaymentsController(
             : View(order);
     }
 
+    /// <summary>يترجم نتيجة خدمة بدء الدفع إلى استجابة ويب دون تنفيذ منطق البوابة داخل Controller.</summary>
     [HttpPost]
     public async Task<IActionResult> Pay(Guid id, CancellationToken ct)
     {
-        var order = await Db.PaymentOrders.SingleOrDefaultAsync(
-            x => x.Id == id && x.UserId == MemberId,
-            ct
-        );
-        if (order is null)
-            return NotFound();
-        if (
-            MembershipRules.Paid(order.State)
-            || order.ExpiresAt <= DateTimeOffset.UtcNow
-            || order.State is PaymentState.Failed or PaymentState.Cancelled
-        )
+        var result = await hostedCheckout.StartAsync(id, MemberId, ct);
+        if (result.Notice is not null) TempData["Notice"] = result.Notice;
+        return result.Route switch
         {
-            TempData["Notice"] = "PaymentExpired";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        if (order.GatewayEnvironment != Db.ActivePaymentEnvironment)
-        {
-            TempData["Notice"] = "PaymentEnvironmentMismatch";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        var gateway = (await registry.AvailableAsync(ct)).SingleOrDefault(x =>
-            x.Key == order.Gateway
-        );
-        if (gateway is null)
-        {
-            TempData["Notice"] = "GatewayUnavailable";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        if (gateway.Key == "JawwalPay")
-            return RedirectToAction("Index", "WalletPayments", new { id });
-        // Claim once, before the HTTP call. A timeout must never create another charge.
-        if (order.CheckoutUrl is not null)
-        {
-            if (
-                Uri.TryCreate(order.CheckoutUrl, UriKind.Absolute, out var saved)
-                && LahzaGateway.IsCheckoutUrl(saved)
-            )
-                return Redirect(saved.AbsoluteUri);
-            return BadRequest();
-        }
-        var claimed = await Db
-            .PaymentOrders.Where(x =>
-                x.Id == id
-                && x.UserId == MemberId
-                && x.CheckoutStartedAt == null
-                && x.ExpiresAt > DateTimeOffset.UtcNow
-                && x.State == PaymentState.AwaitingPayment
-            )
-            .ExecuteUpdateAsync(
-                update =>
-                    update
-                        .SetProperty(x => x.CheckoutStartedAt, DateTimeOffset.UtcNow)
-                        .SetProperty(x => x.ProviderReference, LahzaGateway.Reference(id))
-                        .SetProperty(x => x.State, PaymentState.Pending),
-                ct
-            );
-        if (claimed == 0)
-        {
-            TempData["Notice"] = "PaymentInitializationPending";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        await Db.Entry(order).ReloadAsync(ct);
-        try
-        {
-            var checkout = await gateway.CheckoutAsync(order, ct);
-            if (
-                !LahzaGateway.IsCheckoutUrl(checkout.Url)
-                || checkout.Reference != order.ProviderReference
-            )
-                throw new PaymentProviderException();
-            await Db
-                .PaymentOrders.Where(x => x.Id == id)
-                .ExecuteUpdateAsync(
-                    update => update.SetProperty(x => x.CheckoutUrl, checkout.Url.AbsoluteUri),
-                    ct
-                );
-            return Redirect(checkout.Url.AbsoluteUri);
-        }
-        catch (PaymentProviderException)
-        {
-            TempData["Notice"] = "PaymentInitializationPending";
-            return RedirectToAction(nameof(Details), new { id });
-        }
+            PaymentCheckoutRoute.NotFound => NotFound(),
+            PaymentCheckoutRoute.InvalidRequest => BadRequest(),
+            PaymentCheckoutRoute.Wallet => RedirectToAction("Index", "WalletPayments", new { id }),
+            PaymentCheckoutRoute.External => Redirect(result.Url!),
+            _ => RedirectToAction(nameof(Details), new { id })
+        };
     }
 
     // The return URL is only navigation. Server-side verification determines payment.
@@ -180,54 +97,15 @@ public class PaymentsController(
         CancellationToken ct
     )
     {
-        var order = await Db
-            .PaymentOrders.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == MemberId, ct);
-        if (order is null)
-            return NotFound();
-        var session = await Db
-            .WalletPaymentSessions.AsNoTracking()
-            .Where(x => x.OrderId == id)
-            .Select(x => new { x.ConfirmationStartedAt, x.ConfirmationRejected })
-            .SingleOrDefaultAsync(ct);
         var returned = TempData.Peek("ReturnedPayment") as string == id.ToString("N");
-        if (
-            !PaymentActions
-                .For(
-                    order,
-                    false,
-                    session?.ConfirmationStartedAt is not null,
-                    session?.ConfirmationRejected == true,
-                    returned
-                )
-                .CanReport
-        )
-            return BadRequest();
-        if (note?.Length > 2000)
-            return BadRequest();
-        if (await Db.PaymentReviews.AnyAsync(x => x.OrderId == id, ct))
+        var result = await reviews.RequestAsync(new(id, MemberId, note, returned),
+            token => evidenceStore.SaveAsync(evidence, token), ct);
+        if (result.Outcome == PaymentReviewOutcome.NotFound) return NotFound();
+        if (result.Outcome == PaymentReviewOutcome.InvalidRequest) return BadRequest();
+        if (result.Outcome == PaymentReviewOutcome.AlreadyExists)
             return Request.Headers["X-Checkout-Async"] == "true"
-                ? await Details(id, ct)
-                : RedirectToAction(nameof(Details), new { id });
-        try
-        {
-            var name = await evidenceStore.SaveAsync(evidence, ct);
-            Db.PaymentReviews.Add(
-                new PaymentReview
-                {
-                    OrderId = id,
-                    UserId = MemberId,
-                    Note = note?.Trim() ?? "",
-                    AttachmentName = name,
-                }
-            );
-            await Db.SaveChangesAsync(ct);
-            TempData["Notice"] = "ReviewRequested";
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["Notice"] = ex.Message;
-        }
+                ? await Details(id, ct) : RedirectToAction(nameof(Details), new { id });
+        if (result.Notice is not null) TempData["Notice"] = result.Notice;
         if (Request.Headers["X-Checkout-Async"] == "true")
         {
             ViewData["CheckoutNotice"] = TempData["Notice"];
@@ -238,17 +116,13 @@ public class PaymentsController(
 
     public async Task<IActionResult> Evidence(Guid id, CancellationToken ct)
     {
-        var review = await Db.PaymentReviews.SingleOrDefaultAsync(
-            x => x.OrderId == id && x.UserId == MemberId,
-            ct
-        );
-        if (review?.AttachmentName is null)
-            return NotFound();
+        var name = await reviews.EvidenceNameAsync(id, MemberId, ct);
+        if (name is null) return NotFound();
         Response.Headers.CacheControl = "no-store";
         return PhysicalFile(
-            evidenceStore.PathFor(review.AttachmentName),
-            review.AttachmentName.EndsWith(".png") ? "image/png" : "image/jpeg",
-            "payment-evidence" + Path.GetExtension(review.AttachmentName)
+            evidenceStore.PathFor(name),
+            name.EndsWith(".png") ? "image/png" : "image/jpeg",
+            "payment-evidence" + Path.GetExtension(name)
         );
     }
 }

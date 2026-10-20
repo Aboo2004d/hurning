@@ -11,28 +11,6 @@ using Microsoft.Extensions.Options;
 
 namespace HiringPs.Web.Controllers;
 
-public class LoginInput
-{
-    [Required, EmailAddress]
-    public string Email { get; set; } = "";
-
-    [Required, DataType(DataType.Password)]
-    public string Password { get; set; } = "";
-    public string? ReturnUrl { get; set; }
-}
-
-public class PasswordInput
-{
-    [Required, DataType(DataType.Password)]
-    public string CurrentPassword { get; set; } = "";
-
-    [Required, DataType(DataType.Password), MinLength(12)]
-    public string NewPassword { get; set; } = "";
-
-    [Required, DataType(DataType.Password), Compare(nameof(NewPassword))]
-    public string ConfirmPassword { get; set; } = "";
-}
-
 public class AccountController(
     SignInManager<IdentityUser> signIn,
     UserManager<IdentityUser> users,

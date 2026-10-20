@@ -3,7 +3,6 @@ using HiringPs.Web.Infrastructure;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Admin.Controllers;
 
@@ -13,9 +12,13 @@ public class PaymentsController(
     MembershipService membership,
     PaymentReconciliation reconciliation,
     PaymentEvidenceStore evidenceStore,
-    PaymentTraceWriter? diagnostics = null
+    PaymentTraceWriter? diagnostics = null,
+    PaymentReviewService? reviewService = null,
+    PaymentReadService? readService = null
 ) : Controller
 {
+    private readonly PaymentReviewService reviews = reviewService ?? new(db, membership);
+    private readonly PaymentReadService payments = readService ?? new(db);
     public async Task<IActionResult> Index(
         string? q,
         string? gateway,
@@ -23,38 +26,11 @@ public class PaymentsController(
         PaymentState? state,
         bool review = false,
         int page = 1,
-        CancellationToken ct = default
+        CancellationToken ct = default,
+        bool unresolved = false
     )
     {
-        var query = db.PaymentOrders.AsNoTracking().Include(x => x.PlanVersion).AsQueryable();
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            Guid.TryParse(q, out var orderId);
-            long.TryParse(q, out var transactionId);
-            query = query.Where(x =>
-                x.Id == orderId
-                || x.ProviderReference == q
-                || x.UserId == q
-                || db.WalletPaymentSessions.Any(session =>
-                    session.OrderId == x.Id
-                    && (session.JawwalReference == q || session.TransactionId == transactionId)
-                )
-            );
-        }
-        if (!string.IsNullOrWhiteSpace(gateway))
-            query = query.Where(x => x.Gateway == gateway);
-        if (environment is "Sandbox" or "Production")
-            query = query.Where(x => x.GatewayEnvironment == environment);
-        if (state is not null)
-            query = query.Where(x => x.State == state);
-        if (review)
-            query = query.Where(x =>
-                db.PaymentReviews.Any(r => r.OrderId == x.Id && r.ResolvedAt == null)
-            );
-        var model = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .ThenByDescending(x => x.Id)
-            .PageAsync(page, ct);
+        var model = await payments.AdminOrders(new(q, gateway, environment, state, review, unresolved)).PageAsync(page, ct);
         Response.Headers.CacheControl = "no-store";
         return Request.Headers["X-Payment-Page"] == "true"
             ? PartialView("_PaymentTable", model)
@@ -63,38 +39,14 @@ public class PaymentsController(
 
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
-        var order = await db
-            .PaymentOrders.AsNoTracking()
-            .Include(x => x.PlanVersion)
-            .SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (order is null)
-            return NotFound();
-        var traceActor = "Payment:" + id.ToString("N");
-        ViewBag.PaymentTraces = await db
-            .Audit.AsNoTracking()
-            .Where(x => x.Action == "Payment.VerifyTrace" && x.Actor == traceActor)
-            .OrderByDescending(x => x.At)
-            .ThenByDescending(x => x.Id)
-            .Take(10)
-            .ToListAsync(ct);
+        var order = await payments.OrderAsync(id, null, ct);
+        if (order is null) return NotFound();
+        ViewBag.PaymentTraces = await payments.AdminTracesAsync(id, ct);
         ViewBag.TraceHost = HttpContext
             .RequestServices.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>()
             .EnvironmentName;
-        ViewBag.Review = await db
-            .PaymentReviews.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.OrderId == id, ct);
-        ViewBag.WalletReceipt = await db
-            .WalletPaymentSessions.AsNoTracking()
-            .Where(x => x.OrderId == id)
-            .Select(x => new WalletReceiptSummary(
-                x.TransactionId,
-                x.JawwalReference,
-                x.ConfirmedAmount,
-                x.JawwalFee,
-                x.PlatformFee,
-                x.NetCredited
-            ))
-            .SingleOrDefaultAsync(ct);
+        ViewBag.Review = await payments.ReviewAsync(id, null, ct);
+        ViewBag.WalletReceipt = await payments.WalletReceiptAsync(id, ct);
         return View(order);
     }
 
@@ -119,87 +71,30 @@ public class PaymentsController(
         CancellationToken ct
     )
     {
-        if (
-            string.IsNullOrWhiteSpace(reason)
-            || string.IsNullOrWhiteSpace(evidence)
-            || reason.Length > 1500
-            || evidence.Length > 1500
-        )
-            return BadRequest();
-        if (
-            !await db.PaymentOrders.AnyAsync(
-                x => x.Id == id && x.GatewayEnvironment == db.ActivePaymentEnvironment,
-                ct
-            )
-        )
-        {
-            TempData["Notice"] = "PaymentEnvironmentMismatch";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        await membership.ConfirmAsync(
-            id,
-            User.Identity?.Name ?? "Admin",
-            true,
-            reason ?? "",
-            evidence ?? "",
-            null,
-            null,
-            null,
-            ct
-        );
+        var outcome = await reviews.ApproveAsync(new(id, User.Identity?.Name ?? "Admin", reason, evidence), ct);
+        if (outcome.Outcome == PaymentReviewOutcome.InvalidRequest) return BadRequest();
+        if (outcome.Notice is not null) TempData["Notice"] = outcome.Notice;
         return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpPost]
     public async Task<IActionResult> Resolve(Guid id, string result, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(result) || result.Length > 1500)
-            return BadRequest();
-        var review = await db.PaymentReviews.SingleOrDefaultAsync(x => x.OrderId == id, ct);
-        if (review is null)
-            return NotFound();
-        if (review.ResolvedAt is null)
-        {
-            review.ResolvedAt = DateTimeOffset.UtcNow;
-            review.Resolution = result.Trim();
-            var member = await db.MemberProfiles.SingleAsync(x => x.UserId == review.UserId, ct);
-            db.MemberMessages.Add(
-                new MemberMessage
-                {
-                    UserId = review.UserId,
-                    EventKey = "review:" + review.Id,
-                    Kind = MemberMessageKind.Review,
-                    Text =
-                        (
-                            member.Language == "en"
-                                ? "Payment review completed. Order: "
-                                : "تمت معالجة مراجعة الدفع. الطلب: "
-                        )
-                        + id
-                        + "\n"
-                        + result,
-                }
-            );
-            membership.Audit(
-                User.Identity?.Name ?? "Admin",
-                "Payment.ReviewResolve",
-                $"Member {review.UserId}; order {id}; {result}"
-            );
-            await db.SaveChangesAsync(ct);
-        }
+        var outcome = await reviews.ResolveAsync(new(id, User.Identity?.Name ?? "Admin", result), ct);
+        if (outcome.Outcome == PaymentReviewOutcome.InvalidRequest) return BadRequest();
+        if (outcome.Outcome == PaymentReviewOutcome.NotFound) return NotFound();
         return RedirectToAction(nameof(Details), new { id });
     }
 
     public async Task<IActionResult> Evidence(Guid id, CancellationToken ct)
     {
-        var review = await db.PaymentReviews.SingleOrDefaultAsync(x => x.OrderId == id, ct);
-        if (review?.AttachmentName is null)
-            return NotFound();
+        var name = await reviews.EvidenceNameAsync(id, null, ct);
+        if (name is null) return NotFound();
         Response.Headers.CacheControl = "no-store";
         return PhysicalFile(
-            evidenceStore.PathFor(review.AttachmentName),
-            review.AttachmentName.EndsWith(".png") ? "image/png" : "image/jpeg",
-            "payment-evidence" + Path.GetExtension(review.AttachmentName)
+            evidenceStore.PathFor(name),
+            name.EndsWith(".png") ? "image/png" : "image/jpeg",
+            "payment-evidence" + Path.GetExtension(name)
         );
     }
 }

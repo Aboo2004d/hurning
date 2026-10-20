@@ -1,0 +1,233 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+
+namespace HiringPs.Core;
+
+/// <summary>يعالج أوامر محادثة العضو مع فصل نقل HTTP عن منطق الاشتراك والتفضيلات.</summary>
+public sealed class TelegramCommands(
+    HiringDb db,
+    TelegramClient telegram,
+    MemberVerification verification,
+    PaymentReconciliation payments,
+    IConfiguration configuration
+)
+{
+    /// <summary>يعالج أمر Telegram بعد التحقق من العضو والسياق والصلاحيات المطلوبة.</summary>
+    public async Task HandleAsync(string body, CancellationToken ct)
+    {
+        using var document = JsonDocument.Parse(body);
+        if (
+            !document.RootElement.TryGetProperty("message", out var message)
+            || !message.TryGetProperty("from", out var sender)
+            || !sender.TryGetProperty("id", out var fromId)
+            || !message.TryGetProperty("chat", out var chat)
+            || chat.GetProperty("type").GetString() != "private"
+        )
+            return;
+        var from = fromId.GetInt64();
+        var chatId = chat.GetProperty("id").GetInt64();
+        if (from != chatId)
+            return;
+        if (message.TryGetProperty("contact", out var contact))
+        {
+            if (
+                contact.TryGetProperty("user_id", out var own)
+                && contact.TryGetProperty("phone_number", out var phone)
+            )
+            {
+                try
+                {
+                    await verification.ContactAsync(
+                        from,
+                        chatId,
+                        own.GetInt64(),
+                        phone.GetString() ?? "",
+                        ct
+                    );
+                }
+                catch (InvalidOperationException)
+                {
+                    await telegram.SendAsync(
+                        chatId,
+                        "تعذّر التحقق من الرقم. / Cannot verify this number.",
+                        ct
+                    );
+                }
+            }
+            return;
+        }
+        var text = message.TryGetProperty("text", out var field) ? field.GetString() ?? "" : "";
+        var command = text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (command.Length == 0)
+            return;
+        var name = command[0].Split('@')[0];
+        if (name == "/start" && command.Length == 2)
+        {
+            if (!await verification.StartAsync(command[1], from, chatId, ct))
+                await telegram.SendAsync(
+                    chatId,
+                    "رابط الربط غير صالح أو منتهٍ. افتح رابطًا جديدًا من الموقع. / This link is invalid or expired. Open a new link from the website.",
+                    ct
+                );
+            return;
+        }
+        var member = await db.MemberProfiles.SingleOrDefaultAsync(
+            x => x.TelegramUserId == from && x.Activated,
+            ct
+        );
+        if (member is null)
+        {
+            var english =
+                sender.TryGetProperty("language_code", out var nativeLanguage)
+                && nativeLanguage.ValueKind == JsonValueKind.String
+                && (
+                    nativeLanguage.GetString()?.StartsWith("en", StringComparison.OrdinalIgnoreCase)
+                    ?? false
+                );
+            var visitorSite =
+                (configuration["Seo:PublicOrigin"] ?? "https://hiring.ps").TrimEnd('/')
+                + (english ? "/en" : "/ar");
+            await telegram.SendAsync(
+                chatId,
+                english
+                    ? "Welcome to Employment in Palestine 🌿\nLink your account from the website to activate it. Once subscribed, receive opportunity alerts for your preferences and track your subscription."
+                    : "أهلًا بك في التوظيف في فلسطين 🌿\nاربط حسابك من الموقع لتفعيله. وبعد الاشتراك تصلك تنبيهات الفرص حسب تفضيلاتك ويمكنك متابعة باقتك ومدفوعاتك.",
+                ct,
+                buttons:
+                [
+                    (english ? "Create an account" : "إنشاء حساب", visitorSite + "/Registration"),
+                    (english ? "Sign in" : "تسجيل الدخول", visitorSite + "/Account/Login"),
+                ]
+            );
+            return;
+        }
+        var en = member.Language == "en";
+        var origin = configuration["Seo:PublicOrigin"] ?? "https://hiring.ps";
+        var site = origin.TrimEnd('/') + "/" + member.Language + "/Member";
+        if (member.Suspended)
+        {
+            await telegram.SendAsync(
+                chatId,
+                (en ? "Account suspended: " : "الحساب معلّق: ") + member.SuspensionReason,
+                ct
+            );
+            return;
+        }
+        switch (name)
+        {
+            case "/stop":
+                member.NotificationsEnabled = false;
+                await db.SaveChangesAsync(ct);
+                await telegram.SendAsync(
+                    chatId,
+                    en
+                        ? "Opportunity alerts stopped. Resume with a new code from your website settings. Payment and account messages remain enabled."
+                        : "تم إيقاف تنبيهات الفرص. أعد تفعيلها برمز جديد من إعدادات حسابك بالموقع. تستمر رسائل الدفع والحساب.",
+                    ct
+                );
+                break;
+            case "/payment_status":
+                if (command.Length != 2 || !Guid.TryParse(command[1], out var orderId))
+                {
+                    await telegram.SendAsync(chatId, "/payment_status orderId", ct);
+                    break;
+                }
+                var outcome = await payments.CheckAsync(
+                    orderId,
+                    member.UserId,
+                    "Telegram:" + member.UserId,
+                    ct
+                );
+                // CheckAsync commits the server state before this reply is sent.
+                var result = outcome switch
+                {
+                    "PaymentConfirmed" => en
+                        ? "Payment confirmed and subscription applied."
+                        : "تم تأكيد الدفع واعتماد الاشتراك.",
+                    "PaymentEnvironmentMismatch" => en
+                        ? "This order belongs to another payment environment."
+                        : "هذا الطلب يتبع بيئة دفع مختلفة.",
+                    "PaymentUncertain" => en
+                        ? "Payment status is unresolved. Do not pay again yet; check this order or request an administrator review."
+                        : "نتيجة الدفع غير محسومة. لا تدفع مجددًا الآن؛ تحقّق من الطلب أو اطلب مراجعة الإدارة.",
+                    "PaymentNotFound" => en
+                        ? "Order not found in your account."
+                        : "لم نجد الطلب ضمن حسابك.",
+                    "PaymentCheckWait" => en
+                        ? "Please wait 30 seconds before checking again."
+                        : "انتظر 30 ثانية قبل التحقق مجددًا.",
+                    "GatewayUnavailable" => en
+                        ? "Provider verification is unavailable. Request a payment review on the website."
+                        : "التحقق من البوابة غير متاح. يمكنك طلب مراجعة الدفع من الموقع.",
+                    _ => en ? "Payment has not been confirmed yet." : "لم يتم تأكيد الدفع بعد.",
+                };
+                await telegram.SendAsync(chatId, result, ct);
+                break;
+            case "/status":
+            case "/start":
+                var now = DateTimeOffset.UtcNow;
+                var periods = await db
+                    .MemberSubscriptions.AsNoTracking()
+                    .Include(x => x.PlanVersion)
+                    .Where(x => x.UserId == member.UserId && !x.Cancelled && x.EndsAt > now)
+                    .OrderBy(x => x.StartsAt)
+                    .ToListAsync(ct);
+                var active = MembershipRules
+                    .DisplayPeriods(periods)
+                    .FirstOrDefault(x => x.StartsAt <= now);
+                await telegram.SendAsync(
+                    chatId,
+                    (en ? "Plan: " : "الباقة: ")
+                        + (active?.PlanVersion.Name(member.Language) ?? (en ? "Free" : "مجانية"))
+                        + (
+                            active is null
+                                ? ""
+                                : "\n"
+                                    + (en ? "Ends (Palestine time): " : "تنتهي (توقيت فلسطين): ")
+                                    + SourceSchedule.Display(active.EndsAt)
+                        )
+                        + "\n"
+                        + (en ? "Alerts: " : "التنبيهات: ")
+                        + (
+                            member.NotificationsEnabled
+                                ? en
+                                    ? "On"
+                                    : "مفعلة"
+                                : en
+                                    ? "Off"
+                                    : "متوقفة"
+                        )
+                        + "\n"
+                        + site,
+                    ct,
+                    buttons: [(en ? "Open my account" : "فتح حسابي", site)]
+                );
+                break;
+            default:
+                await telegram.SendAsync(
+                    chatId,
+                    "/start — "
+                        + (en ? "Account link and status" : "ربط الحساب وحالته")
+                        + "\n/status — "
+                        + (en ? "Plan and alerts" : "الباقة والتنبيهات")
+                        + "\n/stop — "
+                        + (en ? "Stop opportunity alerts" : "إيقاف تنبيهات الفرص")
+                        + "\n/payment_status orderId — "
+                        + (en ? "Check your payment" : "التحقق من الدفع")
+                        + "\n/help\n"
+                        + site
+                        + "/Plans\n"
+                        + site
+                        + "/Preferences",
+                    ct,
+                    buttons:
+                    [
+                        (en ? "My plan" : "باقتي", site + "/Plans"),
+                        (en ? "My preferences" : "تفضيلاتي", site + "/Preferences"),
+                    ]
+                );
+                break;
+        }
+    }
+}
