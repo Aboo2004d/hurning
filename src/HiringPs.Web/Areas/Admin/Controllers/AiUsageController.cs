@@ -22,6 +22,7 @@ public class AiUsageController : AdminControllerBase
         CancellationToken ct = default
     )
     {
+        Response.Headers.CacheControl = "no-store";
         days = Math.Clamp(days, 1, 365);
         var since = DateTimeOffset.UtcNow.AddDays(-days);
         var query = db.AiUsage.AsNoTracking().Where(x => x.StartedAt >= since);
@@ -60,6 +61,7 @@ public class AiUsageController : AdminControllerBase
             new AiUsageDashboard
             {
                 Days = days,
+                PauseStatus = await new AiPauseReadService(db).ReadAsync(ct),
                 Items = items.Items,
                 ItemsPager = items.Pager,
                 Groups = groups.Items,

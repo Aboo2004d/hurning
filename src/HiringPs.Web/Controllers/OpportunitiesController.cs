@@ -1,13 +1,18 @@
 using HiringPs.Core;
+using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public class OpportunitiesController(HiringDb db, MembershipService membership) : Controller
+public class OpportunitiesController(
+    HiringDb db,
+    MembershipService membership,
+    PublicCatalog catalog
+) : Controller
 {
-    public async Task<IActionResult> Details(long id, CancellationToken ct)
+    public async Task<IActionResult> Details(long id, string? slug, CancellationToken ct)
     {
         var item = await db
             .Opportunities.AsNoTracking()
@@ -25,6 +30,15 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
             );
         if (item is null)
             return NotFound();
+        // The canonical URL carries the title slug; a wrong or missing slug is permanently redirected.
+        var expected = UrlSlug.Create(item.Title);
+        if (
+            (HttpMethods.IsGet(Request.Method) || HttpMethods.IsHead(Request.Method))
+            && !string.Equals(slug ?? "", expected, StringComparison.Ordinal)
+        )
+            return RedirectPermanent(
+                Url.Content("~" + PublicListing.DetailsPath(item)) + Request.QueryString
+            );
         var allowed = await membership.DetailKindsAsync(
             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             User.IsInRole("Admin"),
@@ -44,6 +58,16 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
             Response.Headers.CacheControl = "no-store";
         }
         ViewData["ListingKind"] = item.Kind;
+        ViewBag.Attachments = Attachments(item.AttachmentsJson);
+        var facets = await catalog.FacetsAsync(ct);
+        ViewBag.OrganizationFacet = facets.OrganizationFor(item.NormalizedOrganization);
+        ViewBag.CityFacets = facets
+            .Cities.Where(x =>
+                x.Kind == item.Kind
+                && item.LocationSearchText.Contains(x.City.SearchKey, StringComparison.Ordinal)
+            )
+            .Select(x => x.City)
+            .ToList();
         ViewBag.VerifiedDates = await db
             .OpportunityDates.AsNoTracking()
             .Where(x => x.OpportunityId == item.Id)
@@ -51,6 +75,24 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
             .ThenByDescending(x => x.Id)
             .ToListAsync(ct);
         return View(item);
+    }
+
+    /// <summary>HTTPS attachment links from stored JSON; malformed data yields no links instead of an error.</summary>
+    private static List<string> Attachments(string? json)
+    {
+        try
+        {
+            return (System.Text.Json.JsonSerializer.Deserialize<string[]>(json ?? "[]") ?? [])
+                .Where(file =>
+                    Uri.TryCreate(file, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+                )
+                .Distinct()
+                .ToList();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return [];
+        }
     }
 
     [HttpPost, EnableRateLimiting("public")]
@@ -66,17 +108,17 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
             || (details?.Length ?? 0) > 1000
         )
             return BadRequest();
-        if (
-            !await db.Opportunities.AnyAsync(
-                x =>
-                    x.Id == id
-                    && (
-                        x.Status == PublicationStatus.Published
-                        || x.Status == PublicationStatus.Archived
-                    ),
-                ct
+        var title = await db
+            .Opportunities.Where(x =>
+                x.Id == id
+                && (
+                    x.Status == PublicationStatus.Published
+                    || x.Status == PublicationStatus.Archived
+                )
             )
-        )
+            .Select(x => x.Title)
+            .FirstOrDefaultAsync(ct);
+        if (title is null)
             return NotFound();
         db.Reports.Add(
             new()
@@ -88,6 +130,6 @@ public class OpportunitiesController(HiringDb db, MembershipService membership) 
         );
         await db.SaveChangesAsync(ct);
         TempData["Notice"] = "ReportReceived";
-        return RedirectToAction(nameof(Details), new { id });
+        return LocalRedirect(Url.Content("~" + PublicListing.DetailsPath(id, title)));
     }
 }

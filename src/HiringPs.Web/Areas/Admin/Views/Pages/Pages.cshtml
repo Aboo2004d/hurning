@@ -24,7 +24,7 @@
                 {
                     @T["PageLastUpdated"]
                     <span>
-                        @TimeZoneInfo.ConvertTime(page.UpdatedAt,TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")
+                        @PaymentDisplay.Time(page.UpdatedAt) @T["PalestineTime"]
                     </span>
                 }
             </p>

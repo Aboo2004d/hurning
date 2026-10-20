@@ -11,17 +11,20 @@ using Microsoft.Playwright;
 
 namespace HiringPs.Core;
 
-/// <summary>يجمع صفحات المصدر وأدلتها باستخدام Playwright دون تنفيذ النشر أو الدفع.</summary>
+/// <summary>مكون BrowserCollector ضمن مجال Collection؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public partial class BrowserCollector(
     UrlPolicy policy,
     IConfiguration configuration,
-    AttachmentReader attachmentReader
+    AttachmentReader attachmentReader,
+    BrowserHost? host = null
 ) : IAsyncDisposable
 {
-    private IPlaywright? playwright;
-    private IBrowser? browser;
+    // Without a shared host (web scopes, probes) this collector owns its browser as before.
+    private BrowserHost? ownedHost;
 
-    /// <summary>يجهز سياق المتصفح المستخدم في جولة المصدر.</summary>
+    private BrowserHost Host => host ?? (ownedHost ??= new BrowserHost(configuration));
+
+    /// <summary>ينفذ ContextAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private async Task<IBrowserContext> ContextAsync(Source source, CancellationToken ct, bool setup = false) =>
         await CollectorDiagnosticFiles.WithoutPageAsync(
             source,
@@ -33,7 +36,7 @@ public partial class BrowserCollector(
             ct
         );
 
-    /// <summary>ينشئ سياق متصفح بإعدادات الجلسة والمهلة الحالية.</summary>
+    /// <summary>ينفذ CreateContextAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private async Task<IBrowserContext> CreateContextAsync(Source source, CancellationToken ct, bool setup)
     {
         var conf =
@@ -45,17 +48,7 @@ public partial class BrowserCollector(
             )
             .ToArray();
         await policy.ValidateAsync(source.Url, hosts, ct);
-        playwright ??= await BrowserSettings.CreateAsync(configuration);
-        browser ??= await playwright.Chromium.LaunchAsync(
-            new()
-            {
-                Headless = true,
-                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
-                Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
-                    ? channel
-                    : null,
-            }
-        );
+        var browser = await Host.GetAsync(ct);
         var context = await browser.NewContextAsync(
             new()
             {
@@ -65,6 +58,26 @@ public partial class BrowserCollector(
             }
         );
         context.SetDefaultTimeout(20000);
+        try
+        {
+            await RouteAsync(context, hosts, setup, ct);
+        }
+        catch
+        {
+            await context.DisposeAsync();
+            throw;
+        }
+        return context;
+    }
+
+    /// <summary>ينفذ RouteAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
+    private async Task RouteAsync(
+        IBrowserContext context,
+        string[] hosts,
+        bool setup,
+        CancellationToken ct
+    )
+    {
         await context.RouteAsync(
             "**/*",
             async route =>
@@ -100,12 +113,11 @@ public partial class BrowserCollector(
                 }
             }
         );
-        return context;
     }
 
     private DiscoverySession? discovery;
 
-    /// <summary>ينشئ حالة تتبع لجولة اكتشاف صفحات المصدر.</summary>
+    /// <summary>ينفذ DiscoverySession وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private sealed class DiscoverySession(
         DiscoveryCheckpoint checkpoint,
         Func<DiscoveryBatch, CancellationToken, Task> save
@@ -116,7 +128,7 @@ public partial class BrowserCollector(
         public bool Saved { get; set; }
     }
 
-    /// <summary>يكتشف عناصر المصدر مع نقطة استئناف دائمة وحدود الصفحات.</summary>
+    /// <summary>ينفذ DiscoverResumableAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     public virtual async Task DiscoverResumableAsync(
         Source source,
         DiscoveryCheckpoint checkpoint,
@@ -141,7 +153,7 @@ public partial class BrowserCollector(
         }
     }
 
-    /// <summary>يحفظ تقدم صفحة الاكتشاف وعناصرها قبل الانتقال للصفحة التالية.</summary>
+    /// <summary>ينفذ SaveDiscoveryPageAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private async Task SaveDiscoveryPageAsync(DiscoveryBatch batch, CancellationToken ct)
     {
         if (discovery is null)
@@ -150,7 +162,7 @@ public partial class BrowserCollector(
         discovery.Saved = true;
     }
 
-    /// <summary>ينتقل إلى صفحة القائمة التالية وفق إعدادات المصدر وحدود الاكتشاف.</summary>
+    /// <summary>ينفذ AdvanceListingAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private static async Task AdvanceListingAsync(
         IPage page,
         string selector,
@@ -171,7 +183,7 @@ public partial class BrowserCollector(
         );
     }
 
-    /// <summary>يكتشف روابط عناصر المصدر دون نشر فرص أو تخمين محتواها.</summary>
+    /// <summary>يكتشف المصدر ويثبت الدفعات ويحدث الصحة والجدولة تحت قفل الدورة.</summary>
     public virtual async Task<List<(string Id, string Url)>> DiscoverAsync(
         Source source,
         CancellationToken ct
@@ -215,6 +227,7 @@ public partial class BrowserCollector(
             );
         var conf =
             JsonSerializer.Deserialize<SourceConfiguration>(source.ConfigurationJson) ?? new();
+        var maxPages = Math.Clamp(conf.MaxPages, 1, 50);
         if (source.Connector == ConnectorKind.Automatic)
         {
             await using var automaticContext = await ContextAsync(source, ct);
@@ -242,7 +255,7 @@ public partial class BrowserCollector(
                         : source.Url;
                     for (
                         var n = discovery?.Checkpoint.CompletedPages ?? 0;
-                        current is not null && n < Math.Clamp(conf.MaxPages, 1, 50);
+                        current is not null && n < maxPages;
                         n++
                     )
                     {
@@ -348,13 +361,9 @@ public partial class BrowserCollector(
                             continue;
                         if (
                             entry.TryGetProperty("byDate", out var date)
-                            && DateTime.TryParse(
-                                date.GetString(),
-                                System.Globalization.CultureInfo.InvariantCulture,
-                                System.Globalization.DateTimeStyles.None,
-                                out var deadline
-                            )
-                            && DateOnly.FromDateTime(deadline) < TextRules.PalestineToday()
+                            && date.ValueKind == JsonValueKind.String
+                            && GpcListingDate(date.GetString()) is { } deadline
+                            && deadline < TextRules.PalestineToday()
                         )
                             continue;
                         found[id] = new Uri(
@@ -382,7 +391,7 @@ public partial class BrowserCollector(
                     }
                     for (
                         var n = discovery?.Checkpoint.CompletedPages ?? 0;
-                        n < Math.Clamp(conf.MaxPages, 1, 50);
+                        n < maxPages;
                         n++
                     )
                     {
@@ -447,7 +456,7 @@ public partial class BrowserCollector(
                             new(pageEntries, resumeBase, n + 1, replayClicks),
                             ct
                         );
-                        if (n + 1 >= conf.MaxPages)
+                        if (n + 1 >= maxPages)
                             throw new InvalidOperationException(
                                 "Pagination limit reached; increase the limit after reviewing this source."
                             );
@@ -488,11 +497,11 @@ public partial class BrowserCollector(
         );
     }
 
-    /// <summary>يجلب نص عنصر المصدر بعد التحقق من سياسة العنوان.</summary>
+    /// <summary>ينفذ FetchAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     public async Task<string> FetchAsync(Source source, string url, CancellationToken ct) =>
         (await FetchBundleAsync(source, url, ct)).Text;
 
-    /// <summary>يجلب نص عنصر المصدر وروابط مرفقاته كحزمة أدلة واحدة.</summary>
+    /// <summary>ينفذ FetchBundleAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     public virtual async Task<ContentBundle> FetchBundleAsync(
         Source source,
         string url,
@@ -509,7 +518,8 @@ public partial class BrowserCollector(
                 configuration,
                 async () =>
                 {
-                    var entries = await OpportunityRss.ReadAsync(source, policy, ct);
+                    // One feed download serves every item of the run instead of one per item.
+                    var entries = await OpportunityRss.ReadCachedAsync(source, policy, ct);
                     if (!entries.TryGetValue(url, out var content))
                         throw new ContentNeedsReviewException(
                             "Job is no longer in the RSS window; not evidence of closure."
@@ -618,13 +628,17 @@ public partial class BrowserCollector(
                         links.Add(uri.ToString());
                 }
 
-                var pdfs = links
+                var linkedPdfs = links
                     .Distinct()
                     .Where(x =>
                         Uri.TryCreate(x, UriKind.Absolute, out var uri)
                         && uri.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
                     )
                     .ToArray();
+                // Attachments on unapproved hosts can never pass the URL policy; skip them up front
+                // instead of failing the item into repeated retries.
+                var pdfs = linkedPdfs.Where(x => ApprovedHost(x, hosts)).ToArray();
+                var skippedPdfs = linkedPdfs.Except(pdfs).ToArray();
                 if (pdfs.Length > 3)
                     throw new ContentNeedsReviewException(
                         "More than 3 PDF attachments; configure or review this source."
@@ -642,6 +656,10 @@ public partial class BrowserCollector(
 
                 diagnostics.Step("ValidateContent");
                 text += "\nSOURCE LINKS:\n" + string.Join('\n', links.Distinct().Take(50));
+                foreach (var skipped in skippedPdfs.Take(10))
+                    text +=
+                        "\nNOTE: PDF attachment on a host not approved for this source was not read: "
+                        + skipped;
                 if (
                     text.Length < 80
                     || text.Contains("Verify you are human", StringComparison.OrdinalIgnoreCase)
@@ -655,7 +673,41 @@ public partial class BrowserCollector(
         );
     }
 
-    /// <summary>يقرأ العناصر المضمنة في صفحة المصدر وفق بنيتها المعروفة.</summary>
+    // GPC (Diwan) is a Palestinian site: numeric dates are day-first or ISO, never US month-first.
+    // An unrecognised value never skips a listing; the detail page and AI decide instead.
+    private static readonly string[] GpcDateFormats =
+    [
+        "yyyy-MM-dd",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss.f",
+        "yyyy-MM-dd HH:mm:ss.fff",
+        "yyyy-MM-ddTHH:mm:ss",
+        "yyyy-MM-ddTHH:mm:ss.fff",
+        "yyyy/MM/dd",
+        "yyyy/M/d",
+        "dd/MM/yyyy",
+        "d/M/yyyy",
+        "dd/MM/yyyy HH:mm",
+        "dd/MM/yyyy HH:mm:ss",
+        "dd-MM-yyyy",
+        "d-M-yyyy",
+        "dd.MM.yyyy",
+    ];
+
+    /// <summary>ينفذ GpcListingDate وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
+    public static DateOnly? GpcListingDate(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && DateTime.TryParseExact(
+            value.Trim(),
+            GpcDateFormats,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var parsed
+        )
+            ? DateOnly.FromDateTime(parsed)
+            : null;
+
+    /// <summary>ينفذ ExtractEmbeddedArray وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     public static JsonElement ExtractEmbeddedArray(string html, string key)
     {
         var match = Regex.Match(html, Regex.Escape(key) + @"\s*:\s*\[");
@@ -690,7 +742,7 @@ public partial class BrowserCollector(
         throw new InvalidOperationException("Incomplete embedded JSON.");
     }
 
-    /// <summary>ينتظر ظهور المحتوى الديناميكي ضمن مهلة دون انتظار غير محدود.</summary>
+    /// <summary>ينفذ WaitForAutomaticContentAsync وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
     private static async Task WaitForAutomaticContentAsync(IPage page)
     {
         await page.WaitForFunctionAsync(
@@ -710,11 +762,16 @@ public partial class BrowserCollector(
         }
     }
 
-    /// <summary>يحرر موارد الخدمة أو قفلها أو يحفظ جلسة التشخيص عند انتهاء استخدامها.</summary>
+    /// <summary>ينفذ ApprovedHost وفق قواعد BrowserCollector.Collection الحالية دون تغيير عقد المستدعين.</summary>
+    private static bool ApprovedHost(string url, IEnumerable<string> hosts) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && hosts.Any(h => string.Equals(h, uri.IdnHost, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>يغلق الموارد التي يملكها المكون مع احترام ملكية المتصفح المشتركة.</summary>
     public async ValueTask DisposeAsync()
     {
-        if (browser is not null)
-            await browser.DisposeAsync();
-        playwright?.Dispose();
+        // A shared host belongs to the worker container and is disposed at shutdown.
+        if (ownedHost is not null)
+            await ownedHost.DisposeAsync();
     }
 }

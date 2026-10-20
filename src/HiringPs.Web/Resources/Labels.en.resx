@@ -310,7 +310,7 @@
         <value>Collection start time</value>
     </data>
   <data name="ScheduleZone" xml:space="preserve">
-        <value>Schedule uses Palestine time (Asia/Hebron)</value>
+        <value>Schedule uses Palestine time</value>
     </data>
   <data name="CollectNow" xml:space="preserve">
         <value>Collect now</value>
@@ -1171,7 +1171,7 @@
         <value>Tools</value>
     </data>
   <data name="ToolsIntro" xml:space="preserve">
-        <value>Tool status from the worker environment. Checks run on request or daily at midnight Palestine time. Result timestamps are UTC; each result describes the tool at check time.</value>
+        <value>Tool status from the worker environment. Checks run on request or daily at midnight Palestine time. Result timestamps use Palestine time; each result describes the tool at check time.</value>
     </data>
   <data name="ToolsCheckNow" xml:space="preserve">
         <value>Check tools now</value>
@@ -1468,7 +1468,7 @@
         <value>Check details</value>
     </data>
   <data name="ToolsCheckedAtUtc" xml:space="preserve">
-        <value>Checked at (UTC)</value>
+        <value>Checked at (Palestine time)</value>
     </data>
   <data name="ToolsCheckDuration" xml:space="preserve">
         <value>Check duration</value>
@@ -1480,10 +1480,10 @@
         <value>Error type</value>
     </data>
   <data name="ToolsHeartbeatUtc" xml:space="preserve">
-        <value>Last heartbeat (UTC)</value>
+        <value>Last heartbeat (Palestine time)</value>
     </data>
   <data name="ToolsLastLoopUtc" xml:space="preserve">
-        <value>Last loop started (UTC)</value>
+        <value>Last loop started (Palestine time)</value>
     </data>
   <data name="SourceSetupTitle" xml:space="preserve">
         <value>Source setup assistant</value>
@@ -1786,13 +1786,13 @@
     <value>Scheduled</value>
   </data>
   <data name="StartsUtc" xml:space="preserve">
-    <value>Starts (UTC)</value>
+    <value>Starts (Palestine time)</value>
   </data>
   <data name="EndsUtc" xml:space="preserve">
-    <value>Ends (UTC)</value>
+    <value>Ends (Palestine time)</value>
   </data>
   <data name="CreatedUtc" xml:space="preserve">
-    <value>Created (UTC)</value>
+    <value>Created (Palestine time)</value>
   </data>
   <data name="RemainingDays" xml:space="preserve">
     <value>Days remaining</value>
@@ -2332,7 +2332,7 @@
     <value>Payment code sent to</value>
   </data>
   <data name="WalletCodeExpiresUtc" xml:space="preserve">
-    <value>Valid until (UTC):</value>
+    <value>Valid until (Palestine time):</value>
   </data>
   <data name="WalletSingleConfirmation" xml:space="preserve">
     <value>Check the code before confirming. Only one confirmation attempt is sent for this session; the debit is never retried automatically.</value>
@@ -2401,7 +2401,7 @@
     <value>Pending withdrawals</value>
   </data>
   <data name="WalletBalanceFetchedUtc" xml:space="preserve">
-    <value>Balance fetched (UTC):</value>
+    <value>Balance fetched (Palestine time):</value>
   </data>
   <data name="WalletOperatingRules" xml:space="preserve">
     <value>Operating rules</value>
@@ -3016,6 +3016,82 @@
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>Load this version into the preview editor</value></data>
   <data name="ToolsFetchFailed" xml:space="preserve"><value>Could not confirm the request or refresh results. Check the request history or refresh results manually before retrying.</value></data>
+  <data name="ChannelDistribution" xml:space="preserve"><value>Telegram channel &amp; IndexNow</value></data>
+  <data name="TelegramChannelIntro" xml:space="preserve"><value>New opportunities are posted automatically to the public Telegram channel when their type is enabled, using the Telegram template and the listing link. Only opportunities first published after enabling are posted, and never twice to the same channel. The Worker service sends the posts.</value></data>
+  <data name="TelegramBotNotConfigured" xml:space="preserve"><value>The Telegram bot token (Telegram:BotToken) is not configured; nothing will be sent.</value></data>
+  <data name="TelegramChannelTarget_Jobs" xml:space="preserve"><value>Jobs channel</value></data>
+  <data name="TelegramChannelTarget_Training" xml:space="preserve"><value>Training channel</value></data>
+  <data name="TelegramChannelTarget_Tenders" xml:space="preserve"><value>Tenders &amp; procurement channel</value></data>
+  <data name="TelegramChannelTarget_All" xml:space="preserve"><value>General channel (all types)</value></data>
+  <data name="TelegramChannel" xml:space="preserve"><value>Channel</value></data>
+  <data name="TelegramChannelNotConfigured" xml:space="preserve"><value>Channel not configured</value></data>
+  <data name="TelegramChannelEnabledSince" xml:space="preserve"><value>Enabled since</value></data>
+  <data name="TelegramChannelEnable" xml:space="preserve"><value>Post this type automatically</value></data>
+  <data name="TelegramChannelTest" xml:space="preserve"><value>Send test post</value></data>
+  <data name="TelegramChannelTestSent" xml:space="preserve"><value>The test post was sent to the channel.</value></data>
+  <data name="TelegramChannelPosts" xml:space="preserve"><value>Channel posts</value></data>
+  <data name="TelegramNextAttempt" xml:space="preserve"><value>Next attempt</value></data>
+  <data name="TelegramRetryConfirm" xml:space="preserve"><value>The result is unknown and the post may already be in the channel. Check the channel, then confirm the retry.</value></data>
+  <data name="SocialSkipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="TelegramChannelForbidden" xml:space="preserve"><value>The bot is not an admin of the channel or cannot post. Add it as an admin with permission to post messages.</value></data>
+  <data name="TelegramChannelNotFound" xml:space="preserve"><value>Channel not found or not visible to the bot. Check the identifier (@channel or -100...).</value></data>
+  <data name="TelegramRateLimited" xml:space="preserve"><value>Telegram rate limit reached; the post will be retried after the wait Telegram requested.</value></data>
+  <data name="TelegramApiUnavailable" xml:space="preserve"><value>Telegram is temporarily unreachable; the post will be retried automatically.</value></data>
+  <data name="TelegramTokenInvalid" xml:space="preserve"><value>Telegram rejected the bot token. Check Telegram:BotToken.</value></data>
+  <data name="TelegramMessageInvalid" xml:space="preserve"><value>Telegram rejected the message text. Review the Telegram template.</value></data>
+  <data name="TelegramDeliveryUnknown" xml:space="preserve"><value>The connection dropped after sending; the post may have been published. It is not retried automatically.</value></data>
+  <data name="TelegramChannelDisabled" xml:space="preserve"><value>Posting to this channel was disabled or changed before sending.</value></data>
+  <data name="TelegramChannelRejected" xml:space="preserve"><value>Telegram rejected the request.</value></data>
+  <data name="NotEligible" xml:space="preserve"><value>The opportunity is no longer published or open.</value></data>
+  <data name="IndexNowIntro" xml:space="preserve"><value>Notifies participating search engines (Bing, Yandex and others) of Arabic and English opportunity URLs when published, significantly updated or archived, in batches from the Worker.</value></data>
+  <data name="IndexNowKeyMissing" xml:space="preserve"><value>Key not configured</value></data>
+  <data name="IndexNowKeyFile" xml:space="preserve"><value>Key file</value></data>
+  <data name="IndexNowPending" xml:space="preserve"><value>Pending (opportunities)</value></data>
+  <data name="IndexNowFailing" xml:space="preserve"><value>Opportunities retrying</value></data>
+  <data name="IndexNowLastSubmission" xml:space="preserve"><value>Last submission</value></data>
+  <data name="IndexNowBadRequest" xml:space="preserve"><value>IndexNow rejected the request format.</value></data>
+  <data name="IndexNowKeyInvalid" xml:space="preserve"><value>The key is invalid or its file is not reachable on the site.</value></data>
+  <data name="IndexNowUrlsRejected" xml:space="preserve"><value>URLs do not belong to the host or do not match the key.</value></data>
+  <data name="IndexNowRateLimited" xml:space="preserve"><value>Too many requests; will retry later.</value></data>
+  <data name="IndexNowUnavailable" xml:space="preserve"><value>IndexNow unreachable; will retry.</value></data>
+  <data name="NotPublic" xml:space="preserve"><value>Details are not public; not submitted.</value></data>
+  <data name="SkipToContent" xml:space="preserve"><value>Skip to content</value></data>
+  <data name="HomeLink" xml:space="preserve"><value>Home</value></data>
+  <data name="Breadcrumbs" xml:space="preserve"><value>Breadcrumbs</value></data>
+  <data name="PaginationLabel" xml:space="preserve"><value>Results pages</value></data>
+  <data name="FirstPage" xml:space="preserve"><value>First</value></data>
+  <data name="LastPage" xml:space="preserve"><value>Last</value></data>
+  <data name="PageNumber" xml:space="preserve"><value>Page {0}</value></data>
+  <data name="NewBadge" xml:space="preserve"><value>New</value></data>
+  <data name="ClosesToday" xml:space="preserve"><value>Closes today</value></data>
+  <data name="ClosesTomorrow" xml:space="preserve"><value>Closes tomorrow</value></data>
+  <data name="ClosesInTwoDays" xml:space="preserve"><value>Closes in 2 days</value></data>
+  <data name="ClosesInDays" xml:space="preserve"><value>Closes in {0} days</value></data>
+  <data name="ClosingThisWeek" xml:space="preserve"><value>Closing this week</value></data>
+  <data name="SortBy" xml:space="preserve"><value>Sort by</value></data>
+  <data name="SortClosing" xml:space="preserve"><value>Closing soonest</value></data>
+  <data name="AlertSearch" xml:space="preserve"><value>Alert me for this search</value></data>
+  <data name="AlertSearchHint" xml:space="preserve"><value>Adds the selected kind, city and category to your alert preferences.</value></data>
+  <data name="AlertSearchSaved" xml:space="preserve"><value>This search was added to your alert preferences.</value></data>
+  <data name="AlertSearchFailed" xml:space="preserve"><value>Could not save the alert. Please try again.</value></data>
+  <data name="HaveAccountLogin" xml:space="preserve"><value>Have an account? Sign in</value></data>
+  <data name="BrowseByCity" xml:space="preserve"><value>Browse by city</value></data>
+  <data name="BrowseByOrganization" xml:space="preserve"><value>Browse by organization</value></data>
+  <data name="BrowseCityHeading" xml:space="preserve"><value>{0} in {1}</value></data>
+  <data name="BrowseCityIntro" xml:space="preserve"><value>Current listings for {0} in {1}, collected by Employment in Palestine from their original sources, with deadlines and a link to each original announcement.</value></data>
+  <data name="BrowseOrganizationHeading" xml:space="preserve"><value>Opportunities at {0}</value></data>
+  <data name="BrowseOrganizationIntro" xml:space="preserve"><value>Current announcements published by {0}: jobs, training and tenders collected from their original sources, with deadlines and a link to each announcement. This site is not the employer.</value></data>
+  <data name="MoreFromOrganization" xml:space="preserve"><value>More from this organization:</value></data>
+  <data name="RssFeed" xml:space="preserve"><value>RSS feed</value></data>
+  <data name="Share" xml:space="preserve"><value>Share this opportunity</value></data>
+  <data name="ShareWhatsApp" xml:space="preserve"><value>Share on WhatsApp</value></data>
+  <data name="ShareTelegram" xml:space="preserve"><value>Share on Telegram</value></data>
+  <data name="ShareFacebook" xml:space="preserve"><value>Share on Facebook</value></data>
+  <data name="ShareLinkedIn" xml:space="preserve"><value>Share on LinkedIn</value></data>
+  <data name="CopyLink" xml:space="preserve"><value>Copy link</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>Link copied</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>Could not copy the link</value></data>
+  <data name="ListingAttachment" xml:space="preserve"><value>Listing attachment</value></data>
   <data name="SocialDestination_Facebook"><value>Facebook page</value></data>
   <data name="SocialDestination_LinkedIn"><value>LinkedIn — organization page</value></data>
   <data name="SocialDestination_LinkedInPersonal"><value>LinkedIn — personal account</value></data>
@@ -3037,4 +3113,17 @@
   <data name="PaymentRecoveryHelp" xml:space="preserve"><value>A payment attempt started but has not been confirmed. Check the provider before starting another payment. The worker retries verification; an administrator can verify or review payment evidence manually.</value></data>
   <data name="PlanEditConflict" xml:space="preserve"><value>Another administrator changed this plan. Reopen the editor to load the current version.</value></data>
   <data name="PlanNoLongerAvailable" xml:space="preserve"><value>This plan is no longer available. Return to the plan catalog to choose an available plan.</value></data>
+  <data name="AiPauseTitle" xml:space="preserve"><value>AI processing status</value></data>
+  <data name="AiTemporarilyPaused" xml:space="preserve"><value>Temporarily paused</value></data>
+  <data name="AiNoActivePause" xml:space="preserve"><value>No active pause</value></data>
+  <data name="AiPauseReason" xml:space="preserve"><value>Pause reason</value></data>
+  <data name="AiPreviousPauseReason" xml:space="preserve"><value>Last pause reason</value></data>
+  <data name="AiPauseReasonUnspecified" xml:space="preserve"><value>No reason recorded</value></data>
+  <data name="AiExpectedResumePalestine" xml:space="preserve"><value>Expected retry time — Palestine time</value></data>
+  <data name="AiPauseEndedPalestine" xml:space="preserve"><value>Pause expired — Palestine time</value></data>
+  <data name="AiPauseResumeHelp" xml:space="preserve"><value>After this time the worker can retry. The time does not guarantee that provider credentials or quota have recovered.</value></data>
+  <data name="AiNoPauseHelp" xml:space="preserve"><value>This is the stored pause state, not a live provider or worker health check.</value></data>
+  <data name="PalestineDateTimeInvalid" xml:space="preserve"><value>Enter a valid date and time in Palestine time; this local time may not exist during a daylight-saving transition.</value></data>
+  <data name="JobsClosingThisWeek" xml:space="preserve"><value>Jobs closing this week</value></data>
+  <data name="JobsClosingThisWeekHelp" xml:space="preserve"><value>Explore jobs approaching their application deadline.</value></data>
 </root>

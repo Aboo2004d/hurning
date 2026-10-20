@@ -30,6 +30,11 @@ public sealed class SocialPublishing
         this.linkedin = linkedin ?? new LinkedInPublishingClient(this.transport);
     }
     /// <summary>يتحقق من أن وجهة الربط ضمن مزودي النشر المدعومين.</summary>
+    /// <summary>يميز مزودي القوالب اليدويين والنشر التلقائي لقنوات تليجرام.</summary>
+    public static bool IsTemplateProvider(string provider) =>
+        provider is "Facebook" or "LinkedIn" || provider == TelegramChannelTargets.Provider;
+
+    /// <summary>ينفذ IsProvider وفق قواعد SocialPublishing الحالية دون تغيير عقد المستدعين.</summary>
     public static bool IsProvider(string provider) => provider is "Facebook" or "LinkedIn" or "LinkedInPersonal";
     /// <summary>يميز وجهتي LinkedIn عن مزودي النشر الآخرين.</summary>
     public static bool IsLinkedIn(string provider) => provider is "LinkedIn" or "LinkedInPersonal";

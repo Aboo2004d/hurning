@@ -1,17 +1,23 @@
 // مسارات الزائر: عرض الفرص وتفاصيلها وصفحات الموقع واللغة وخرائط البحث.
+using System.Globalization;
 using System.Security.Claims;
 using System.Xml.Linq;
 using HiringPs.Core;
 using HiringPs.Web.Models;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public class HomeController(HiringDb db, SiteSeo seo, MembershipService membership) : Controller
+public class HomeController(
+    HiringDb db,
+    SiteSeo seo,
+    MembershipService membership,
+    PublicCatalog catalog
+) : Controller
 {
+    [OutputCache(PolicyName = SiteCache.Listing)]
     public async Task<IActionResult> Index(
         string? q,
         OpportunityKind? kind,
@@ -19,6 +25,7 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
         string? category,
         string? employment,
         string? experience,
+        string? sort,
         bool archive = false,
         int page = 1,
         CancellationToken ct = default
@@ -28,70 +35,39 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
             return BadRequest();
         ViewData["ListingKind"] = kind;
         ViewData["ListingArchive"] = archive;
+        var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
         var today = TextRules.PalestineToday();
-        var query = db
-            .Opportunities.AsNoTracking()
-            .Where(x =>
-                archive
-                    ? (
-                        x.Status == PublicationStatus.Archived
-                        || (
-                            x.Status == PublicationStatus.Published
-                            && x.Deadline != null
-                            && x.Deadline < today
-                        )
-                    )
-                    : (
-                        x.Status == PublicationStatus.Published
-                        && (x.Deadline == null || x.Deadline >= today)
-                    )
-            );
+        var filters = await catalog.FiltersAsync(kind, archive, ct);
+        var query = PublicListingFilters.Scope(db.Opportunities.AsNoTracking(), archive, today);
         var scoped = kind is null ? query : query.Where(x => x.Kind == kind);
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            q = q.Trim().Truncate(200);
-            foreach (
-                var term in LocationSearch
-                    .Normalize(q)
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    .Distinct()
-                    .Take(12)
-            )
-                query = query.Where(x => x.SearchText.Contains(term));
-        }
-
-        if (kind is not null)
-            query = query.Where(x => x.Kind == kind);
-        if (!string.IsNullOrWhiteSpace(city))
-        {
-            var normalizedCity = LocationSearch.Normalize(city);
-            query = query.Where(x => x.LocationSearchText.Contains(normalizedCity));
-        }
-        if (!string.IsNullOrWhiteSpace(category))
-            query = query.Where(x => x.Category == category);
-        if (kind == OpportunityKind.Job)
-        {
-            if (!string.IsNullOrWhiteSpace(employment))
-                query = query.Where(x => x.EmploymentType == employment);
-            if (!string.IsNullOrWhiteSpace(experience))
-                query = query.Where(x => x.ExperienceLevel == experience);
-        }
+        q = q?.Trim().Truncate(200);
+        query = PublicListingFilters.Apply(query, new(q, kind, city, category, employment, experience), filters);
 
         var count = await query.CountAsync(ct);
-        page = Math.Clamp(page, 1, Math.Max(1, (count + 11) / 12));
+        if (page < 1 || page > PublicListing.PageCount(count))
+            return NotFound();
+        var order = ListingSort.Parse(sort);
+        var ordered =
+            order == ListingSort.Closing
+                ? query
+                    .OrderBy(x => x.Deadline == null)
+                    .ThenBy(x => x.Deadline)
+                    .ThenByDescending(x => x.SortDate)
+                    .ThenByDescending(x => x.Id)
+                : query.OrderByDescending(x => x.SortDate).ThenByDescending(x => x.Id);
         var allowed = await membership.DetailKindsAsync(
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
             User.IsInRole("Admin"),
             ct
         );
         var model = new ListingModel
         {
-            Items = await query
-                .OrderByDescending(x => x.SourcePublishedAt ?? x.CreatedAt)
-                .Skip((page - 1) * 12)
-                .Take(12)
+            Items = await ordered
+                .Skip((page - 1) * PublicListing.PageSize)
+                .Take(PublicListing.PageSize)
                 .ToListAsync(ct),
             AllowedDetails = allowed,
+            PublicDetailKinds = await catalog.PublicDetailKindsAsync(ct),
             Count = count,
             Page = page,
             Query = q ?? "",
@@ -101,60 +77,53 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
             Employment = employment ?? "",
             Experience = experience ?? "",
             Archive = archive,
+            Sort = order,
+            Today = today,
         };
-        if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
-        {
-            var memberId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var ids = model.Items.Select(x => x.Id).ToArray();
-            model.SavedIds = (
-                await db
-                    .SavedOpportunities.AsNoTracking()
-                    .Where(x => x.UserId == memberId && ids.Contains(x.OpportunityId))
-                    .Select(x => x.OpportunityId)
-                    .ToListAsync(ct)
-            ).ToHashSet();
-            Response.Headers.CacheControl = "no-store";
-        }
-        var published = scoped;
-        model.Cities = new[]
-        {
-            "رام الله",
-            "غزة",
-            "القدس",
-            "الخليل",
-            "نابلس",
-            "جنين",
-            "بيت لحم",
-            "أريحا",
-            "طولكرم",
-            "قلقيلية",
-            "طوباس",
-            "سلفيت",
-        }
-            .Concat(await LocationCatalog.ApprovedAsync(db, ct))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x)
+        if (!archive && (kind is null || kind == OpportunityKind.Job) && !model.HasFilters && page == 1 && order == ListingSort.Newest)
+            model.ClosingSoon = await scoped
+                .Where(x => x.Kind == OpportunityKind.Job && x.Deadline != null && x.Deadline <= today.AddDays(7))
+                .OrderBy(x => x.Deadline)
+                .ThenByDescending(x => x.SortDate)
+                .Take(4)
+                .ToListAsync(ct);
+        await FillSavedAsync(model, ct);
+        model.Cities = filters
+            .Locations.Select(x => new FilterOption(x, CityCatalog.Display(x, english)))
+            .OrderBy(x => x.Label, StringComparer.Create(CultureInfo.CurrentCulture, true))
             .ToList();
-        model.Categories = await published
-            .Where(x => x.Category != "")
-            .Select(x => x.Category)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToListAsync(ct);
-        model.EmploymentTypes = await published
-            .Where(x => x.Kind == OpportunityKind.Job && x.EmploymentType != "")
-            .Select(x => x.EmploymentType)
-            .Distinct()
-            .ToListAsync(ct);
-        model.ExperienceLevels = await published
-            .Where(x => x.Kind == OpportunityKind.Job && x.ExperienceLevel != "")
-            .Select(x => x.ExperienceLevel)
-            .Distinct()
-            .ToListAsync(ct);
+        model.Categories = FilterLabels.Options(filters.Categories, FilterLabels.Category, english);
+        model.EmploymentTypes = FilterLabels.Options(
+            filters.EmploymentTypes,
+            FilterLabels.Employment,
+            english
+        );
+        model.ExperienceLevels = FilterLabels.Options(
+            filters.ExperienceLevels,
+            FilterLabels.Experience,
+            english
+        );
+        ViewBag.Facets = !archive && !model.HasFilters && page == 1 ? await catalog.FacetsAsync(ct) : null;
         return View(model);
     }
 
-    [HttpGet("llms.txt")]
+    internal async Task FillSavedAsync(ListingModel model, CancellationToken ct)
+    {
+        if (User.Identity?.IsAuthenticated != true || User.IsInRole("Admin"))
+            return;
+        var memberId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var ids = model.Items.Select(x => x.Id).ToArray();
+        model.SavedIds = (
+            await db
+                .SavedOpportunities.AsNoTracking()
+                .Where(x => x.UserId == memberId && ids.Contains(x.OpportunityId))
+                .Select(x => x.OpportunityId)
+                .ToListAsync(ct)
+        ).ToHashSet();
+        Response.Headers.CacheControl = "no-store";
+    }
+
+    [HttpGet("llms.txt"), OutputCache(PolicyName = SiteCache.Files)]
     public IActionResult LanguageModelGuide()
     {
         var text = new System.Text.StringBuilder();
@@ -179,10 +148,10 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
         text.AppendLine("## Opportunity categories");
         foreach (var kind in Enum.GetValues<OpportunityKind>())
             text.AppendLine(
-                $"- [{kind}]({seo.Url("/", false, [new("kind", kind.ToString())])}): current public listings; follow each detail page to its source."
+                $"- [{kind}]({seo.Url("/", false, [new("kind", kind.ToString())])}): current public listings; follow each detail page to its source. RSS: {seo.Origin}/feeds/{KindSlugs.For(kind)}.xml"
             );
         text.AppendLine(
-            $"- [Sitemap index]({seo.Origin}/sitemap.xml): published, non-expired opportunities and language variants."
+            $"- [Sitemap index]({seo.Origin}/sitemap.xml): published, non-expired opportunities, city and organization pages, and language variants."
         );
         text.AppendLine();
         text.AppendLine("## Interpreting opportunity records");
@@ -198,7 +167,7 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
         return Content(text.ToString(), "text/plain; charset=utf-8");
     }
 
-    [HttpGet("robots.txt")]
+    [HttpGet("robots.txt"), OutputCache(PolicyName = SiteCache.Files)]
     public IActionResult Robots()
     {
         var rules = new System.Text.StringBuilder("User-agent: *\nAllow: /\n");
@@ -211,26 +180,23 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
                 "/Member",
                 "/Registration",
                 "/PasswordReset",
+                "/Google",
                 "/integrations",
             }
         )
-            rules.AppendLine("Disallow: " + prefix + path);
+        foreach (var variant in new[] { path, path.ToLowerInvariant() }.Distinct())
+            rules.AppendLine("Disallow: " + prefix + variant);
         rules.AppendLine("Sitemap: " + seo.Origin + "/sitemap.xml");
         return Content(rules.ToString(), "text/plain");
     }
 
-    [HttpGet("sitemap.xml")]
+    [HttpGet("sitemap.xml"), OutputCache(PolicyName = SiteCache.Files)]
     public async Task<IActionResult> Sitemap(CancellationToken ct)
     {
-        var today = TextRules.PalestineToday();
         var count = await db
             .Opportunities.AsNoTracking()
-            .CountAsync(
-                x =>
-                    x.Status == PublicationStatus.Published
-                    && (x.Deadline == null || x.Deadline >= today),
-                ct
-            );
+            .PublicDetails(db, TextRules.PalestineToday())
+            .CountAsync(ct);
         XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
         var root = new XElement(
             ns + "sitemapindex",
@@ -253,65 +219,84 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
         return Content(new XDocument(root).ToString(), "application/xml; charset=utf-8");
     }
 
-    [HttpGet("sitemaps/pages.xml")]
+    [HttpGet("sitemaps/pages.xml"), OutputCache(PolicyName = SiteCache.Files)]
     public async Task<IActionResult> SitemapPages(CancellationToken ct)
     {
-        var pages = new List<(string Arabic, string English)>();
+        var pages = new List<SitemapEntry>();
         var today = TextRules.PalestineToday();
         var activeKinds = await db
             .Opportunities.AsNoTracking()
-            .Where(x =>
-                x.Status == PublicationStatus.Published
-                && (x.Deadline == null || x.Deadline >= today)
-            )
-            .Select(x => x.Kind)
-            .Distinct()
+            .Current(today)
+            .GroupBy(x => x.Kind)
+            .Select(g => new
+            {
+                Kind = g.Key,
+                Changed = g.Max(x => x.SourceModifiedAt ?? x.SourcePublishedAt ?? x.CreatedAt),
+            })
             .ToListAsync(ct);
         var paths = new List<string> { "/About", "/Contact", "/Privacy" };
         if (activeKinds.Count > 0)
             paths.Insert(0, "/");
         foreach (var path in paths)
-            pages.Add((seo.Url(path, false), seo.Url(path, true)));
-        foreach (var kind in activeKinds.Where(kind => Enum.IsDefined(kind)).OrderBy(kind => kind))
+            pages.Add(
+                new(
+                    seo.Url(path, false),
+                    seo.Url(path, true),
+                    path == "/" ? activeKinds.Max(x => x.Changed) : null
+                )
+            );
+        foreach (var kind in activeKinds.Where(x => Enum.IsDefined(x.Kind)).OrderBy(x => x.Kind))
         {
-            var query = new[] { new KeyValuePair<string, string?>("kind", kind.ToString()) };
-            pages.Add((seo.Url("/", false, query), seo.Url("/", true, query)));
+            var query = new[] { new KeyValuePair<string, string?>("kind", kind.Kind.ToString()) };
+            pages.Add(new(seo.Url("/", false, query), seo.Url("/", true, query), kind.Changed));
+        }
+        var facets = await catalog.FacetsAsync(ct);
+        foreach (var facet in facets.Cities)
+        {
+            var path = BrowsePaths.City(facet.Kind, facet.City);
+            pages.Add(new(seo.Url(path, false), seo.Url(path, true), facet.LastModified));
+        }
+        foreach (var organization in facets.Organizations)
+        {
+            var path = BrowsePaths.Organization(organization.Slug);
+            pages.Add(new(seo.Url(path, false), seo.Url(path, true), organization.LastModified));
         }
 
         return SitemapDocument(pages);
     }
 
-    [HttpGet("sitemaps/opportunities-{page:int}.xml")]
+    [HttpGet("sitemaps/opportunities-{page:int}.xml"), OutputCache(PolicyName = SiteCache.Files)]
     public async Task<IActionResult> SitemapOpportunities(int page, CancellationToken ct)
     {
         if (page < 1 || page > int.MaxValue / SiteSeo.SitemapPageSize)
             return NotFound();
-        var today = TextRules.PalestineToday();
-        var ids = await db
+        var items = await db
             .Opportunities.AsNoTracking()
-            .Where(x =>
-                x.Status == PublicationStatus.Published
-                && db.OpportunityAccessRules.Any(rule => rule.Kind == x.Kind && rule.PublicDetails)
-                && (x.Deadline == null || x.Deadline >= today)
-            )
+            .PublicDetails(db, TextRules.PalestineToday())
             .OrderBy(x => x.Id)
             .Skip((page - 1) * SiteSeo.SitemapPageSize)
             .Take(SiteSeo.SitemapPageSize)
-            .Select(x => x.Id)
+            .Select(x => new
+            {
+                x.Id,
+                x.Title,
+                Changed = x.SourceModifiedAt ?? x.SourcePublishedAt ?? x.CreatedAt,
+            })
             .ToListAsync(ct);
-        if (ids.Count == 0)
+        if (items.Count == 0)
             return NotFound();
         return SitemapDocument(
-            ids.Select(id =>
-                (
-                    seo.Url("/Opportunities/Details/" + id, false),
-                    seo.Url("/Opportunities/Details/" + id, true)
-                )
-            )
+            items.Select(item =>
+            {
+                var path = PublicListing.DetailsPath(item.Id, item.Title);
+                return new SitemapEntry(seo.Url(path, false), seo.Url(path, true), item.Changed);
+            })
         );
     }
 
-    private IActionResult SitemapDocument(IEnumerable<(string Arabic, string English)> pages)
+    private sealed record SitemapEntry(string Arabic, string English, DateTimeOffset? LastModified);
+
+    private IActionResult SitemapDocument(IEnumerable<SitemapEntry> pages)
     {
         XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
         XNamespace xhtml = "http://www.w3.org/1999/xhtml";
@@ -322,6 +307,12 @@ public class HomeController(HiringDb db, SiteSeo seo, MembershipService membersh
                 new XElement(
                     ns + "url",
                     new XElement(ns + "loc", url),
+                    pair.LastModified is { } changed
+                        ? new XElement(
+                            ns + "lastmod",
+                            changed.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                        )
+                        : null,
                     new XElement(
                         xhtml + "link",
                         new XAttribute("rel", "alternate"),

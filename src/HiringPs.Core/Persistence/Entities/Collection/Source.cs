@@ -1,8 +1,11 @@
+// نماذج قاعدة البيانات والحالات الأساسية للمصادر والإعلانات ونتائج المعالجة.
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Linq;
 
 namespace HiringPs.Core;
 
-/// <summary>مصدر خارجي مع إعدادات جمعه وجدولته والموافقة على استخدامه.</summary>
+/// <summary>سجل Source وعلاقاته؛ يطابق مخطط تحديث المنصة المحفوظ.</summary>
 public class Source
 {
     /// <summary>المعرّف الأساسي للسجل؛ يختلف نوعه وطريقة توليده حسب الكيان.</summary>
@@ -45,6 +48,17 @@ public class Source
     /// <summary>رمز آخر خطأ معالجة؛ لا يتضمن مفاتيح أو محتوى مزود حساسًا.</summary>
     [MaxLength(2000)]
     public string LastError { get; set; } = "";
+
+    // Reset by a successful discovery; drives exponential retry backoff.
+    /// <summary>عدد إخفاقات الجمع المتتالية لحساب التراجع الزمني؛ يصفر بعد نجاح الاكتشاف.</summary>
+    public int ConsecutiveFailures { get; set; }
+
+    // Collector health note for administrators (repeated failures or possible template change).
+    /// <summary>تنبيه إداري عن تكرر الفشل أو احتمال تغير قالب المصدر.</summary>
+    [MaxLength(500)]
+    public string HealthWarning { get; set; } = "";
+    /// <summary>وقت تسجيل آخر تحذير لصحة المصدر.</summary>
+    public DateTimeOffset? HealthWarningAt { get; set; }
 
     /// <summary>رمز rowversion الذي يمنع الكتابة فوق تعديلات متزامنة.</summary>
     [Timestamp]

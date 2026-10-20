@@ -12,6 +12,7 @@ public class SourceCollectionRequest
             System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.None
         )
     ]
+    /// <summary>بيانات SourceId المحفوظة للسجل.</summary>
     public int SourceId { get; set; }
 
     /// <summary>المصدر المرتبط بالسجل.</summary>
@@ -19,6 +20,7 @@ public class SourceCollectionRequest
     [System.ComponentModel.DataAnnotations.Schema.InverseProperty(
         nameof(HiringPs.Core.Source.CollectionRequests)
     )]
+    /// <summary>بيانات Source المحفوظة للسجل.</summary>
     public Source Source { get; set; } = null!;
     /// <summary>مفتاح يميز دفعة طلب الجمع اليدوي.</summary>
     public Guid RequestToken { get; set; } = Guid.NewGuid();

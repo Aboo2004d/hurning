@@ -20,7 +20,7 @@
         <div>
             <dt>@T["ContactDate"]</dt>
             <dd>
-                @TimeZoneInfo.ConvertTime(Model.CreatedAt,TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")
+                @PaymentDisplay.Time(Model.CreatedAt) @T["PalestineTime"]
             </dd>
         </div>
     </dl>

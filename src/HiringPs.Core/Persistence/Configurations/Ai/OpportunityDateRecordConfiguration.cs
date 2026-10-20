@@ -1,15 +1,13 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HiringPs.Core;
 
-/// <summary>
-/// يعرّف العلاقات والفهارس والقيود والبيانات الابتدائية لكيان <see cref="OpportunityDateRecord"/>.
-/// تبقى أسماء الجداول والحقول وقواعد الحذف مطابقة للتعريف السابق.
-/// </summary>
+/// <summary>يعرّف علاقات وفهارس وتخزين OpportunityDateRecord مع الحفاظ على مخطط تحديث المستخدم.</summary>
 public sealed class OpportunityDateRecordConfiguration : IEntityTypeConfiguration<OpportunityDateRecord>
 {
-    /// <summary>يطبق إعدادات تخزين <see cref="OpportunityDateRecord"/> عند إنشاء نموذج قاعدة البيانات.</summary>
+    /// <summary>يطبق تعريف جدول الكيان؛ لا ينفذ migration أو اتصال قاعدة بيانات.</summary>
     public void Configure(EntityTypeBuilder<OpportunityDateRecord> builder)
     {
         builder

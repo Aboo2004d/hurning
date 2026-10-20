@@ -4,6 +4,7 @@
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 }
 <h1>@T["AiUsage"]</h1>
+<partial name="_AiPauseStatus" model="Model.PauseStatus" />
 <p class="notice">
     @(ar ? "النجاح يعني قراءة استجابة AI، وليس اعتماد الإعلان للنشر. علامة — تعني أن المزود لم يعِد العدد؛ المجاميع تشمل الأعداد المعروفة فقط. الطلب غير المكتمل قد يكون توقف معه العامل." : "Success means the AI response was parsed, not that publication was approved. — means no token count was reported; totals cover known counts only. Unfinished requests may reflect an interrupted worker.")
 </p>
@@ -55,7 +56,7 @@
                 <th>@(ar ? "الحالة / HTTP" : "Outcome / HTTP")</th>
                 <th>@(ar ? "التوكنز" : "Tokens")</th>
                 <th>@(ar ? "المدة" : "Duration")</th>
-                <th>@(ar ? "الوقت" : "Time")</th>
+                <th>@(ar ? "الوقت" : "Time") · @T["PalestineTime"]</th>
             </tr>
         </thead>
         <tbody>
@@ -75,7 +76,7 @@
                     </td>
                     <td>@(item.TotalTokens?.ToString() ?? "—")</td>
                     <td>@item.DurationMs ms</td>
-                    <td>@item.StartedAt.ToString("u")</td>
+                    <td>@PaymentDisplay.Time(item.StartedAt)</td>
                 </tr>
             }
         </tbody>

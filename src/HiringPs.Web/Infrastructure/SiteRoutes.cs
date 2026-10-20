@@ -1,3 +1,4 @@
+using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -53,18 +54,46 @@ public static class SiteRoutes
             "areas",
             "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}"
         );
-        foreach (var action in new[] { "Details", "Report" })
-            app.MapControllerRoute(
-                "legacy-opportunity-" + action,
-                "Home/" + action + "/{id?}",
-                new { controller = "Opportunities", action }
-            );
+        // Legacy /Home/* URLs are permanent redirects, not controller routes, so they never
+        // take part in link generation. PathBase already carries the language prefix here.
+        app.MapGet(
+            "Home/Details/{id:long}",
+            (HttpContext context, long id) =>
+                Results.Redirect(
+                    context.Request.PathBase + "/Opportunities/Details/" + id + context.Request.QueryString,
+                    permanent: true
+                )
+        );
+        app.MapPost(
+            "Home/Report/{id?}",
+            (HttpContext context) =>
+                Results.Redirect(
+                    context.Request.PathBase + "/Opportunities/Report" + context.Request.QueryString,
+                    permanent: true,
+                    preserveMethod: true
+                )
+        );
         foreach (var page in new[] { "About", "Contact", "Privacy" })
-            app.MapControllerRoute(
-                "legacy-" + page,
+            app.MapGet(
                 "Home/" + page,
-                new { controller = page, action = "Index" }
+                (HttpContext context) =>
+                    Results.Redirect(context.Request.PathBase + "/" + page, permanent: true)
             );
+        app.MapControllerRoute(
+            "opportunity-details",
+            "Opportunities/Details/{id:long}/{slug?}",
+            new { controller = "Opportunities", action = "Details" }
+        );
+        app.MapControllerRoute(
+            "browse-city",
+            "{kindSlug:" + KindSlugs.RouteConstraint + "}/city/{citySlug}",
+            new { controller = "Browse", action = "City" }
+        );
+        app.MapControllerRoute(
+            "browse-organization",
+            "org/{orgSlug}",
+            new { controller = "Browse", action = "Organization" }
+        );
         app.MapControllerRoute(
             "language",
             "Home/Language",

@@ -68,7 +68,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>@T["CreatedUtc"]</th>
+                            <th>@T["CreatedPalestineTime"]</th>
                             <th>@T["Attempts"]</th>
                             <th>
                             </th>
@@ -80,7 +80,7 @@
                             <tr>
                                 <td>@update.Id</td>
                                 <td>
-                                    <bdi>@update.ReceivedAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                                    <bdi>@PaymentDisplay.Time(update.ReceivedAt)</bdi>
                                 </td>
                                 <td>@update.Attempts</td>
                                 <td>

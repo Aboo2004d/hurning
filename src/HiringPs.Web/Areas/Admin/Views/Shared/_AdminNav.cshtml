@@ -14,7 +14,9 @@
                 (Controller: "Opportunities", Action: "Opportunities", Status: "", Label: T["Opportunities"].Value),
                 (Controller: "Opportunities", Action: "Opportunities", Status: "NeedsReview", Label: T["Review"].Value),
                 (Controller: "Sources", Action: "Sources", Status: "", Label: T["Sources"].Value),
-                (Controller: "Merges", Action: "Merges", Status: "", Label: T["MergeHistory"].Value)
+                (Controller: "Merges", Action: "Merges", Status: "", Label: T["MergeHistory"].Value),
+                (Controller: "Duplicates", Action: "Index", Status: "", Label: isArabic ? "التكرارات المحتملة" : "Possible duplicates"),
+                (Controller: "OrganizationAliases", Action: "Index", Status: "", Label: isArabic ? "أسماء الجهات" : "Organisation aliases")
             }
         ),
         (
@@ -47,6 +49,7 @@
             Links: new[]
             {
                 (Controller: "SocialTemplates", Action: "Index", Status: "", Label: T["SocialTemplates"].Value),
+                (Controller: "Distribution", Action: "Index", Status: "", Label: T["ChannelDistribution"].Value),
                 (Controller: "Pages", Action: "Pages", Status: "", Label: T["PageContents"].Value),
                 (Controller: "Messages", Action: "Messages", Status: "", Label: T["ContactInbox"].Value),
                 (Controller: "Reports", Action: "Reports", Status: "", Label: T["Reports"].Value)

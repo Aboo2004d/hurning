@@ -50,10 +50,13 @@ public static class MergeHistory
         foreach (var link in links)
             link.OpportunityId = targetId;
         duplicate.Status = PublicationStatus.Hidden;
-        duplicate.AdminOverride = target.AdminOverride = true;
+        duplicate.AdminOverride = true;
+        // The target is marked, not frozen: verified deadline extensions and dates still apply,
+        // while its text is kept. Only an administrator's own edit sets AdminOverride.
+        target.IsMergeTarget = true;
         duplicate.ReviewReason = $"Merged by administrator into {targetId}.";
-        // Even a second merge into an already protected target must advance its rowversion.
-        db.Entry(target).Property(x => x.AdminOverride).IsModified = true;
+        // Even a second merge into an already marked target must advance its rowversion.
+        db.Entry(target).Property(x => x.IsMergeTarget).IsModified = true;
         await db.SaveChangesAsync(ct);
         record.DuplicateVersion = duplicate.Version.ToArray();
         record.TargetVersion = target.Version.ToArray();
@@ -67,6 +70,23 @@ public static class MergeHistory
             }
         );
         await db.SaveChangesAsync(ct);
+        var resolved = DateTimeOffset.UtcNow;
+        await db
+            .DuplicateCandidates.Where(x =>
+                x.Status == DuplicateCandidateStatus.Open
+                && (
+                    (x.OpportunityId == duplicateId && x.CandidateId == targetId)
+                    || (x.OpportunityId == targetId && x.CandidateId == duplicateId)
+                )
+            )
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(x => x.Status, DuplicateCandidateStatus.Merged)
+                        .SetProperty(x => x.ResolvedAt, (DateTimeOffset?)resolved)
+                        .SetProperty(x => x.ResolvedBy, actor)
+                        .SetProperty(x => x.MergeOperationId, (long?)record.Id),
+                ct
+            );
         await transaction.CommitAsync(ct);
         return true;
     }
@@ -107,6 +127,10 @@ public static class MergeHistory
         duplicate.AdminOverride = record.DuplicateOverride;
         duplicate.ReviewReason = record.OriginalReviewReason;
         target.AdminOverride = record.TargetOverride;
+        target.IsMergeTarget = await db.MergeOperations.AnyAsync(
+            x => x.UndoneAt == null && x.TargetId == target.Id && x.Id != record.Id,
+            ct
+        );
         db.Entry(target).Property(x => x.AdminOverride).IsModified = true;
         record.UndoneAt = DateTimeOffset.UtcNow;
         db.Audit.Add(
@@ -118,6 +142,16 @@ public static class MergeHistory
             }
         );
         await db.SaveChangesAsync(ct);
+        await db
+            .DuplicateCandidates.Where(x => x.MergeOperationId == record.Id)
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(x => x.Status, DuplicateCandidateStatus.Open)
+                        .SetProperty(x => x.ResolvedAt, (DateTimeOffset?)null)
+                        .SetProperty(x => x.ResolvedBy, "")
+                        .SetProperty(x => x.MergeOperationId, (long?)null),
+                ct
+            );
         // Returning to the state following an earlier merge lets nested merges be undone in reverse order.
         var earlier = await db
             .MergeOperations.Where(x =>

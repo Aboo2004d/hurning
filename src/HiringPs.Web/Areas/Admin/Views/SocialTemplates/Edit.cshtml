@@ -21,7 +21,7 @@
 <section class="social-composer social-history" data-template-list>
 <h2>@T["TemplateHistory"]</h2>
 @foreach (var version in history.Items) {
-<details class="template-history-version"><summary>@T["TemplateVersion"] @version.Number · <bdi>@TimeZoneInfo.ConvertTime(version.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi> · @version.Actor @(version.Active ? "✓" : "")</summary>
+<details class="template-history-version"><summary>@T["TemplateVersion"] @version.Number · <bdi>@PaymentDisplay.Time(version.CreatedAt)</bdi> @T["PalestineTime"] · @version.Actor @(version.Active ? "✓" : "")</summary>
 <pre class="template-preview-text" dir="auto">@version.Body</pre>
 @if (!version.Active) {
 <button type="button" class="button-outline admin-action" data-template-load>@T["PreviewTemplateVersion"]</button>

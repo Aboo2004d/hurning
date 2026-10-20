@@ -1,15 +1,13 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HiringPs.Core;
 
-/// <summary>
-/// يعرّف العلاقات والفهارس والقيود والبيانات الابتدائية لكيان <see cref="WorkflowSettings"/>.
-/// تبقى أسماء الجداول والحقول وقواعد الحذف مطابقة للتعريف السابق.
-/// </summary>
+/// <summary>يعرّف علاقات وفهارس وتخزين WorkflowSettings مع الحفاظ على مخطط تحديث المستخدم.</summary>
 public sealed class WorkflowSettingsConfiguration : IEntityTypeConfiguration<WorkflowSettings>
 {
-    /// <summary>يطبق إعدادات تخزين <see cref="WorkflowSettings"/> عند إنشاء نموذج قاعدة البيانات.</summary>
+    /// <summary>يطبق تعريف جدول الكيان؛ لا ينفذ migration أو اتصال قاعدة بيانات.</summary>
     public void Configure(EntityTypeBuilder<WorkflowSettings> builder)
     {
         builder.Property(x => x.Id).ValueGeneratedNever();

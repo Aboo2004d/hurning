@@ -1,8 +1,11 @@
+// نماذج قاعدة البيانات والحالات الأساسية للمصادر والإعلانات ونتائج المعالجة.
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Linq;
 
 namespace HiringPs.Core;
 
-/// <summary>فرصة منشورة أو قيد المراجعة مع بياناتها وأدلة مصادرها.</summary>
+/// <summary>سجل Opportunity وعلاقاته؛ يطابق مخطط تحديث المنصة المحفوظ.</summary>
 public class Opportunity
 {
     /// <summary>المعرّف الأساسي للسجل؛ يختلف نوعه وطريقة توليده حسب الكيان.</summary>
@@ -67,10 +70,21 @@ public class Opportunity
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     /// <summary>وقت آخر تحقق من صلاحية معلومات الفرصة.</summary>
     public DateTimeOffset LastVerifiedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Persisted COALESCE(SourcePublishedAt, CreatedAt) used for public ordering; computed by SQL Server.</summary>
+    public DateTimeOffset SortDate { get; private set; }
     /// <summary>حالة السجل ضمن دورة العمل؛ يستخدم النوع الحالي كما هو محفوظ في القاعدة.</summary>
     public PublicationStatus Status { get; set; } = PublicationStatus.NeedsReview;
     /// <summary>يحمي تعديلات الإدارة من الاستبدال أثناء إعادة الاستخراج.</summary>
     public bool AdminOverride { get; set; }
+
+    // Other records were merged into this one; extraction keeps its text but still applies verified dates.
+    /// <summary>يحمي نص الفرصة التي دمجت فرص أخرى فيها مع السماح بتطبيق تواريخ مثبتة.</summary>
+    public bool IsMergeTarget { get; set; }
+
+    /// <summary>مرجع الإعلان بعد التطبيع للمطابقة الحتمية بين المصادر.</summary>
+    [MaxLength(200)]
+    public string NormalizedReference { get; set; } = "";
 
     /// <summary>بصمة الفرصة المستخدمة للمساعدة في اكتشاف التكرار.</summary>
     [MaxLength(64)]

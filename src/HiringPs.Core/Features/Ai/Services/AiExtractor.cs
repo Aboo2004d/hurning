@@ -1,16 +1,16 @@
-// استخراج البيانات بالنموذج، ثم التحقق من الأدلة وتحديد النشر أو المراجعة أو الأرشفة.
+// طلب Gemini وقراءة ردّه: حدود المدخلات والمخرجات، مخطط JSON، وتصنيف أخطاء المزوّد.
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-/// <summary>عميل الاستخراج المنظم من AI مع إدارة المهلة وتصنيف الأخطاء وتتبع الاستهلاك.</summary>
+/// <summary>مكون AiExtractor ضمن مجال Ai؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public class AiExtractor
 {
     private readonly HttpClient client;
@@ -36,16 +36,63 @@ public class AiExtractor
 
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new OptionalDateConverter() },
     };
 
-    /// <summary>يطلب استخراجًا من AI ثم يتحقق من الرد المنظم دون افتراض بيانات غائبة.</summary>
+    // An empty string for an unknown optional date means null, not a contract violation.
+    private sealed class OptionalDateConverter : JsonConverter<DateOnly?>
+    {
+        public override DateOnly? Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+                return null;
+            if (reader.TokenType != JsonTokenType.String)
+                throw new JsonException("Optional date must be a string.");
+            var text = reader.GetString();
+            if (string.IsNullOrWhiteSpace(text))
+                return null;
+            return DateOnly.TryParseExact(
+                text.Trim(),
+                "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out var date
+            )
+                ? date
+                : throw new JsonException("Optional date must be yyyy-MM-dd.");
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            DateOnly? value,
+            JsonSerializerOptions options
+        )
+        {
+            if (value is { } date)
+                writer.WriteStringValue(
+                    date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+                );
+            else
+                writer.WriteNullValue();
+        }
+    }
+
+    /// <summary>يستخرج الفرص من النص مع تطبيق المهلة والقيود وتسجيل الاستخدام.</summary>
     public async Task<ExtractionResult> ExtractAsync(
         string content,
         CancellationToken ct,
         AiExecution? execution = null
     )
     {
+        var limit = GeminiClient.MaxInputCharacters(config);
+        if (content.Length > limit)
+            throw new ContentNeedsReviewException(
+                $"Source text has {content.Length} characters, above the AI input limit of {limit} (Ai:MaxInputCharacters); original text retained for manual review."
+            );
         var telemetry = new AiTelemetry();
         long? usageId = null;
         var started = System.Diagnostics.Stopwatch.StartNew();
@@ -93,7 +140,7 @@ public class AiExtractor
         }
     }
 
-    /// <summary>يرسل الطلب إلى المزود ويتحقق من الاستجابة والمهلة وفق عقد هذه الخدمة.</summary>
+    /// <summary>يرسل طلب المزود ويصنف نتيجته وفق قواعد الخدمة دون كشف بيانات الاعتماد.</summary>
     private async Task<ExtractionResult> SendAsync(
         string content,
         AiExecution? execution,
@@ -110,26 +157,13 @@ public class AiExtractor
         if (!System.Text.RegularExpressions.Regex.IsMatch(model, @"\A[a-zA-Z0-9._-]+\z"))
             throw new AiUnavailableException("AI model is invalid; item remains queued.");
         var prompt = execution?.Version ?? PromptDefaults.Initial();
-        var aiInstructions = prompt.Render();
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         );
         request.Headers.Add("x-goog-api-key", key);
         request.Content = JsonContent.Create(
-            new
-            {
-                systemInstruction = new { parts = new[] { new { text = aiInstructions } } },
-                contents = new[]
-                {
-                    new
-                    {
-                        role = "user",
-                        parts = new[] { new { text = "SOURCE DATA:\n" + content } },
-                    },
-                },
-                generationConfig = new { temperature = 0, responseMimeType = "application/json" },
-            }
+            GeminiClient.RequestBody(prompt.Render(), content, config)
         );
         HttpResponseMessage received;
         try
@@ -167,8 +201,10 @@ public class AiExtractor
             || response.StatusCode == HttpStatusCode.Unauthorized
             || response.StatusCode == HttpStatusCode.Forbidden
         )
-            throw new AiUnavailableException(
-                $"AI HTTP {(int)response.StatusCode}: quota/credentials unavailable; no paid fallback used."
+            throw new AiQuotaException(
+                $"AI HTTP {(int)response.StatusCode}: quota/credentials unavailable; no paid fallback used.",
+                GeminiClient.RetryAfter(response),
+                response.StatusCode != HttpStatusCode.TooManyRequests
             );
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
@@ -190,15 +226,18 @@ public class AiExtractor
                 $"AI HTTP {(int)response.StatusCode}: check configured model {model} and request compatibility."
             );
         response.EnsureSuccessStatusCode();
-        using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        JsonDocument parsed;
+        try
+        {
+            parsed = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        }
+        catch (JsonException)
+        {
+            // A malformed provider envelope is not the extraction itself; retry with backoff.
+            throw new AiTransientException("AI provider returned a malformed response; retry scheduled.");
+        }
+        using var result = parsed;
         telemetry.Read(result.RootElement);
-        var text = result
-            .RootElement.GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString();
-        return JsonSerializer.Deserialize<ExtractionResult>(text ?? "", JsonOptions)
-            ?? throw new InvalidOperationException("Empty AI result.");
+        return GeminiClient.ParseResponse(result.RootElement);
     }
 }

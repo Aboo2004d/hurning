@@ -23,26 +23,66 @@ public class PreferencesController(HiringDb db) : MemberControllerBase(db)
             .OrderBy(x => x)
             .ToArrayAsync(ct);
         input.AvailableLocations = (await LocationCatalog.ApprovedAsync(Db, ct))
-            .Concat(
-                new[]
-                {
-                    "رام الله",
-                    "غزة",
-                    "القدس",
-                    "الخليل",
-                    "نابلس",
-                    "جنين",
-                    "بيت لحم",
-                    "أريحا",
-                    "طولكرم",
-                    "قلقيلية",
-                    "طوباس",
-                    "سلفيت",
-                }
-            )
+            .Concat(CityCatalog.ArabicNames)
             .Distinct()
             .OrderBy(x => x)
             .ToArray();
+    }
+
+    /// <summary>
+    /// "Alert me for this search": merges the listing's kind, city and category into the
+    /// member's existing alert preferences, using the same catalogs as the preferences page.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> AddSearch(
+        OpportunityKind? kind,
+        string? city,
+        string? category,
+        string? returnUrl,
+        CancellationToken ct
+    )
+    {
+        if (
+            (kind is null && string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(category))
+            || (kind is { } requested && !Enum.IsDefined(requested))
+        )
+            return BadRequest();
+        var pref = await Db.MemberPreferences.SingleAsync(x => x.UserId == MemberId, ct);
+        var input = new PreferenceInput();
+        await FillAsync(input, ct);
+        var categories = JsonSerializer.Deserialize<string[]>(pref.CategoriesJson) ?? [];
+        var locations = JsonSerializer.Deserialize<string[]>(pref.LocationsJson) ?? [];
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            // Equivalent spellings share one listing filter; keep all that the catalog offers.
+            var added = FilterLabels
+                .Equivalents(category, input.AvailableCategories, FilterLabels.Category)
+                .Where(input.AvailableCategories.Contains)
+                .ToArray();
+            if (added.Length == 0)
+                return BadRequest();
+            categories = categories.Concat(added).Distinct().ToArray();
+        }
+        if (!string.IsNullOrWhiteSpace(city))
+        {
+            var location = input.AvailableLocations.Contains(city)
+                ? city
+                : CityCatalog.Find(city)?.Arabic;
+            if (location is null || !input.AvailableLocations.Contains(location))
+                return BadRequest();
+            locations = locations.Append(location).Distinct().ToArray();
+        }
+        if (kind is { } selected)
+            pref.Kinds |= MembershipRules.Bit(selected);
+        pref.CategoriesJson = JsonSerializer.Serialize(categories);
+        pref.LocationsJson = JsonSerializer.Serialize(locations);
+        pref.ChangedAt = DateTimeOffset.UtcNow;
+        await Db.SaveChangesAsync(ct);
+        Response.Headers.CacheControl = "no-store";
+        if (Request.Headers["X-Member-Async"] == "true")
+            return Json(new { saved = true });
+        TempData["Notice"] = "AlertSearchSaved";
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl!) : RedirectToAction(nameof(Index));
     }
 
     public async Task<IActionResult> Index(CancellationToken ct)

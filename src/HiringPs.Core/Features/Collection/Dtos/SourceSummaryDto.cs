@@ -10,6 +10,7 @@ public sealed record SourceSummaryDto
     public TimeOnly CollectionStartTime { get; init; }
     public int IntervalHours { get; init; }
     public DateTimeOffset NextDueAt { get; init; }
+    public string HealthWarning { get; init; } = "";
     public string LastError { get; init; } = "";
     public List<SourceCollectionRequestSummaryDto> CollectionRequests { get; init; } = [];
 }

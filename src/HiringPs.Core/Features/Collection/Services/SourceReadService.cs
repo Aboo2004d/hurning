@@ -11,7 +11,7 @@ public sealed class SourceReadService(HiringDb db)
         {
             Id = x.Id, Name = x.Name, Enabled = x.Enabled, UsageApproved = x.UsageApproved,
             CollectionStartTime = x.CollectionStartTime, IntervalHours = x.IntervalHours,
-            NextDueAt = x.NextDueAt, LastError = x.LastError,
+            NextDueAt = x.NextDueAt, LastError = x.LastError, HealthWarning = x.HealthWarning,
             CollectionRequests = x.CollectionRequests.Select(request =>
                 new SourceCollectionRequestSummaryDto(request.Status, request.Error)).ToList(),
         });

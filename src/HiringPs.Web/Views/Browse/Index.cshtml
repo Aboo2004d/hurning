@@ -1,0 +1,44 @@
+@model BrowseModel
+@* صفحة تصفح قابلة للفهرسة: نوع في مدينة أو جهة واحدة، مع مقدمة وبطاقات وترقيم وخلاصة RSS. *@
+@{
+    ViewData["Title"] = Model.Heading;
+    ViewData["Description"] = Model.Intro;
+    var currentUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    string PageUrl(int page) => Url.Content("~" + Model.Path) + (page > 1 ? "?page=" + page.ToString(CultureInfo.InvariantCulture) : "");
+}
+<nav class="breadcrumbs" aria-label="@T["Breadcrumbs"]">
+    <a asp-controller="Home" asp-action="Index">@T["HomeLink"]</a>
+    @if (Model.Kind is { } kind)
+    {
+        <span aria-hidden="true">/</span>
+        <a asp-controller="Home" asp-action="Index" asp-route-kind="@kind">@T[kind == OpportunityKind.Job ? "Jobs" : kind.ToString()]</a>
+    }
+</nav>
+<section class="intro">
+    <h1 dir="auto">@Model.Heading</h1>
+    <p>@Model.Intro</p>
+    @if (Model.Kind is { } feedKind)
+    {
+        <a class="textlink feed-link" href="@((Context.Items["MountPath"] is PathString mount ? mount.Value : "") + HiringPs.Web.Controllers.FeedsController.Path(feedKind, Model.BrowseCity))" type="application/rss+xml">
+            <span class="fa-solid fa-rss" aria-hidden="true"></span>
+            <span>@T["RssFeed"]</span>
+        </a>
+    }
+</section>
+<div class="results-header">
+    <strong>@Model.Count @T["Results"]</strong>
+    <span>@T["Newest"]</span>
+</div>
+<partial name="_OpportunityCards" model="new CardListModel(Model, Model.Items)" />
+<partial name="_Pagination" model="new PaginationModel(Model.Page, Model.PageCount, PageUrl)" />
+
+@if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+{
+    @foreach (var item in Model.Items)
+    {
+        <form id="save-@item.Id" asp-area="Member" asp-controller="Saved" asp-action="Add" method="post" data-save-opportunity>
+            <input type="hidden" name="returnUrl" value="@currentUrl" />
+            <input type="hidden" name="id" value="@item.Id" />
+        </form>
+    }
+}

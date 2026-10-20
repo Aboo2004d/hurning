@@ -1,16 +1,16 @@
-// استخراج البيانات بالنموذج، ثم التحقق من الأدلة وتحديد النشر أو المراجعة أو الأرشفة.
+// طلب Gemini وقراءة ردّه: حدود المدخلات والمخرجات، مخطط JSON، وتصنيف أخطاء المزوّد.
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-/// <summary>DTO لبيانات فرصة اقترحها AI قبل فحص الأدلة وتطبيقها على كيانات القاعدة.</summary>
+/// <summary>مكون ExtractedOpportunity ضمن مجال Ai؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public class ExtractedOpportunity
 {
     public string ChildKey { get; set; } = "";

@@ -28,8 +28,8 @@
         <input asp-for="MaximumUses" type="number" min="1" required />
     </label>
     <label>
-        @T["EndsUtc"]
-        <input asp-for="ExpiresAt" type="datetime-local" required />
+        @T["EndsPalestineTime"]
+        <input asp-for="ExpiresAt" type="datetime-local" step="1" value="@TimeZoneInfo.ConvertTime(Model.ExpiresAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)" required />
     </label>
     <label class="check"><input asp-for="Enabled" />@T["Enabled"]</label>
     <button class="button button-outline admin-action" type="submit">

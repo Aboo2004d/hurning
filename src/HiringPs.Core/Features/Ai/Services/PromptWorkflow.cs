@@ -5,11 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HiringPs.Core;
 
-/// <summary>يعتمد نسخ تعليمات AI مع حماية النسخ المستخدمة من التعديل.</summary>
+/// <summary>مكون PromptWorkflow ضمن مجال Ai؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public static class PromptWorkflow
 {
     // Only the worker activates pending versions, while holding the collection SQL lock.
-    /// <summary>يعتمد نسخة تعليمات AI مع الحفاظ على النسخ المستخدمة سابقًا.</summary>
+    /// <summary>Only the worker activates pending versions, while holding the collection SQL lock.</summary>
     public static async Task<PromptVersion> ActivateAsync(HiringDb db, CancellationToken ct)
     {
         var settings = await db.WorkflowSettings.SingleAsync(x => x.Id == 1, ct);
@@ -30,6 +30,15 @@ public static class PromptWorkflow
         var active = await db
             .PromptVersions.AsNoTracking()
             .SingleAsync(x => x.Id == settings.ActivePromptVersionId, ct);
+        // The full requeue scan runs only after an activation (plus an hourly sweep for
+        // re-enabled sources), not on every few-second tick.
+        var state = await AiGovernor.StateAsync(db, ct);
+        var now = DateTimeOffset.UtcNow;
+        if (
+            state.LastRequeuedPromptVersionId == active.Id
+            && state.LastRequeuedAt > now.AddHours(-1)
+        )
+            return active;
         // Published, archived and manual decisions are not queued for prompt changes.
         var eligible = db.SourceItems.Where(item =>
             item.RequestedPromptVersionId != active.Id
@@ -60,10 +69,13 @@ public static class PromptWorkflow
                     .SetProperty(x => x.Error, ""),
             ct
         );
+        state.LastRequeuedPromptVersionId = active.Id;
+        state.LastRequeuedAt = now;
+        await db.SaveChangesAsync(ct);
         return active;
     }
 
-    /// <summary>يتحقق من أن نسخة التعليمات مستخدمة ولا يجوز تعديل محتواها.</summary>
+    /// <summary>ينفذ Protected وفق قواعد PromptWorkflow الحالية دون تغيير عقد المستدعين.</summary>
     public static bool Protected(Opportunity opportunity, int? incomingVersion) =>
         opportunity.AdminOverride
         || (

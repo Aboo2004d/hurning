@@ -18,7 +18,7 @@
                     <th>@T["DiscountCode"]</th>
                     <th>@T["PlanId"]</th>
                     <th>%</th>
-                    <th>@T["EndsUtc"]</th>
+                    <th>@T["EndsPalestineTime"]</th>
                     <th>
                     </th>
                 </tr>
@@ -33,7 +33,7 @@
                         <td>@(code.PlanId is null ? T["AllPlans"].Value : code.PlanId.Value.ToString())</td>
                         <td>@code.Percent</td>
                         <td>
-                            <bdi>@code.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</bdi>
+                            <bdi>@PaymentDisplay.Time(code.ExpiresAt)</bdi>
                         </td>
                         <td>
                             <a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-id="@code.Id" aria-label="@T["Edit"]" title="@T["Edit"]">

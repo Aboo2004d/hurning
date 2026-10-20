@@ -1,0 +1,93 @@
+@model HiringPs.Web.Areas.Admin.Controllers.DistributionModel
+@{
+    ViewData["Title"] = T["ChannelDistribution"].Value;
+    string Time(DateTimeOffset? value) => PaymentDisplay.Time(value);
+}
+<section class="admin-list-page">
+<header class="admin-page-heading"><h1>@T["ChannelDistribution"]</h1></header>
+<p class="muted">@T["TelegramChannelIntro"]</p>
+@if (!Model.BotReady) { <p class="notice" role="alert">@T["TelegramBotNotConfigured"]</p> }
+<div class="integrations-grid">
+@foreach (var target in Model.Targets)
+{
+    var enabled = target.Setting?.Enabled == true;
+    var configured = target.Channel.Length > 0;
+    <section class="tool-card integration-card" id="telegram-@target.Target.ToLowerInvariant()">
+        <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true"><span class="fa-solid fa-paper-plane"></span></span><div><h2>@T["TelegramChannelTarget_" + target.Target]</h2><p class="muted"><code>Telegram:Channels:@target.Target</code></p></div></header>
+        <span class="tool-status @(enabled && configured ? "tool-ready" : "tool-neutral")">@(configured ? (enabled ? T["Enabled"] : T["Disabled"]) : T["TelegramChannelNotConfigured"])</span>
+        <dl class="integration-facts">
+            <dt>@T["TelegramChannel"]</dt><dd><bdi dir="ltr">@(configured ? target.Channel : "—")</bdi></dd>
+            @if (enabled) { <dt>@T["TelegramChannelEnabledSince"] · @T["PalestineTime"]</dt><dd><bdi>@Time(target.Setting!.EnabledAt)</bdi></dd> }
+        </dl>
+        <form asp-action="Toggle" method="post" class="integration-settings-form">
+            <input type="hidden" name="target" value="@target.Target" />
+            <label class="integration-toggle"><input type="checkbox" name="enabled" value="true" checked="@enabled" /><span>@T["TelegramChannelEnable"]</span></label>
+            <button type="submit" class="button-outline">@T["Save"]</button>
+        </form>
+        <form asp-action="Test" method="post">
+            <input type="hidden" name="target" value="@target.Target" />
+            <button type="submit" class="button-outline admin-action" disabled="@(!configured || !Model.BotReady)"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["TelegramChannelTest"]</button>
+        </form>
+    </section>
+}
+</div>
+
+<section class="social-history" id="telegram-posts">
+<h2>@T["TelegramChannelPosts"]</h2>
+<form method="get" class="actions admin-filters">
+    <label>@T["Status"]<select name="state">
+        <option value="">@T["All"]</option>
+        @foreach (var state in new[] { "Pending", "Published", "Failed", "Unknown", "Skipped" })
+        {
+            <option value="@state" selected="@(Context.Request.Query["state"] == state)">@T["Social" + state]</option>
+        }
+    </select></label>
+    <button class="button button-outline admin-action" type="submit"><span class="fa-solid fa-filter" aria-hidden="true"></span><span>@T["Filter"]</span></button>
+</form>
+<div class="table-wrap"><table class="table-nowrap"><thead><tr><th>@T["Title"]</th><th>@T["TelegramChannel"]</th><th>@T["Status"]</th><th>@T["Attempts"]</th><th>@T["Date"] · @T["PalestineTime"]</th><th></th></tr></thead><tbody>
+@foreach (var post in Model.Posts.Items)
+{
+    <tr>
+        <td dir="auto"><a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@post.OpportunityId">@post.Opportunity.Title</a></td>
+        <td><bdi dir="ltr">@post.PageId</bdi></td>
+        <td>@T["Social" + post.Status]@if (post.Error.Length > 0) { <br /><span class="muted">@T[post.Error]</span> }</td>
+        <td>@post.Attempts</td>
+        <td><bdi>@Time(post.CreatedAt)</bdi>@if (post.Status == "Pending" && post.NextAttemptAt is { } next) { <br /><span class="muted">@T["TelegramNextAttempt"] <bdi>@Time(next)</bdi></span> }</td>
+        <td>
+            @if (!string.IsNullOrEmpty(post.Url)) { <a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a> }
+            @if (post.Status is "Failed" or "Unknown" or "Skipped")
+            {
+                <form asp-action="Retry" method="post">
+                    <input type="hidden" name="id" value="@post.Id" />
+                    @if (post.Status == "Unknown") { <label class="notice social-repeat"><input type="checkbox" name="confirmUnknown" value="true" required />@T["TelegramRetryConfirm"]</label> }
+                    <button class="button button-outline admin-action" type="submit"><span class="fa-solid fa-rotate-right" aria-hidden="true"></span><span>@T["Retry"]</span></button>
+                </form>
+            }
+        </td>
+    </tr>
+}
+</tbody></table></div>
+<partial name="_AdminPagination" model="Model.Posts.Pager" />
+</section>
+
+<section class="tool-card integration-card" id="indexnow">
+    <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true"><span class="fa-solid fa-magnifying-glass"></span></span><div><h2>IndexNow</h2><p class="muted">@T["IndexNowIntro"]</p></div></header>
+    <span class="tool-status @(Model.IndexNowEnabled ? "tool-ready" : "tool-neutral")">@(Model.IndexNowEnabled ? T["Enabled"] : Model.IndexNowKeyConfigured ? T["Disabled"] : T["IndexNowKeyMissing"])</span>
+    <dl class="integration-facts">
+        <dt>@T["IndexNowKeyFile"]</dt><dd>@if (Model.IndexNowKeyUrl.Length > 0) { <a href="@Model.IndexNowKeyUrl" target="_blank" rel="noopener" dir="ltr">@Model.IndexNowKeyUrl</a> } else { <span>—</span> }</dd>
+        <dt>@T["IndexNowPending"]</dt><dd><bdi>@Model.IndexNowPending</bdi></dd>
+        <dt>@T["IndexNowFailing"]</dt><dd><bdi>@Model.IndexNowFailing</bdi></dd>
+        <dt>@T["IndexNowLastSubmission"] · @T["PalestineTime"]</dt><dd><bdi>@Time(Model.IndexNowLastSubmission)</bdi></dd>
+    </dl>
+    @if (Model.IndexNowRecent.Count > 0)
+    {
+        <div class="table-wrap"><table class="table-nowrap"><thead><tr><th>#</th><th>@T["IndexNowLastSubmission"] · @T["PalestineTime"]</th><th>@T["Status"]</th><th>@T["Attempts"]</th></tr></thead><tbody>
+        @foreach (var entry in Model.IndexNowRecent)
+        {
+            <tr><td><a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@entry.OpportunityId"><bdi>@entry.OpportunityId</bdi></a></td><td><bdi>@Time(entry.SubmittedAt)</bdi></td><td><bdi>@(entry.LastStatus?.ToString() ?? "—")</bdi>@if (entry.LastError.Length > 0) { <span class="muted"> · @T[entry.LastError]</span> }</td><td>@entry.Attempts</td></tr>
+        }
+        </tbody></table></div>
+    }
+    <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><code>IndexNow:Enabled<br />IndexNow:Key<br />IndexNow:IntervalMinutes</code></details>
+</section>
+</section>

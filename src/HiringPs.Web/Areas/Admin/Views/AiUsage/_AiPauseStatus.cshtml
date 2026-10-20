@@ -1,0 +1,22 @@
+@model AiPauseStatusDto
+@{
+    var paused = Model.IsPaused(DateTimeOffset.UtcNow);
+    var hasPrevious = Model.Until is not null;
+}
+<section class="tool-card integration-card" aria-labelledby="ai-pause-title" role="status">
+    <header class="integration-card-heading">
+        <span class="integration-mark" aria-hidden="true"><span class="fa-solid fa-clock"></span></span>
+        <h2 id="ai-pause-title">@T["AiPauseTitle"]</h2>
+    </header>
+    <span class="tool-status @(paused ? "tool-problem" : "tool-neutral")">@T[paused ? "AiTemporarilyPaused" : "AiNoActivePause"]</span>
+    @if (paused || hasPrevious)
+    {
+        <dl class="integration-facts">
+            <dt>@T[paused ? "AiPauseReason" : "AiPreviousPauseReason"]</dt>
+            <dd dir="auto">@(string.IsNullOrWhiteSpace(Model.Reason) ? T["AiPauseReasonUnspecified"].Value : Model.Reason)</dd>
+            <dt>@T[paused ? "AiExpectedResumePalestine" : "AiPauseEndedPalestine"]</dt>
+            <dd><bdi><time datetime="@Model.Until!.Value.ToString("O")">@PaymentDisplay.Time(Model.Until.Value, seconds: true)</time></bdi></dd>
+        </dl>
+    }
+    <p class="muted">@T[paused ? "AiPauseResumeHelp" : "AiNoPauseHelp"]</p>
+</section>

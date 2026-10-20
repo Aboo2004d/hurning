@@ -5,26 +5,26 @@ using System.Linq;
 
 namespace HiringPs.Core;
 
-/// <summary>قواعد النص والبصمات وتاريخ فلسطين المشتركة بين المجالات.</summary>
+/// <summary>مكون TextRules ضمن مجال Shared؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public static class TextRules
 {
-    /// <summary>يحسب طول النص وفق طريقة العد المعتمدة في الموقع.</summary>
+    /// <summary>ينفذ CharacterCount وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     public static int CharacterCount(string text) => new StringInfo(text).LengthInTextElements;
 
-    /// <summary>يحسب بصمة ثابتة للبيانات دون الحاجة إلى حفظ القيمة السرية الأصلية.</summary>
+    /// <summary>ينفذ Hash وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     public static string Hash(string text) =>
         Convert.ToHexString(
             System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))
         );
 
-    /// <summary>ينشئ مفتاح مقارنة موحدًا لاسم الجهة.</summary>
+    /// <summary>ينفذ OrganizationKey وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     public static string OrganizationKey(string text)
     {
         var value = Normalize(text);
         return value.Length <= 200 ? value : "sha256:" + Hash(value);
     }
 
-    /// <summary>يطبع النص للمقارنة والبحث مع الحفاظ على قواعد المجال الحالية.</summary>
+    /// <summary>ينفذ Normalize وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     public static string Normalize(string text) =>
         string.Join(
             ' ',
@@ -40,41 +40,59 @@ public static class TextRules
 
     public static TimeZoneInfo PalestineTimeZone => PalestineZone.Value;
 
-    /// <summary>يعيد تاريخ اليوم حسب توقيت فلسطين بدل توقيت الخادم.</summary>
+    /// <summary>ينفذ PalestineToday وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     public static DateOnly PalestineToday() =>
         DateOnly.FromDateTime(
             TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, PalestineTimeZone).DateTime
         );
 
-    /// <summary>يحدد اسم المنطقة الزمنية الفلسطينية المتاح على نظام التشغيل.</summary>
+    // Set when the server lacks a Palestinian zone; the worker logs it once.
+    public static string? PalestineTimeZoneWarning { get; private set; }
+
+    /// <summary>ينفذ ResolvePalestineTimeZone وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
     private static TimeZoneInfo ResolvePalestineTimeZone()
     {
-        // Keep the project's existing IANA/Windows resolution order in one place.
-        string[] candidates =
+        // Palestinian zones first (Windows id, then IANA); Israeli zones differ around DST changes.
+        string[] palestinian = ["West Bank Standard Time", "Asia/Hebron", "Asia/Gaza"];
+        string[] fallbacks =
         [
-            "Asia/Hebron",
             "Israel Standard Time",
             "Palestine Standard Time",
             "Jerusalem",
             "Middle East Standard Time",
         ];
-        foreach (var id in candidates)
+        foreach (var id in palestinian.Concat(fallbacks))
         {
             try
             {
-                return TimeZoneInfo.FindSystemTimeZoneById(id);
+                var zone = TimeZoneInfo.FindSystemTimeZoneById(id);
+                if (!palestinian.Contains(id))
+                    Fallback($"Palestinian time zone not found; using {id}.");
+                return zone;
             }
             catch (TimeZoneNotFoundException) { }
             catch (InvalidTimeZoneException) { }
         }
-        return TimeZoneInfo
-                .GetSystemTimeZones()
-                .FirstOrDefault(zone =>
-                    zone.Id.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
-                    || zone.Id.Contains("Israel", StringComparison.OrdinalIgnoreCase)
-                    || zone.DisplayName.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
-                    || zone.DisplayName.Contains("Israel", StringComparison.OrdinalIgnoreCase)
-                )
-            ?? TimeZoneInfo.Utc;
+        var match = TimeZoneInfo
+            .GetSystemTimeZones()
+            .FirstOrDefault(zone =>
+                zone.Id.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                || zone.Id.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+                || zone.DisplayName.Contains("Jerusalem", StringComparison.OrdinalIgnoreCase)
+                || zone.DisplayName.Contains("Israel", StringComparison.OrdinalIgnoreCase)
+            );
+        Fallback(
+            match is null
+                ? "No Palestinian time zone found; using UTC."
+                : $"Palestinian time zone not found; using {match.Id}."
+        );
+        return match ?? TimeZoneInfo.Utc;
+    }
+
+    /// <summary>ينفذ Fallback وفق قواعد TextRules الحالية دون تغيير عقد المستدعين.</summary>
+    private static void Fallback(string warning)
+    {
+        PalestineTimeZoneWarning = warning;
+        System.Diagnostics.Trace.TraceWarning(warning);
     }
 }

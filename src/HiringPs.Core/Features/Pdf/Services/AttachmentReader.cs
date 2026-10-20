@@ -8,12 +8,12 @@ using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
 namespace HiringPs.Core;
 
-/// <summary>يفحص عناوين المرفقات وينزل ملفات PDF ضمن حدود الحجم والوقت وسياسة الوصول.</summary>
+/// <summary>مكون AttachmentReader ضمن مجال Pdf؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = null)
 {
     public const int MaxBytes = 8 * 1024 * 1024;
 
-    /// <summary>ينزل مرفق PDF المسموح ويستخرج نصه ضمن حدود الحجم والزمن.</summary>
+    /// <summary>ينفذ ReadPdfAsync وفق قواعد AttachmentReader الحالية دون تغيير عقد المستدعين.</summary>
     public async Task<string> ReadPdfAsync(string url, string[] hosts, CancellationToken ct)
     {
         using var downloadBudget = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -25,8 +25,8 @@ public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = 
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new ContentNeedsReviewException(
-                "PDF download timed out after 40 seconds; review or retry the original source."
+            throw new ContentRetryableException(
+                "PDF download timed out after 40 seconds; retry scheduled."
             );
         }
         return (
@@ -37,7 +37,7 @@ public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = 
         ).Text;
     }
 
-    /// <summary>ينزل المورد بعد التحقق من سياسة العنوان وحدود التحميل.</summary>
+    /// <summary>ينفذ DownloadAsync وفق قواعد AttachmentReader الحالية دون تغيير عقد المستدعين.</summary>
     private async Task<byte[]> DownloadAsync(string url, string[] hosts, CancellationToken ct)
     {
         using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false };
@@ -80,6 +80,10 @@ public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = 
                 continue;
             }
 
+            if (IsTemporary(response.StatusCode))
+                throw new ContentRetryableException(
+                    $"Attachment HTTP {(int)response.StatusCode}: temporary source error; retry scheduled."
+                );
             if (!response.IsSuccessStatusCode)
                 throw new ContentNeedsReviewException(
                     "Attachment unavailable; review before publishing."
@@ -103,7 +107,17 @@ public class AttachmentReader(UrlPolicy policy, IConfiguration? configuration = 
         throw new ContentNeedsReviewException("Attachment redirect limit reached.");
     }
 
-    /// <summary>يستخرج النص القابل للاستخدام من المحتوى وفق مسار القراءة الحالي.</summary>
+    /// <summary>ينفذ IsTemporary وفق قواعد AttachmentReader الحالية دون تغيير عقد المستدعين.</summary>
+    public static bool IsTemporary(HttpStatusCode status) =>
+        status
+            is HttpStatusCode.RequestTimeout
+                or HttpStatusCode.TooManyRequests
+                or HttpStatusCode.InternalServerError
+                or HttpStatusCode.BadGateway
+                or HttpStatusCode.ServiceUnavailable
+                or HttpStatusCode.GatewayTimeout;
+
+    /// <summary>ينفذ ExtractText وفق قواعد AttachmentReader الحالية دون تغيير عقد المستدعين.</summary>
     public static string ExtractText(byte[] bytes)
     {
         if (bytes.Length < 5 || Encoding.ASCII.GetString(bytes, 0, 5) != "%PDF-")

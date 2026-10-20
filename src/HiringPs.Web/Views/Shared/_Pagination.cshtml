@@ -1,0 +1,43 @@
+@model PaginationModel
+@* ترقيم مرقّم يعمل بدون JavaScript: الأولى والسابقة ونافذة أرقام والتالية والأخيرة. *@
+@if (Model.PageCount > 1)
+{
+    var from = Math.Max(1, Model.Page - 2);
+    var to = Math.Min(Model.PageCount, Model.Page + 2);
+    <nav class="pagination" aria-label="@T["PaginationLabel"]">
+        <ul>
+            @if (Model.Page > 1)
+            {
+                <li><a class="page-step" href="@Model.Url(1)" aria-label="@T["FirstPage"]">@T["FirstPage"]</a></li>
+                <li><a class="page-step" href="@Model.Url(Model.Page - 1)" rel="prev">@T["Previous"]</a></li>
+            }
+            @if (from > 1)
+            {
+                <li class="page-gap" aria-hidden="true">…</li>
+            }
+            @for (var number = from; number <= to; number++)
+            {
+                var label = string.Format(CultureInfo.CurrentCulture, T["PageNumber"].Value, number);
+                <li>
+                    @if (number == Model.Page)
+                    {
+                        <span class="page-number is-current" aria-current="page" aria-label="@label">@number</span>
+                    }
+                    else
+                    {
+                        <a class="page-number" href="@Model.Url(number)" aria-label="@label">@number</a>
+                    }
+                </li>
+            }
+            @if (to < Model.PageCount)
+            {
+                <li class="page-gap" aria-hidden="true">…</li>
+            }
+            @if (Model.Page < Model.PageCount)
+            {
+                <li><a class="page-step" href="@Model.Url(Model.Page + 1)" rel="next">@T["Next"]</a></li>
+                <li><a class="page-step" href="@Model.Url(Model.PageCount)" aria-label="@T["LastPage"]">@T["LastPage"]</a></li>
+            }
+        </ul>
+    </nav>
+}

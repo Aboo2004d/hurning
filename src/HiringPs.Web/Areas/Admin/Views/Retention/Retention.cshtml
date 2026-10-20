@@ -24,7 +24,7 @@
     </label>
     <button type="submit">@T["Save"]</button>
 </form>
-<p>@(ar ? "آخر تنظيف" : "Last cleanup"): @(Model.Current?.LastCleanupAt?.ToString("u") ?? "—")</p>
+<p>@(ar ? "آخر تنظيف" : "Last cleanup"): @(PaymentDisplay.Time(Model.Current?.LastCleanupAt)) @T["PalestineTime"]</p>
 <p>
     @(ar ? "نسخ نص محذوفة / ملفات تشخيص محذوفة في آخر عملية" : "Deleted revisions / diagnostic files in last run"): @Model.Current?.LastDeletedRevisions / @Model.Current?.LastDeletedDiagnostics
 </p>

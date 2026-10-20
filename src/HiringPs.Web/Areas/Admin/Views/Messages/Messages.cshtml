@@ -50,7 +50,7 @@ else
                         <td>@message.Name</td>
                         <td dir="ltr">@message.Email</td>
                         <td>
-                            @TimeZoneInfo.ConvertTime(message.CreatedAt,TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")
+                            @PaymentDisplay.Time(message.CreatedAt) @T["PalestineTime"]
                         </td>
                         <td>@T["ContactStatus_"+(message.IsHandled?"handled":message.IsRead?"read":"unread")]</td>
                         <td>

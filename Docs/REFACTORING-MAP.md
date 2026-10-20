@@ -251,3 +251,65 @@
 | الأسعار المباشرة | Web/Services/Membership/PlanCatalogNotifications، PlanUpdatesController، plan-catalog.js، plan-preview.js |
 
 راجع PAYMENT-RECOVERY.md وLIVE-PLAN-PRICES.md لحدود المزود والتشغيل. كل التغييرات محلية وغير مرفوعة.
+
+
+## أنواع إضافات المنصة المدمجة
+
+| الملف في تحديث المستخدم | النوع | المسار المنظم |
+| --- | --- | --- |
+| `Domain.cs` | `Source` | [Source.cs](../src/HiringPs.Core/Persistence/Entities/Collection/Source.cs) |
+| `Domain.cs` | `SourceItem` | [SourceItem.cs](../src/HiringPs.Core/Persistence/Entities/Collection/SourceItem.cs) |
+| `Domain.cs` | `Opportunity` | [Opportunity.cs](../src/HiringPs.Core/Persistence/Entities/Opportunities/Opportunity.cs) |
+| `Domain.cs` | `WorkerHeartbeat` | [WorkerHeartbeat.cs](../src/HiringPs.Core/Persistence/Entities/Collection/WorkerHeartbeat.cs) |
+| `Domain.cs` | `PipelineState` | [PipelineState.cs](../src/HiringPs.Core/Persistence/Entities/Collection/PipelineState.cs) |
+| `Domain.cs` | `OrganizationAlias` | [OrganizationAlias.cs](../src/HiringPs.Core/Persistence/Entities/Opportunities/OrganizationAlias.cs) |
+| `Domain.cs` | `DuplicateCandidateStatus` | [DuplicateCandidateStatus.cs](../src/HiringPs.Core/Features/Opportunities/Enums/DuplicateCandidateStatus.cs) |
+| `Domain.cs` | `DuplicateCandidate` | [DuplicateCandidate.cs](../src/HiringPs.Core/Persistence/Entities/Opportunities/DuplicateCandidate.cs) |
+| `Domain.cs` | `TextRules` | [TextRules.cs](../src/HiringPs.Core/Features/Shared/Rules/TextRules.cs) |
+| `Collection.cs` | `UrlPolicy` | [BrowserCollector.Collection.cs](../src/HiringPs.Core/Features/Collection/Services/BrowserCollector.Collection.cs) |
+| `Collection.cs` | `ContentFingerprint` | [BrowserCollector.Collection.cs](../src/HiringPs.Core/Features/Collection/Services/BrowserCollector.Collection.cs) |
+| `Collection.cs` | `BrowserCollector` | [BrowserCollector.Collection.cs](../src/HiringPs.Core/Features/Collection/Services/BrowserCollector.Collection.cs) |
+| `Attachments.cs` | `ContentNeedsReviewException` | [AttachmentReader.cs](../src/HiringPs.Core/Features/Pdf/Services/AttachmentReader.cs) |
+| `Attachments.cs` | `ContentRetryableException` | [AttachmentReader.cs](../src/HiringPs.Core/Features/Pdf/Services/AttachmentReader.cs) |
+| `Attachments.cs` | `AttachmentReader` | [AttachmentReader.cs](../src/HiringPs.Core/Features/Pdf/Services/AttachmentReader.cs) |
+| `DateEvidenceRules.cs` | `DateEvidenceRules` | [DateEvidenceRules.cs](../src/HiringPs.Core/Features/Ai/Rules/DateEvidenceRules.cs) |
+| `OpportunityRss.cs` | `OpportunityRss` | [OpportunityRss.cs](../src/HiringPs.Core/Features/Opportunities/Services/OpportunityRss.cs) |
+| `WorkflowServices.cs` | `PromptWorkflow` | [PromptWorkflow.cs](../src/HiringPs.Core/Features/Ai/Services/PromptWorkflow.cs) |
+| `AiGovernor.cs` | `AiGovernor` | [AiGovernor.cs](../src/HiringPs.Core/Features/Ai/Services/AiGovernor.cs) |
+| `BrowserHost.cs` | `BrowserHost` | [BrowserHost.cs](../src/HiringPs.Core/Features/Collection/Services/BrowserHost.cs) |
+| `DuplicateMatcher.cs` | `DuplicateMatcher` | [DuplicateMatcher.cs](../src/HiringPs.Core/Features/Opportunities/Services/DuplicateMatcher.cs) |
+| `ExtractionValidator.cs` | `ExtractionValidator` | [ExtractionValidator.cs](../src/HiringPs.Core/Features/Ai/Rules/ExtractionValidator.cs) |
+| `GeminiClient.cs` | `ExtractionResult` | [ExtractionResult.cs](../src/HiringPs.Core/Features/Ai/Dtos/ExtractionResult.cs) |
+| `GeminiClient.cs` | `ExtractedOpportunity` | [ExtractedOpportunity.cs](../src/HiringPs.Core/Features/Ai/Dtos/ExtractedOpportunity.cs) |
+| `GeminiClient.cs` | `AiUnavailableException` | [AiUnavailableException.cs](../src/HiringPs.Core/Features/Ai/Exceptions/AiUnavailableException.cs) |
+| `GeminiClient.cs` | `AiQuotaException` | [AiQuotaException.cs](../src/HiringPs.Core/Features/Ai/Exceptions/AiQuotaException.cs) |
+| `GeminiClient.cs` | `AiTransientException` | [AiTransientException.cs](../src/HiringPs.Core/Features/Ai/Exceptions/AiTransientException.cs) |
+| `GeminiClient.cs` | `GeminiClient` | [GeminiClient.cs](../src/HiringPs.Core/Features/Ai/Services/GeminiClient.cs) |
+| `GeminiClient.cs` | `AiExtractor` | [AiExtractor.cs](../src/HiringPs.Core/Features/Ai/Services/AiExtractor.cs) |
+| `IndexNow.cs` | `PublicUrls` | [PublicUrls.cs](../src/HiringPs.Core/Features/Indexing/Rules/PublicUrls.cs) |
+| `IndexNow.cs` | `IndexNowEntry` | [IndexNowEntry.cs](../src/HiringPs.Core/Persistence/Entities/Indexing/IndexNowEntry.cs) |
+| `IndexNow.cs` | `IndexNowSettings` | [IndexNowSettings.cs](../src/HiringPs.Core/Features/Indexing/Rules/IndexNowSettings.cs) |
+| `IndexNow.cs` | `IndexNowQueue` | [IndexNowQueue.cs](../src/HiringPs.Core/Features/Indexing/Services/IndexNowQueue.cs) |
+| `IndexNow.cs` | `IndexNowSubmitter` | [IndexNowSubmitter.cs](../src/HiringPs.Core/Features/Indexing/Services/IndexNowSubmitter.cs) |
+| `SourceHealth.cs` | `SourceHealth` | [SourceHealth.cs](../src/HiringPs.Core/Features/Collection/Rules/SourceHealth.cs) |
+| `TelegramChannel.cs` | `TelegramChannelSetting` | [TelegramChannelSetting.cs](../src/HiringPs.Core/Persistence/Entities/Telegram/TelegramChannelSetting.cs) |
+| `TelegramChannel.cs` | `TelegramChannelTargets` | [TelegramChannelTargets.cs](../src/HiringPs.Core/Features/Telegram/Rules/TelegramChannelTargets.cs) |
+| `TelegramChannel.cs` | `TelegramChannelResult` | [TelegramChannelResult.cs](../src/HiringPs.Core/Features/Telegram/Dtos/TelegramChannelResult.cs) |
+| `TelegramChannel.cs` | `TelegramChannelOutcome` | [TelegramChannelOutcome.cs](../src/HiringPs.Core/Features/Telegram/Enums/TelegramChannelOutcome.cs) |
+| `TelegramChannel.cs` | `TelegramChannelClient` | [TelegramChannelClient.cs](../src/HiringPs.Core/Features/Telegram/Services/TelegramChannelClient.cs) |
+| `TelegramChannel.cs` | `TelegramChannelPublisher` | [TelegramChannelPublisher.cs](../src/HiringPs.Core/Features/Telegram/Services/TelegramChannelPublisher.cs) |
+| `src/HiringPs.Web/Models/CityCatalog.cs` | `City` | [City.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/City.cs) |
+| `src/HiringPs.Web/Models/CityCatalog.cs` | `CityCatalog` | [CityCatalog.cs](../src/HiringPs.Web/Services/PublicCatalog/CityCatalog.cs) |
+| `src/HiringPs.Web/Models/FilterLabels.cs` | `FilterOption` | [FilterOption.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/FilterOption.cs) |
+| `src/HiringPs.Web/Models/FilterLabels.cs` | `FilterLabels` | [FilterLabels.cs](../src/HiringPs.Web/Services/PublicCatalog/FilterLabels.cs) |
+| `src/HiringPs.Web/Models/PublicCatalog.cs` | `FilterValues` | [FilterValues.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/FilterValues.cs) |
+| `src/HiringPs.Web/Models/PublicCatalog.cs` | `CityFacet` | [CityFacet.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/CityFacet.cs) |
+| `src/HiringPs.Web/Models/PublicCatalog.cs` | `OrganizationFacet` | [OrganizationFacet.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/OrganizationFacet.cs) |
+| `src/HiringPs.Web/Models/PublicCatalog.cs` | `BrowseFacets` | [BrowseFacets.cs](../src/HiringPs.Web/Models/Opportunities/Dtos/BrowseFacets.cs) |
+| `src/HiringPs.Web/Models/PublicCatalog.cs` | `PublicCatalog` | [PublicCatalog.cs](../src/HiringPs.Web/Services/PublicCatalog/PublicCatalog.cs) |
+| `src/HiringPs.Web/Models/PublicListing.cs` | `SiteCache` | [SiteCache.cs](../src/HiringPs.Web/Services/PublicCatalog/SiteCache.cs) |
+| `src/HiringPs.Web/Models/PublicListing.cs` | `PublicListing` | [PublicListing.cs](../src/HiringPs.Web/Services/PublicCatalog/PublicListing.cs) |
+| `src/HiringPs.Web/Models/PublicListing.cs` | `KindSlugs` | [KindSlugs.cs](../src/HiringPs.Web/Services/PublicCatalog/KindSlugs.cs) |
+| `src/HiringPs.Web/Models/PublicListing.cs` | `UrlSlug` | [UrlSlug.cs](../src/HiringPs.Web/Services/PublicCatalog/UrlSlug.cs) |
+
+توجد خدمات قراءة وإدارة التوزيع ضمن `Features/Telegram`، وإدارة التكرار والجهات ضمن `Features/Opportunities`. نماذج القراءة منفصلة عن كيانات EF. خدمات الفلاتر والروابط العامة ضمن `HiringPs.Web/Services/PublicCatalog`.

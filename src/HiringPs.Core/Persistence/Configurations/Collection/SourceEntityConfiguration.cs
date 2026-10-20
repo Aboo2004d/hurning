@@ -1,15 +1,13 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HiringPs.Core;
 
-/// <summary>
-/// يعرّف العلاقات والفهارس والقيود والبيانات الابتدائية لكيان <see cref="Source"/>.
-/// تبقى أسماء الجداول والحقول وقواعد الحذف مطابقة للتعريف السابق.
-/// </summary>
+/// <summary>يعرّف علاقات وفهارس وتخزين Source مع الحفاظ على مخطط تحديث المستخدم.</summary>
 public sealed class SourceEntityConfiguration : IEntityTypeConfiguration<Source>
 {
-    /// <summary>يطبق إعدادات تخزين <see cref="Source"/> عند إنشاء نموذج قاعدة البيانات.</summary>
+    /// <summary>يطبق تعريف جدول الكيان؛ لا ينفذ migration أو اتصال قاعدة بيانات.</summary>
     public void Configure(EntityTypeBuilder<Source> builder)
     {
         builder

@@ -1,14 +1,18 @@
+// استخراج البيانات بالنموذج، ثم التحقق من الأدلة وتحديد النشر أو المراجعة أو الأرشفة.
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-/// <summary>يحفظ صفحة اكتشاف ومؤشر استئنافها وعدادات جولتها في معاملة واحدة.</summary>
+/// <summary>يثبت دفعة اكتشاف ومؤشرها وعداداتها مع سياسة إعادة التحقق الجديدة.</summary>
 public sealed class DiscoveryBatchStore(HiringDb pageDb)
 {
-    /// <summary>يثبت الدفعة داخل نطاق الصفحة؛ لا يحفظ تغييرات من نطاق دورة الجمع.</summary>
+    /// <summary>يحفظ الصفحة ضمن معاملة واحدة مع تحميل عناصرها السابق دفعة واحدة.</summary>
     public async Task SaveAsync(int sourceId, ConnectorKind connector, long runId,
-        int promptVersionId, DiscoveryBatch batch, CancellationToken token)
+        int activePromptId, DateTimeOffset reverifyBefore, DiscoveryBatch batch, CancellationToken token)
     {
         var savedCheckpoint = await pageDb.DiscoveryCheckpoints.SingleAsync(
             x => x.SourceId == sourceId,
@@ -17,36 +21,15 @@ public sealed class DiscoveryBatchStore(HiringDb pageDb)
         var savedRun = await pageDb.Runs.SingleAsync(x => x.Id == runId, token);
         await using var pageTransaction =
             await pageDb.Database.BeginTransactionAsync(token);
-        foreach (var entry in batch.Items.DistinctBy(x => x.Id))
-        {
-            var item = await pageDb.SourceItems.SingleOrDefaultAsync(
-                x => x.SourceId == sourceId && x.ExternalId == entry.Id,
-                token
-            );
-            if (item is null)
-            {
-                pageDb.SourceItems.Add(
-                    new()
-                    {
-                        SourceId = sourceId,
-                        ExternalId = entry.Id,
-                        Url = entry.Url,
-                        Status = ProcessingStatus.Discovered,
-                        RequestedPromptVersionId = promptVersionId,
-                    }
-                );
-                savedRun.Changed++;
-            }
-            else
-            {
-                item.LastSeenAt = DateTimeOffset.UtcNow;
-                if (item.Status == ProcessingStatus.Published)
-                {
-                    item.Status = ProcessingStatus.Discovered;
-                    item.RetryAt = null;
-                }
-            }
-        }
+        await SaveDiscoveredAsync(
+            pageDb,
+            sourceId,
+            batch,
+            savedRun,
+            activePromptId,
+            reverifyBefore,
+            token
+        );
         var visited =
             JsonSerializer.Deserialize<List<string>>(
                 savedCheckpoint.VisitedUrlsJson
@@ -69,4 +52,53 @@ public sealed class DiscoveryBatchStore(HiringDb pageDb)
         await pageDb.SaveChangesAsync(token);
         await pageTransaction.CommitAsync(token);
     }
+
+    /// <summary>يحمل عناصر الصفحة دفعة واحدة ويعيد جلب المنشور فقط بعد مهلة التحقق.</summary>
+    private static async Task SaveDiscoveredAsync(
+        HiringDb pageDb,
+        int sourceId,
+        DiscoveryBatch batch,
+        ScrapeRun savedRun,
+        int activePromptId,
+        DateTimeOffset reverifyBefore,
+        CancellationToken token
+    )
+    {
+        var entries = batch.Items.DistinctBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
+        var ids = entries.Select(x => x.Id).ToArray();
+        // One lookup per page instead of one query per listing row.
+        var existing = await pageDb
+            .SourceItems.Where(x => x.SourceId == sourceId && ids.Contains(x.ExternalId))
+            .ToDictionaryAsync(x => x.ExternalId, StringComparer.OrdinalIgnoreCase, token);
+        var seen = DateTimeOffset.UtcNow;
+        foreach (var entry in entries)
+        {
+            if (!existing.TryGetValue(entry.Id, out var item))
+            {
+                pageDb.SourceItems.Add(
+                    new()
+                    {
+                        SourceId = sourceId,
+                        ExternalId = entry.Id,
+                        Url = entry.Url,
+                        Status = ProcessingStatus.Discovered,
+                        RequestedPromptVersionId = activePromptId,
+                    }
+                );
+                savedRun.Changed++;
+                continue;
+            }
+            item.LastSeenAt = seen;
+            // Published items are re-fetched only once their last verification is old enough.
+            if (
+                item.Status == ProcessingStatus.Published
+                && (item.LastVerifiedAt is null || item.LastVerifiedAt < reverifyBefore)
+            )
+            {
+                item.Status = ProcessingStatus.Discovered;
+                item.RetryAt = null;
+            }
+        }
+    }
+
 }

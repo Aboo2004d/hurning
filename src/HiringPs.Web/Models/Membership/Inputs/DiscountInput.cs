@@ -9,6 +9,7 @@ public sealed class DiscountInput
     [Required, StringLength(50)] public string Code { get; set; } = "";
     public int? PlanId { get; set; }
     [Range(0, 100)] public int Percent { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinder(BinderType = typeof(HiringPs.Web.Infrastructure.PalestineDateTimeOffsetModelBinder))]
     public DateTimeOffset ExpiresAt { get; set; }
     [Range(1, int.MaxValue)] public int MaximumUses { get; set; }
     public bool Enabled { get; set; } = true;

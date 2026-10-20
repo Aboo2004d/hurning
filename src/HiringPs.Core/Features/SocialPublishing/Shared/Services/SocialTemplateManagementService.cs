@@ -7,7 +7,7 @@ public sealed class SocialTemplateManagementService(HiringDb db)
 {
     /// <summary>يتحقق من منصة ونطاق القالب المعتمدين.</summary>
     public static bool ValidScope(string provider, string scope) =>
-        (provider is "Facebook" or "LinkedIn")
+        SocialPublishing.IsTemplateProvider(provider)
         && (scope == "general" || Enum.GetNames<OpportunityKind>().Contains(scope));
 
     /// <summary>يسقط النسخ إلى حقول السجل والمحرر دون تتبع.</summary>

@@ -310,7 +310,7 @@
         <value>ساعة بدء الجمع</value>
     </data>
   <data name="ScheduleZone" xml:space="preserve">
-        <value>المواعيد بتوقيت فلسطين (Asia/Hebron)</value>
+        <value>المواعيد بتوقيت فلسطين</value>
     </data>
   <data name="CollectNow" xml:space="preserve">
         <value>ابدأ الجمع الآن</value>
@@ -1171,7 +1171,7 @@
         <value>الأدوات</value>
     </data>
   <data name="ToolsIntro" xml:space="preserve">
-        <value>حالة الأدوات من بيئة العامل الفعلية. الفحص بطلبك أو يوميًا عند منتصف الليل بتوقيت فلسطين. وقت النتائج بتوقيت UTC؛ النتيجة تصف حالة الأداة وقت الفحص.</value>
+        <value>حالة الأدوات من بيئة العامل الفعلية. الفحص بطلبك أو يوميًا عند منتصف الليل بتوقيت فلسطين. وقت النتائج بتوقيت فلسطين؛ النتيجة تصف حالة الأداة وقت الفحص.</value>
     </data>
   <data name="ToolsCheckNow" xml:space="preserve">
         <value>فحص الأدوات الآن</value>
@@ -1468,7 +1468,7 @@
         <value>تفاصيل الفحص</value>
     </data>
   <data name="ToolsCheckedAtUtc" xml:space="preserve">
-        <value>وقت الفحص (UTC)</value>
+        <value>وقت الفحص (توقيت فلسطين)</value>
     </data>
   <data name="ToolsCheckDuration" xml:space="preserve">
         <value>مدة الفحص</value>
@@ -1480,10 +1480,10 @@
         <value>نوع الخطأ</value>
     </data>
   <data name="ToolsHeartbeatUtc" xml:space="preserve">
-        <value>آخر نبضة (UTC)</value>
+        <value>آخر نبضة (توقيت فلسطين)</value>
     </data>
   <data name="ToolsLastLoopUtc" xml:space="preserve">
-        <value>بداية آخر دورة (UTC)</value>
+        <value>بداية آخر دورة (توقيت فلسطين)</value>
     </data>
   <data name="SourceSetupTitle" xml:space="preserve">
         <value>مساعد إعداد المصدر</value>
@@ -1786,13 +1786,13 @@
     <value>مجدولة</value>
   </data>
   <data name="StartsUtc" xml:space="preserve">
-    <value>البداية (UTC)</value>
+    <value>البداية (توقيت فلسطين)</value>
   </data>
   <data name="EndsUtc" xml:space="preserve">
-    <value>النهاية (UTC)</value>
+    <value>النهاية (توقيت فلسطين)</value>
   </data>
   <data name="CreatedUtc" xml:space="preserve">
-    <value>التاريخ (UTC)</value>
+    <value>التاريخ (توقيت فلسطين)</value>
   </data>
   <data name="RemainingDays" xml:space="preserve">
     <value>الأيام المتبقية</value>
@@ -2332,7 +2332,7 @@
     <value>أُرسل رمز الدفع إلى</value>
   </data>
   <data name="WalletCodeExpiresUtc" xml:space="preserve">
-    <value>صالح حتى (UTC):</value>
+    <value>صالح حتى (توقيت فلسطين):</value>
   </data>
   <data name="WalletSingleConfirmation" xml:space="preserve">
     <value>تأكد من الرمز قبل التأكيد. تُرسل محاولة تأكيد واحدة فقط لهذه الجلسة؛ لن نكرر الخصم تلقائيًا.</value>
@@ -2401,7 +2401,7 @@
     <value>السحوبات المعلقة</value>
   </data>
   <data name="WalletBalanceFetchedUtc" xml:space="preserve">
-    <value>وقت جلب الرصيد (UTC):</value>
+    <value>وقت جلب الرصيد (توقيت فلسطين):</value>
   </data>
   <data name="WalletOperatingRules" xml:space="preserve">
     <value>آلية التشغيل</value>
@@ -3016,6 +3016,82 @@
   <data name="Date" xml:space="preserve"><value>التاريخ</value></data>
   <data name="PreviewTemplateVersion" xml:space="preserve"><value>معاينة نص هذا الإصدار في المحرر</value></data>
   <data name="ToolsFetchFailed" xml:space="preserve"><value>تعذر تأكيد الطلب أو تحديث النتائج. راجع سجل طلبات الفحص أو حدّث النتائج يدويًا قبل إعادة المحاولة.</value></data>
+  <data name="ChannelDistribution" xml:space="preserve"><value>قناة تليجرام وIndexNow</value></data>
+  <data name="TelegramChannelIntro" xml:space="preserve"><value>تنشر الفرص الجديدة تلقائيًا في قناة تليجرام العامة عند تفعيل نوعها، بقالب منصة Telegram ورابط الإعلان. يُنشر فقط ما نُشر لأول مرة بعد التفعيل، ولا تُنشر الفرصة مرتين في القناة نفسها. الإرسال يتم من خدمة العامل.</value></data>
+  <data name="TelegramBotNotConfigured" xml:space="preserve"><value>رمز بوت تليجرام غير مضبوط (Telegram:BotToken)؛ لن يُرسل شيء.</value></data>
+  <data name="TelegramChannelTarget_Jobs" xml:space="preserve"><value>قناة الوظائف</value></data>
+  <data name="TelegramChannelTarget_Training" xml:space="preserve"><value>قناة التدريب</value></data>
+  <data name="TelegramChannelTarget_Tenders" xml:space="preserve"><value>قناة العطاءات والمناقصات</value></data>
+  <data name="TelegramChannelTarget_All" xml:space="preserve"><value>القناة العامة (كل الأنواع)</value></data>
+  <data name="TelegramChannel" xml:space="preserve"><value>القناة</value></data>
+  <data name="TelegramChannelNotConfigured" xml:space="preserve"><value>لم تُضبط القناة في الإعدادات</value></data>
+  <data name="TelegramChannelEnabledSince" xml:space="preserve"><value>مفعّل منذ</value></data>
+  <data name="TelegramChannelEnable" xml:space="preserve"><value>نشر تلقائي لهذا النوع</value></data>
+  <data name="TelegramChannelTest" xml:space="preserve"><value>إرسال منشور تجريبي</value></data>
+  <data name="TelegramChannelTestSent" xml:space="preserve"><value>أُرسل المنشور التجريبي إلى القناة بنجاح.</value></data>
+  <data name="TelegramChannelPosts" xml:space="preserve"><value>منشورات القناة</value></data>
+  <data name="TelegramNextAttempt" xml:space="preserve"><value>المحاولة التالية</value></data>
+  <data name="TelegramRetryConfirm" xml:space="preserve"><value>نتيجة الإرسال غير محسومة وقد يكون المنشور في القناة. تحقق من القناة ثم أكد إعادة المحاولة.</value></data>
+  <data name="SocialSkipped" xml:space="preserve"><value>تم التخطي</value></data>
+  <data name="TelegramChannelForbidden" xml:space="preserve"><value>البوت ليس مشرفًا في القناة أو لا يملك صلاحية النشر. أضفه مشرفًا بصلاحية نشر الرسائل.</value></data>
+  <data name="TelegramChannelNotFound" xml:space="preserve"><value>القناة غير موجودة أو لا يراها البوت. تحقق من المعرف (@channel أو -100...).</value></data>
+  <data name="TelegramRateLimited" xml:space="preserve"><value>تجاوز حد الإرسال في تليجرام؛ ستعاد المحاولة بعد المدة التي حددها تليجرام.</value></data>
+  <data name="TelegramApiUnavailable" xml:space="preserve"><value>تعذر الوصول إلى تليجرام مؤقتًا؛ ستعاد المحاولة تلقائيًا.</value></data>
+  <data name="TelegramTokenInvalid" xml:space="preserve"><value>رفض تليجرام رمز البوت. راجع Telegram:BotToken.</value></data>
+  <data name="TelegramMessageInvalid" xml:space="preserve"><value>رفض تليجرام نص الرسالة. راجع قالب Telegram.</value></data>
+  <data name="TelegramDeliveryUnknown" xml:space="preserve"><value>انقطع الاتصال بعد إرسال الطلب؛ قد يكون المنشور نُشر. لا تعاد المحاولة تلقائيًا.</value></data>
+  <data name="TelegramChannelDisabled" xml:space="preserve"><value>عُطّل النشر لهذه القناة أو تغيّرت قبل الإرسال.</value></data>
+  <data name="TelegramChannelRejected" xml:space="preserve"><value>رفض تليجرام الطلب.</value></data>
+  <data name="NotEligible" xml:space="preserve"><value>لم تعد الفرصة منشورة أو سارية.</value></data>
+  <data name="IndexNowIntro" xml:space="preserve"><value>يبلغ محركات البحث المشاركة (Bing وYandex وغيرهما) بروابط الفرص العربية والإنجليزية عند نشرها أو تعديلها جوهريًا أو أرشفتها، على دفعات من خدمة العامل.</value></data>
+  <data name="IndexNowKeyMissing" xml:space="preserve"><value>المفتاح غير مضبوط</value></data>
+  <data name="IndexNowKeyFile" xml:space="preserve"><value>ملف المفتاح</value></data>
+  <data name="IndexNowPending" xml:space="preserve"><value>بانتظار الإرسال (فرص)</value></data>
+  <data name="IndexNowFailing" xml:space="preserve"><value>فرص تعاد محاولتها</value></data>
+  <data name="IndexNowLastSubmission" xml:space="preserve"><value>آخر إرسال</value></data>
+  <data name="IndexNowBadRequest" xml:space="preserve"><value>رفض IndexNow صيغة الطلب.</value></data>
+  <data name="IndexNowKeyInvalid" xml:space="preserve"><value>المفتاح غير صالح أو ملفه غير متاح على الموقع.</value></data>
+  <data name="IndexNowUrlsRejected" xml:space="preserve"><value>الروابط لا تتبع النطاق أو لا تطابق المفتاح.</value></data>
+  <data name="IndexNowRateLimited" xml:space="preserve"><value>طلبات كثيرة؛ ستعاد المحاولة لاحقًا.</value></data>
+  <data name="IndexNowUnavailable" xml:space="preserve"><value>تعذر الوصول إلى IndexNow؛ ستعاد المحاولة.</value></data>
+  <data name="NotPublic" xml:space="preserve"><value>تفاصيلها غير عامة؛ لم تُرسل.</value></data>
+  <data name="SkipToContent" xml:space="preserve"><value>انتقل إلى المحتوى</value></data>
+  <data name="HomeLink" xml:space="preserve"><value>الرئيسية</value></data>
+  <data name="Breadcrumbs" xml:space="preserve"><value>مسار التنقل</value></data>
+  <data name="PaginationLabel" xml:space="preserve"><value>التنقل بين صفحات النتائج</value></data>
+  <data name="FirstPage" xml:space="preserve"><value>الأولى</value></data>
+  <data name="LastPage" xml:space="preserve"><value>الأخيرة</value></data>
+  <data name="PageNumber" xml:space="preserve"><value>صفحة {0}</value></data>
+  <data name="NewBadge" xml:space="preserve"><value>جديد</value></data>
+  <data name="ClosesToday" xml:space="preserve"><value>يغلق اليوم</value></data>
+  <data name="ClosesTomorrow" xml:space="preserve"><value>يغلق غدًا</value></data>
+  <data name="ClosesInTwoDays" xml:space="preserve"><value>يغلق خلال يومين</value></data>
+  <data name="ClosesInDays" xml:space="preserve"><value>يغلق خلال {0} أيام</value></data>
+  <data name="ClosingThisWeek" xml:space="preserve"><value>تغلق هذا الأسبوع</value></data>
+  <data name="SortBy" xml:space="preserve"><value>الترتيب</value></data>
+  <data name="SortClosing" xml:space="preserve"><value>الأقرب إغلاقًا</value></data>
+  <data name="AlertSearch" xml:space="preserve"><value>نبّهني بهذا البحث</value></data>
+  <data name="AlertSearchHint" xml:space="preserve"><value>يُضاف نوع الفرصة والمدينة والتصنيف المختارة إلى تفضيلات تنبيهاتك.</value></data>
+  <data name="AlertSearchSaved" xml:space="preserve"><value>أُضيف هذا البحث إلى تفضيلات التنبيه.</value></data>
+  <data name="AlertSearchFailed" xml:space="preserve"><value>تعذر حفظ التنبيه. حاول مرة أخرى.</value></data>
+  <data name="HaveAccountLogin" xml:space="preserve"><value>لديك حساب؟ سجّل الدخول</value></data>
+  <data name="BrowseByCity" xml:space="preserve"><value>تصفح حسب المدينة</value></data>
+  <data name="BrowseByOrganization" xml:space="preserve"><value>تصفح حسب الجهة</value></data>
+  <data name="BrowseCityHeading" xml:space="preserve"><value>{0} في {1}</value></data>
+  <data name="BrowseCityIntro" xml:space="preserve"><value>أحدث إعلانات {0} الحالية في {1} كما جمعها موقع التوظيف في فلسطين من مصادرها الأصلية، مع موعد الإغلاق ورابط الإعلان الأصلي لكل فرصة.</value></data>
+  <data name="BrowseOrganizationHeading" xml:space="preserve"><value>فرص {0}</value></data>
+  <data name="BrowseOrganizationIntro" xml:space="preserve"><value>الإعلانات الحالية المنشورة باسم {0}: وظائف وتدريب وعطاءات جمعها الموقع من مصادرها الأصلية، مع موعد الإغلاق ورابط كل إعلان. الموقع ليس جهة التوظيف.</value></data>
+  <data name="MoreFromOrganization" xml:space="preserve"><value>المزيد من فرص هذه الجهة:</value></data>
+  <data name="RssFeed" xml:space="preserve"><value>خلاصة RSS</value></data>
+  <data name="Share" xml:space="preserve"><value>مشاركة الفرصة</value></data>
+  <data name="ShareWhatsApp" xml:space="preserve"><value>مشاركة عبر واتساب</value></data>
+  <data name="ShareTelegram" xml:space="preserve"><value>مشاركة عبر تليجرام</value></data>
+  <data name="ShareFacebook" xml:space="preserve"><value>مشاركة عبر فيسبوك</value></data>
+  <data name="ShareLinkedIn" xml:space="preserve"><value>مشاركة عبر لينكد إن</value></data>
+  <data name="CopyLink" xml:space="preserve"><value>نسخ الرابط</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>تم نسخ الرابط</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>تعذر نسخ الرابط</value></data>
+  <data name="ListingAttachment" xml:space="preserve"><value>وثيقة الإعلان</value></data>
   <data name="SocialDestination_Facebook"><value>صفحة فيسبوك</value></data>
   <data name="SocialDestination_LinkedIn"><value>LinkedIn — صفحة المؤسسة</value></data>
   <data name="SocialDestination_LinkedInPersonal"><value>LinkedIn — الحساب الشخصي</value></data>
@@ -3037,4 +3113,17 @@
   <data name="PaymentRecoveryHelp" xml:space="preserve"><value>بدأت محاولة الدفع ولم يعتمد نجاحها بعد. تحقق من البوابة قبل إنشاء دفعة جديدة. يعيد العامل التحقق تلقائيًا، ويمكن للإدارة طلب التحقق أو مراجعة دليل الدفع يدويًا.</value></data>
   <data name="PlanEditConflict" xml:space="preserve"><value>عدّل شخص آخر هذه الباقة. أعد فتح نموذج التعديل للاطلاع على النسخة الحالية.</value></data>
   <data name="PlanNoLongerAvailable" xml:space="preserve"><value>هذه الباقة لم تعد متاحة للاشتراك. ارجع إلى قائمة الباقات لاختيار باقة متاحة.</value></data>
+  <data name="AiPauseTitle" xml:space="preserve"><value>حالة تشغيل الذكاء الاصطناعي</value></data>
+  <data name="AiTemporarilyPaused" xml:space="preserve"><value>متوقف مؤقتًا</value></data>
+  <data name="AiNoActivePause" xml:space="preserve"><value>لا يوجد إيقاف مؤقت ساري</value></data>
+  <data name="AiPauseReason" xml:space="preserve"><value>سبب الإيقاف</value></data>
+  <data name="AiPreviousPauseReason" xml:space="preserve"><value>سبب آخر إيقاف</value></data>
+  <data name="AiPauseReasonUnspecified" xml:space="preserve"><value>لم يسجل سبب</value></data>
+  <data name="AiExpectedResumePalestine" xml:space="preserve"><value>موعد المحاولة التالية المتوقع — توقيت فلسطين</value></data>
+  <data name="AiPauseEndedPalestine" xml:space="preserve"><value>انتهت مهلة الإيقاف — توقيت فلسطين</value></data>
+  <data name="AiPauseResumeHelp" xml:space="preserve"><value>بعد انتهاء المهلة يحاول العامل استئناف المعالجة؛ لا يعني الموعد ضمان عودة صلاحيات المزود أو توفر حصته.</value></data>
+  <data name="AiNoPauseHelp" xml:space="preserve"><value>هذه حالة مهلة الإيقاف المحفوظة، وليست فحصًا مباشرًا لجهوزية المزود أو العامل.</value></data>
+  <data name="PalestineDateTimeInvalid" xml:space="preserve"><value>أدخل تاريخًا ووقتًا صحيحين بتوقيت فلسطين؛ قد تكون الساعة غير متاحة أثناء انتقال التوقيت الصيفي.</value></data>
+  <data name="JobsClosingThisWeek" xml:space="preserve"><value>وظائف تغلق هذا الأسبوع</value></data>
+  <data name="JobsClosingThisWeekHelp" xml:space="preserve"><value>اطّلع على الوظائف القريبة من موعد الإغلاق قبل انتهاء التقديم.</value></data>
 </root>

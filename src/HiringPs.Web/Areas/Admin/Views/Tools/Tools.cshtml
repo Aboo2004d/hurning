@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = T["Tools"];
     string PalestineTime(DateTimeOffset? instant) => instant is { } value
-        ? TimeZoneInfo.ConvertTime(value, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm:ss")
+        ? PaymentDisplay.Time(value, seconds: true)
         : "—";
     var workerFresh = ToolMonitoringRules.WorkerFresh(Model.Worker, Model.Now);
     var collectorFailed = Model.Worker?.LastFailureAt is { } failure && (Model.Worker.LastSuccessAt is null || failure > Model.Worker.LastSuccessAt);

@@ -78,36 +78,49 @@ public sealed class SiteSeo
             )
                 if (!string.IsNullOrWhiteSpace(value))
                     values.Add(new(key, value));
+            if (listing.Sort != ListingSort.Newest)
+                values.Add(new("sort", listing.Sort));
             var scope =
                 listing.Kind is { } selected ? KindName(selected, english)
                 : english ? "Jobs, training and tenders in Palestine"
                 : "وظائف وتدريب وعطاءات في فلسطين";
             name = listing.Archive ? (english ? "Archive: " : "أرشيف: ") + scope : scope;
             if (listing.City.Length > 0)
-                name += " · " + listing.City;
+                name += " · " + CityCatalog.Display(listing.City, english);
             if (listing.Category.Length > 0)
-                name += " · " + listing.Category;
+                name += " · " + FilterLabels.Category(listing.Category, english);
             if (listing.Query.Length > 0)
                 name = (english ? "Search: " : "بحث: ") + listing.Query + " · " + name;
             if (listing.Page > 1)
                 name += (english ? " · Page " : " · صفحة ") + listing.Page;
+            // Filter, search, sort and archive pages stay noindex; kind × city landing pages are indexable instead.
             noindex =
                 listing.Archive
                 || listing.Count == 0
                 || values.Any(x =>
-                    x.Key is "q" or "city" or "category" or "employment" or "experience"
+                    x.Key is "q" or "city" or "category" or "employment" or "experience" or "sort"
                 );
-            if (listing.Page > 1)
-                previous = Url(path, english, WithPage(values, listing.Page - 1));
-            if (listing.Page * 12 < listing.Count)
-                next = Url(path, english, WithPage(values, listing.Page + 1));
-            if (listing.Page > 1)
-                values.Add(new("page", listing.Page.ToString(CultureInfo.InvariantCulture)));
+            Paginate(listing, english);
+            pageType = "CollectionPage";
+        }
+        else if (controller == "Browse" && model is BrowseModel browse)
+        {
+            path = browse.Path;
+            name = browse.Heading;
+            description = browse.Intro;
+            noindex = browse.Count == 0;
+            if (browse.Kind is { } browseKind)
+                breadcrumbs.Add(
+                    (KindName(browseKind, english), Url("/", english, [new("kind", browseKind.ToString())]))
+                );
+            if (browse.Page > 1)
+                name += (english ? " · Page " : " · صفحة ") + browse.Page;
+            Paginate(browse, english);
             pageType = "CollectionPage";
         }
         else if (controller == "Opportunities" && model is Opportunity opportunity)
         {
-            path = "/Opportunities/Details/" + opportunity.Id.ToString(CultureInfo.InvariantCulture);
+            path = PublicListing.DetailsPath(opportunity);
             name = string.Join(
                 " · ",
                 new[] { opportunity.Title, opportunity.Organization, opportunity.Locations }.Where(
@@ -146,6 +159,17 @@ public sealed class SiteSeo
         }
         else
             noindex = true;
+
+        void Paginate(ListingModel list, bool englishUrls)
+        {
+            if (list.Page > 1)
+                previous = Url(path, englishUrls, WithPage(values, list.Page - 1));
+            if (list.Page < list.PageCount)
+                next = Url(path, englishUrls, WithPage(values, list.Page + 1));
+            if (list.Page > 1)
+                values.Add(new("page", list.Page.ToString(CultureInfo.InvariantCulture)));
+        }
+
         var canonical = Url(path, english, values);
         if (
             request.HttpContext.Response.StatusCode >= 400
@@ -216,15 +240,17 @@ public sealed class SiteSeo
                 webpage["mainEntity"] = new Dictionary<string, object?>
                 {
                     ["@type"] = "ItemList",
+                    // Only items whose details page is public; restricted details are not linked for crawlers.
                     ["itemListElement"] = list
-                        .Items.Select(
+                        .Items.Where(item => list.PublicDetailKinds.Contains(item.Kind))
+                        .Select(
                             (item, index) =>
                                 new Dictionary<string, object?>
                                 {
                                     ["@type"] = "ListItem",
-                                    ["position"] = (list.Page - 1) * 12 + index + 1,
+                                    ["position"] = (list.Page - 1) * PublicListing.PageSize + index + 1,
                                     ["name"] = item.Title,
-                                    ["url"] = Url("/Opportunities/Details/" + item.Id, english),
+                                    ["url"] = Url(PublicListing.DetailsPath(item), english),
                                 }
                         )
                         .ToArray(),

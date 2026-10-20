@@ -30,7 +30,7 @@
                     <td>
                         <a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@operation.TargetId">@operation.TargetId</a>
                     </td>
-                    <td>@operation.CreatedAt.ToString("u")</td>
+                    <td>@PaymentDisplay.Time(operation.CreatedAt) · @T["PalestineTime"]</td>
                     <td>@(operation.UndoneAt is null ? (ar ? "مدمج" : "Merged") : (ar ? "تم التراجع" : "Undone"))</td>
                     <td>
                         @if (operation.UndoneAt is null)

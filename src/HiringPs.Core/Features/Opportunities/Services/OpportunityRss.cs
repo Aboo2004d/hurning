@@ -4,18 +4,56 @@ using AngleSharp.Html.Parser;
 
 namespace HiringPs.Core;
 
-/// <summary>قارئ موجز الفرص مع التحقق من العنوان وبنية البيانات.</summary>
+/// <summary>مكون OpportunityRss ضمن مجال Opportunities؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public static class OpportunityRss
 {
     public const string JobsUrl = "https://www.jobs.ps/rss/jobs/gaza-jobs";
     public const string ReliefUrl = "https://reliefweb.int/jobs/rss.xml";
 
-    /// <summary>يتحقق من عنوان موجز الفرص المطلوب قبل الاتصال به.</summary>
+    /// <summary>ينفذ Endpoint وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
     public static string Endpoint(ConnectorKind kind) =>
         kind == ConnectorKind.JobsRss ? JobsUrl : ReliefUrl;
 
-    /// <summary>يقرأ بيانات المورد ويتحقق من استجابته أو حدوده وفق عقد الخدمة.</summary>
+    // Parsed feeds are reused for a short window: discovery fills it and each item's detail
+    // read in the same run takes its entry from memory. Failures are never cached.
+    public static readonly TimeSpan CacheAge = TimeSpan.FromMinutes(10);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<
+        string,
+        (DateTimeOffset At, Dictionary<string, ContentBundle> Entries)
+    > Cache = new();
+
+    /// <summary>ينفذ ReadCachedAsync وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
+    public static async Task<Dictionary<string, ContentBundle>> ReadCachedAsync(
+        Source source,
+        UrlPolicy policy,
+        CancellationToken ct
+    )
+    {
+        if (
+            Cache.TryGetValue(CacheKey(source), out var hit)
+            && hit.At > DateTimeOffset.UtcNow - CacheAge
+        )
+            return hit.Entries;
+        return await ReadAsync(source, policy, ct);
+    }
+
+    /// <summary>ينفذ CacheKey وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
+    private static string CacheKey(Source source) => $"{source.Connector}|{source.Url}";
+
+    /// <summary>ينفذ ReadAsync وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
     public static async Task<Dictionary<string, ContentBundle>> ReadAsync(
+        Source source,
+        UrlPolicy policy,
+        CancellationToken ct
+    )
+    {
+        var entries = await ReadFeedAsync(source, policy, ct);
+        Cache[CacheKey(source)] = (DateTimeOffset.UtcNow, entries);
+        return entries;
+    }
+
+    /// <summary>ينفذ ReadFeedAsync وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
+    private static async Task<Dictionary<string, ContentBundle>> ReadFeedAsync(
         Source source,
         UrlPolicy policy,
         CancellationToken ct
@@ -35,7 +73,7 @@ public static class OpportunityRss
         return Parse(feed, source.Connector);
     }
 
-    /// <summary>يحلل حمولة المصدر ويستخرج العناصر الصالحة وفق بنيتها المعروفة.</summary>
+    /// <summary>ينفذ Parse وفق قواعد OpportunityRss الحالية دون تغيير عقد المستدعين.</summary>
     public static Dictionary<string, ContentBundle> Parse(XDocument feed, ConnectorKind kind)
     {
         if (feed.Root?.Name != "rss" || feed.Root.Element("channel") is not { } channel)

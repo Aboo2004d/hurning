@@ -22,7 +22,7 @@
     </div>
 </div>
 <p class="notice">
-    @T["Worker"]: @(Model.Heartbeat is null?T["Never"].Value:$"{UiMessages.State(Model.Heartbeat.State,T)} · {Model.Heartbeat.At:yyyy-MM-dd HH:mm} UTC")
+    @T["Worker"]: @(Model.Heartbeat is null?T["Never"].Value:$"{UiMessages.State(Model.Heartbeat.State,T)} · {PaymentDisplay.Time(Model.Heartbeat.At)} {T["PalestineTime"]}")
 </p>
 <h2 id="runs">@T["Runs"]</h2>
 <div class="table-wrap">
@@ -31,7 +31,7 @@
             <tr>
                 <th>ID</th>
                 <th>@T["Source"]</th>
-                <th>@T["Started"]</th>
+                <th>@T["Started"] · @T["PalestineTime"]</th>
                 <th>@T["Status"]</th>
                 <th>@T["Found"]</th>
                 <th>@T["Changed"]</th>
@@ -44,7 +44,7 @@
                 <tr>
                     <td>@run.Id</td>
                     <td>@run.SourceId</td>
-                    <td>@run.StartedAt.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                    <td>@PaymentDisplay.Time(run.StartedAt)</td>
                     <td>@UiMessages.State(run.Status,T)</td>
                     <td>@run.Found</td>
                     <td>@run.Changed</td>

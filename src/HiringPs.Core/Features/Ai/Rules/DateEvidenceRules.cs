@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace HiringPs.Core;
 
-/// <summary>يتحقق من توافق الموعد ونوعه ودليله بدل الثقة بتاريخ أعاده النموذج وحده.</summary>
+/// <summary>مكون DateEvidenceRules ضمن مجال Ai؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public static class DateEvidenceRules
 {
     private const string Numeric =
@@ -16,7 +16,7 @@ public static class DateEvidenceRules
     private const string NonClosingEvents =
         @"(?<NonClosing>نهاي[ةه]\s+(?:التدريب|الدور[ةه]|المشروع|العقد)|بداي[ةه]\s+(?:التسجيل|التقديم|التدريب)|(?:training|course|project|contract)\s+(?:end|ends|ending)|(?:registration|applications?)\s+(?:open|opens|opening))";
 
-    /// <summary>يتحقق من أدلة التواريخ ويعيد القيم المقبولة وأسباب الرفض.</summary>
+    /// <summary>ينفذ Check وفق قواعد DateEvidenceRules الحالية دون تغيير عقد المستدعين.</summary>
     public static CheckedDates Check(ExtractedOpportunity opportunity, string source)
     {
         var entries = new List<ExtractedDate>();
@@ -113,7 +113,7 @@ public static class DateEvidenceRules
         return new(valid.DistinctBy(x => (x.Kind, x.Date, x.Evidence)).ToList(), errors);
     }
 
-    /// <summary>يتحقق من وجود دليل نصي على تمديد الموعد.</summary>
+    /// <summary>ينفذ HasExtension وفق قواعد DateEvidenceRules الحالية دون تغيير عقد المستدعين.</summary>
     public static bool HasExtension(string evidence) =>
         Regex.IsMatch(
             TextEvidence.Normalize(evidence),
@@ -121,7 +121,7 @@ public static class DateEvidenceRules
             RegexOptions.IgnoreCase
         );
 
-    /// <summary>يطابق نص الدليل بنوع الموعد بدل الاعتماد على قيمة التاريخ وحدها.</summary>
+    /// <summary>ينفذ MatchesRole وفق قواعد DateEvidenceRules الحالية دون تغيير عقد المستدعين.</summary>
     private static bool MatchesRole(ExtractedDate entry)
     {
         var quote = TextEvidence.Normalize(entry.Evidence);
@@ -137,7 +137,7 @@ public static class DateEvidenceRules
         );
         foreach (Match date in dates)
         {
-            if (!OpportunityService.DateEvidenceMatches(date.Value, entry.Date))
+            if (!ExtractionValidator.DateEvidenceMatches(date.Value, entry.Date))
                 continue;
             var preceding = quote[..date.Index];
             var role = Regex
@@ -178,7 +178,13 @@ public static class DateEvidenceRules
         return false;
     }
 
-    /// <summary>يحول تاريخ الموعد إلى بداية يومه وفق المنطقة الزمنية الفلسطينية.</summary>
-    public static DateTimeOffset AtPalestineMidnight(DateOnly date) =>
-        new(TimeZoneInfo.ConvertTimeToUtc(date.ToDateTime(TimeOnly.MinValue), SourceSchedule.Zone));
+    /// <summary>ينفذ AtPalestineMidnight وفق قواعد DateEvidenceRules الحالية دون تغيير عقد المستدعين.</summary>
+    public static DateTimeOffset AtPalestineMidnight(DateOnly date)
+    {
+        // Palestinian DST can start at midnight; use the first valid local minute of that day.
+        var local = date.ToDateTime(TimeOnly.MinValue);
+        for (var m = 0; SourceSchedule.Zone.IsInvalidTime(local) && m < 180; m++)
+            local = local.AddMinutes(1);
+        return new(TimeZoneInfo.ConvertTimeToUtc(local, SourceSchedule.Zone));
+    }
 }

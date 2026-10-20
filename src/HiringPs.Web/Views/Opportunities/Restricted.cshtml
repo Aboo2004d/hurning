@@ -10,6 +10,9 @@
     }
     else
     {
-        <a class="button" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.PathBase + Context.Request.Path)">@T["Login"]</a>
+        <div class="actions">
+            <a class="button" asp-controller="Registration" asp-action="Index">@T["Register"]</a>
+            <a class="button button-outline" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.PathBase + Context.Request.Path)">@T["Login"]</a>
+        </div>
     }
 </section>

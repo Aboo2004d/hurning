@@ -52,7 +52,7 @@ var item = Model.Opportunity!;
 </form>
 @if(Model.History.Count > 0) {
 <section class="social-history"><h3>@T["SocialHistory"]</h3><ul>
-@foreach(var post in Model.History) { <li>@T["SocialDestination_" + post.Provider] · <bdi>@TimeZoneInfo.ConvertTime(post.CreatedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi> · @T["Social" + post.Status] @if(!string.IsNullOrEmpty(post.Url)){<a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a>}</li> }
+@foreach(var post in Model.History) { <li>@T["SocialDestination_" + post.Provider] · <bdi>@PaymentDisplay.Time(post.CreatedAt)</bdi> @T["PalestineTime"] · @T["Social" + post.Status] @if(!string.IsNullOrEmpty(post.Url)){<a href="@post.Url" target="_blank" rel="noopener">@T["SocialView"]</a>}</li> }
 </ul></section>
 }
 </section>

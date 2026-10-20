@@ -1,64 +1,67 @@
+// استخراج البيانات بالنموذج، ثم التحقق من الأدلة وتحديد النشر أو المراجعة أو الأرشفة.
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
-/// <summary>يطبق نتائج AI داخل معاملة مع حماية التعديلات وأدلة التواريخ والتكرار.</summary>
+/// <summary>يطبق الاستخراج وأدلته مع قواعد التكرار وحماية الدمج والاعتماد الإداري داخل المعاملة.</summary>
 public sealed class OpportunityExtractionService(HiringDb db)
 {
-    /// <summary>يطبق الاستخراج على الفرص وروابط أدلتها مع حماية تعديلات الإدارة.</summary>
+    /// <summary>يطبق البيانات والأدلة وقواعد الدمج والتكرار ضمن المعاملة الحالية.</summary>
     public async Task ApplyExtractionAsync(
         SourceItem item,
         ExtractionResult result,
         CancellationToken ct
     )
     {
-        if (result.Opportunities is null)
-            throw new InvalidOperationException("AI returned no opportunity array.");
-        foreach (var value in result.Opportunities)
-        foreach (
-            var property in typeof(ExtractedOpportunity)
-                .GetProperties()
-                .Where(p => p.PropertyType == typeof(string))
-        )
-            if (property.GetValue(value) is null)
-                property.SetValue(value, "");
-        foreach (var opportunity in result.Opportunities)
-            if (opportunity.ChildKey.Length > 100)
-                opportunity.ChildKey = TextRules.Hash(opportunity.ChildKey);
+        ExtractionValidator.EnsureShape(result);
         if (!result.InScope)
         {
             item.Status = ProcessingStatus.NeedsReview;
             item.Error = "AI marked out of scope; verify before excluding.";
+            item.ExtractionPromptVersionId = result.PromptVersionId;
             await db.SaveChangesAsync(ct);
             return;
         }
 
-        if (result.Opportunities.Count is 0 or > 30)
-            throw new InvalidOperationException("Invalid extracted opportunity count.");
-        if (
-            result.Opportunities.Any(x =>
-                string.IsNullOrWhiteSpace(x.ChildKey) || x.ChildKey.Length > 100
-            )
-            || result.Opportunities.Select(x => x.ChildKey).Distinct().Count()
-                != result.Opportunities.Count
-        )
-            throw new InvalidOperationException(
-                "Missing/duplicate stable child keys; review source."
-            );
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var allReviewed = true;
         var reviewReasons = new List<string>();
         var approvedLocations = await LocationCatalog.ApprovedAsync(db, ct);
         var sourceContent = SourceEvidence.ForItem(item);
+        var activeRules = result.PromptVersionId is { } versionId
+            ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
+            : null;
+        var aliases = await DuplicateMatcher.AliasesAsync(db, ct);
+        // One query for this item's links and one for their known dates, not one per child/date.
+        var links = await db
+            .SourceLinks.Include(x => x.Opportunity)
+            .Where(x => x.SourceItemId == item.Id)
+            .ToListAsync(ct);
+        var linkByKey = links.ToDictionary(x => x.ChildKey, StringComparer.OrdinalIgnoreCase);
+        var ownIds = links.Select(x => x.OpportunityId).Distinct().ToArray();
+        var knownDates = (
+            await db
+                .OpportunityDates.AsNoTracking()
+                .Where(x => ownIds.Contains(x.OpportunityId))
+                .Select(x => new
+                {
+                    x.OpportunityId,
+                    x.Kind,
+                    x.EvidenceHash,
+                })
+                .ToListAsync(ct)
+        )
+            .Select(x => (x.OpportunityId, x.Kind, x.EvidenceHash))
+            .ToHashSet();
+        var nearMatches = new List<(Opportunity, long, double, string)>();
+        var now = DateTimeOffset.UtcNow;
         foreach (var e in result.Opportunities)
         {
-            var link = await db
-                .SourceLinks.Include(x => x.Opportunity)
-                .SingleOrDefaultAsync(
-                    x => x.SourceItemId == item.Id && x.ChildKey == e.ChildKey,
-                    ct
-                );
+            linkByKey.TryGetValue(e.ChildKey, out var link);
             if (
                 link is not null
                 && PromptWorkflow.Protected(link.Opportunity, result.PromptVersionId)
@@ -84,7 +87,7 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 Deadline = e.Deadline,
                 AttachmentsJson = item.AttachmentsJson,
             };
-            candidate.ApplyUrl = OpportunityValidationRules.ResolveApplyUrl(e.ApplyUrl, item);
+            candidate.ApplyUrl = ExtractionValidator.ResolveApplyUrl(e.ApplyUrl, item);
             if (
                 item.Source.Connector == ConnectorKind.PalCareer
                 && result.Opportunities.Count == 1
@@ -117,7 +120,7 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 );
                 candidate.Deadline = null;
             }
-            var errors = OpportunityValidationRules.Validate(
+            var errors = ExtractionValidator.Validate(
                 candidate,
                 sourceContent,
                 allowUnrecognizedLocation: e.IsInPalestine == true,
@@ -133,9 +136,6 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 errors.Add(
                     "PDF OCR transcription requires visual verification of the original page before publication."
                 );
-            var activeRules = result.PromptVersionId is { } versionId
-                ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
-                : null;
             if (activeRules is not null)
             {
                 if (!activeRules.AllowedKinds.Split(',').Contains(candidate.Kind.ToString()))
@@ -176,7 +176,7 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 errors.Add("Deadline evidence missing.");
             if (
                 candidate.Deadline is { } claimed
-                && !OpportunityValidationRules.DateEvidenceMatches(e.DeadlineEvidence, claimed)
+                && !ExtractionValidator.DateEvidenceMatches(e.DeadlineEvidence, claimed)
             )
                 errors.Add("Deadline quotation does not independently confirm the date.");
             var relevantReason = SourceEvidence.RelevantReviewReason(e.ReviewReason);
@@ -187,12 +187,29 @@ public sealed class OpportunityExtractionService(HiringDb db)
                     $"{candidate.Kind}|{candidate.Title}|{candidate.Organization}|{candidate.Locations}|{candidate.ReferenceNumber}|{candidate.Deadline}"
                 )
             );
-            var exact = await db.Opportunities.FirstOrDefaultAsync(
-                x =>
-                    x.Fingerprint == candidate.Fingerprint
-                    && x.Id != (link == null ? 0 : link.OpportunityId),
+            var organizationKeys = aliases.Keys(TextRules.OrganizationKey(candidate.Organization));
+            // Records of this same announcement (other lots/roles) are never its duplicates.
+            var excluded = ownIds.Append(link?.OpportunityId ?? 0).Distinct().ToArray();
+            var reference = await DuplicateMatcher.ExactReferenceAsync(
+                db,
+                candidate,
+                organizationKeys,
+                excluded,
                 ct
             );
+            var exact =
+                reference.Exact
+                ?? (
+                    reference.Ambiguous.Count > 0
+                        ? null
+                        : await db.Opportunities.FirstOrDefaultAsync(
+                            x =>
+                                x.Fingerprint == candidate.Fingerprint
+                                && x.Status != PublicationStatus.Hidden
+                                && !excluded.Contains(x.Id),
+                            ct
+                        )
+                );
             // Only deterministic identifiers justify automatic cross-source merging.
             if (
                 exact is not null
@@ -213,22 +230,32 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 else
                     link.OpportunityId = exact.Id;
                 if (!PromptWorkflow.Protected(exact, result.PromptVersionId))
-                    exact.LastVerifiedAt = DateTimeOffset.UtcNow;
+                    exact.LastVerifiedAt = now;
                 continue;
             }
 
+            var peers = new List<(long Id, double Score, string Reason)>();
             if (exact is not null)
+            {
                 errors.Add(
                     "Possible duplicate without a unique reference; administrator review required."
                 );
+                peers.Add((exact.Id, 1, "Same fingerprint or reference; validation needs review."));
+            }
+            foreach (var ambiguous in reference.Ambiguous)
+                peers.Add((ambiguous, 1, "Same organisation and reference number on several records."));
+            if (reference.Ambiguous.Count > 0)
+                errors.Add(
+                    "Reference number matches several records; compare and merge in administration."
+                );
             if (exact is null && link is null)
             {
-                var normalizedOrganization = TextRules.OrganizationKey(candidate.Organization);
-                var peers = await db
+                var similar = await db
                     .Opportunities.AsNoTracking()
                     .Where(x =>
                         x.Kind == candidate.Kind
-                        && x.NormalizedOrganization == normalizedOrganization
+                        && organizationKeys.Contains(x.NormalizedOrganization)
+                        && !excluded.Contains(x.Id)
                         && (
                             x.Status == PublicationStatus.Published
                             || x.Status == PublicationStatus.NeedsReview
@@ -238,10 +265,13 @@ public sealed class OpportunityExtractionService(HiringDb db)
                     .OrderByDescending(x => x.CreatedAt)
                     .Take(100)
                     .ToListAsync(ct);
-                if (peers.Any(x => OpportunityValidationRules.PotentialDuplicate(candidate, x)))
+                if (similar.Any(x => DuplicateMatcher.PotentialDuplicate(candidate, x, sameOrganization: true)))
                     errors.Add(
                         "Possible repost or similar role across sources; compare and merge in administration if identical."
                     );
+                foreach (var peer in similar)
+                    if (DuplicateMatcher.NearMatch(candidate, peer) is { } match)
+                        peers.Add((peer.Id, match.Score, match.Reason));
             }
 
             var target = link?.Opportunity;
@@ -257,6 +287,12 @@ public sealed class OpportunityExtractionService(HiringDb db)
                         ChildKey = e.ChildKey,
                     }
                 );
+            }
+            else if (target.IsMergeTarget)
+            {
+                // A merged record keeps its reviewed text; a verified deadline extension still applies.
+                if (candidate.Deadline is not null && errors.Count == 0)
+                    target.Deadline = candidate.Deadline;
             }
             else
             {
@@ -280,6 +316,8 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 target.Fingerprint = candidate.Fingerprint;
                 target.AttachmentsJson = candidate.AttachmentsJson;
             }
+            foreach (var peer in peers)
+                nearMatches.Add((target, peer.Id, peer.Score, peer.Reason));
 
             target.PromptVersionId = result.PromptVersionId;
             foreach (var date in checkedDates.Dates)
@@ -287,55 +325,58 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 var evidenceHash = TextRules.Hash(
                     $"{date.Kind}|{date.Date:yyyy-MM-dd}|{date.Label}|{date.Evidence}"
                 );
-                var exists =
-                    target.Id != 0
-                    && await db.OpportunityDates.AnyAsync(
-                        x =>
-                            x.OpportunityId == target.Id
-                            && x.Kind == date.Kind
-                            && x.EvidenceHash == evidenceHash,
-                        ct
-                    );
-                if (!exists)
-                    db.OpportunityDates.Add(
-                        new()
-                        {
-                            Opportunity = target,
-                            SourceItemId = item.Id,
-                            PromptVersionId = result.PromptVersionId,
-                            Kind = date.Kind,
-                            Date = date.Date,
-                            Evidence = date.Evidence,
-                            Label = date.Label.Truncate(300),
-                            EvidenceHash = evidenceHash,
-                            IsExtension =
-                                date.Kind == OpportunityDateKind.Deadline && e.DeadlineIsExtension,
-                        }
-                    );
+                if (target.Id != 0 && !knownDates.Add((target.Id, date.Kind, evidenceHash)))
+                    continue;
+                db.OpportunityDates.Add(
+                    new()
+                    {
+                        Opportunity = target,
+                        SourceItemId = item.Id,
+                        PromptVersionId = result.PromptVersionId,
+                        Kind = date.Kind,
+                        Date = date.Date,
+                        Evidence = date.Evidence,
+                        Label = date.Label.Truncate(300),
+                        EvidenceHash = evidenceHash,
+                        IsExtension =
+                            date.Kind == OpportunityDateKind.Deadline && e.DeadlineIsExtension,
+                    }
+                );
                 if (date.Kind == OpportunityDateKind.Publication)
                     target.SourcePublishedAt = DateEvidenceRules.AtPalestineMidnight(date.Date);
                 if (date.Kind == OpportunityDateKind.Modification)
                     target.SourceModifiedAt = DateEvidenceRules.AtPalestineMidnight(date.Date);
             }
-            target.LastVerifiedAt = DateTimeOffset.UtcNow;
-            target.ReviewReason = string.Join(" ", errors);
-            target.Status =
-                errors.Count > 0 ? PublicationStatus.NeedsReview
-                : target.Deadline is { } deadline && deadline < TextRules.PalestineToday()
-                    ? PublicationStatus.Archived
-                : PublicationStatus.Published;
-            if (target.Status == PublicationStatus.Archived)
-                target.ClosureEvidence = "Published source deadline has passed.";
+            target.LastVerifiedAt = now;
+            var expired = target.Deadline is { } deadline && deadline < TextRules.PalestineToday();
+            if (target.IsMergeTarget)
+            {
+                // Problems of one merged source are reported on its item, not on the merged record.
+                if (expired && target.Status == PublicationStatus.Published)
+                {
+                    target.Status = PublicationStatus.Archived;
+                    target.ClosureEvidence = "Published source deadline has passed.";
+                }
+            }
+            else
+            {
+                target.ReviewReason = string.Join(" ", errors);
+                target.Status =
+                    errors.Count > 0 ? PublicationStatus.NeedsReview
+                    : expired ? PublicationStatus.Archived
+                    : PublicationStatus.Published;
+                if (target.Status == PublicationStatus.Archived)
+                    target.ClosureEvidence = "Published source deadline has passed.";
+            }
             if (errors.Count > 0)
                 allReviewed = false;
             reviewReasons.AddRange(errors);
         }
 
-        var currentKeys = result.Opportunities.Select(x => x.ChildKey).ToArray();
-        var removed = await db
-            .SourceLinks.Include(x => x.Opportunity)
-            .Where(x => x.SourceItemId == item.Id && !currentKeys.Contains(x.ChildKey))
-            .ToListAsync(ct);
+        var currentKeys = result
+            .Opportunities.Select(x => x.ChildKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removed = links.Where(x => !currentKeys.Contains(x.ChildKey)).ToList();
         foreach (
             var link in removed.Where(x =>
                 !PromptWorkflow.Protected(x.Opportunity, result.PromptVersionId)
@@ -365,6 +406,11 @@ public sealed class OpportunityExtractionService(HiringDb db)
                 .Truncate(1800);
         item.ExtractionJson = JsonSerializer.Serialize(result, AiExtractor.JsonOptions);
         await db.SaveChangesAsync(ct);
+        if (nearMatches.Count > 0)
+        {
+            await DuplicateMatcher.RecordAsync(db, nearMatches, ct);
+            await db.SaveChangesAsync(ct);
+        }
         await tx.CommitAsync(ct);
     }
 

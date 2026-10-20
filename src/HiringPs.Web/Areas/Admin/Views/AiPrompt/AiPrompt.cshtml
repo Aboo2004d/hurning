@@ -102,7 +102,7 @@
             {
                 <tr>
                     <td>@version.Id</td>
-                    <td class="prompt-history-timestamp"><bdi>@version.CreatedAt.ToString("u")</bdi></td>
+                    <td class="prompt-history-timestamp"><bdi>@PaymentDisplay.Time(version.CreatedAt)</bdi> @T["PalestineTime"]</td>
                     <td>@version.Note</td>
                     <td>
                         <a asp-controller="AiPrompt" asp-action="AiPrompt" asp-route-inspect="@version.Id">@(ar ? "عرض / نسخ" : "Inspect / copy")</a>

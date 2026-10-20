@@ -1,8 +1,11 @@
+// نماذج قاعدة البيانات والحالات الأساسية للمصادر والإعلانات ونتائج المعالجة.
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Linq;
 
 namespace HiringPs.Core;
 
-/// <summary>عنصر خام اكتُشف لدى مصدر؛ يحتفظ بحالة الاستخراج والمراجعة.</summary>
+/// <summary>سجل SourceItem وعلاقاته؛ يطابق مخطط تحديث المنصة المحفوظ.</summary>
 public class SourceItem
 {
     /// <summary>المعرّف الأساسي للسجل؛ يختلف نوعه وطريقة توليده حسب الكيان.</summary>
@@ -31,6 +34,10 @@ public class SourceItem
     public DateTimeOffset FirstSeenAt { get; set; } = DateTimeOffset.UtcNow;
     /// <summary>وقت آخر مشاهدة للمحتوى في المصدر.</summary>
     public DateTimeOffset LastSeenAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // Last successful fetch of the original page; published items are re-verified after an interval.
+    /// <summary>وقت آخر تحقق ناجح من المحتوى؛ يحدد أهلية إعادة جلب العنصر.</summary>
+    public DateTimeOffset? LastVerifiedAt { get; set; }
     /// <summary>أقرب وقت يسمح فيه بإعادة معالجة العنصر.</summary>
     public DateTimeOffset? RetryAt { get; set; }
     /// <summary>عدد محاولات التنفيذ أو التحقق المسجلة.</summary>

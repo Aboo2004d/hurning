@@ -1,0 +1,54 @@
+@model AdminPage<OrganizationAliasSummaryDto>
+@{
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = ar ? "أسماء الجهات البديلة" : "Organisation aliases";
+}
+<h1>@ViewData["Title"]</h1>
+@if (TempData["PipelineNotice"] is string notice)
+{
+    <p class="notice" role="status">@notice</p>
+}
+<p class="muted">
+    @(ar ? "يُعامل الاسم البديل كأنه الاسم المعتمد عند كشف التكرار بين المصادر (مثل الاختصار والاسم الكامل أو الاسم العربي والإنجليزي). يُحفظ الاسمان بعد التوحيد (أحرف صغيرة وتوحيد الألف) ولا يغيّر هذا اسم الجهة المعروض." : "An alias is treated as its canonical organisation when detecting cross-source duplicates (acronym vs full name, Arabic vs English). Both are stored normalised (lower case, unified alef); displayed organisation names are not changed.")
+</p>
+<form asp-controller="OrganizationAliases" asp-action="Create" method="post" class="membership-card">
+    <label>
+        @(ar ? "الاسم البديل" : "Alias")
+        <input name="alias" required maxlength="200" />
+    </label>
+    <label>
+        @(ar ? "الاسم المعتمد" : "Canonical name")
+        <input name="canonical" required maxlength="200" />
+    </label>
+    <button class="button button-outline admin-action" type="submit">@T["Add"]</button>
+</form>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>@(ar ? "الاسم البديل" : "Alias")</th>
+                <th>@(ar ? "الاسم المعتمد" : "Canonical name")</th>
+                <th>@(ar ? "أضافه" : "Added by")</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var alias in Model.Items)
+            {
+                <tr>
+                    <td>@alias.Alias</td>
+                    <td>@alias.Canonical</td>
+                    <td>@alias.CreatedBy · @PaymentDisplay.Time(alias.CreatedAt) · @T["PalestineTime"]</td>
+                    <td>
+                        <form asp-controller="OrganizationAliases" asp-action="Delete" method="post">
+                            <input type="hidden" name="id" value="@alias.Id" />
+                            <button class="button-outline" type="submit">@(ar ? "حذف" : "Delete")</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_AdminPagination" model="Model.Pager" />

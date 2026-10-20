@@ -24,7 +24,7 @@
     <div class="integration-test-panel">
         <h3>@T["GoogleTestLabel"]</h3><p class="muted">@T["GoogleTestHelp"]</p>
         <form asp-action="TestGoogle" method="get"><input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" /><button type="submit" disabled="@(!googleReady)">@T["GoogleTestLabel"]</button></form>
-        @if(googleTestAt is { } checkedAt) { <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@TimeZoneInfo.ConvertTime(checkedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></p> }
+        @if(googleTestAt is { } checkedAt) { <p class="integration-test-result">@T["GoogleInteractiveReady"] <bdi>@PaymentDisplay.Time(checkedAt)</bdi> @T["PalestineTime"]</p> }
     </div>
     <details class="integration-setup"><summary>@T["IntegrationSetupDetails"]</summary><p>@T["IntegrationSecretsHelp"]</p><code>Authentication:Google:ClientId<br />Authentication:Google:ClientSecret</code><p>@T["IntegrationCallback"]</p><code>@origin/signin-google</code></details>
 </section>
@@ -38,7 +38,7 @@
         <header class="integration-card-heading"><span class="integration-mark" aria-hidden="true">@(provider == "Facebook" ? "f" : "in")</span><div><h2>@T["SocialDestination_" + provider]</h2><p class="muted">@T["SocialIntegrationPurpose"]</p></div></header>
         <span class="tool-status @(connected ? "tool-ready" : expired ? "tool-problem" : "tool-neutral")">@(connected ? T["IntegrationConnectedLabel"] : expired ? T["IntegrationExpiredLabel"] : T["IntegrationDisconnectedLabel"])</span>
         @if(connection is not null) {
-            <dl class="integration-facts"><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountName" : "IntegrationPageName"]</dt><dd>@connection.PageName</dd><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountId" : "IntegrationPageId"]</dt><dd><bdi>@connection.PageId</bdi></dd><dt>@T["IntegrationLinkedAt"]</dt><dd><bdi>@TimeZoneInfo.ConvertTime(connection.ConnectedAt, TextRules.PalestineTimeZone).ToString("yyyy-MM-dd HH:mm")</bdi></dd></dl>
+            <dl class="integration-facts"><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountName" : "IntegrationPageName"]</dt><dd>@connection.PageName</dd><dt>@T[provider == "LinkedInPersonal" ? "IntegrationAccountId" : "IntegrationPageId"]</dt><dd><bdi>@connection.PageId</bdi></dd><dt>@T["IntegrationLinkedAt"] · @T["PalestineTime"]</dt><dd><bdi>@PaymentDisplay.Time(connection.ConnectedAt)</bdi></dd></dl>
         }
         @if(!configured) { <p class="notice">@T["IntegrationNotConfigured"]</p> }
         <form asp-action="Connect" method="post" class="integration-connect-form">
