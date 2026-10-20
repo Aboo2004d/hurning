@@ -1,7 +1,6 @@
 using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Member.Controllers;
 
@@ -11,9 +10,12 @@ public class PlansController(
     MembershipService membership,
     MemberPlanReadService? readService = null,
     MembershipDiscountService? discountService = null,
-    MembershipCheckoutService? checkoutService = null
+    MembershipCheckoutService? checkoutService = null,
+    PaymentReadService? paymentReadService = null
 ) : MemberControllerBase(db)
 {
+    private readonly PaymentReadService paymentRequests = paymentReadService ?? new(db);
+
     private MembershipDiscountService Discounts => discountService ?? new MembershipDiscountService(Db);
 
     /// <summary>يعرض الباقات المرئية وفترات استحقاق العضو عبر عقود قراءة مستقلة.</summary>
@@ -40,16 +42,20 @@ public class PlansController(
     [HttpGet]
     public async Task<IActionResult> Quote(int id, string? code, string? gateway, Guid requestId, CancellationToken ct)
     {
-        if (requestId == Guid.Empty || code?.Length > 50) return BadRequest();
-        if (await Db.PaymentOrders.AnyAsync(x => x.Id == requestId && x.UserId == MemberId
-            && x.GatewayEnvironment == Db.ActivePaymentEnvironment, ct))
+        if (requestId == Guid.Empty || code?.Length > 50)
+            return BadRequest();
+        if (await paymentRequests.HasMemberRequestAsync(requestId, MemberId, ct))
             return NoContent(); // This key already belongs to a frozen payment session.
         var input = new PurchaseInput
         {
-            PlanId = id, RequestId = requestId, DiscountCode = code ?? "", Gateway = gateway ?? "",
+            PlanId = id,
+            RequestId = requestId,
+            DiscountCode = code ?? "",
+            Gateway = gateway ?? "",
         };
         await FillAsync(input, ct, chooseGateway: false);
-        if (input.Plan is null) return NotFound();
+        if (input.Plan is null)
+            return NotFound();
         input.PresentedVersionId = input.Plan.Id;
         input.PresentedAmount = input.FinalAmount;
         Response.Headers.CacheControl = "no-store";
@@ -107,15 +113,9 @@ public class PlansController(
         // A completed request remains replayable even after its discount was reserved.
         if (checkout && input.RequestId != Guid.Empty)
         {
-            var replay = await Db
-                .PaymentOrders.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.Id == input.RequestId, ct);
-            if (replay is not null)
-                return
-                    replay.UserId == MemberId
-                    && replay.GatewayEnvironment == Db.ActivePaymentEnvironment
-                    ? PaymentDestination(replay.Id)
-                    : BadRequest();
+            var ownership = await paymentRequests.RequestOwnershipAsync(input.RequestId, MemberId, ct);
+            if (ownership != PaymentRequestOwnership.Missing)
+                return ownership == PaymentRequestOwnership.Owned ? PaymentDestination(input.RequestId) : BadRequest();
         }
         await FillAsync(input, ct, chooseGateway: !checkout);
         if (input.Plan is null)
@@ -147,14 +147,17 @@ public class PlansController(
         var service = checkoutService ?? new MembershipCheckoutService(Db, membership, registry, Discounts);
         var result = await service.CreateAsync(new MembershipCheckoutCommandDto(input.RequestId,
             MemberId, input.PlanId, input.Plan.Id, input.FinalAmount, input.DiscountCode, input.Gateway), ct);
-        if (result.Outcome == MembershipCheckoutOutcome.Forbidden) return Forbid();
-        if (result.Outcome == MembershipCheckoutOutcome.InvalidRequest) return BadRequest();
+        if (result.Outcome == MembershipCheckoutOutcome.Forbidden)
+            return Forbid();
+        if (result.Outcome == MembershipCheckoutOutcome.InvalidRequest)
+            return BadRequest();
         if (result.Outcome == MembershipCheckoutOutcome.Completed && result.OrderId is { } orderId)
             return PaymentDestination(orderId);
         if (result.Outcome == MembershipCheckoutOutcome.PlanChanged)
         {
             await FillAsync(input, ct, chooseGateway: false);
-            if (input.Plan is null) return NotFound();
+            if (input.Plan is null)
+                return NotFound();
             input.PresentedVersionId = input.Plan.Id;
             input.PresentedAmount = input.FinalAmount;
             ModelState.Remove(nameof(input.PresentedVersionId));
@@ -176,6 +179,15 @@ public class PlansController(
     /// <summary>يوجه إلى جلسة الدفع القائمة بالطريقة الملائمة للطلب العادي أو غير المتزامن.</summary>
     private IActionResult PaymentDestination(Guid id) =>
         Request.Headers["X-Checkout-Async"] == "true"
-            ? Json(new { redirectUrl = Url.Action("Details", "Payments", new { id }) })
-            : RedirectToAction("Details", "Payments", new { id });
+            ? Json(new
+            {
+                redirectUrl = Url.Action("Details", "Payments", new
+                {
+                    id
+                })
+            })
+            : RedirectToAction("Details", "Payments", new
+            {
+                id
+            });
 }

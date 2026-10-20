@@ -72,7 +72,7 @@
             @foreach (var item in Model.Items)
             {
                 <tr>
-                    <td>@item.Source.Name · @item.ExternalId</td>
+                    <td>@item.SourceName · @item.ExternalId</td>
                     <td>@UiMessages.State(item.Status.ToString(),T)</td>
                     <td>
                         <partial name="_Diagnostic" model="item.Error"/>

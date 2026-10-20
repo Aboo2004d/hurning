@@ -51,6 +51,7 @@ public class ListingShellFixtureController : Controller
         bool archive = false,
         bool restricted = false,
         bool saved = false,
+        bool closing = false,
         int page = 1
     ) =>
         View(
@@ -66,17 +67,24 @@ public class ListingShellFixtureController : Controller
                 Experience = experience ?? "",
                 Page = Math.Clamp(page, 1, 2),
                 Count = 24,
-                Cities = ["رام الله", "غزة"],
-                Categories = ["برمجة", "هندسة"],
-                EmploymentTypes = ["دوام كامل", "دوام جزئي"],
-                ExperienceLevels = ["مبتدئ", "متوسط"],
+                Cities = [new("رام الله", "رام الله"), new("غزة", "غزة")],
+                Categories = [new("برمجة", "برمجة"), new("هندسة", "هندسة")],
+                EmploymentTypes = [new("دوام كامل", "دوام كامل"), new("دوام جزئي", "دوام جزئي")],
+                ExperienceLevels = [new("مبتدئ", "مبتدئ"), new("متوسط", "متوسط")],
                 AllowedDetails = restricted ? [] : [kind],
                 SavedIds = saved ? [1] : [],
+                ClosingSoon = closing ? [new OpportunityCardDto
+                {
+                    Id = 42, Kind = OpportunityKind.Job, Title = "وظيفة تغلق هذا الأسبوع",
+                    Organization = "مؤسسة تجريبية", Locations = "غزة", OriginalLanguage = "ar",
+                    Deadline = TextRules.PalestineToday().AddDays(2),
+                }] : [],
                 Items =
                 [
-                    new Opportunity
+                    new OpportunityCardDto
                     {
                         Id = 1,
+                        CreatedAt = DateTimeOffset.UtcNow,
                         Kind = kind,
                         Title = "فرصة عمل في مجال تطوير البرمجيات",
                         Organization = "مؤسسة تجريبية",
@@ -100,6 +108,47 @@ public class AdminShellFixtureController : Controller
             "/Areas/Admin/Views/Tools/Tools.cshtml",
             new ToolDashboard { Now = DateTimeOffset.UtcNow }
         );
+
+    // Render DTO-backed administration screens without a database or provider request.
+    public IActionResult QualityPreview(string screen)
+    {
+        var now = DateTimeOffset.UtcNow;
+        ViewBag.Inbox = new AdminPage<TelegramInboxSummaryDto>
+        {
+            Items = [new TelegramInboxSummaryDto(1, now, 1)],
+        };
+        return screen switch
+        {
+            "ai" => View("/Areas/Admin/Views/AiUsage/AiUsage.cshtml", new AiUsageDashboard
+            {
+                PauseStatus = new AiPauseStatusDto(now.AddHours(1), "Daily AI token budget reached."),
+            }),
+            "messages" => View("/Areas/Admin/Views/Messages/Messages.cshtml", new ContactInbox
+            {
+                Items = [new ContactMessageSummaryDto(1, "عضو تجريبي", "fixture@example.test", now, false, false)],
+                Count = 1, UnreadCount = 1,
+            }),
+            "message" => View("/Areas/Admin/Views/Messages/Message.cshtml",
+                new ContactMessageDetailsDto(1, "عضو تجريبي", "fixture@example.test", "رسالة محلية للاختبار", now, true, false)),
+            "reports" => View("/Areas/Admin/Views/Reports/Reports.cshtml", new AdminPage<UserReportSummaryDto>
+            {
+                Items = [new UserReportSummaryDto(1, 42, "فرصة تجريبية", "incorrect", "تجربة عرض البلاغ", false)],
+            }),
+            "merges" => View("/Areas/Admin/Views/Merges/Merges.cshtml", new AdminPage<MergeOperationSummaryDto>
+            {
+                Items = [new MergeOperationSummaryDto(1, 42, 43, now, null)],
+            }),
+            "notifications" => View("/Areas/Admin/Views/Notifications/Index.cshtml", new AdminPage<MemberMessageSummaryDto>
+            {
+                Items = [new MemberMessageSummaryDto(1, "fixture", "رسالة اختبار محلية", null, null, "TelegramDeliveryProblem", 1)],
+            }),
+            "pages" => View("/Areas/Admin/Views/Pages/Pages.cshtml", new List<SitePageSummaryDto> { new("about", now) }),
+            "item" => View("/Areas/Admin/Views/Items/Item.cshtml", new SourceItemDetailsDto(
+                1, "مصدر تجريبي", "fixture", ProcessingStatus.NeedsReview, "", "https://example.test/source",
+                "محتوى مصدر تجريبي", "{}", 1)),
+            _ => NotFound(),
+        };
+    }
 
     public IActionResult Index()
     {
@@ -129,16 +178,11 @@ public class MemberShellFixtureController : Controller
                 BotReady = true,
                 Subscriptions =
                 [
-                    new MemberSubscription
-                    {
-                        StartsAt = DateTimeOffset.UtcNow.AddDays(-1),
-                        EndsAt = DateTimeOffset.UtcNow.AddDays(29),
-                        PlanVersion = new MembershipPlanVersion
-                        {
-                            NameAr = "باقة شهرية",
-                            NameEn = "Monthly plan",
-                        },
-                    },
+                    new MemberSubscriptionPeriodDto(
+                        1,
+                        new MembershipPlanVersionSummaryDto { Id = 1, NameAr = "باقة شهرية", NameEn = "Monthly plan" },
+                        DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(29)
+                    ),
                 ],
             }
         );
@@ -197,8 +241,10 @@ public class MemberShellFixtureController : Controller
 
     public IActionResult Settings(bool enabled = true)
     {
-        var profile = Profile();
-        profile.NotificationsEnabled = enabled;
+        var profile = Profile() with
+        {
+            NotificationsEnabled = enabled
+        };
         return View("/Areas/Member/Views/Settings/Index.cshtml", profile);
     }
 
@@ -211,25 +257,21 @@ public class MemberShellFixtureController : Controller
             .Where(id => id != removed)
             .Take(total)
             .OrderByDescending(id => id);
-        var model = new AdminPage<SavedOpportunity>
+        var model = new AdminPage<SavedOpportunitySummaryDto>
         {
             Pager = new AdminPager { Page = page, TotalRecords = total },
             Items = ids.Skip((page - 1) * AdminPager.PageSize)
                 .Take(AdminPager.PageSize)
-                .Select(id => new SavedOpportunity
+                .Select(id => new SavedOpportunitySummaryDto
                 {
                     Id = id,
                     OpportunityId = id,
                     SavedAt = DateTimeOffset.UtcNow,
-                    Opportunity = new Opportunity
-                    {
-                        Id = id,
-                        Kind = id % 2 == 0 ? OpportunityKind.Training : OpportunityKind.Job,
-                        Title = "فرصة محفوظة للتجربة " + id,
-                        Organization = "مؤسسة تجريبية",
-                        Locations = "رام الله",
-                        Status = PublicationStatus.Published,
-                    },
+                    Kind = id % 2 == 0 ? OpportunityKind.Training : OpportunityKind.Job,
+                    Title = "فرصة محفوظة للتجربة " + id,
+                    Organization = "مؤسسة تجريبية",
+                    Locations = "رام الله",
+                    Status = PublicationStatus.Published,
                 })
                 .ToList(),
         };
@@ -238,14 +280,14 @@ public class MemberShellFixtureController : Controller
             : View("/Areas/Member/Views/Saved/Index.cshtml", model);
     }
 
-    private static MemberProfile Profile() =>
+    private static MemberAccountSummaryDto Profile() =>
         new()
         {
             UserId = "fixture",
             Name = "Test Member — عضو تجريبي",
             Mobile = "+970599123456",
             Activated = true,
-            TelegramChatId = 1,
+            TelegramLinked = true,
             NotificationsEnabled = true,
         };
 }
@@ -443,9 +485,9 @@ public class AdminFormShellFixtureController : Controller
         ViewBag.Plans = kind == "Subscriptions"
             ? (object)new List<MembershipPlanLabelDto> { new(version.Id, version.NameAr, version.NameEn) }
             : new List<MembershipPlanVersion> { version };
-        ViewBag.Inbox = new AdminPage<TelegramInbox>
+        ViewBag.Inbox = new AdminPage<TelegramInboxSummaryDto>
         {
-            Items = [new() { Id = 1, ReceivedAt = DateTimeOffset.UtcNow }],
+            Items = [new TelegramInboxSummaryDto(1, DateTimeOffset.UtcNow, 0)],
         };
         ViewBag.Ready = new[] { "Lahza", "JawwalPay" };
         ViewBag.Available = new[] { "Lahza" };
@@ -467,8 +509,12 @@ public class AdminFormShellFixtureController : Controller
                 "/Areas/Admin/Views/Plans/Index.cshtml",
                 PageOf(new AdminPlanSummaryDto(1, true, new MembershipPlanVersionSummaryDto
                 {
-                    Id = version.Id, PlanId = version.PlanId, NameAr = version.NameAr,
-                    NameEn = version.NameEn, PriceIls = version.PriceIls, Days = version.Days,
+                    Id = version.Id,
+                    PlanId = version.PlanId,
+                    NameAr = version.NameAr,
+                    NameEn = version.NameEn,
+                    PriceIls = version.PriceIls,
+                    Days = version.Days,
                 }))
             ),
             "Subscriptions" => View(
@@ -486,12 +532,9 @@ public class AdminFormShellFixtureController : Controller
             "Notifications" => View(
                 "/Areas/Admin/Views/Notifications/Index.cshtml",
                 PageOf(
-                    new MemberMessage
-                    {
-                        UserId = "fixture",
-                        Text =
-                            "تم العثور على فرص جديدة تطابق تفضيلاتك في الموقع. يمكنك فتح الموقع للاطلاع على التفاصيل.",
-                    }
+                    new MemberMessageSummaryDto(0, "fixture",
+                        "تم العثور على فرص جديدة تطابق تفضيلاتك في الموقع. يمكنك فتح الموقع للاطلاع على التفاصيل.",
+                        null, null, "", 0)
                 )
             ),
             "Discounts" => View(
@@ -523,7 +566,10 @@ public class AdminFormShellFixtureController : Controller
         new()
         {
             Items = [item],
-            Pager = new() { TotalRecords = 1 },
+            Pager = new()
+            {
+                TotalRecords = 1
+            },
         };
 
     public IActionResult PaymentTrace()
@@ -688,13 +734,22 @@ public class SocialTemplateShellFixtureController : Controller
             Pager = new AdminPager { TotalRecords = 1 },
         };
         return View("/Areas/Admin/Views/SocialTemplates/Edit.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
-        { Provider = "Facebook", Scope = "general", Body = SocialTemplateText.DefaultBody, ExpectedActiveId = 1 });
+        {
+            Provider = "Facebook",
+            Scope = "general",
+            Body = SocialTemplateText.DefaultBody,
+            ExpectedActiveId = 1
+        });
     }
 
     public IActionResult Compose() => View("/Areas/Admin/Views/Social/Compose.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialCompose
     {
-        OpportunityId = 1, Provider = "Facebook", TemplateVersionId = 1, TemplateNumber = 1,
+        OpportunityId = 1,
+        Provider = "Facebook",
+        TemplateVersionId = 1,
+        TemplateNumber = 1,
         Opportunity = new SocialOpportunitySummaryDto("وظيفة تجريبية"),
-        Text = "وظيفة تجريبية", Link = "https://hiring.ps/ar/Opportunities/Details/1",
+        Text = "وظيفة تجريبية",
+        Link = "https://hiring.ps/ar/Opportunities/Details/1",
     });
 }

@@ -5,13 +5,19 @@ using System.Linq;
 
 namespace HiringPs.Core;
 
-/// <summary>سجل Opportunity وعلاقاته؛ يطابق مخطط تحديث المنصة المحفوظ.</summary>
+/// <summary>إعلان فرصة محفوظ مع بياناته وأدلته وروابط مصادره وقرار النشر.</summary>
 public class Opportunity
 {
-    /// <summary>المعرّف الأساسي للسجل؛ يختلف نوعه وطريقة توليده حسب الكيان.</summary>
-    public long Id { get; set; }
-    /// <summary>نوع الفرصة أو الفحص أو الرسالة وفق enum الخاص بالسجل.</summary>
-    public OpportunityKind Kind { get; set; }
+    /// <summary>المعرّف الدائم للفرصة المستخدم في روابط العرض وعلاقات المصادر.</summary>
+    public long Id
+    {
+        get; set;
+    }
+    /// <summary>تصنيف الإعلان: وظيفة أو تدريب أو عطاء أو مناقصة وفق OpportunityKind.</summary>
+    public OpportunityKind Kind
+    {
+        get; set;
+    }
 
     /// <summary>عنوان الفرصة المعروض بلغته الأصلية.</summary>
     [Required]
@@ -42,11 +48,11 @@ public class Opportunity
     public string WorkMode { get; set; } = "";
     /// <summary>رقم المرجع المنشور للفرصة.</summary>
     public string ReferenceNumber { get; set; } = "";
-    /// <summary>مدة جولة الجمع.</summary>
+    /// <summary>مدة التدريب أو البرنامج كما وردت في الإعلان.</summary>
     public string Duration { get; set; } = "";
     /// <summary>شروط أهلية التقديم كما وردت في الإعلان.</summary>
     public string Eligibility { get; set; } = "";
-    /// <summary>التكلفة المحسوبة أو المسجلة للاستدعاء وفق المنطق الحالي.</summary>
+    /// <summary>رسوم التدريب أو البرنامج كما وردت في الإعلان؛ ليست تكلفة استدعاء AI.</summary>
     public string Cost { get; set; } = "";
 
     /// <summary>رابط التقديم الخارجي.</summary>
@@ -55,13 +61,25 @@ public class Opportunity
     /// <summary>عناوين المرفقات المكتشفة بصيغة JSON.</summary>
     public string AttachmentsJson { get; set; } = "[]";
     /// <summary>آخر موعد للتقديم عند وجود دليل موثوق عليه.</summary>
-    public DateOnly? Deadline { get; set; }
+    public DateOnly? Deadline
+    {
+        get; set;
+    }
     /// <summary>تاريخ النشر الأصلي كما ورد في المصدر.</summary>
-    public DateTimeOffset? SourcePublishedAt { get; set; }
+    public DateTimeOffset? SourcePublishedAt
+    {
+        get; set;
+    }
     /// <summary>تاريخ آخر تعديل كما ورد في المصدر.</summary>
-    public DateTimeOffset? SourceModifiedAt { get; set; }
+    public DateTimeOffset? SourceModifiedAt
+    {
+        get; set;
+    }
     /// <summary>معرّف نسخة تعليمات AI المستخدمة في هذه العملية.</summary>
-    public int? PromptVersionId { get; set; }
+    public int? PromptVersionId
+    {
+        get; set;
+    }
     /// <summary>النص الموحد المفهرس للبحث في الفرصة.</summary>
     public string SearchText { get; set; } = "";
     /// <summary>النص المفهرس للبحث بالمواقع بعد التطبيع.</summary>
@@ -72,15 +90,24 @@ public class Opportunity
     public DateTimeOffset LastVerifiedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>Persisted COALESCE(SourcePublishedAt, CreatedAt) used for public ordering; computed by SQL Server.</summary>
-    public DateTimeOffset SortDate { get; private set; }
-    /// <summary>حالة السجل ضمن دورة العمل؛ يستخدم النوع الحالي كما هو محفوظ في القاعدة.</summary>
+    public DateTimeOffset SortDate
+    {
+        get; private set;
+    }
+    /// <summary>قرار نشر الفرصة أو مراجعتها أو أرشفتها أو إخفائها وفق PublicationStatus.</summary>
     public PublicationStatus Status { get; set; } = PublicationStatus.NeedsReview;
     /// <summary>يحمي تعديلات الإدارة من الاستبدال أثناء إعادة الاستخراج.</summary>
-    public bool AdminOverride { get; set; }
+    public bool AdminOverride
+    {
+        get; set;
+    }
 
     // Other records were merged into this one; extraction keeps its text but still applies verified dates.
     /// <summary>يحمي نص الفرصة التي دمجت فرص أخرى فيها مع السماح بتطبيق تواريخ مثبتة.</summary>
-    public bool IsMergeTarget { get; set; }
+    public bool IsMergeTarget
+    {
+        get; set;
+    }
 
     /// <summary>مرجع الإعلان بعد التطبيع للمطابقة الحتمية بين المصادر.</summary>
     [MaxLength(200)]

@@ -5,11 +5,10 @@ using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public class FeedsController(HiringDb db, SiteSeo seo, PublicCatalog catalog) : Controller
+public class FeedsController(SiteSeo seo, HiringPs.Web.Services.PublicCatalog.PublicListingReadService listings) : Controller
 {
     private const int FeedSize = 50;
 
@@ -38,17 +37,8 @@ public class FeedsController(HiringDb db, SiteSeo seo, PublicCatalog catalog) : 
         var category = Request.Query["category"].ToString();
         var employment = Request.Query["employment"].ToString();
         var experience = Request.Query["experience"].ToString();
-        var filters = await catalog.FiltersAsync(kind, archive, ct);
-        var query = PublicListingFilters.Scope(db.Opportunities.AsNoTracking(), archive, TextRules.PalestineToday())
-            .Where(x => db.OpportunityAccessRules.Any(rule => rule.Kind == x.Kind && rule.PublicDetails));
-        query = PublicListingFilters.Apply(query, new(q, kind, selectedCity, category, employment, experience), filters);
-        var closing = ListingSort.Parse(Request.Query["sort"].ToString()) == ListingSort.Closing;
-        var ordered = closing
-            ? query.OrderBy(x => x.Deadline == null).ThenBy(x => x.Deadline).ThenByDescending(x => x.SortDate).ThenByDescending(x => x.Id)
-            : query.OrderByDescending(x => x.SortDate).ThenByDescending(x => x.Id);
-        var items = await ordered
-            .Take(FeedSize)
-            .ToListAsync(ct);
+        var items = await listings.FeedAsync(new(q, kind, selectedCity, category, employment, experience),
+            archive, ListingSort.Parse(Request.Query["sort"].ToString()), TextRules.PalestineToday(), FeedSize, ct);
         var (arabicKind, englishKind) = kind switch
         {
             OpportunityKind.Job => ("وظائف", "Jobs"),
@@ -58,8 +48,17 @@ public class FeedsController(HiringDb db, SiteSeo seo, PublicCatalog catalog) : 
             _ => ("فرص", "Opportunities"),
         };
         var place = city is null ? ("فلسطين", "Palestine") : (city.Arabic, city.English);
-        var listing = new ListingModel { Query = q, Kind = kind, City = selectedCity, Category = category,
-            Employment = employment, Experience = experience, Archive = archive, Sort = ListingSort.Parse(Request.Query["sort"].ToString()) };
+        var listing = new ListingModel
+        {
+            Query = q,
+            Kind = kind,
+            City = selectedCity,
+            Category = category,
+            Employment = employment,
+            Experience = experience,
+            Archive = archive,
+            Sort = ListingSort.Parse(Request.Query["sort"].ToString())
+        };
         var channelLink = city is not null && Request.Query.Count == 0
             ? seo.Url(BrowsePaths.City(kind!.Value, city), false)
             : seo.Url("/", false, listing.RouteValues(1).Select(x => new KeyValuePair<string, string?>(x.Key, x.Value)));

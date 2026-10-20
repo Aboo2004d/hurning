@@ -7,7 +7,7 @@ namespace HiringPs.Web.Models;
 
 public static class SitePageDefaults
 {
-    public static bool IsEditable(string key) => key is "about" or "privacy";
+    public static bool IsEditable(string key) => SitePageKeys.IsEditable(key);
 
     private static readonly ResourceManager Resources = new(
         "HiringPs.Web.Resources.Labels",
@@ -42,7 +42,7 @@ public static class SitePageDefaults
             );
     }
 
-    public static SitePageViewModel Resolve(string key, SitePage? page, string language)
+    public static SitePageViewModel Resolve(string key, SitePageContentDto? page, string language)
     {
         var fallback = Get(key, language);
         var ar = language == "ar";

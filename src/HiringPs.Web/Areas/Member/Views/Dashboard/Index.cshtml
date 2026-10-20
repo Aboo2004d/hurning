@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = T["MyAccount"];
     var now = DateTimeOffset.UtcNow;
-    var current = Model.Subscriptions.FirstOrDefault(x => !x.Cancelled && x.StartsAt <= now && x.EndsAt > now);
+    var current = Model.Subscriptions.FirstOrDefault(x => x.StartsAt <= now && x.EndsAt > now);
     var language = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var tiles = new[]
     {

@@ -2,14 +2,8 @@
 @{
     ViewData["Title"] = T["AiPrompt"];
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
-    var preview = new PromptVersion
-    {
-        Template = Model.Template ?? "",
-        GeographicScope = Model.GeographicScope ?? "",
-        AllowedKinds = Model.AllowedKinds ?? "",
-        SummaryLimit = Model.SummaryLimit,
-        AllowUnknownDeadline = Model.AllowUnknownDeadline
-    }.Render();
+    var preview = PromptAdministrationService.Preview(Model.Template, Model.GeographicScope,
+        Model.AllowedKinds, Model.SummaryLimit, Model.AllowUnknownDeadline);
 }
 <h1>@T["AiPrompt"]</h1>
 <p class="notice">

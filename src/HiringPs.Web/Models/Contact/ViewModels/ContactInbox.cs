@@ -5,9 +5,15 @@ namespace HiringPs.Web.Models;
 
 public class ContactInbox
 {
-    public List<ContactMessage> Items { get; set; } = [];
+    public List<ContactMessageSummaryDto> Items { get; set; } = [];
     public string Status { get; set; } = "all";
-    public int Count { get; set; }
-    public int UnreadCount { get; set; }
+    public int Count
+    {
+        get; set;
+    }
+    public int UnreadCount
+    {
+        get; set;
+    }
     public AdminPager Pager { get; set; } = new();
 }

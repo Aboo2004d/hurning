@@ -10,7 +10,6 @@ public sealed class LahzaController(
     HiringDb db,
     IConfiguration configuration,
     LahzaGateway gateway,
-    ILogger<LahzaController>? logger = null,
     LahzaWebhookService? webhookService = null
 ) : Controller
 {
@@ -33,7 +32,8 @@ public sealed class LahzaController(
     {
         using var body = new MemoryStream();
         await Request.Body.CopyToAsync(body, ct);
-        if (body.Length > 65536) return BadRequest();
+        if (body.Length > 65536)
+            return BadRequest();
         var valid = TryReadSignature(Request.Headers, out var signature, out var headerName);
         var outcome = await webhook.ProcessAsync(body.ToArray(), valid, signature, headerName, ct);
         return outcome switch

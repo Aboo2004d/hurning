@@ -1,4 +1,4 @@
-@model AdminPage<SavedOpportunity>
+@model AdminPage<SavedOpportunitySummaryDto>
 @{ var allowed = ViewBag.AllowedDetails as HashSet<OpportunityKind> ?? []; }
 <section data-saved-results tabindex="-1" data-current-url="@Url.Action("Index", "Saved", new { page = Model.Pager.Page })"
          data-error="@T["SavedUpdateFailed"]" aria-live="polite">
@@ -17,7 +17,7 @@
     <div class="member-saved-grid">
         @foreach (var saved in Model.Items)
         {
-            var item = saved.Opportunity;
+            var item = saved;
             var visible = item.Status is PublicationStatus.Published or PublicationStatus.Archived;
             <article class="membership-card member-panel member-saved-card">
                 <div class="member-section-heading">

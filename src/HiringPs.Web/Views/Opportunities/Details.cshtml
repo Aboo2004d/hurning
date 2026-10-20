@@ -1,14 +1,14 @@
-@model Opportunity
+@model OpportunityDetailsDto
 @* تفاصيل فرصة واحدة مع مصدر الإعلان وروابط التقديم والمرفقات ونموذج البلاغ. *@
 @{
     ViewData["Title"] = Model.Title;
     ViewData["Description"] = Model.Summary;
     var expired = Model.Status == PublicationStatus.Archived || (Model.Deadline is { } d && d < TextRules.PalestineToday());
-    var sourceUrl = Model.SourceLinks.FirstOrDefault()?.SourceItem.Url;
+    var sourceUrl = Model.Sources.FirstOrDefault()?.Url;
     var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
     var organizationFacet = ViewBag.OrganizationFacet as OrganizationFacet;
     var cityLinks = ViewBag.CityFacets as List<City> ?? [];
-    var attachments = ViewBag.Attachments as List<string> ?? [];
+    var attachments = Model.Attachments;
     var closing = expired ? null : PublicListing.ClosingInDays(Model, TextRules.PalestineToday());
 }
 <a class="textlink back-link" asp-controller="Home" asp-action="Index" asp-route-kind="@Model.Kind">
@@ -133,9 +133,9 @@
         }
     </div>
     <div class="sources">
-        @foreach (var link in Model.SourceLinks)
+        @foreach (var link in Model.Sources)
         {
-            <a href="@link.SourceItem.Url" rel="noopener noreferrer">@link.SourceItem.Source.Name</a>
+            <a href="@link.Url" rel="noopener noreferrer">@link.Name</a>
         }
     </div>
     @if (attachments.Count > 0)
@@ -187,7 +187,7 @@
         </form>
     </details>
 </article>
-@if (ViewBag.VerifiedDates is IEnumerable<OpportunityDateRecord> dateRecords)
+@if (ViewBag.VerifiedDates is IEnumerable<VerifiedOpportunityDateDto> dateRecords)
 {
     <section class="detail-panel">
         <h2>@T["VerifiedSourceDates"]</h2>

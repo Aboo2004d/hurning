@@ -5,11 +5,13 @@ namespace HiringPs.Web.Models;
 
 public static class AdminPagination
 {
-    public static IQueryable<T> Window<T>(this IOrderedQueryable<T> query, int page) =>
+    /// <summary>Applies a page window to a query whose read service already defines a stable ordering.</summary>
+    public static IQueryable<T> Window<T>(this IQueryable<T> query, int page) =>
         query.Skip((Math.Max(1, page) - 1) * AdminPager.PageSize).Take(AdminPager.PageSize);
 
+    /// <summary>Counts and materializes a page after projection. Callers must provide a stable order before pagination.</summary>
     public static async Task<AdminPage<T>> PageAsync<T>(
-        this IOrderedQueryable<T> query,
+        this IQueryable<T> query,
         int page,
         CancellationToken ct,
         string parameter = "page",

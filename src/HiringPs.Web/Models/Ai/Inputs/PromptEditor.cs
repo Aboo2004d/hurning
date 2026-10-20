@@ -21,7 +21,10 @@ public class PromptEditor
     [MaxLength(500)]
     public string Note { get; set; } = "";
     public string Version { get; set; } = "";
-    public WorkflowSettings? Settings { get; set; }
-    public List<PromptVersion> History { get; set; } = [];
+    public PromptSettingsDto? Settings
+    {
+        get; set;
+    }
+    public List<PromptVersionSummaryDto> History { get; set; } = [];
     public AdminPager HistoryPager { get; set; } = new();
 }

@@ -4,13 +4,13 @@ using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace HiringPs.Web.Controllers;
 
 public class BrowseController(
-    HiringDb db,
+    HiringPs.Web.Services.PublicCatalog.PublicListingReadService listings,
+    SavedOpportunityService saved,
     MembershipService membership,
     PublicCatalog catalog,
     IStringLocalizer<Labels> T
@@ -26,11 +26,9 @@ public class BrowseController(
         if (kindSlug != KindSlugs.For(kind.Value) || citySlug != city.Slug)
             return RedirectPermanent(Url.Content("~" + BrowsePaths.City(kind.Value, city)));
         var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
-        var key = city.SearchKey;
-        var query = db
-            .Opportunities.AsNoTracking()
-            .Current(TextRules.PalestineToday())
-            .Where(x => x.Kind == kind && x.LocationSearchText.Contains(key));
+        var result = await listings.CityAsync(kind.Value, city.SearchKey, page, TextRules.PalestineToday(), ct);
+        if (result is null)
+            return NotFound();
         var model = new BrowseModel
         {
             Kind = kind,
@@ -51,7 +49,7 @@ public class BrowseController(
             city.Name(english)
         );
         ViewData["ListingKind"] = kind;
-        return await RenderAsync(model, query, page, ct);
+        return await RenderAsync(model, result, page, ct);
     }
 
     [OutputCache(PolicyName = SiteCache.Listing)]
@@ -61,11 +59,9 @@ public class BrowseController(
         var organization = facets.Organization(orgSlug);
         if (organization is null)
             return NotFound();
-        var keys = organization.Keys;
-        var query = db
-            .Opportunities.AsNoTracking()
-            .Current(TextRules.PalestineToday())
-            .Where(x => keys.Contains(x.NormalizedOrganization));
+        var result = await listings.OrganizationAsync(organization.Keys, page, TextRules.PalestineToday(), ct);
+        if (result is null)
+            return NotFound();
         var model = new BrowseModel
         {
             Organization = organization,
@@ -81,27 +77,19 @@ public class BrowseController(
                 organization.Name
             ),
         };
-        return await RenderAsync(model, query, page, ct);
+        return await RenderAsync(model, result, page, ct);
     }
 
     private async Task<IActionResult> RenderAsync(
         BrowseModel model,
-        IQueryable<Opportunity> query,
+        OpportunityPageDto result,
         int page,
         CancellationToken ct
     )
     {
-        var count = await query.CountAsync(ct);
-        if (count == 0 || page < 1 || page > PublicListing.PageCount(count))
-            return NotFound();
-        model.Count = count;
+        model.Count = result.Count;
         model.Page = page;
-        model.Items = await query
-            .OrderByDescending(x => x.SortDate)
-            .ThenByDescending(x => x.Id)
-            .Skip((page - 1) * PublicListing.PageSize)
-            .Take(PublicListing.PageSize)
-            .ToListAsync(ct);
+        model.Items = result.Items;
         model.AllowedDetails = await membership.DetailKindsAsync(
             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             User.IsInRole("Admin"),
@@ -112,13 +100,7 @@ public class BrowseController(
         {
             var memberId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var ids = model.Items.Select(x => x.Id).ToArray();
-            model.SavedIds = (
-                await db
-                    .SavedOpportunities.AsNoTracking()
-                    .Where(x => x.UserId == memberId && ids.Contains(x.OpportunityId))
-                    .Select(x => x.OpportunityId)
-                    .ToListAsync(ct)
-            ).ToHashSet();
+            model.SavedIds = await saved.IdsAsync(memberId!, ids, ct);
             Response.Headers.CacheControl = "no-store";
         }
         return View("Index", model);

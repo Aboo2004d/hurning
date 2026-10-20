@@ -296,8 +296,8 @@ internal static class ToolChecks
                 Config(new() { ["Pdf:OcrDataPath"] = Path.Combine(folder, "no-languages") })
             ).CheckAsync("PdfLanguages", default);
             Check(
-                language.State == ToolState.NotConfigured,
-                "missing traineddata never reports OCR ready"
+                language.State == ToolState.Problem && language.Code == "ToolExecutionFailed",
+                "unreadable traineddata returns a problem before invoking OCR"
             );
             var disabled = await new ToolProbes(
                 Config(new() { ["Pdf:EnableOcr"] = "false" })

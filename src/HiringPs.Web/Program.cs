@@ -90,6 +90,12 @@ if (string.IsNullOrWhiteSpace(aiModel))
 // ======================================
 // Application Services
 // ======================================
+builder.Services.AddAdministrationFeatures();
+builder.Services.AddPublicOpportunityFeatures();
+builder.Services.AddMemberWorkspaceFeatures();
+builder.Services.AddScoped<HiringPs.Web.Services.Membership.MemberPreferencePageService>();
+builder.Services.AddScoped<HiringPs.Web.Services.Authentication.GoogleLinkReadService>();
+builder.Services.AddScoped<HiringPs.Web.Services.PublicCatalog.PublicListingReadService>();
 builder.Services.AddScoped<OpportunityService>();
 builder.Services.AddScoped<OpportunityExtractionService>();
 builder.Services.AddScoped<SocialComposeReadService>();

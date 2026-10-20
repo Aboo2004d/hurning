@@ -9,7 +9,10 @@ namespace HiringPs.Web.Models;
 /// <summary>Stable, localized public URLs and metadata; never derives the origin from request headers.</summary>
 public sealed class SiteSeo
 {
-    public string Origin { get; }
+    public string Origin
+    {
+        get;
+    }
 
     public const int SitemapPageSize = 10000;
 
@@ -118,7 +121,7 @@ public sealed class SiteSeo
             Paginate(browse, english);
             pageType = "CollectionPage";
         }
-        else if (controller == "Opportunities" && model is Opportunity opportunity)
+        else if (controller == "Opportunities" && model is OpportunityDetailsDto opportunity)
         {
             path = PublicListing.DetailsPath(opportunity);
             name = string.Join(

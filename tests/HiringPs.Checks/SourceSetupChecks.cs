@@ -66,9 +66,13 @@ public static class SourceSetupChecks
         )
             Reject(() => SourceSetupRules.Website(url), "SourceSetupSocialDeferred");
         Reject(
-            () => SourceSetupRules.Snapshot(new string('x', 2_000_001), homeUrl),
+            () => SourceSetupRules.Snapshot(new string('x', 16_000_001), homeUrl),
             "SourceSetupPageTooLarge"
         );
+        var largePage = SourceSetupRules.Snapshot("<a href='/careers'>Jobs</a>" + new string('x', 2_000_001), homeUrl);
+        Check(largePage.Text.Length <= 12000 && largePage.Html.Length <= 40000
+            && largePage.Links.Any(x => x.Url == listingUrl),
+            "large-page inspection stays bounded while preserving observed career links");
         Check(
             SourceSetupRules
                 .Snapshot("<a href='/" + new string('x', 1100) + "'>Too long</a>", homeUrl)
@@ -157,24 +161,18 @@ public static class SourceSetupChecks
         {
             using var manualHttp = new HttpClient(new FixtureAi(Proposal(proposedUrl)));
             var before = browser.Inspections.Count;
-            var manual = await new SourceSetupAssistant(
-                manualHttp,
-                browser,
-                configuration
-            ).SuggestAsync(homeUrl, "ar", default);
-            Check(
-                !manual.Verified && manual.Url == proposedUrl && manual.Preview.Links.Length == 0,
-                "unobserved or cross-host proposal remains available for explicit manual approval"
-            );
-            Check(
-                browser.Inspections.Count == before + 1 && browser.Previews == 1,
-                "manual proposal is neither fetched nor reported as tested"
-            );
-            var conf = JsonSerializer.Deserialize<SourceConfiguration>(manual.ConfigurationJson)!;
-            Check(
-                conf.AllowedHosts.SequenceEqual(new[] { new Uri(proposedUrl).IdnHost }),
-                "manual configuration targets the proposed source host without expanding the original crawl"
-            );
+            try
+            {
+                await new SourceSetupAssistant(manualHttp, browser, configuration).SuggestAsync(homeUrl, "ar", default);
+                throw new Exception("Unobserved source URL was accepted.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Check(ex.Message == "SourceSetupUnseenUrl" && (string?)ex.Data["SourceSetupStage"] == "SourceSetupStageAi",
+                    "unobserved and cross-host source suggestions are rejected at the AI evidence boundary");
+            }
+            Check(browser.Inspections.Count == before + 1 && browser.Previews == 1,
+                "rejected source suggestions are neither fetched nor reported as tested");
         }
         using var singleHttp = new HttpClient(new FixtureAi(Proposal(listingUrl)));
         var single = await new SourceSetupAssistant(
@@ -216,8 +214,14 @@ public static class SourceSetupChecks
     ) : BrowserCollector(new UrlPolicy(), config, new AttachmentReader(new UrlPolicy(), config))
     {
         public List<string> Inspections { get; } = [];
-        public int Previews { get; private set; }
-        public bool FailPreview { get; set; }
+        public int Previews
+        {
+            get; private set;
+        }
+        public bool FailPreview
+        {
+            get; set;
+        }
 
         public override Task<SourceSetupSnapshot> InspectForSetupAsync(
             string url,
@@ -244,7 +248,10 @@ public static class SourceSetupChecks
 
     private sealed class FixtureAi(params SourceSetupSuggestion[] suggestions) : HttpMessageHandler
     {
-        public int Calls { get; private set; }
+        public int Calls
+        {
+            get; private set;
+        }
         public List<bool> PinFlags { get; } = [];
         public List<string> Instructions { get; } = [];
 

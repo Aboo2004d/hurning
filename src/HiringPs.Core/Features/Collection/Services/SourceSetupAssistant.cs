@@ -31,34 +31,34 @@ You help an administrator configure a public Palestinian opportunities source. A
         var stage = "SourceSetupStageConfiguration";
         try
         {
-        SourceSetupRules.Website(url);
-        _ = ProviderConfiguration();
+            SourceSetupRules.Website(url);
+            _ = ProviderConfiguration();
             stage = "SourceSetupStageRead";
-        var snapshot = await browser.InspectForSetupAsync(url, ct);
+            var snapshot = await browser.InspectForSetupAsync(url, ct);
             stage = "SourceSetupStageAi";
-        var suggestion = await AskAsync(snapshot, language, false, ct);
+            var suggestion = await AskAsync(snapshot, language, false, ct);
             var candidate = SourceSetupRules.Candidate(suggestion, snapshot);
-        if (new Uri(candidate.Url) != new Uri(snapshot.Url))
-        {
+            if (new Uri(candidate.Url) != new Uri(snapshot.Url))
+            {
                 stage = "SourceSetupStageListing";
-            var listing = await browser.InspectForSetupAsync(candidate.Url, ct);
+                var listing = await browser.InspectForSetupAsync(candidate.Url, ct);
                 stage = "SourceSetupStageAi";
-            suggestion = await AskAsync(listing, language, true, ct);
+                suggestion = await AskAsync(listing, language, true, ct);
                 candidate = SourceSetupRules.Candidate(suggestion, listing);
-            if (new Uri(candidate.Url) != new Uri(listing.Url))
+                if (new Uri(candidate.Url) != new Uri(listing.Url))
                     throw new InvalidOperationException("SourceSetupUnseenUrl");
-        }
+            }
             stage = "SourceSetupStagePreview";
-        var preview = await browser.PreviewSetupAsync(candidate, ct);
-        return new(
-            candidate.Name,
-            candidate.Url,
-            (int)candidate.Connector,
-            candidate.ConfigurationJson,
-            suggestion.Explanation,
-            preview
-        );
-    }
+            var preview = await browser.PreviewSetupAsync(candidate, ct);
+            return new(
+                candidate.Name,
+                candidate.Url,
+                (int)candidate.Connector,
+                candidate.ConfigurationJson,
+                suggestion.Explanation,
+                preview
+            );
+        }
         catch (Exception ex)
         {
             ex.Data["SourceSetupStage"] = stage;
@@ -100,7 +100,10 @@ You help an administrator configure a public Palestinian opportunities source. A
         request.Content = JsonContent.Create(
             new
             {
-                systemInstruction = new { parts = new[] { new { text = Instructions } } },
+                systemInstruction = new
+                {
+                    parts = new[] { new { text = Instructions } }
+                },
                 contents = new[]
                 {
                     new

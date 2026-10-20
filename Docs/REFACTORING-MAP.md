@@ -313,3 +313,44 @@
 | `src/HiringPs.Web/Models/PublicListing.cs` | `UrlSlug` | [UrlSlug.cs](../src/HiringPs.Web/Services/PublicCatalog/UrlSlug.cs) |
 
 توجد خدمات قراءة وإدارة التوزيع ضمن `Features/Telegram`، وإدارة التكرار والجهات ضمن `Features/Opportunities`. نماذج القراءة منفصلة عن كيانات EF. خدمات الفلاتر والروابط العامة ضمن `HiringPs.Web/Services/PublicCatalog`.
+
+
+## دفعة خدمات الإدارة والقراءة
+
+| المسار السابق أو المسؤولية | المسار الحالي |
+| --- | --- |
+| `MessagesController` — قراءة الرسائل ومعالجتها | `Features/Contact/{Services,Dtos}` |
+| `PagesController` وحفظ الأسئلة | `Features/Content/{Services,Dtos,Rules}` |
+| `ReportsController` وقراءة سجل الدمج | `Features/Opportunities/Services/{ReportManagementService,MergeAdministrationService}.cs` |
+| `NotificationsController` — القراءة وجدولة إعادة المحاولة | `Features/Telegram/Services/NotificationAdministrationService.cs` |
+| `AdminController` — المؤشرات والجولات | `Features/Monitoring/Services/AdminDashboardReadService.cs` |
+| `ItemsController` — القراءة وإعادة المعالجة | `Features/Collection/Services/SourceItemAdministrationService.cs` |
+| `DiagnosticsController` — الملفات والبيانات التشخيصية | `Features/Monitoring/Services/CollectorDiagnosticReadService.cs` |
+| `AiUsageController` — الاستعلامات والتجميع | `Features/Ai/Services/AiUsageReadService.cs` |
+| `Models/Ai/ViewModels/AiUsageTotals.cs` | `Features/Ai/Dtos/AiUsageTotalsDto.cs` |
+| `AiPromptController` — الإصدارات والقواعد | `Features/Ai/Services/PromptAdministrationService.cs` و`Features/Ai/Rules/PromptInputRules.cs` |
+| `RetentionController` — حفظ السياسة | `Features/Retention/Services/RetentionSettingsService.cs` |
+| `OpportunityExtractionService` — تجهيز المرشح | `Features/Opportunities/Rules/ExtractionCandidateRules.cs` |
+| `_DateExtraction.cshtml` — تحليل JSON ودليل PDF | `HiringPs.Web/Services/Collection/SourceItemEvidencePresenter.cs` |
+
+المسارات غير المسبوقة باسم مشروع في الجدول تبدأ من `src/HiringPs.Core`. يحتوي كل DTO جديد على ملف مستقل ضمن مجال خدمته. راجع [متابعة الجودة](QUALITY-PROGRESS.md) للقيود والميزة المؤجلة.
+
+
+## قراءات الزائر ومساحة العضو
+
+| المسؤولية | المسار |
+| --- | --- |
+| كارد وتفاصيل الفرصة وروابط المصدر | `Core/Features/Opportunities/Dtos/{OpportunityCardDto,OpportunityDetailsDto,OpportunitySourceSummaryDto,VerifiedOpportunityDateDto}.cs` |
+| إسقاط SQL لبطاقات الفرص | `Core/Persistence/Queries/PublicOpportunityProjection.cs` |
+| نطاق الحالي والأرشيف والفهرسة العامة | `Core/Features/Opportunities/Rules/PublicOpportunityScope.cs` |
+| الرئيسية والتصفح وRSS | `Web/Services/PublicCatalog/PublicListingReadService.cs` |
+| التفاصيل والأدلة والبلاغ | `Core/Features/Opportunities/Services/{OpportunityDetailsReadService,OpportunityReportService}.cs` |
+| بيانات خريطة الموقع | `Core/Features/Opportunities/Services/PublicSitemapReadService.cs` |
+| محفوظات العضو وحالة الحساب | `Core/Features/Membership/Services/{SavedOpportunityService,MemberAccountReadService}.cs` |
+| تفضيلات العضو وحفظ الإعدادات | `Core/Features/Membership/Services/{MemberPreferenceService,MemberNotificationSettingsService}.cs` |
+| محرر التفضيلات | `Web/Services/Membership/MemberPreferencePageService.cs` |
+| قراءة زر ربط جوجل وقالب عرضه | `Web/Services/Authentication/GoogleLinkReadService.cs` و`Web/ViewComponents/GoogleLinkViewComponent.cs` |
+| بصمة المحتوى المستعادة من Collection.cs | `Core/Features/Collection/Rules/ContentFingerprint.cs` |
+| استثناء المصدر المؤقت المستعاد من Attachments.cs | `Core/Features/Collection/Exceptions/ContentRetryableException.cs` |
+
+`Core` و`Web` في الجدول اختصار لـ`src/HiringPs.Core` و`src/HiringPs.Web`. خدمات العضو مسجلة عبر `AddMemberWorkspaceFeatures`، وقراءات الزائر عبر `AddPublicOpportunityFeatures`.

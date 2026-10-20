@@ -1,20 +1,16 @@
 using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
-public class AboutController(HiringDb db) : Controller
+public class AboutController(SiteContentService content) : Controller
 {
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         var model = await ReadSitePageAsync("about", ct);
         var questions = SiteQuestionsContent.Read(
-            await db
-                .SitePages.AsNoTracking()
-                .SingleOrDefaultAsync(p => p.Key == SiteQuestionsContent.Key, ct)
+            await content.ReadAsync(SiteQuestionsContent.Key, ct)
         );
         var english =
             System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
@@ -29,7 +25,7 @@ public class AboutController(HiringDb db) : Controller
 
     private async Task<SitePageViewModel> ReadSitePageAsync(string key, CancellationToken ct)
     {
-        var page = await db.SitePages.AsNoTracking().SingleOrDefaultAsync(x => x.Key == key, ct);
+        var page = await content.ReadAsync(key, ct);
         var language =
             System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
                 ? "en"

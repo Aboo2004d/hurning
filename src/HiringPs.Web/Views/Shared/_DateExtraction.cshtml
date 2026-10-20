@@ -1,19 +1,8 @@
-@model SourceItem
-@using System.Text.Json
+@model SourceItemDetailsDto
 @{
-    ExtractionResult? extraction = null;
-    if (!string.IsNullOrWhiteSpace(Model.ExtractionJson))
-    {
-        try
-        {
-            extraction = JsonSerializer.Deserialize<ExtractionResult>(Model.ExtractionJson, AiExtractor.JsonOptions);
-        }
-        catch (JsonException)
-        {
-        }
-    }
+    var opportunities = HiringPs.Web.Services.Collection.SourceItemEvidencePresenter.Read(Model);
 }
-@if (extraction?.Opportunities is { } opportunities)
+@if (opportunities is not null)
 {
     <section class="detail-panel">
         <h2>@T["ProposedDates"]</h2>
@@ -24,21 +13,7 @@
         @foreach (var opportunity in opportunities)
         {
             <h3 dir="auto">@opportunity.Title</h3>
-            var dates = new List<ExtractedDate>();
-            if (opportunity.PublicationDate is { } publication)
-            {
-                dates.Add(new() { Kind = OpportunityDateKind.Publication, Date = publication, Evidence = opportunity.PublicationEvidence });
-            }
-            if (opportunity.ModificationDate is { } modification)
-            {
-                dates.Add(new() { Kind = OpportunityDateKind.Modification, Date = modification, Evidence = opportunity.ModificationEvidence });
-            }
-            if (opportunity.Deadline is { } deadline)
-            {
-                dates.Add(new() { Kind = OpportunityDateKind.Deadline, Date = deadline, Evidence = opportunity.DeadlineEvidence });
-            }
-            dates.AddRange(opportunity.OtherDates ?? []);
-            @foreach (var date in dates.Where(x => x is not null))
+            @foreach (var date in opportunity.Dates)
             {
                 <p>
                     <strong>@T["DateKind_" + date.Kind]</strong>
@@ -47,11 +22,10 @@
                     · @date.Label
                 </p>
                 <blockquote dir="auto">@date.Evidence</blockquote>
-                var pdfReference = PdfTextFiles.FindPage(Model.Content, date.Evidence);
-                @if (pdfReference is not null)
+                @if (date.PdfPage is { } page)
                 {
                     <p>
-                        <span>@T["PdfEvidencePage", pdfReference.Page]</span>
+                        <span>@T["PdfEvidencePage", page]</span>
                     </p>
                 }
             }

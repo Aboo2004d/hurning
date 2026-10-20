@@ -63,7 +63,7 @@ public static class MemberWorkspaceSqlChecks
         async Task<IActionResult> Save()
         {
             await using var db = new HiringDb(options);
-            var controller = Setup(new SavedController(db, new MembershipService(db)), owner);
+            var controller = Setup(new SavedController(db, new MembershipService(db), new SavedOpportunityService(db)), owner);
             return await controller.Add(opportunityId, null, default);
         }
         var results = await Task.WhenAll(Save(), Save());
@@ -84,7 +84,7 @@ public static class MemberWorkspaceSqlChecks
                 "Concurrent saves persist one bookmark per member and opportunity"
             );
             savedId = saved.Single().Id;
-            var wrongOwner = Setup(new SavedController(db, new MembershipService(db)), other);
+            var wrongOwner = Setup(new SavedController(db, new MembershipService(db), new SavedOpportunityService(db)), other);
             await wrongOwner.Remove(savedId);
             await wrongOwner.Unsave(opportunityId, null, default);
             Check(
@@ -94,7 +94,7 @@ public static class MemberWorkspaceSqlChecks
         }
         await using (var db = new HiringDb(options))
         {
-            await Setup(new SavedController(db, new MembershipService(db)), owner).Remove(savedId);
+            await Setup(new SavedController(db, new MembershipService(db), new SavedOpportunityService(db)), owner).Remove(savedId);
             Check(
                 !await db.SavedOpportunities.AnyAsync(x => x.Id == savedId),
                 "Saved removal persists for its owner"
@@ -108,7 +108,7 @@ public static class MemberWorkspaceSqlChecks
                 new SavedOpportunity { UserId = other, OpportunityId = opportunityId }
             );
             await db.SaveChangesAsync();
-            var controller = Setup(new SavedController(db, new MembershipService(db)), owner);
+            var controller = Setup(new SavedController(db, new MembershipService(db), new SavedOpportunityService(db)), owner);
             var first = await controller.Unsave(opportunityId, null, default);
             var repeated = await controller.Unsave(opportunityId, null, default);
             Check(
@@ -150,7 +150,7 @@ public static class MemberWorkspaceSqlChecks
                 Categories = JsonSerializer.Deserialize<string[]>(pref.CategoriesJson)!,
                 Locations = JsonSerializer.Deserialize<string[]>(pref.LocationsJson)!,
             };
-            var controller = Setup(new PreferencesController(db), owner);
+            var controller = Setup(new PreferencesController(db, new HiringPs.Web.Services.Membership.MemberPreferencePageService(new MemberPreferenceService(db))), owner);
             var action = new ActionContext(
                 controller.HttpContext,
                 new RouteData(),
@@ -316,6 +316,8 @@ public static class MemberWorkspaceSqlChecks
         public IDictionary<string, object> LoadTempData(HttpContext context) =>
             new Dictionary<string, object>();
 
-        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values)
+        {
+        }
     }
 }

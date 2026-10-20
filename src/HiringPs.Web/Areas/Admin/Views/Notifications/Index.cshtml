@@ -1,4 +1,4 @@
-@model AdminPage<MemberMessage>
+@model AdminPage<MemberMessageSummaryDto>
 @{ ViewData["Title"] = T["NotificationDelivery"].Value; }
 <section class="admin-list-page">
     <header class="admin-page-heading">
@@ -60,7 +60,7 @@
         </table>
     </div>
     <partial name="_AdminPagination" model="Model.Pager" />
-    @if (ViewBag.Inbox is AdminPage<TelegramInbox> inbox)
+    @if (ViewBag.Inbox is AdminPage<TelegramInboxSummaryDto> inbox)
         {
             <h2 id="bot-inbox">@T["BotInbox"]</h2>
             <div class="table-wrap">

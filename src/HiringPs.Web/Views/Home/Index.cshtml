@@ -27,7 +27,7 @@
     <h1>@heading</h1>
     <p>@T[subtitle]</p>
 </section>
-<partial name="_ClosingWeek" model="Model" />
+<partial name="/Views/Home/_ClosingWeek.cshtml" model="Model" />
 <form method="get" asp-action="Index" id="listing-form">
     @if (Model.Archive)
     {

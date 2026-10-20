@@ -6,9 +6,9 @@ namespace HiringPs.Web.Models;
 
 public static class SiteQuestionsContent
 {
-    public const string Key = "about-questions";
+    public const string Key = SitePageKeys.Questions;
 
-    public static SiteQuestionsInput Read(SitePage? page)
+    public static SiteQuestionsInput Read(SitePageContentDto? page)
     {
         if (page is not null)
             return new()
@@ -25,8 +25,10 @@ public static class SiteQuestionsContent
         {
             Items = ar.Select((q, i) => new SiteQuestionInput
             {
-                QuestionAr = q.Question, AnswerAr = q.Answer,
-                QuestionEn = en[i].Question, AnswerEn = en[i].Answer,
+                QuestionAr = q.Question,
+                AnswerAr = q.Answer,
+                QuestionEn = en[i].Question,
+                AnswerEn = en[i].Answer,
             }).ToList(),
         };
     }

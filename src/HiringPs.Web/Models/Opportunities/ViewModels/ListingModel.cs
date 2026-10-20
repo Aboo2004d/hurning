@@ -10,25 +10,37 @@ public class ListingModel
     /// <summary>Kinds whose details are public to anonymous visitors (used for structured data).</summary>
     public HashSet<OpportunityKind> PublicDetailKinds { get; set; } = [];
     public HashSet<long> SavedIds { get; set; } = [];
-    public List<Opportunity> Items { get; set; } = [];
-    public int Count { get; set; }
-    public int Page { get; set; }
+    public List<OpportunityCardDto> Items { get; set; } = [];
+    public int Count
+    {
+        get; set;
+    }
+    public int Page
+    {
+        get; set;
+    }
     public int PageCount => PublicListing.PageCount(Count);
     public List<FilterOption> Cities { get; set; } = [];
     public string Query { get; set; } = "";
-    public OpportunityKind? Kind { get; set; }
+    public OpportunityKind? Kind
+    {
+        get; set;
+    }
     public string City { get; set; } = "";
     public string Category { get; set; } = "";
     public string Employment { get; set; } = "";
     public string Experience { get; set; } = "";
-    public bool Archive { get; set; }
+    public bool Archive
+    {
+        get; set;
+    }
 
     /// <summary>"newest" (default) or "closing".</summary>
     public string Sort { get; set; } = ListingSort.Newest;
     public List<FilterOption> Categories { get; set; } = [];
     public List<FilterOption> EmploymentTypes { get; set; } = [];
     public List<FilterOption> ExperienceLevels { get; set; } = [];
-    public List<Opportunity> ClosingSoon { get; set; } = [];
+    public List<OpportunityCardDto> ClosingSoon { get; set; } = [];
     public DateOnly Today { get; set; } = TextRules.PalestineToday();
 
     public bool HasFilters =>

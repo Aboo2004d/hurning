@@ -6,15 +6,16 @@ using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Controllers;
 
 public class HomeController(
-    HiringDb db,
     SiteSeo seo,
     MembershipService membership,
-    PublicCatalog catalog
+    PublicCatalog catalog,
+    HiringPs.Web.Services.PublicCatalog.PublicListingReadService listings,
+    SavedOpportunityService saved,
+    PublicSitemapReadService sitemap
 ) : Controller
 {
     [OutputCache(PolicyName = SiteCache.Listing)]
@@ -37,24 +38,12 @@ public class HomeController(
         ViewData["ListingArchive"] = archive;
         var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
         var today = TextRules.PalestineToday();
-        var filters = await catalog.FiltersAsync(kind, archive, ct);
-        var query = PublicListingFilters.Scope(db.Opportunities.AsNoTracking(), archive, today);
-        var scoped = kind is null ? query : query.Where(x => x.Kind == kind);
         q = q?.Trim().Truncate(200);
-        query = PublicListingFilters.Apply(query, new(q, kind, city, category, employment, experience), filters);
-
-        var count = await query.CountAsync(ct);
-        if (page < 1 || page > PublicListing.PageCount(count))
-            return NotFound();
         var order = ListingSort.Parse(sort);
-        var ordered =
-            order == ListingSort.Closing
-                ? query
-                    .OrderBy(x => x.Deadline == null)
-                    .ThenBy(x => x.Deadline)
-                    .ThenByDescending(x => x.SortDate)
-                    .ThenByDescending(x => x.Id)
-                : query.OrderByDescending(x => x.SortDate).ThenByDescending(x => x.Id);
+        var result = await listings.ReadAsync(new(q, kind, city, category, employment, experience), archive, order, page, today, ct);
+        if (result is null)
+            return NotFound();
+        var filters = result.Filters;
         var allowed = await membership.DetailKindsAsync(
             User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
             User.IsInRole("Admin"),
@@ -62,13 +51,10 @@ public class HomeController(
         );
         var model = new ListingModel
         {
-            Items = await ordered
-                .Skip((page - 1) * PublicListing.PageSize)
-                .Take(PublicListing.PageSize)
-                .ToListAsync(ct),
+            Items = result.Page.Items,
             AllowedDetails = allowed,
             PublicDetailKinds = await catalog.PublicDetailKindsAsync(ct),
-            Count = count,
+            Count = result.Page.Count,
             Page = page,
             Query = q ?? "",
             Kind = kind,
@@ -80,13 +66,7 @@ public class HomeController(
             Sort = order,
             Today = today,
         };
-        if (!archive && (kind is null || kind == OpportunityKind.Job) && !model.HasFilters && page == 1 && order == ListingSort.Newest)
-            model.ClosingSoon = await scoped
-                .Where(x => x.Kind == OpportunityKind.Job && x.Deadline != null && x.Deadline <= today.AddDays(7))
-                .OrderBy(x => x.Deadline)
-                .ThenByDescending(x => x.SortDate)
-                .Take(4)
-                .ToListAsync(ct);
+        model.ClosingSoon = result.ClosingSoon;
         await FillSavedAsync(model, ct);
         model.Cities = filters
             .Locations.Select(x => new FilterOption(x, CityCatalog.Display(x, english)))
@@ -113,13 +93,7 @@ public class HomeController(
             return;
         var memberId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var ids = model.Items.Select(x => x.Id).ToArray();
-        model.SavedIds = (
-            await db
-                .SavedOpportunities.AsNoTracking()
-                .Where(x => x.UserId == memberId && ids.Contains(x.OpportunityId))
-                .Select(x => x.OpportunityId)
-                .ToListAsync(ct)
-        ).ToHashSet();
+        model.SavedIds = await saved.IdsAsync(memberId!, ids, ct);
         Response.Headers.CacheControl = "no-store";
     }
 
@@ -172,9 +146,9 @@ public class HomeController(
     {
         var rules = new System.Text.StringBuilder("User-agent: *\nAllow: /\n");
         foreach (var prefix in new[] { "", "/ar", "/en" })
-        foreach (
-            var path in new[]
-            {
+            foreach (
+                var path in new[]
+                {
                 "/Admin",
                 "/Account",
                 "/Member",
@@ -182,10 +156,10 @@ public class HomeController(
                 "/PasswordReset",
                 "/Google",
                 "/integrations",
-            }
-        )
-        foreach (var variant in new[] { path, path.ToLowerInvariant() }.Distinct())
-            rules.AppendLine("Disallow: " + prefix + variant);
+                }
+            )
+                foreach (var variant in new[] { path, path.ToLowerInvariant() }.Distinct())
+                    rules.AppendLine("Disallow: " + prefix + variant);
         rules.AppendLine("Sitemap: " + seo.Origin + "/sitemap.xml");
         return Content(rules.ToString(), "text/plain");
     }
@@ -193,10 +167,7 @@ public class HomeController(
     [HttpGet("sitemap.xml"), OutputCache(PolicyName = SiteCache.Files)]
     public async Task<IActionResult> Sitemap(CancellationToken ct)
     {
-        var count = await db
-            .Opportunities.AsNoTracking()
-            .PublicDetails(db, TextRules.PalestineToday())
-            .CountAsync(ct);
+        var count = await sitemap.CountAsync(TextRules.PalestineToday(), ct);
         XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
         var root = new XElement(
             ns + "sitemapindex",
@@ -224,16 +195,7 @@ public class HomeController(
     {
         var pages = new List<SitemapEntry>();
         var today = TextRules.PalestineToday();
-        var activeKinds = await db
-            .Opportunities.AsNoTracking()
-            .Current(today)
-            .GroupBy(x => x.Kind)
-            .Select(g => new
-            {
-                Kind = g.Key,
-                Changed = g.Max(x => x.SourceModifiedAt ?? x.SourcePublishedAt ?? x.CreatedAt),
-            })
-            .ToListAsync(ct);
+        var activeKinds = await sitemap.ActiveKindsAsync(today, ct);
         var paths = new List<string> { "/About", "/Contact", "/Privacy" };
         if (activeKinds.Count > 0)
             paths.Insert(0, "/");
@@ -270,19 +232,7 @@ public class HomeController(
     {
         if (page < 1 || page > int.MaxValue / SiteSeo.SitemapPageSize)
             return NotFound();
-        var items = await db
-            .Opportunities.AsNoTracking()
-            .PublicDetails(db, TextRules.PalestineToday())
-            .OrderBy(x => x.Id)
-            .Skip((page - 1) * SiteSeo.SitemapPageSize)
-            .Take(SiteSeo.SitemapPageSize)
-            .Select(x => new
-            {
-                x.Id,
-                x.Title,
-                Changed = x.SourceModifiedAt ?? x.SourcePublishedAt ?? x.CreatedAt,
-            })
-            .ToListAsync(ct);
+        var items = await sitemap.PageAsync(TextRules.PalestineToday(), page, SiteSeo.SitemapPageSize, ct);
         if (items.Count == 0)
             return NotFound();
         return SitemapDocument(
@@ -302,37 +252,37 @@ public class HomeController(
         XNamespace xhtml = "http://www.w3.org/1999/xhtml";
         var root = new XElement(ns + "urlset", new XAttribute(XNamespace.Xmlns + "xhtml", xhtml));
         foreach (var pair in pages)
-        foreach (var url in new[] { pair.Arabic, pair.English })
-            root.Add(
-                new XElement(
-                    ns + "url",
-                    new XElement(ns + "loc", url),
-                    pair.LastModified is { } changed
-                        ? new XElement(
-                            ns + "lastmod",
-                            changed.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            foreach (var url in new[] { pair.Arabic, pair.English })
+                root.Add(
+                    new XElement(
+                        ns + "url",
+                        new XElement(ns + "loc", url),
+                        pair.LastModified is { } changed
+                            ? new XElement(
+                                ns + "lastmod",
+                                changed.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                            )
+                            : null,
+                        new XElement(
+                            xhtml + "link",
+                            new XAttribute("rel", "alternate"),
+                            new XAttribute("hreflang", "ar"),
+                            new XAttribute("href", pair.Arabic)
+                        ),
+                        new XElement(
+                            xhtml + "link",
+                            new XAttribute("rel", "alternate"),
+                            new XAttribute("hreflang", "en"),
+                            new XAttribute("href", pair.English)
+                        ),
+                        new XElement(
+                            xhtml + "link",
+                            new XAttribute("rel", "alternate"),
+                            new XAttribute("hreflang", "x-default"),
+                            new XAttribute("href", pair.Arabic)
                         )
-                        : null,
-                    new XElement(
-                        xhtml + "link",
-                        new XAttribute("rel", "alternate"),
-                        new XAttribute("hreflang", "ar"),
-                        new XAttribute("href", pair.Arabic)
-                    ),
-                    new XElement(
-                        xhtml + "link",
-                        new XAttribute("rel", "alternate"),
-                        new XAttribute("hreflang", "en"),
-                        new XAttribute("href", pair.English)
-                    ),
-                    new XElement(
-                        xhtml + "link",
-                        new XAttribute("rel", "alternate"),
-                        new XAttribute("hreflang", "x-default"),
-                        new XAttribute("href", pair.Arabic)
                     )
-                )
-            );
+                );
         return Content(new XDocument(root).ToString(), "application/xml; charset=utf-8");
     }
 

@@ -1,4 +1,4 @@
-@model AdminPage<UserReport>
+@model AdminPage<UserReportSummaryDto>
 @{
     ViewData["Title"] = T["Reports"];
 }
@@ -19,7 +19,7 @@
             {
                 <tr>
                     <td>
-                        <a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@report.OpportunityId">@report.Opportunity.Title</a>
+                        <a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@report.OpportunityId">@report.OpportunityTitle</a>
                     </td>
                     <td>@T[report.Reason=="expired"?"Report_expired":report.Reason]</td>
                     <td>@report.Details</td>

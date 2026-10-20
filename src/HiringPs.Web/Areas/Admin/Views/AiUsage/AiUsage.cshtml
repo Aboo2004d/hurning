@@ -4,7 +4,7 @@
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 }
 <h1>@T["AiUsage"]</h1>
-<partial name="_AiPauseStatus" model="Model.PauseStatus" />
+<partial name="/Areas/Admin/Views/AiUsage/_AiPauseStatus.cshtml" model="Model.PauseStatus" />
 <p class="notice">
     @(ar ? "النجاح يعني قراءة استجابة AI، وليس اعتماد الإعلان للنشر. علامة — تعني أن المزود لم يعِد العدد؛ المجاميع تشمل الأعداد المعروفة فقط. الطلب غير المكتمل قد يكون توقف معه العامل." : "Success means the AI response was parsed, not that publication was approved. — means no token count was reported; totals cover known counts only. Unfinished requests may reflect an interrupted worker.")
 </p>

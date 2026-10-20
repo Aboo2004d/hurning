@@ -2,14 +2,14 @@ using HiringPs.Core;
 using HiringPs.Web.Infrastructure;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Member.Controllers;
 
 public class SettingsController(
     HiringDb db,
     MemberVerification verification,
-    PendingVerificationCookie pending
+    PendingVerificationCookie pending,
+    MemberNotificationSettingsService notifications
 ) : MemberControllerBase(db)
 {
     public IActionResult Index() => View(Profile);
@@ -17,8 +17,7 @@ public class SettingsController(
     [HttpPost]
     public async Task<IActionResult> Stop(CancellationToken ct)
     {
-        Profile.NotificationsEnabled = false;
-        await Db.SaveChangesAsync(ct);
+        await notifications.StopAsync(MemberId, ct);
         return RedirectToAction(nameof(Index));
     }
 
@@ -36,7 +35,10 @@ public class SettingsController(
         {
             var request = await verification.CreateAsync(MemberId, purpose, null, ct);
             pending.Save(HttpContext, new(request, MemberId, DateTimeOffset.UtcNow.AddMinutes(15)));
-            return RedirectToAction("Verify", "Registration", new { area = "" });
+            return RedirectToAction("Verify", "Registration", new
+            {
+                area = ""
+            });
         }
         catch (Exception ex) when (ex is InvalidOperationException or TelegramDeliveryException)
         {
@@ -63,21 +65,16 @@ public class SettingsController(
             ModelState.AddModelError("", "MobileInternational");
             return View(input);
         }
-        var prior = await Db.MemberChallenges.SingleAsync(x => x.Id == authorized.Request.Id, ct);
-        if (prior.CompletedAt is not null)
-            return Forbid();
         try
         {
-            var request = await verification.CreateAsync(
-                MemberId,
-                ChallengePurpose.ChangeTelegram,
-                input.NewMobile,
-                ct
-            );
-            prior.CompletedAt = DateTimeOffset.UtcNow;
-            await Db.SaveChangesAsync(ct);
+            var request = await notifications.ReplaceAsync(MemberId, authorized.Request.Id, input.NewMobile, ct);
+            if (request is null)
+                return Forbid();
             pending.Save(HttpContext, new(request, MemberId, DateTimeOffset.UtcNow.AddMinutes(15)));
-            return RedirectToAction("Verify", "Registration", new { area = "" });
+            return RedirectToAction("Verify", "Registration", new
+            {
+                area = ""
+            });
         }
         catch (InvalidOperationException ex)
         {

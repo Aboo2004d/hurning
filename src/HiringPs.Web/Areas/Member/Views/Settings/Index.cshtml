@@ -1,4 +1,4 @@
-@model MemberProfile
+@model MemberAccountSummaryDto
 @{ ViewData["Title"] = T["AccountSettings"]; }
 <header class="member-page-heading">
     <h1>@T["AccountSettings"]</h1>
@@ -13,7 +13,7 @@
         <dl class="member-profile-details">
             <div><dt>@T["Name"]</dt><dd><bdi>@Model.Name</bdi></dd></div>
             <div><dt>@T["Mobile"]</dt><dd><bdi dir="ltr">@Model.Mobile</bdi></dd></div>
-            <div><dt>@T["TelegramLinked"]</dt><dd>@T[Model.TelegramChatId.HasValue ? "Yes" : "No"]</dd></div>
+            <div><dt>@T["TelegramLinked"]</dt><dd>@T[Model.TelegramLinked ? "Yes" : "No"]</dd></div>
         </dl>
     </section>
     <section class="membership-card member-panel">

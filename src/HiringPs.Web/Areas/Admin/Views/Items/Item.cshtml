@@ -1,8 +1,8 @@
-@model SourceItem
+@model SourceItemDetailsDto
 @{
     ViewData["Title"] = T["Content"];
 }
-<h1>@Model.Source.Name · @Model.ExternalId</h1>
+<h1>@Model.SourceName · @Model.ExternalId</h1>
 <p>@T["Status"]: @UiMessages.State(Model.Status.ToString(),T)</p>
 <div class="notice">
     <partial name="_Diagnostic" model="Model.Error"/>

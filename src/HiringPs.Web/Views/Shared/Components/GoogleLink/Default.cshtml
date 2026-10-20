@@ -1,0 +1,18 @@
+@model GoogleLinkStatusDto
+@if (Model.Available)
+{
+    if (!Model.Linked)
+    {
+        <form asp-area="" asp-controller="Google" asp-action="Start" method="post">
+            <input type="hidden" name="link" value="true" /><button class="button-outline">@T["GoogleLink"]</button>
+        </form>
+    }
+    else
+    {
+        <p>@T["GoogleLinked"]</p>
+        if (Model.HasPassword)
+        {
+            <form asp-area="" asp-controller="Google" asp-action="Disconnect" method="post"><button class="button-outline">@T["IntegrationDisconnect"] Google</button></form>
+        }
+    }
+}

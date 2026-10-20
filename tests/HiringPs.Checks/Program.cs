@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--refactoring-check"))
+{
+    await RefactoringChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--social-template-check"))
 {
     await SocialTemplateChecks.RunAsync();
@@ -140,7 +146,10 @@ if (args.Contains("--navigation-check"))
 {
     using var runtime = await Playwright.CreateAsync();
     await using var navigationBrowser = await runtime.Chromium.LaunchAsync(
-        new() { Headless = true }
+        new()
+        {
+            Headless = true
+        }
     );
     var navigationPage = await navigationBrowser.NewPageAsync();
     await navigationPage.RouteAsync(
@@ -825,7 +834,10 @@ try
     await db.SaveChangesAsync();
     var originalNext = target.NextDueAt;
     var unrelatedDue = unrelated.NextDueAt;
-    db.Set<SourceCollectionRequest>().Add(new() { SourceId = target.Id });
+    db.Set<SourceCollectionRequest>().Add(new()
+    {
+        SourceId = target.Id
+    });
     await db.SaveChangesAsync();
     var seen = new List<int>();
     var mockServices = new ServiceCollection();

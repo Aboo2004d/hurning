@@ -5,6 +5,21 @@ namespace HiringPs.Core;
 /// <summary>استعلامات صفحات الدفع؛ تعيد إسقاطات للقراءة ولا تعيد كيانات EF للواجهات.</summary>
 public sealed class PaymentReadService(HiringDb db)
 {
+    /// <summary>يفحص أن مفتاح المعاينة أصبح جلسة دفع مجمدة للعضو في البيئة الحالية دون تحميل الطلب.</summary>
+    public Task<bool> HasMemberRequestAsync(Guid id, string owner, CancellationToken ct) =>
+        db.PaymentOrders.AnyAsync(x => x.Id == id && x.UserId == owner
+            && x.GatewayEnvironment == db.ActivePaymentEnvironment, ct);
+
+    /// <summary>يفحص إعادة استخدام مفتاح شراء قبل إعادة التحقق من خصمه؛ لا يعيد بيانات مالك آخر.</summary>
+    public async Task<PaymentRequestOwnership> RequestOwnershipAsync(Guid id, string owner, CancellationToken ct)
+    {
+        var request = await db.PaymentOrders.AsNoTracking().Where(x => x.Id == id)
+            .Select(x => new { x.UserId, x.GatewayEnvironment }).SingleOrDefaultAsync(ct);
+        return request is null ? PaymentRequestOwnership.Missing
+            : request.UserId == owner && request.GatewayEnvironment == db.ActivePaymentEnvironment
+                ? PaymentRequestOwnership.Owned : PaymentRequestOwnership.OtherOwnerOrEnvironment;
+    }
+
     /// <summary>يعيد قائمة طلبات العضو في بيئة الدفع الحالية، مرتبة للترقيم المستقر.</summary>
     public IQueryable<PaymentOrderSummaryDto> MemberOrders(string owner) =>
         db.PaymentOrders.AsNoTracking().Where(x => x.UserId == owner && x.GatewayEnvironment == db.ActivePaymentEnvironment)
@@ -23,11 +38,16 @@ public sealed class PaymentReadService(HiringDb db)
                 || db.WalletPaymentSessions.Any(session => session.OrderId == x.Id
                     && (session.JawwalReference == q || session.TransactionId == transactionId)));
         }
-        if (!string.IsNullOrWhiteSpace(filter.Gateway)) query = query.Where(x => x.Gateway == filter.Gateway);
-        if (filter.Environment is "Sandbox" or "Production") query = query.Where(x => x.GatewayEnvironment == filter.Environment);
-        if (filter.State is not null) query = query.Where(x => x.State == filter.State);
-        if (filter.Review) query = query.Where(x => db.PaymentReviews.Any(r => r.OrderId == x.Id && r.ResolvedAt == null));
-        if (filter.Unresolved) query = query.Where(x =>
+        if (!string.IsNullOrWhiteSpace(filter.Gateway))
+            query = query.Where(x => x.Gateway == filter.Gateway);
+        if (filter.Environment is "Sandbox" or "Production")
+            query = query.Where(x => x.GatewayEnvironment == filter.Environment);
+        if (filter.State is not null)
+            query = query.Where(x => x.State == filter.State);
+        if (filter.Review)
+            query = query.Where(x => db.PaymentReviews.Any(r => r.OrderId == x.Id && r.ResolvedAt == null));
+        if (filter.Unresolved)
+            query = query.Where(x =>
             x.State != PaymentState.Paid && x.State != PaymentState.ManuallyApproved && x.State != PaymentState.Cancelled
             && (x.CheckoutStartedAt != null || (x.Gateway == "JawwalPay" && db.WalletPaymentSessions.Any(session =>
                 session.OrderId == x.Id && session.ConfirmationStartedAt != null))));
@@ -64,9 +84,17 @@ public sealed class PaymentReadService(HiringDb db)
     {
         var session = await db.WalletPaymentSessions.AsNoTracking()
             .Where(x => x.OrderId == id && x.Order.UserId == owner)
-            .Select(x => new { x.Phone, HasKey = x.ProtectedSessionKey != null, x.ExpiresAt,
-                x.ConfirmationStartedAt, x.InitiationRejected, x.ConfirmationRejected }).SingleOrDefaultAsync(ct);
-        if (session is null) return null;
+            .Select(x => new
+            {
+                x.Phone,
+                HasKey = x.ProtectedSessionKey != null,
+                x.ExpiresAt,
+                x.ConfirmationStartedAt,
+                x.InitiationRejected,
+                x.ConfirmationRejected
+            }).SingleOrDefaultAsync(ct);
+        if (session is null)
+            return null;
         var suffix = session.Phone.Length >= 4 ? session.Phone[^4..] : "••••";
         return new(session.HasKey, session.ExpiresAt, session.ConfirmationStartedAt,
             session.InitiationRejected, session.ConfirmationRejected, "05••••" + suffix);

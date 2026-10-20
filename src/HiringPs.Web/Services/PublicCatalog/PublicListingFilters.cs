@@ -7,9 +7,7 @@ public static class PublicListingFilters
 {
     /// <summary>Selects current or archived opportunities using the Palestine calendar date.</summary>
     public static IQueryable<Opportunity> Scope(IQueryable<Opportunity> query, bool archive, DateOnly today) =>
-        query.Where(x => archive
-            ? x.Status == PublicationStatus.Archived || (x.Status == PublicationStatus.Published && x.Deadline != null && x.Deadline < today)
-            : x.Status == PublicationStatus.Published && (x.Deadline == null || x.Deadline >= today));
+        PublicOpportunityScope.Listing(query, archive, today);
 
     /// <summary>Filters a query without changing access permissions or executing a database request.</summary>
     public static IQueryable<Opportunity> Apply(IQueryable<Opportunity> query, PublicListingFilterDto input, FilterValues filters)

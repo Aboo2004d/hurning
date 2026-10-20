@@ -298,8 +298,8 @@ internal static class PdfChecks
             Directory.CreateDirectory(emptyData);
             await Reject(
                 () => Read("arabic-scanned.pdf", Config(new() { ["Pdf:OcrDataPath"] = emptyData })),
-                "ara and eng",
-                "missing Arabic language data is detected"
+                "ara.traineddata",
+                "missing Arabic language data is detected before OCR execution"
             );
             Check(
                 !Directory.EnumerateFileSystemEntries(PdfTextFiles.DirectoryPath(Config())).Any(),

@@ -15,9 +15,7 @@ public static class PublicListing
 
     /// <summary>Published opportunities that have not passed their deadline (Palestine date).</summary>
     public static IQueryable<Opportunity> Current(this IQueryable<Opportunity> query, DateOnly today) =>
-        query.Where(x =>
-            x.Status == PublicationStatus.Published && (x.Deadline == null || x.Deadline >= today)
-        );
+        PublicOpportunityScope.Current(query, today);
 
     /// <summary>Current opportunities whose details are public; the single predicate for sitemaps and feeds.</summary>
     public static IQueryable<Opportunity> PublicDetails(
@@ -25,12 +23,10 @@ public static class PublicListing
         HiringDb db,
         DateOnly today
     ) =>
-        query
-            .Current(today)
-            .Where(x => db.OpportunityAccessRules.Any(rule => rule.Kind == x.Kind && rule.PublicDetails));
+        PublicOpportunityScope.PublicDetails(query, db, today);
 
     /// <summary>Content-change date for sitemaps/feeds; never the verification date.</summary>
-    public static DateTimeOffset ContentDate(Opportunity item) =>
+    public static DateTimeOffset ContentDate(OpportunityCardDto item) =>
         item.SourceModifiedAt ?? item.SourcePublishedAt ?? item.CreatedAt;
 
     /// <summary>ينفذ DetailsPath وفق قواعد PublicListing الحالية دون تغيير عقد المستدعين.</summary>
@@ -43,16 +39,16 @@ public static class PublicListing
     }
 
     /// <summary>ينفذ DetailsPath وفق قواعد PublicListing الحالية دون تغيير عقد المستدعين.</summary>
-    public static string DetailsPath(Opportunity item) => DetailsPath(item.Id, item.Title);
+    public static string DetailsPath(OpportunityCardDto item) => DetailsPath(item.Id, item.Title);
 
     /// <summary>Days until the deadline when it is within a week; null otherwise.</summary>
-    public static int? ClosingInDays(Opportunity item, DateOnly today) =>
+    public static int? ClosingInDays(OpportunityCardDto item, DateOnly today) =>
         item.Deadline is { } deadline && deadline >= today && deadline.DayNumber - today.DayNumber <= 7
             ? deadline.DayNumber - today.DayNumber
             : null;
 
     /// <summary>Published (or first seen) within the last 24 hours, measured on Palestine time.</summary>
-    public static bool IsNew(Opportunity item)
+    public static bool IsNew(OpportunityCardDto item)
     {
         var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, SourceSchedule.Zone);
         var published = TimeZoneInfo.ConvertTime(
