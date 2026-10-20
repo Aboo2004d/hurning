@@ -1,0 +1,27 @@
+@model OperationLogPage
+@{ ViewData["Title"] = T["OperationLog"].Value; }
+<section class="admin-list-page operation-log">
+<header class="admin-page-heading"><div><h1>@T["OperationLog"]</h1><p class="muted">@T["OperationLogHelp"]</p></div><span class="badge"><bdi>@Model.Events.Pager.TotalRecords</bdi> @T["OperationEvents"]</span></header>
+<form method="get" class="operation-filters">
+<label>@T["Search"]<input name="Search" value="@Model.Filter.Search" maxlength="200" /></label>
+<label>@T["OperationArea"]<select name="Area"><option value="">@T["All"]</option>@foreach (var area in Enum.GetValues<OperationArea>()) { <option value="@area" selected="@(Model.Filter.Area == area)">@T["OperationArea_" + area]</option> }</select></label>
+<label>@T["Status"]<select name="Outcome"><option value="">@T["All"]</option>@foreach (var outcome in Enum.GetValues<OperationOutcome>()) { <option value="@outcome" selected="@(Model.Filter.Outcome == outcome)">@T["OperationOutcome_" + outcome]</option> }</select></label>
+<label>@T["OperationActor"]<input name="Actor" value="@Model.Filter.Actor" maxlength="200" /></label>
+<label>@T["OperationFrom"]<input type="date" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" /></label>
+<label>@T["OperationTo"]<input type="date" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" /></label>
+<div class="actions"><button type="submit">@T["Filter"]</button><a class="button button-outline" asp-action="Index">@T["OperationReset"]</a></div>
+</form>
+@if (Model.Events.Items.Count == 0) { <p class="notice">@T["OperationEmpty"]</p> }
+else {
+<div class="operation-events">
+@foreach (var entry in Model.Events.Items) {
+<article class="operation-event operation-@entry.Outcome.ToString().ToLowerInvariant()">
+<header><span class="badge">@T["OperationArea_" + entry.Area]</span><strong>@T["OperationOutcome_" + entry.Outcome]</strong><time datetime="@entry.At.ToString("O")"><bdi>@PaymentDisplay.Time(entry.At, seconds: true)</bdi> · @T["PalestineTime"]</time></header>
+<h2>@(entry.Action.StartsWith("Activity.", StringComparison.Ordinal) ? T["OperationEvent_" + entry.Action.Split('.').Last()].Value : entry.Action)</h2>
+<p dir="auto">@entry.Detail</p><p class="muted">@T["OperationActor"]: <bdi>@entry.Actor</bdi> · #<bdi>@entry.Id</bdi></p>
+</article>
+}
+</div>
+}
+<partial name="_AdminPagination" model="Model.Events.Pager" />
+</section>

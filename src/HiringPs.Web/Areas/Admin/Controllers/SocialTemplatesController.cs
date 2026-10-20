@@ -48,30 +48,38 @@ public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publ
             {
                 Provider = provider,
                 Scope = scope,
-                Body = active?.Body ?? SocialTemplateText.DefaultBody,
+                Body = active?.Body ?? (provider == TelegramBotTemplates.Provider
+                    ? TelegramBotTemplates.DefaultBody
+                    : provider == TelegramChannelTargets.Provider ? TelegramChannelPublisher.DefaultArabicBody
+                    : SocialTemplateText.DefaultBody),
                 ExpectedActiveId = active?.Id ?? 0,
             }
         );
     }
 
     [HttpPost]
-    public async Task<IActionResult> Preview(string body, long opportunityId, CancellationToken ct)
+    public async Task<IActionResult> Preview(string body, long opportunityId, CancellationToken ct, string provider = "Facebook")
     {
-        if (!SocialTemplateText.Valid(body ?? ""))
+        if (!SocialPublishing.IsTemplateProvider(provider) || !SocialTemplateText.Valid(body ?? ""))
             return BadRequest();
         var item = await db
             .Opportunities.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == opportunityId, ct);
         if (item is null)
             return NotFound();
-        return Json(
-            new
-            {
-                text = SocialTemplateText.Render(body!, item)
-                    + "\n\n"
-                    + publishing.OpportunityUrl(item.Id, item.OriginalLanguage),
-            }
-        );
+        var link = publishing.OpportunityUrl(item.Id, item.OriginalLanguage);
+        var text = provider == TelegramBotTemplates.Provider
+            ? TelegramBotTemplates.Compose(body!, item, link)
+            : SocialTemplateText.Render(body!, item) + "\n\n" + link;
+        if (provider == TelegramChannelTargets.Provider)
+        {
+            // Use the delivery builder's access-rule URL and length limits, without saving or sending.
+            text = await new TelegramChannelTemplatePreview(db, publishing).RenderAsync(body!, item, ct);
+        }
+        return Json(new
+        {
+            text
+        });
     }
 
     [HttpPost]
@@ -107,16 +115,25 @@ public sealed class SocialTemplatesController(HiringDb db, SocialPublishing publ
         }
         var outcome = await Templates.SaveAsync(new SocialTemplateSaveCommandDto(input.Provider,
             input.Scope, input.ExpectedActiveId, input.Body, User.Identity?.Name ?? "Admin"), ct);
-        if (outcome == SocialTemplateSaveOutcome.InvalidRequest) return BadRequest();
+        if (outcome == SocialTemplateSaveOutcome.InvalidRequest)
+            return BadRequest();
         if (outcome == SocialTemplateSaveOutcome.Conflict)
         {
             TempData["Notice"] = "SocialTemplateConflict";
-            return RedirectToAction(nameof(Edit), new { provider = input.Provider, scope = input.Scope });
+            return RedirectToAction(nameof(Edit), new
+            {
+                provider = input.Provider,
+                scope = input.Scope
+            });
         }
         TempData["Notice"] = "SavedChanges";
         return RedirectToAction(
             nameof(Edit),
-            new { provider = input.Provider, scope = input.Scope }
+            new
+            {
+                provider = input.Provider,
+                scope = input.Scope
+            }
         );
     }
 }

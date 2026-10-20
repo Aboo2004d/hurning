@@ -13,6 +13,8 @@ public class HiringDb(
     PaymentEnvironment? paymentEnvironment = null
 ) : IdentityDbContext<IdentityUser>(options)
 {
+    private readonly OperationTracking operations = new();
+
     public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
     public DbSet<SocialTemplateVersion> SocialTemplateVersions => Set<SocialTemplateVersion>();
     public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
@@ -70,6 +72,7 @@ public class HiringDb(
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.ApplyConfiguration(new AuditEntryConfiguration());
         b.ApplyConfiguration(new SocialTemplateVersionConfiguration());
         b.ApplyConfiguration(new SocialPublicationConfiguration());
         b.ApplyConfiguration(new IndexNowEntryConfiguration());
@@ -234,6 +237,7 @@ public class HiringDb(
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         NormalizeRecords();
+        operations.Stage(this);
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
@@ -244,6 +248,7 @@ public class HiringDb(
     )
     {
         await NormalizeRecordsAsync(cancellationToken);
+        operations.Stage(this);
         return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 }

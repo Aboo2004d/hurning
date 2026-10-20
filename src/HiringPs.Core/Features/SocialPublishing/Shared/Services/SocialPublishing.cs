@@ -32,7 +32,7 @@ public sealed class SocialPublishing
     /// <summary>يتحقق من أن وجهة الربط ضمن مزودي النشر المدعومين.</summary>
     /// <summary>يميز مزودي القوالب اليدويين والنشر التلقائي لقنوات تليجرام.</summary>
     public static bool IsTemplateProvider(string provider) =>
-        provider is "Facebook" or "LinkedIn" || provider == TelegramChannelTargets.Provider;
+        provider is "Facebook" or "LinkedIn" || provider == TelegramChannelTargets.Provider || provider == TelegramBotTemplates.Provider;
 
     /// <summary>ينفذ IsProvider وفق قواعد SocialPublishing الحالية دون تغيير عقد المستدعين.</summary>
     public static bool IsProvider(string provider) => provider is "Facebook" or "LinkedIn" or "LinkedInPersonal";
@@ -60,7 +60,8 @@ public sealed class SocialPublishing
     /// <summary>يحل هوية الصفحة ورمزها عبر العميل الخاص بالمزود بعد التحقق من المدخلات.</summary>
     public Task<(string Token, string Name)> ResolvePageAsync(string provider, string pageId, string token, CancellationToken ct)
     {
-        if (!IsProvider(provider) || !System.Text.RegularExpressions.Regex.IsMatch(pageId, "^[0-9]{1,40}$")) throw new InvalidOperationException("IntegrationPageInvalid");
+        if (!IsProvider(provider) || !System.Text.RegularExpressions.Regex.IsMatch(pageId, "^[0-9]{1,40}$"))
+            throw new InvalidOperationException("IntegrationPageInvalid");
         return provider == "Facebook" ? facebook.ResolvePageAsync(pageId, token, ct) : linkedin.ResolvePageAsync(pageId, token, ct);
     }
     /// <summary>يقرأ هوية الحساب الشخصي من LinkedIn دون إنشاء حساب عضو أو منشور.</summary>
@@ -85,27 +86,37 @@ public sealed class SocialPublishing
             catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { return new(provider, ToolState.Problem, "IntegrationUnavailable"); }
         }
         var connection = await db.SocialConnections.AsNoTracking().SingleOrDefaultAsync(x => x.Provider == provider, ct);
-        if (connection is null) return new(provider, ToolState.NotConfigured, "IntegrationNotConfigured");
+        if (connection is null)
+            return new(provider, ToolState.NotConfigured, "IntegrationNotConfigured");
         try
         {
-            if (!connection.Enabled) return new(provider, ToolState.Disabled, "IntegrationDisabled");
-            if (connection.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException("IntegrationExpired");
+            if (!connection.Enabled)
+                return new(provider, ToolState.Disabled, "IntegrationDisabled");
+            if (connection.ExpiresAt <= DateTimeOffset.UtcNow)
+                throw new InvalidOperationException("IntegrationExpired");
             var token = protector.Unprotect(connection.ProtectedToken);
-            if (provider == "Facebook") await facebook.ProbeAsync(connection.PageId, token, ct);
-            else await linkedin.ProbeAsync(provider, connection.PageId, token, ct);
+            if (provider == "Facebook")
+                await facebook.ProbeAsync(connection.PageId, token, ct);
+            else
+                await linkedin.ProbeAsync(provider, connection.PageId, token, ct);
             return new(provider, ToolState.Ready, provider == "LinkedInPersonal" ? "IntegrationPersonalReady" : "IntegrationPageReady", connection.PageName + " · " + connection.PageId);
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or JsonException or KeyNotFoundException or System.Security.Cryptography.CryptographicException)
-        { return new(provider, ToolState.Problem, ex is InvalidOperationException ? ex.Message : "IntegrationUnavailable", connection.PageName + " · " + connection.PageId); }
+        {
+            return new(provider, ToolState.Problem, ex is InvalidOperationException ? ex.Message : "IntegrationUnavailable", connection.PageName + " · " + connection.PageId);
+        }
     }
 
     /// <summary>يتحقق من الربط المحفوظ ويرسل المحاولة المحجوزة مرة واحدة، ثم يحدّث نتيجتها في الذاكرة ليحفظها المستدعي.</summary>
     public async Task PublishAsync(SocialPublication attempt, CancellationToken ct)
     {
         var connection = await db.SocialConnections.AsNoTracking().SingleAsync(x => x.Provider == attempt.Provider, ct);
-        if (!connection.Enabled) throw new InvalidOperationException("IntegrationDisabled");
-        if (connection.PageId != attempt.PageId) throw new InvalidOperationException("IntegrationPageInvalid");
-        if (connection.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException("IntegrationExpired");
+        if (!connection.Enabled)
+            throw new InvalidOperationException("IntegrationDisabled");
+        if (connection.PageId != attempt.PageId)
+            throw new InvalidOperationException("IntegrationPageInvalid");
+        if (connection.ExpiresAt <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("IntegrationExpired");
         var token = protector.Unprotect(connection.ProtectedToken);
         var publication = new SocialPublishRequestDto(attempt.Id, attempt.Provider, connection.PageId, attempt.Text);
         var result = attempt.Provider == "Facebook"

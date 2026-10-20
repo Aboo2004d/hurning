@@ -103,11 +103,26 @@ public class ListingShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminShellFixtureController : Controller
 {
-    public IActionResult Tools() =>
-        View(
-            "/Areas/Admin/Views/Tools/Tools.cshtml",
-            new ToolDashboard { Now = DateTimeOffset.UtcNow }
-        );
+    public IActionResult Tools(bool checkedTools = false, bool single = false)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var a = new ToolWorkerState { Id = "a", At = now, StartedAt = now.AddHours(-1) };
+        var b = new ToolWorkerState { Id = "b", At = now.AddSeconds(1), StartedAt = now.AddHours(-1) };
+        return View("/Areas/Admin/Views/Tools/Tools.cshtml", new ToolDashboard
+        {
+            Now = now,
+            Worker = b,
+            ResultWorkers = new() { [a.Id] = a, [b.Id] = b },
+            Results = !checkedTools ? [] : ToolMonitoringRules.StandardTools.Append("AiLive").Select(key => new ToolCheckResult
+            {
+                Tool = key,
+                State = ToolState.Ready,
+                WorkerId = single && key == "Chromium" ? b.Id : a.Id,
+                Code = "ChecksFinished",
+                CheckedAt = now,
+            }).ToList(),
+        });
+    }
 
     // Render DTO-backed administration screens without a database or provider request.
     public IActionResult QualityPreview(string screen)
@@ -119,6 +134,21 @@ public class AdminShellFixtureController : Controller
         };
         return screen switch
         {
+            "operations" => View("/Areas/Admin/Views/Operations/Index.cshtml", new OperationLogPage(
+                new OperationFilterDto("Source", OperationArea.Collection, OperationOutcome.Failed),
+                new AdminPage<OperationSummaryDto>
+                {
+                    Items = [new OperationSummaryDto(72, now, "Worker", "Activity.Collection.Failed.Run",
+                        "Run 11; Source 3; Found 12; Changed 2; Failed", OperationArea.Collection, OperationOutcome.Failed)],
+                    Pager = new AdminPager { Page = 2, TotalRecords = 120 },
+                })),
+            "telegramtemplates" => View("/Areas/Admin/Views/SocialTemplates/Index.cshtml", new AdminPage<SocialTemplateSummaryDto>
+            {
+                Items = [new SocialTemplateSummaryDto { Id = 1, Provider = "Telegram", Scope = "general", Number = 1, CreatedAt = now, Active = true },
+                    new SocialTemplateSummaryDto { Id = 2, Provider = "TelegramBot", Scope = "general", Number = 1, CreatedAt = now, Active = true }],
+            }),
+            "telegrambot" => TemplateEditor("TelegramBot"),
+            "telegramchannel" => TemplateEditor("Telegram"),
             "ai" => View("/Areas/Admin/Views/AiUsage/AiUsage.cshtml", new AiUsageDashboard
             {
                 PauseStatus = new AiPauseStatusDto(now.AddHours(1), "Daily AI token budget reached."),
@@ -126,7 +156,8 @@ public class AdminShellFixtureController : Controller
             "messages" => View("/Areas/Admin/Views/Messages/Messages.cshtml", new ContactInbox
             {
                 Items = [new ContactMessageSummaryDto(1, "عضو تجريبي", "fixture@example.test", now, false, false)],
-                Count = 1, UnreadCount = 1,
+                Count = 1,
+                UnreadCount = 1,
             }),
             "message" => View("/Areas/Admin/Views/Messages/Message.cshtml",
                 new ContactMessageDetailsDto(1, "عضو تجريبي", "fixture@example.test", "رسالة محلية للاختبار", now, true, false)),
@@ -148,6 +179,17 @@ public class AdminShellFixtureController : Controller
                 "محتوى مصدر تجريبي", "{}", 1)),
             _ => NotFound(),
         };
+    }
+
+    private IActionResult TemplateEditor(string provider)
+    {
+        ViewBag.History = new AdminPage<SocialTemplateSummaryDto>();
+        return View("/Areas/Admin/Views/SocialTemplates/Edit.cshtml", new HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
+        {
+            Provider = provider,
+            Scope = "general",
+            Body = provider == "TelegramBot" ? TelegramBotTemplates.DefaultBody : TelegramChannelPublisher.DefaultArabicBody,
+        });
     }
 
     public IActionResult Index()

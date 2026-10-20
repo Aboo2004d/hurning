@@ -115,6 +115,8 @@ namespace HiringPs.Core.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("At", "Id");
+
                     b.ToTable("Audit");
                 });
 

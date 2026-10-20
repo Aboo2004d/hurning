@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--operation-check"))
+{
+    await OperationChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--refactoring-check"))
 {
     await RefactoringChecks.RunAsync();

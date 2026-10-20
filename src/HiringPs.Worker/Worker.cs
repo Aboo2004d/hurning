@@ -29,6 +29,7 @@ public class Worker(
             }
             catch (Exception ex)
             {
+                await OperationFailureRecorder.TryRecordAsync(scopes, OperationArea.Collection, "Pipeline", ex, stoppingToken);
                 runtime.Fail(ex);
                 logger.LogError(
                     "Pipeline failed ({Type}); retry in one minute. Check SQL/service configuration.",

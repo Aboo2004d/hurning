@@ -76,7 +76,7 @@
     @foreach (var key in ToolMonitoringRules.StandardTools.Append("AiLive"))
     {
         var result = Model.Results.FirstOrDefault(x => x.Tool == key);
-        var fresh = result is not null && ToolMonitoringRules.ResultFresh(result, Model.Worker, Model.Now);
+        var fresh = result is not null && ToolMonitoringRules.ResultFresh(result, Model.ResultWorkers.GetValueOrDefault(result.WorkerId), Model.Now);
         if (key == "GoogleLogin" && Model.GoogleInteractive is { } interactive
             && (result is null || interactive.CheckedAt >= result.CheckedAt || result.State == ToolState.Configured))
         {
@@ -84,7 +84,7 @@
             fresh = true;
         }
         var state = fresh ? result!.State : ToolState.Unknown;
-        <section class="tool-card">
+        <section class="tool-card" data-tool="@key">
             <h2>@T["Tool_" + key]</h2>
             <span class="tool-status @(state == ToolState.Ready ? "tool-ready" : state == ToolState.Problem || state == ToolState.NotConfigured ? "tool-problem" : "tool-neutral")">
                 @T["ToolState_" + state]

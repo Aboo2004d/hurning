@@ -40,6 +40,7 @@ public sealed class DistributionWorker(
             }
             catch (Exception ex)
             {
+                await OperationFailureRecorder.TryRecordAsync(scopes, OperationArea.Telegram, "Distribution", ex, stoppingToken);
                 // Do not log messages or URIs: the bot token is part of the Telegram endpoint.
                 logger.LogWarning(
                     "Distribution background work failed ({ExceptionType}). Will retry.",

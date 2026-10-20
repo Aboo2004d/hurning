@@ -1,7 +1,8 @@
 @model HiringPs.Web.Areas.Admin.Controllers.SocialTemplateInput
 @{ ViewData["Title"] = T["SocialTemplates"].Value; var history = (AdminPage<SocialTemplateSummaryDto>)ViewBag.History; }
-<header class="admin-page-heading"><h1>@T["SocialTemplates"] · @Model.Provider · @T[Model.Scope == "general" ? "GeneralTemplate" : Model.Scope]</h1></header>
+<header class="admin-page-heading"><h1>@T["SocialTemplates"] · @T[Model.Provider == "Telegram" ? "TelegramChannelTemplates" : Model.Provider == "TelegramBot" ? "TelegramBotTemplates" : Model.Provider] · @T[Model.Scope == "general" ? "GeneralTemplate" : Model.Scope]</h1></header>
 <p class="notice">@T["SocialTemplateHelp"]</p>
+@if (Model.Provider == "TelegramBot") { <p class="notice">@T["TelegramBotTemplateHelp"]</p> }
 @if (ViewData["TemplateInvalid"] is true) { <p class="notice" role="alert">@T["SocialTemplateInvalid"]</p> }
 <section class="social-composer" data-template-editor>
 <form asp-action="Save" method="post" data-template-form>

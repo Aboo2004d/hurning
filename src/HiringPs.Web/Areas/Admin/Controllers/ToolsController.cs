@@ -70,6 +70,9 @@ public class ToolsController : AdminControllerBase
             if (latest is not null)
                 model.Results.Add(latest);
         }
+        var workerIds = model.Results.Select(x => x.WorkerId).Distinct().ToArray();
+        model.ResultWorkers = await db.ToolWorkers.AsNoTracking()
+            .Where(x => workerIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
         return View(model);
     }
 
@@ -110,11 +113,17 @@ public class ToolsController : AdminControllerBase
             ct
         );
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            return Json(new { queued });
+            return Json(new
+            {
+                queued
+            });
         TempData["Notice"] = queued ? "ToolsCheckQueued" : "ToolsCheckAlreadyQueued";
         // A check changes state; always display its result with a separate GET.
         // 303 explicitly prevents refresh from submitting the check again.
-        var destination = Url.Action(nameof(Tools), "Tools", new { area = "Admin" })
+        var destination = Url.Action(nameof(Tools), "Tools", new
+        {
+            area = "Admin"
+        })
             ?? throw new InvalidOperationException("Unable to generate the tools dashboard URL.");
         Response.Headers.Location = destination;
         return StatusCode(StatusCodes.Status303SeeOther);

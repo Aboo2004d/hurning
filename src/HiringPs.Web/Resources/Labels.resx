@@ -3126,4 +3126,46 @@
   <data name="PalestineDateTimeInvalid" xml:space="preserve"><value>أدخل تاريخًا ووقتًا صحيحين بتوقيت فلسطين؛ قد تكون الساعة غير متاحة أثناء انتقال التوقيت الصيفي.</value></data>
   <data name="JobsClosingThisWeek" xml:space="preserve"><value>وظائف تغلق هذا الأسبوع</value></data>
   <data name="JobsClosingThisWeekHelp" xml:space="preserve"><value>اطّلع على الوظائف القريبة من موعد الإغلاق قبل انتهاء التقديم.</value></data>
+  <data name="TelegramChannelTemplates" xml:space="preserve"><value>قوالب قنوات التليجرام</value></data>
+  <data name="TelegramBotTemplates" xml:space="preserve"><value>قوالب تنبيهات البوت</value></data>
+  <data name="TelegramBotTemplateHelp" xml:space="preserve"><value>يطبق على تنبيهات الفرص وتذكيرات الفرص المحفوظة. يبقى رابط الفرصة إلزاميًا وتبقى رسائل الدفع والتحقق وأوامر الحساب كما هي.</value></data>
+  <data name="OperationLog" xml:space="preserve"><value>سجل العمليات</value></data>
+  <data name="OperationLogHelp" xml:space="preserve"><value>أحداث الإدارة والجمع والنشر والتسليم في مكان واحد. تسجل الأحداث التشغيلية الجديدة من وقت تفعيل هذا التحديث، مع إبقاء سجلات التدقيق السابقة.</value></data>
+  <data name="OperationEvents" xml:space="preserve"><value>حدث</value></data>
+  <data name="OperationArea" xml:space="preserve"><value>المجال</value></data>
+  <data name="OperationActor" xml:space="preserve"><value>المنفذ</value></data>
+  <data name="OperationFrom" xml:space="preserve"><value>من تاريخ — توقيت فلسطين</value></data>
+  <data name="OperationTo" xml:space="preserve"><value>إلى تاريخ — توقيت فلسطين</value></data>
+  <data name="OperationReset" xml:space="preserve"><value>مسح الفلاتر</value></data>
+  <data name="OperationEmpty" xml:space="preserve"><value>لا توجد أحداث تطابق الفلاتر.</value></data>
+  <data name="OperationArea_Opportunities" xml:space="preserve"><value>الفرص</value></data>
+  <data name="OperationArea_Sources" xml:space="preserve"><value>المصادر</value></data>
+  <data name="OperationArea_Collection" xml:space="preserve"><value>الجمع</value></data>
+  <data name="OperationArea_Publishing" xml:space="preserve"><value>النشر</value></data>
+  <data name="OperationArea_Telegram" xml:space="preserve"><value>التليجرام</value></data>
+  <data name="OperationArea_Payments" xml:space="preserve"><value>المدفوعات</value></data>
+  <data name="OperationArea_Ai" xml:space="preserve"><value>الذكاء الاصطناعي</value></data>
+  <data name="OperationArea_Tools" xml:space="preserve"><value>فحوص الأدوات</value></data>
+  <data name="OperationArea_System" xml:space="preserve"><value>النظام</value></data>
+  <data name="OperationOutcome_Started" xml:space="preserve"><value>بدأت</value></data>
+  <data name="OperationOutcome_Succeeded" xml:space="preserve"><value>نجحت</value></data>
+  <data name="OperationOutcome_Failed" xml:space="preserve"><value>فشلت</value></data>
+  <data name="OperationOutcome_Pending" xml:space="preserve"><value>قيد الانتظار</value></data>
+  <data name="OperationOutcome_Skipped" xml:space="preserve"><value>تم تجاوزها</value></data>
+  <data name="OperationOutcome_Unknown" xml:space="preserve"><value>سجل تدقيق سابق</value></data>
+  <data name="OperationEvent_Created" xml:space="preserve"><value>إضافة سجل</value></data>
+  <data name="OperationEvent_Deleted" xml:space="preserve"><value>حذف سجل</value></data>
+  <data name="OperationEvent_StatusChanged" xml:space="preserve"><value>تحديث الحالة</value></data>
+  <data name="OperationEvent_Run" xml:space="preserve"><value>جولة جمع</value></data>
+  <data name="OperationEvent_Item" xml:space="preserve"><value>معالجة عنصر مصدر</value></data>
+  <data name="OperationEvent_Publish" xml:space="preserve"><value>نشر خارجي</value></data>
+  <data name="OperationEvent_BotDelivery" xml:space="preserve"><value>تسليم رسالة البوت</value></data>
+  <data name="OperationEvent_Update" xml:space="preserve"><value>تحديث تليجرام</value></data>
+  <data name="OperationEvent_Order" xml:space="preserve"><value>طلب دفع</value></data>
+  <data name="OperationEvent_Request" xml:space="preserve"><value>طلب ذكاء اصطناعي</value></data>
+  <data name="OperationEvent_Check" xml:space="preserve"><value>فحص أداة</value></data>
+  <data name="OperationEvent_Pipeline" xml:space="preserve"><value>دورة المعالجة</value></data>
+  <data name="OperationEvent_Distribution" xml:space="preserve"><value>توزيع المحتوى</value></data>
+  <data name="OperationEvent_MembershipWorker" xml:space="preserve"><value>معالجة خدمات الأعضاء</value></data>
+  <data name="OperationOutcome_Uncertain" xml:space="preserve"><value>غير محسومة</value></data>
 </root>

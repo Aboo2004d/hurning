@@ -6,7 +6,10 @@ namespace HiringPs.Core;
 public class AuditEntry
 {
     /// <summary>المعرّف الأساسي للسجل؛ يختلف نوعه وطريقة توليده حسب الكيان.</summary>
-    public long Id { get; set; }
+    public long Id
+    {
+        get; set;
+    }
 
     /// <summary>هوية المستخدم أو العامل الذي نفذ العملية.</summary>
     [MaxLength(200)]
@@ -19,6 +22,6 @@ public class AuditEntry
     /// <summary>تفاصيل آمنة لنتيجة الفحص دون أسرار أو محتوى مستندات خاص.</summary>
     [MaxLength(2000)]
     public string Detail { get; set; } = "";
-    /// <summary>وقت آخر نبضة حياة محفوظة للعامل.</summary>
+    /// <summary>وقت وقوع الحدث بالتوقيت العالمي؛ يحول إلى توقيت فلسطين عند العرض.</summary>
     public DateTimeOffset At { get; set; } = DateTimeOffset.UtcNow;
 }

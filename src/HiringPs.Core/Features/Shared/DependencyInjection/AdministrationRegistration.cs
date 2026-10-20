@@ -21,6 +21,7 @@ public static class AdministrationRegistration
         services.TryAddScoped<RetentionSettingsService>();
         services.TryAddScoped<PromptAdministrationService>();
         services.TryAddScoped<CollectorDiagnosticReadService>();
+        services.TryAddScoped<OperationReadService>();
         return services;
     }
 }

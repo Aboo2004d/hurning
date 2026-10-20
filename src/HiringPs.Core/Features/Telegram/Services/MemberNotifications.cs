@@ -10,6 +10,8 @@ public sealed class MemberNotifications(
     IConfiguration configuration
 )
 {
+    private readonly TelegramBotTemplates botTemplates = new(db);
+
     /// <summary>يتحقق من استحقاق العضو للتنبيه بحسب اشتراكه ونوع الفرصة.</summary>
     private async Task<bool> EntitledAsync(
         MemberProfile member,
@@ -388,17 +390,14 @@ public sealed class MemberNotifications(
             if (message.OpportunityId is { } opportunityId)
             {
                 var item = await db.Opportunities.SingleAsync(x => x.Id == opportunityId, ct);
-                message.Text =
+                message.Text = await botTemplates.RenderAsync(item, Link(member, item.Id),
                     (
                         message.Kind == MemberMessageKind.SavedDeadline
                             ? en
                                 ? "Application deadline is tomorrow: "
                                 : "ينتهي التقديم غدًا: "
                             : ""
-                    )
-                    + item.Title
-                    + "\n"
-                    + Link(member, item.Id);
+                    ), ct);
             }
             else if (
                 message.Kind == MemberMessageKind.Payment

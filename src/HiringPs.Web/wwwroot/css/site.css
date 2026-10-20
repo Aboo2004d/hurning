@@ -2353,3 +2353,20 @@ main:focus {
     .closing-week-heading { flex-direction: column; gap: 10px; }
     .closing-week h2 { font-size: 19px; }
 }
+
+/* Unified operation history uses the same surfaces, spacing and green identity as administration. */
+.operation-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; padding: 1.25rem; margin-block: 1.25rem; background: var(--surface, #fff); border: 1px solid var(--border, #d6e4df); border-radius: 1rem; }
+.operation-filters label { display: grid; gap: .4rem; min-width: 0; margin: 0; }
+.operation-filters input, .operation-filters select { width: 100%; min-width: 0; box-sizing: border-box; }
+.operation-filters .actions { grid-column: span 2; display: flex; flex-direction: row; gap: .5rem; align-self: end; flex-wrap: wrap; }
+.operation-events { display: grid; gap: 1rem; }
+.operation-event { background: var(--surface, #fff); border: 1px solid var(--border, #d6e4df); border-inline-start: 4px solid #19735c; border-radius: 1rem; padding: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
+.operation-event header { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.operation-event time { margin-inline-start: auto; color: #627b72; font-size: .875rem; }
+.operation-event h2 { font-size: 1.05rem; margin-block: .9rem .5rem; }
+.operation-event p { margin-block: .5rem; white-space: pre-wrap; }
+.operation-failed { border-inline-start-color: #ad3926; }
+.operation-failed header strong { color: #ad3926; }
+.operation-pending, .operation-started { border-inline-start-color: #a07823; }
+@media (max-width: 900px) { .operation-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .operation-filters .actions { grid-column: auto; } .operation-event time { margin-inline-start: 0; flex-basis: 100%; } .operation-filters { grid-template-columns: 1fr; } }

@@ -24,6 +24,7 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
             }
             catch (Exception ex)
             {
+                await OperationFailureRecorder.TryRecordAsync(scopes, OperationArea.Telegram, "MembershipWorker", ex, stoppingToken);
                 // Do not log request URIs: the Telegram token is part of its endpoint.
                 logger.LogWarning(
                     "Membership background work failed ({ExceptionType}). Will retry.",
@@ -113,6 +114,8 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
+                    db.Audit.Add(OperationTracking.Create(OperationArea.Telegram, OperationOutcome.Failed,
+                        "Update", $"Update {update.Id}; Attempt {update.Attempts}; {ex.GetType().Name}"));
                     logger.LogWarning(
                         "Telegram update {UpdateId} could not be processed ({ExceptionType}).",
                         update.Id,
