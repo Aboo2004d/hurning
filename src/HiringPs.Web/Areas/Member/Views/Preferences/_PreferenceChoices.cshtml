@@ -4,21 +4,37 @@
     var addName = Model.Field == "Categories" ? "addCategory" : "addLocation";
     var group = Model.Field == "Categories" ? "categories" : "locations";
     var removeName = Model.Field == "Categories" ? "removeCategory" : "removeLocation";
+    var selectedCount = PreferenceLimitRules.Count(Model.Selected);
+    var limitReached = Model.Limit is { } capLimit && selectedCount >= capLimit;
 }
 <section class="preference-group" aria-labelledby="preference-@Model.Field">
     <div class="member-section-heading">
         <h2 id="preference-@Model.Field">@T[Model.LabelKey]</h2>
-        <span class="badge">@Model.Selected.Length @T["SelectedPreferences"]</span>
+        @if (Model.Limit is { } maximum)
+        {
+            <span class="badge" data-preference-quota data-selected="@selectedCount" data-limit="@maximum">@T["SelectedCategoryQuota", selectedCount, maximum]</span>
+        }
+        else
+        {
+            <span class="badge">@selectedCount @T["SelectedPreferences"]</span>
+            @if (Model.Field == "Categories") { <span class="badge">@T["UnlimitedCategories"]</span> }
+        }
     </div>
+    @if (Model.Limit is { } quota)
+    {
+        <p class="@(limitReached ? "notice" : "muted")" role="status" data-preference-quota-status>
+            @(limitReached ? T["PreferenceQuotaReached"] : T["PreferenceQuotaRemaining", Math.Max(0, quota - selectedCount)])
+        </p>
+    }
     <div class="preference-bulk-actions">
-        <button class="button button-outline member-action" type="submit" name="bulkAction" value="select-@group" disabled="@(available.Length == 0)">
+        <button class="button button-outline member-action" type="submit" name="bulkAction" value="select-@group" disabled="@(available.Length == 0 || Model.Limit is { } cap && PreferenceLimitRules.Count(Model.Selected.Concat(available)) > cap)">
             <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["SelectAllPreferences"]</span>
         </button>
         <button class="button button-outline member-action" type="submit" name="bulkAction" value="clear-@group" disabled="@(Model.Selected.Length == 0)">
             <span class="fa-solid fa-trash-can" aria-hidden="true"></span><span>@T["ClearAllPreferences"]</span>
         </button>
     </div>
-    <p class="muted preference-bulk-help">@T["EmptyPreferencesMeansAll"]</p>
+    <p class="muted preference-bulk-help">@T[Model.Limit is null ? "EmptyPreferencesMeansAll" : "LimitedCategoriesHelp"]</p>
     <div class="preference-chips" data-preference-selected="@Model.Field">
         @foreach (var value in Model.Selected)
         {
@@ -33,7 +49,7 @@
         }
         @if (Model.Selected.Length == 0)
         {
-            <p class="member-empty-hint">@T[Model.Field == "Categories" ? "AllCategoriesSelected" : "AllLocationsSelected"]</p>
+            <p class="member-empty-hint">@T[Model.Field == "Categories" ? (Model.Limit is null ? "AllCategoriesSelected" : "NoCategoriesSelected") : "AllLocationsSelected"]</p>
         }
     </div>
     <details class="member-disclosure" data-preference-list="@Model.Field">
@@ -43,7 +59,7 @@
             {
                 <div class="preference-chip">
                     <span dir="auto">@value</span>
-                    <button class="preference-chip-action" type="submit" name="@addName" value="@value"
+                    <button class="preference-chip-action" type="submit" name="@addName" value="@value" disabled="@limitReached"
                             aria-label="@T["AddPreference"]: @value" title="@T["AddPreference"]">
                         <span class="fa-solid fa-check" aria-hidden="true"></span>
                     </button>

@@ -13,7 +13,7 @@ public sealed class AdminPlanReadService(HiringDb db)
         select new AdminPlanSummaryDto(plan.Id, plan.Visible, new MembershipPlanVersionSummaryDto
         {
             Id = version.Id, PlanId = version.PlanId, NameAr = version.NameAr, NameEn = version.NameEn,
-            PriceIls = version.PriceIls, Days = version.Days,
+            PriceIls = version.PriceIls, Days = version.Days, MaxPreferredCategories = version.MaxPreferredCategories,
         });
 
     /// <summary>يقرأ بيانات النموذج ورمز التزامن من الخادم لتعديل باقة موجودة.</summary>

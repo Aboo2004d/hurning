@@ -107,6 +107,7 @@
     async function saveAlertSearch(form, button) {
         if (busy.has(form)) return;
         const feedback = document.querySelector("[data-alert-feedback]");
+        let failureMessage = button?.dataset.errorText ?? "";
         busy.add(form);
         if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
         try {
@@ -114,12 +115,18 @@
                 method: "POST", headers: { ...header, Accept: "application/json" }, body: new FormData(form),
                 credentials: "same-origin", cache: "no-store",
             });
-            if (!response.ok || response.redirected) throw new Error("Alert unavailable");
+            if (!response.ok || response.redirected) {
+                if (!response.redirected && response.headers.get("content-type")?.includes("application/json")) {
+                    const problem = await response.json();
+                    if (typeof problem.message === "string") failureMessage = problem.message;
+                }
+                throw new Error("Alert unavailable");
+            }
             const result = await response.json();
             if (result.saved !== true) throw new Error("Unexpected alert state");
             if (feedback) { feedback.classList.remove("is-error"); feedback.textContent = button?.dataset.savedText ?? ""; feedback.hidden = false; }
         } catch {
-            if (feedback) { feedback.classList.add("is-error"); feedback.textContent = button?.dataset.errorText ?? ""; feedback.hidden = false; }
+            if (feedback) { feedback.classList.add("is-error"); feedback.textContent = failureMessage; feedback.hidden = false; }
         } finally {
             busy.delete(form);
             if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }

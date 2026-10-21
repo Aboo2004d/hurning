@@ -6,6 +6,15 @@ namespace HiringPs.Core;
 /// <summary>قراءة وحفظ تفضيلات عضو واحد، مع إبقاء صيغة JSON وقناع الأنواع المستخدمين في التنبيهات.</summary>
 public sealed class MemberPreferenceService(HiringDb db)
 {
+    /// <summary>يقرأ حد المجالات من نسخ الاشتراكات السارية، لا من أسعار أو شروط الباقات المعدلة لاحقًا.</summary>
+    public async Task<int?> LimitAsync(string owner, CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var limits = await db.MemberSubscriptions.AsNoTracking()
+            .Where(x => x.UserId == owner && !x.Cancelled && x.StartsAt <= now && x.EndsAt > now)
+            .Select(x => x.PlanVersion.MaxPreferredCategories).ToArrayAsync(ct);
+        return PreferenceLimitRules.Effective(limits);
+    }
     /// <summary>يقرأ اختيارات العضو فقط؛ البيانات التاريخية غير الصالحة تحتفظ بسلوك الخطأ السابق.</summary>
     public async Task<MemberPreferenceDto> ReadAsync(string owner, CancellationToken ct)
     {
@@ -25,8 +34,10 @@ public sealed class MemberPreferenceService(HiringDb db)
     }
 
     /// <summary>يحفظ الاختيارات وعلامة التذكيرات عند تقديمها في SaveChanges واحدة؛ لا يرسل تنبيهًا.</summary>
-    public async Task SaveAsync(string owner, MemberPreferenceUpdateDto input, CancellationToken ct)
+    public async Task<bool> SaveAsync(string owner, MemberPreferenceUpdateDto input, CancellationToken ct)
     {
+        if (await LimitAsync(owner, ct) is { } limit && PreferenceLimitRules.Count(input.Categories) > limit)
+            return false;
         var pref = await db.MemberPreferences.SingleAsync(x => x.UserId == owner, ct);
         pref.Kinds = input.Kinds;
         pref.CategoriesJson = JsonSerializer.Serialize(input.Categories);
@@ -38,5 +49,6 @@ public sealed class MemberPreferenceService(HiringDb db)
             profile.SavedRemindersEnabled = reminders;
         }
         await db.SaveChangesAsync(ct);
+        return true;
     }
 }

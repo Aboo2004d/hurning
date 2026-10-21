@@ -1,5 +1,6 @@
 @model MembershipPlanVersionSummaryDto
 <ul class="plan-benefits">
+    <li>@T["MaxPreferredCategories"]: @(Model.MaxPreferredCategories?.ToString() ?? T["UnlimitedCategories"].Value)</li>
     @foreach (var kind in Enum.GetValues<OpportunityKind>())
         {
             if (MembershipRules.Includes(Model.DetailKinds, kind) || MembershipRules.Includes(Model.AlertKinds, kind))

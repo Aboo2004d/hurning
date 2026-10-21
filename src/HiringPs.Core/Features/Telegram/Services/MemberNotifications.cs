@@ -36,12 +36,22 @@ public sealed class MemberNotifications(
                 x.UserId == member.UserId
                 && !x.Cancelled
                 && x.StartsAt <= now
-                && x.StartsAt <= eventAt
                 && x.EndsAt > now
             )
-            .Select(x => x.PlanVersion.AlertKinds)
+            .Select(x => new { x.StartsAt, x.PlanVersion.AlertKinds, x.PlanVersion.MaxPreferredCategories })
             .ToListAsync(ct);
-        return rights.Any(mask => MembershipRules.Includes(mask, item.Kind));
+        if (!saved)
+        {
+            var limit = PreferenceLimitRules.Effective(rights.Select(x => x.MaxPreferredCategories));
+            if (limit is not null)
+            {
+                var categoriesJson = await db.MemberPreferences.Where(x => x.UserId == member.UserId)
+                    .Select(x => x.CategoriesJson).SingleAsync(ct);
+                if (!PreferenceLimitRules.AllowsAlerts(System.Text.Json.JsonSerializer.Deserialize<string[]>(categoriesJson) ?? [], limit))
+                    return false;
+            }
+        }
+        return rights.Any(right => right.StartsAt <= eventAt && MembershipRules.Includes(right.AlertKinds, item.Kind));
     }
 
     /// <summary>ينشئ رابط الخدمة المعروض للعضو دون تغيير حالة حسابه.</summary>

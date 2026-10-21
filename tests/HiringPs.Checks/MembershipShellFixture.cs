@@ -174,6 +174,13 @@ public class AdminShellFixtureController : Controller
         };
         return screen switch
         {
+            "telegramcompose" => View("/Areas/Admin/Views/TelegramCompose/Index.cshtml", new TelegramComposeDto(
+                42, "مبرمج / Software developer", "📢 وظيفة\nمبرمج / Software developer\nتفاصيل الإعلان", "https://example.test/ar/Opportunities/Details/42",
+                null, [new("Jobs", "@jobs_fixture", true, null), new("All", "@all_fixture", true, null)])),
+            "planlimit" => View("/Areas/Admin/Views/Plans/PlanForm.cshtml", new PlanInput
+            {
+                Id = 42, NameAr = "باقة تجريبية", NameEn = "Test plan", MaxPreferredCategories = 3,
+            }),
             "prompt" => View("/Areas/Admin/Views/AiPrompt/AiPrompt.cshtml", new PromptEditor
             {
                 Template = PromptDefaults.CurrentTemplate,
@@ -287,9 +294,11 @@ public class MemberShellFixtureController : Controller
         string? removeCategory,
         string? addLocation,
         string? removeLocation,
-        string? bulkAction = null
+        string? bulkAction = null,
+        int? categoryLimit = null
     )
     {
+        input.CategoryLimit = categoryLimit;
         if (HttpMethods.IsGet(Request.Method))
         {
             input.Categories = ["برمجة", "فئة سابقة لم تعد في القائمة"];

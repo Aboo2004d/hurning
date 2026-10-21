@@ -25,6 +25,8 @@ public sealed class SocialPublication
     [MaxLength(100)] public string PageId { get; set; } = "";
     [MaxLength(20)] public string Status { get; set; } = "Pending";
     public string Text { get; set; } = "";
+    /// <summary>رسالة قناة جهزتها الإدارة؛ يحافظ العامل على نصها ولا يشترط تفعيل النشر التلقائي للقناة.</summary>
+    public bool ManualCompose { get; set; }
     /// <summary>وقت إنشاء السجل بالتوقيت العالمي.</summary>
     [MaxLength(500)] public string RemoteId { get; set; } = "";
     [MaxLength(1500)] public string Url { get; set; } = "";

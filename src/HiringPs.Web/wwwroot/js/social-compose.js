@@ -1,4 +1,10 @@
 (() => {
+    document.addEventListener('change', e => {
+        if (!e.target.matches('input[name="Targets"]')) return;
+        const targets = e.target.closest('[data-social-targets]');
+        if (targets?.querySelector('input[name="Targets"]:checked:not(:disabled)'))
+            targets.querySelector('[role="alert"]')?.remove();
+    });
     document.addEventListener('submit', e => {
         if (!e.target.closest('[data-social-compose]')) return;
         const targets = e.target.querySelector('[data-social-targets]');

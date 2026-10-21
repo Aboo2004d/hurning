@@ -11,4 +11,8 @@ public sealed class PreferenceInput
     public string[] AvailableCategories { get; set; } = [];
     public string[] AvailableLocations { get; set; } = [];
     public bool SavedReminders { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+    public int? CategoryLimit { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+    public bool LimitExceeded { get; set; }
 }

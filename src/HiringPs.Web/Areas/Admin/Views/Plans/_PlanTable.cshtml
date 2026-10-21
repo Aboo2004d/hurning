@@ -6,6 +6,7 @@
                     <th>@T["PlanId"]</th>
                     <th>@T["Plan"]</th>
                     <th>@T["Amount"]</th>
+                    <th>@T["MaxPreferredCategories"]</th>
                     <th>@T["Visible"]</th>
                     <th>@T["Edit"]</th>
                 </tr>
@@ -18,6 +19,7 @@
                         <td>@plan.Id</td>
                         <td>@version.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
                         <td><bdi dir="ltr">@MembershipRules.Money(version.PriceIls)</bdi></td>
+                        <td>@(version.MaxPreferredCategories?.ToString() ?? T["UnlimitedCategories"].Value)</td>
                         <td>@T[plan.Visible ? "Yes" : "No"]</td>
                         <td>
                             <a class="button button-outline admin-icon-button" asp-action="Edit" asp-route-id="@plan.Id"

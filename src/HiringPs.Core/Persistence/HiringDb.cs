@@ -30,6 +30,7 @@ public class HiringDb(
     public DbSet<ScrapeRun> Runs => Set<ScrapeRun>();
     public DbSet<UserReport> Reports => Set<UserReport>();
     public DbSet<AuditEntry> Audit => Set<AuditEntry>();
+    public DbSet<ApplicationError> ApplicationErrors => Set<ApplicationError>();
     public DbSet<WorkerHeartbeat> Heartbeats => Set<WorkerHeartbeat>();
     public DbSet<PipelineState> PipelineStates => Set<PipelineState>();
     public DbSet<OrganizationAlias> OrganizationAliases => Set<OrganizationAlias>();

@@ -3174,4 +3174,18 @@
   <data name="StatNewToday" xml:space="preserve"><value>جديدة خلال 24 ساعة</value></data>
   <data name="ThemeSwitchToDark" xml:space="preserve"><value>الوضع الليلي</value></data>
   <data name="ThemeSwitchToLight" xml:space="preserve"><value>الوضع النهاري</value></data>
+  <data name="MaxPreferredCategories" xml:space="preserve"><value>الحد الأقصى للمجالات المفضلة</value></data>
+  <data name="MaxPreferredCategoriesHelp" xml:space="preserve"><value>اتركه فارغًا لعدد غير محدود. التعديل ينطبق على المشتريات الجديدة فقط.</value></data>
+  <data name="UnlimitedCategories" xml:space="preserve"><value>غير محدود</value></data>
+  <data name="LimitedCategoriesHelp" xml:space="preserve"><value>اختر المجالات ضمن حد اشتراكك؛ عدم اختيار أي مجال يوقف تنبيهات الفرص حتى تحدد تفضيلاتك.</value></data>
+  <data name="NoCategoriesSelected" xml:space="preserve"><value>لم تحدد مجالات بعد</value></data>
+  <data name="PreferenceLimitExceeded" xml:space="preserve"><value>لم تُحفظ التغييرات لأن عدد المجالات يتجاوز الحد المسموح في اشتراكك. احذف بعض المجالات ثم احفظ.</value></data>
+  <data name="TelegramManualHelp" xml:space="preserve"><value>تُحدد قناة نوع الفرصة تلقائيًا، ويمكنك اختيار القناة العامة أيضًا. التأكيد يضيف الرسالة إلى طابور العامل، ولا يعني أنها وصلت بعد. النشر اليدوي مستقل عن تفعيل النشر التلقائي.</value></data>
+  <data name="TelegramQueuePublish" xml:space="preserve"><value>تأكيد النشر عبر القنوات المحددة</value></data>
+  <data name="TelegramManualQueued" xml:space="preserve"><value>أضيف المنشور إلى طابور قنوات تليجرام. تابع حالة التسليم في توزيع القنوات.</value></data>
+  <data name="TelegramManualAlreadyQueued" xml:space="preserve"><value>يوجد منشور مسجل لهذه الفرصة في القنوات المحددة؛ لم يُرسل طلب مكرر.</value></data>
+  <data name="PreferredCategoryLimitRange" xml:space="preserve"><value>حدد عدد المجالات من 1 إلى 1000، أو اترك الحقل فارغًا لعدد غير محدود.</value></data>
+  <data name="SelectedCategoryQuota" xml:space="preserve"><value>المختار: {0} من {1}</value></data>
+  <data name="PreferenceQuotaReached" xml:space="preserve"><value>وصلت إلى الحد الأقصى للمجالات في اشتراكك. احذف مجالًا لإضافة غيره.</value></data>
+  <data name="PreferenceQuotaRemaining" xml:space="preserve"><value>يمكنك إضافة {0} مجال آخر ضمن اشتراكك.</value></data>
 </root>

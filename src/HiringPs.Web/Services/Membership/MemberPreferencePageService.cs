@@ -7,9 +7,10 @@ namespace HiringPs.Web.Services.Membership;
 public sealed class MemberPreferencePageService(MemberPreferenceService preferences)
 {
     /// <summary>يضيف أسماء المدن القياسية إلى المواقع المعتمدة بنفس ترتيب ومقارنة المحرر السابق.</summary>
-    private async Task FillAsync(PreferenceInput input, CancellationToken ct)
+    private async Task FillAsync(PreferenceInput input, string owner, CancellationToken ct)
     {
         var options = await preferences.OptionsAsync(ct);
+        input.CategoryLimit = await preferences.LimitAsync(owner, ct);
         input.AvailableCategories = options.Categories;
         input.AvailableLocations = options.ApprovedLocations.Concat(CityCatalog.ArabicNames).Distinct().OrderBy(x => x).ToArray();
     }
@@ -25,21 +26,21 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
             Locations = pref.Locations,
             SavedReminders = savedReminders,
         };
-        await FillAsync(input, ct);
+        await FillAsync(input, owner, ct);
         return input;
     }
 
     /// <summary>يدمج بحث القائمة في التفضيلات بعد مطابقة القيم بكتالوجها؛ القيم غير المعروفة لا تحفظ.</summary>
-    public async Task<bool> AddSearchAsync(string owner, OpportunityKind? kind, string? city, string? category, CancellationToken ct)
+    public async Task<PreferenceSaveOutcome> AddSearchAsync(string owner, OpportunityKind? kind, string? city, string? category, CancellationToken ct)
     {
         if (
             (kind is null && string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(category))
             || (kind is { } requested && !Enum.IsDefined(requested))
         )
-            return false;
+            return PreferenceSaveOutcome.Invalid;
         var pref = await preferences.ReadAsync(owner, ct);
         var input = new PreferenceInput();
-        await FillAsync(input, ct);
+        await FillAsync(input, owner, ct);
         var categories = pref.Categories;
         var locations = pref.Locations;
         if (!string.IsNullOrWhiteSpace(category))
@@ -50,7 +51,7 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
                 .Where(input.AvailableCategories.Contains)
                 .ToArray();
             if (added.Length == 0)
-                return false;
+                return PreferenceSaveOutcome.Invalid;
             categories = categories.Concat(added).Distinct().ToArray();
         }
         if (!string.IsNullOrWhiteSpace(city))
@@ -59,14 +60,14 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
                 ? city
                 : CityCatalog.Find(city)?.Arabic;
             if (location is null || !input.AvailableLocations.Contains(location))
-                return false;
+                return PreferenceSaveOutcome.Invalid;
             locations = locations.Append(location).Distinct().ToArray();
         }
         var kinds = pref.Kinds;
         if (kind is { } selected)
             kinds |= MembershipRules.Bit(selected);
-        await preferences.SaveAsync(owner, new(kinds, categories, locations, null), ct);
-        return true;
+        return await preferences.SaveAsync(owner, new(kinds, categories, locations, null), ct)
+            ? PreferenceSaveOutcome.Saved : PreferenceSaveOutcome.LimitExceeded;
     }
 
     /// <summary>يطبق إضافة وحذف وتحديد الخيارات مع إبقاء القيم القديمة قابلة للإزالة بعد اختفائها من الكتالوج.</summary>
@@ -76,7 +77,7 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
         var pref = await preferences.ReadAsync(owner, ct);
         var priorCategories = pref.Categories;
         var priorLocations = pref.Locations;
-        await FillAsync(input, ct);
+        await FillAsync(input, owner, ct);
         if (
             new[] { addCategory, removeCategory, addLocation, removeLocation, bulkAction }.Count(
                 x => x is not null
@@ -134,7 +135,7 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
         input.Categories = input.Categories.Distinct().ToArray();
         input.Locations = input.Locations.Distinct().ToArray();
         var kinds = input.Kinds.Aggregate(0, (mask, kind) => mask | MembershipRules.Bit(kind));
-        await preferences.SaveAsync(owner, new(kinds, input.Categories, input.Locations, input.SavedReminders), ct);
-        return true;
+        input.LimitExceeded = !await preferences.SaveAsync(owner, new(kinds, input.Categories, input.Locations, input.SavedReminders), ct);
+        return !input.LimitExceeded;
     }
 }

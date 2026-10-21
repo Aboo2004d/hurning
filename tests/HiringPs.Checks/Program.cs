@@ -9,6 +9,18 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--error-log-check"))
+{
+    ErrorLoggingChecks.Run();
+    return;
+}
+
+if (args.Contains("--preference-telegram-check"))
+{
+    await PreferenceAndTelegramComposeChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--presentation-check"))
 {
     PresentationChecks.Run();

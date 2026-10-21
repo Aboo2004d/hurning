@@ -87,6 +87,65 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("AiUsage");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.ApplicationError", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Application")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExceptionType")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("TraceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("At");
+
+                    b.HasIndex("TraceId");
+
+                    b.ToTable("ApplicationErrors");
+                });
+
             modelBuilder.Entity("HiringPs.Core.AuditEntry", b =>
                 {
                     b.Property<long>("Id")
@@ -697,6 +756,9 @@ namespace HiringPs.Core.Migrations
                         .HasColumnType("nvarchar(2000)");
 
                     b.Property<int>("DetailKinds")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxPreferredCategories")
                         .HasColumnType("int");
 
                     b.Property<string>("NameAr")
@@ -1629,6 +1691,9 @@ namespace HiringPs.Core.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("ManualCompose")
+                        .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("NextAttemptAt")
                         .HasColumnType("datetimeoffset");

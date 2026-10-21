@@ -8,7 +8,7 @@ public sealed class PlanManagementService(HiringDb db, MembershipService members
     /// <summary>ينشئ نسخة جديدة ويحدث المؤشر الحالي ذريًا؛ المشتريات القائمة لا تتغير.</summary>
     public async Task<PlanSaveResultDto> SaveAsync(PlanSaveCommandDto input, CancellationToken ct)
     {
-        if (input.Id is <= 0 || input.PriceIls is < 0.01m or > 100000m || input.Days is < 1 or > 3650
+        if (input.MaxPreferredCategories is < 1 or > 1000 || input.Id is <= 0 || input.PriceIls is < 0.01m or > 100000m || input.Days is < 1 or > 3650
             || string.IsNullOrWhiteSpace(input.NameAr) || string.IsNullOrWhiteSpace(input.NameEn)
             || input.NameAr.Length > 160 || input.NameEn.Length > 160
             || input.DescriptionAr.Length > 2000 || input.DescriptionEn.Length > 2000
@@ -57,6 +57,7 @@ public sealed class PlanManagementService(HiringDb db, MembershipService members
             BadgeEn = (input.BadgeEn ?? "").Trim(),
             PriceIls = input.PriceIls,
             Days = input.Days,
+            MaxPreferredCategories = input.MaxPreferredCategories,
             DetailKinds = input.Details.Aggregate(
                 0,
                 (mask, kind) => mask | MembershipRules.Bit(kind)

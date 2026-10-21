@@ -132,7 +132,9 @@ public sealed class TelegramChannelPublisher(
                 await db.SaveChangesAsync(CancellationToken.None);
                 continue;
             }
-            if (!await ChannelStillEnabledAsync(attempt.PageId, item.Kind, ct))
+            var manualChannelConfigured = attempt.ManualCompose && TelegramChannelTargets.ForOpportunity(item.Kind)
+                .Any(target => TelegramChannelTargets.Channel(configuration, target) == attempt.PageId);
+            if (attempt.ManualCompose ? !manualChannelConfigured : !await ChannelStillEnabledAsync(attempt.PageId, item.Kind, ct))
             {
                 Finish(attempt, "Skipped", "TelegramChannelDisabled");
                 await db.SaveChangesAsync(CancellationToken.None);
@@ -142,6 +144,8 @@ public sealed class TelegramChannelPublisher(
             try
             {
                 message = await BuildAsync(item, ct);
+                if (attempt.ManualCompose)
+                    message = (attempt.Text, attempt.TemplateVersionId, message.Link);
             }
             catch (InvalidOperationException ex) when (ex.Message == "PublicOriginRequired")
             {

@@ -33,6 +33,7 @@
                         <a class="button button-outline" asp-controller="Opportunities" asp-action="Edit" asp-route-id="@item.Id">@T["Edit"]</a>                        @if(item.CanPublish) {
                         <a class="button button-outline admin-icon-button" asp-controller="Social" asp-action="Compose" asp-route-id="@item.Id" asp-route-provider="Facebook" aria-label="@T["SocialCompose"] · Facebook" title="@T["SocialCompose"] · Facebook"><span class="fa-solid fa-facebook-f" aria-hidden="true"></span></a>
                         <a class="button button-outline admin-icon-button" asp-controller="Social" asp-action="Compose" asp-route-id="@item.Id" asp-route-provider="LinkedIn" aria-label="@T["SocialCompose"] · LinkedIn" title="@T["SocialCompose"] · LinkedIn"><span class="fa-solid fa-linkedin-in" aria-hidden="true"></span></a>
+                        <a class="button button-outline admin-icon-button" asp-controller="TelegramCompose" asp-action="Index" asp-route-id="@item.Id" aria-label="@T["SocialCompose"] · Telegram" title="@T["SocialCompose"] · Telegram"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span></a>
                         }
                     </td>
                 </tr>

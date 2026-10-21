@@ -1,0 +1,39 @@
+@model TelegramComposeDto
+@{ ViewData["Title"] = T["SocialCompose"].Value + " · Telegram"; }
+<section class="social-composer" data-social-compose>
+    <header class="social-composer-heading">
+        <span class="social-provider-mark" aria-hidden="true"><span class="fa-solid fa-paper-plane"></span></span>
+        <div><h1>@T["SocialCompose"] · Telegram</h1><p dir="auto">@Model.Title</p></div>
+    </header>
+    <p class="notice">@T["TelegramManualHelp"]</p>
+    <form asp-controller="TelegramCompose" asp-action="Publish" method="post">
+        <input type="hidden" name="Id" value="@Guid.NewGuid()" />
+        <input type="hidden" name="OpportunityId" value="@Model.OpportunityId" />
+        <input type="hidden" name="TemplateVersionId" value="@Model.TemplateVersionId" />
+        <p><a asp-controller="SocialTemplates" asp-action="Index">@T["TelegramChannelTemplates"]</a></p>
+        <fieldset class="social-destinations" data-social-targets data-required-message="@T["SocialDestinationRequired"]">
+            <legend>@T["SocialDestinations"]</legend>
+            <div class="social-destination-grid">
+                @foreach (var target in Model.Destinations)
+                {
+                    <div class="social-destination @(target.Available ? "" : "social-destination-unavailable")">
+                        <label class="social-destination-choice">
+                            <input type="checkbox" name="Targets" value="@target.Target" disabled="@(!target.Available)" checked="@(target.Available && target.Target != "All")" />
+                            <span class="social-destination-icon" aria-hidden="true"><span class="fa-solid fa-paper-plane"></span></span>
+                            <span class="social-destination-copy">
+                                <strong>@T["TelegramChannelTarget_" + target.Target]</strong>
+                                <bdi class="social-destination-account">@(target.Channel.Length > 0 ? target.Channel : T["TelegramChannelNotConfigured"].Value)</bdi>
+                                @if (target.Status is { } status) { <span>@T["Social" + status]</span> }
+                            </span>
+                        </label>
+                        <a class="social-destination-settings" asp-controller="Distribution" asp-action="Index" asp-fragment="telegram-@target.Target.ToLowerInvariant()">@T["IntegrationSettings"]</a>
+                    </div>
+                }
+            </div>
+        </fieldset>
+        <label class="social-preview">@T["SocialPreview"]<textarea name="Text" rows="12" dir="auto" maxlength="4096" required>@Model.Text</textarea></label>
+        <p class="social-canonical-link" dir="ltr"><a href="@Model.Link" target="_blank" rel="noopener">@Model.Link</a></p>
+        <div class="social-compose-actions"><button type="submit" class="admin-action" disabled="@(!Model.Destinations.Any(x => x.Available))"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["TelegramQueuePublish"]</button></div>
+    </form>
+</section>
+<script src="~/js/social-compose.js" asp-append-version="true" defer></script>

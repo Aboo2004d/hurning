@@ -45,6 +45,9 @@ public sealed class MembershipPlanVersion
     public int DetailKinds { get; set; }
     /// <summary>قناع بتات أنواع الفرص التي يشملها إرسال التنبيهات.</summary>
     public int AlertKinds { get; set; }
+    /// <summary>أقصى عدد للمجالات المفضلة؛ القيمة الفارغة تسمح بعدد غير محدود.</summary>
+    [Range(1, 1000)]
+    public int? MaxPreferredCategories { get; set; }
     /// <summary>وقت إنشاء السجل بالتوقيت العالمي.</summary>
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

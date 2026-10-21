@@ -15,6 +15,7 @@ public sealed record MembershipPlanVersionSummaryDto
     public int Days { get; init; }
     public int DetailKinds { get; init; }
     public int AlertKinds { get; init; }
+    public int? MaxPreferredCategories { get; init; }
 
     /// <summary>يختار الاسم وفق لغة العرض بنفس سياسة النسخة المخزنة.</summary>
     public string Name(string language) => language == "en" ? NameEn : NameAr;

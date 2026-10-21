@@ -10,6 +10,6 @@ public static class MembershipPlanProjection
         Id = x.Id, PlanId = x.PlanId, NameAr = x.NameAr, NameEn = x.NameEn,
         DescriptionAr = x.DescriptionAr, DescriptionEn = x.DescriptionEn,
         BadgeAr = x.BadgeAr, BadgeEn = x.BadgeEn, PriceIls = x.PriceIls,
-        Days = x.Days, DetailKinds = x.DetailKinds, AlertKinds = x.AlertKinds,
+        Days = x.Days, DetailKinds = x.DetailKinds, AlertKinds = x.AlertKinds, MaxPreferredCategories = x.MaxPreferredCategories,
     };
 }

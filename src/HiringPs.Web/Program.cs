@@ -160,6 +160,8 @@ builder.Services.AddHttpClient<SourceSetupAssistant>(client =>
     client.Timeout = TimeSpan.FromSeconds(75)
 );
 
+builder.Services.AddDatabaseErrorLogging("Web");
+
 // ========================================
 // 5. Identity Configuration
 // ========================================
@@ -379,7 +381,7 @@ app.Use(
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; "
-            + "script-src 'self' https://www.googletagmanager.com; "
+            + "script-src 'self' https://www.googletagmanager.com https://static.cloudflareinsights.com; "
             + "style-src 'self'; "
             + "font-src 'self'; "
             + "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; "
@@ -394,6 +396,17 @@ app.Use(
 // ========================================
 // 14. Middleware
 // ========================================
+// Capture failed HTTP responses, including those without an exception. Never log bodies or query strings.
+app.Use(async (context, next) =>
+{
+    var originalPath = context.Request.PathBase + context.Request.Path;
+    await next(context);
+    if (context.Response.StatusCode >= 400)
+        app.Logger.LogError("HTTP request failed: {Method} {Path}; status {StatusCode}; reference {TraceId}",
+            context.Request.Method, originalPath, context.Response.StatusCode,
+            System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier);
+});
+
 app.UseExceptionHandler(
     new ExceptionHandlerOptions
     {

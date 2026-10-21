@@ -5,14 +5,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HiringPs.Web.Areas.Member.Controllers;
 
-public class PreferencesController(HiringDb db, MemberPreferencePageService preferences) : MemberControllerBase(db)
+public class PreferencesController(HiringDb db, MemberPreferencePageService preferences, Microsoft.Extensions.Localization.IStringLocalizer<Labels>? labels = null) : MemberControllerBase(db)
 {
     /// <summary>يحفظ بحث القائمة كتفضيلات تنبيه بعد التحقق من كتالوج الخيارات.</summary>
     [HttpPost]
     public async Task<IActionResult> AddSearch(OpportunityKind? kind, string? city, string? category, string? returnUrl, CancellationToken ct)
     {
-        if (!await preferences.AddSearchAsync(MemberId, kind, city, category, ct))
-            return BadRequest();
+        var outcome = await preferences.AddSearchAsync(MemberId, kind, city, category, ct);
+        if (outcome != PreferenceSaveOutcome.Saved)
+        {
+            var key = outcome == PreferenceSaveOutcome.LimitExceeded ? "PreferenceLimitExceeded" : "PreferenceSaveFailed";
+            return BadRequest(new { message = labels?[key].Value ?? key });
+        }
         Response.Headers.CacheControl = "no-store";
         if (Request.Headers["X-Member-Async"] == "true")
             return Json(new
@@ -34,9 +38,16 @@ public class PreferencesController(HiringDb db, MemberPreferencePageService pref
     public async Task<IActionResult> Index(PreferenceInput input, string? addCategory, string? removeCategory,
         string? addLocation, string? removeLocation, CancellationToken ct, string? bulkAction = null)
     {
-        if (!ModelState.IsValid || !await preferences.EditAsync(MemberId, input, addCategory, removeCategory,
+        if (!ModelState.IsValid) return BadRequest();
+        if (!await preferences.EditAsync(MemberId, input, addCategory, removeCategory,
             addLocation, removeLocation, bulkAction, ct))
-            return BadRequest();
+        {
+            if (!input.LimitExceeded) return BadRequest();
+            ModelState.Clear();
+            ViewData["PreferenceNotice"] = "PreferenceLimitExceeded";
+            return Request.Headers["X-Member-Async"] == "true"
+                ? PartialView("_PreferenceEditor", input) : View(input);
+        }
         Response.Headers.CacheControl = "no-store";
         if (Request.Headers["X-Member-Async"] == "true")
         {

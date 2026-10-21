@@ -44,6 +44,7 @@ public class PlansController(HiringDb db, MembershipService membership, AdminPla
                 BadgeEn = version.BadgeEn,
                 PriceIls = version.PriceIls,
                 Days = version.Days,
+                MaxPreferredCategories = version.MaxPreferredCategories,
                 Details = Enum.GetValues<OpportunityKind>()
                     .Where(x => MembershipRules.Includes(version.DetailKinds, x))
                     .ToArray(),
@@ -83,7 +84,7 @@ public class PlansController(HiringDb db, MembershipService membership, AdminPla
         var result = await manager.SaveAsync(new PlanSaveCommandDto(input.Id, input.NameAr, input.NameEn,
             input.DescriptionAr ?? "", input.DescriptionEn ?? "", input.BadgeAr ?? "", input.BadgeEn ?? "",
             input.PriceIls, input.Days, input.Details, input.Alerts, input.Visible, input.SortOrder,
-            input.Version, User.Identity?.Name ?? "Admin"), ct);
+            input.Version, User.Identity?.Name ?? "Admin", input.MaxPreferredCategories), ct);
         if (result.Outcome == PlanSaveOutcome.NotFound) return NotFound();
         if (result.Outcome == PlanSaveOutcome.InvalidRequest) return BadRequest();
         if (result.Outcome == PlanSaveOutcome.Conflict)

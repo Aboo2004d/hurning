@@ -19,6 +19,15 @@ public static class TelegramChannelTargets
     /// <summary>يتحقق من أن رمز الوجهة ضمن قنوات التوزيع المعتمدة.</summary>
     public static bool IsTarget(string? target) => target is not null && All.Contains(target);
 
+    /// <summary>يعيد قناة نوع الفرصة ثم القناة العامة دون إتاحة قنوات الأنواع الأخرى.</summary>
+    public static string[] ForOpportunity(OpportunityKind kind) => kind switch
+    {
+        OpportunityKind.Job => ["Jobs", "All"],
+        OpportunityKind.Training => ["Training", "All"],
+        OpportunityKind.Tender or OpportunityKind.ProcurementNotice => ["Tenders", "All"],
+        _ => [],
+    };
+
     /// <summary>يعيد أنواع الفرص الخاصة بوجهة القناة.</summary>
     public static OpportunityKind[] Kinds(string target) =>
         target switch

@@ -39,6 +39,8 @@ public sealed class PlanInput
 
     [Range(1, 3650)]
     public int Days { get; set; } = 30;
+    [Range(1, 1000, ErrorMessage = "PreferredCategoryLimitRange")]
+    public int? MaxPreferredCategories { get; set; }
     public OpportunityKind[] Details { get; set; } = [];
     public OpportunityKind[] Alerts { get; set; } = [];
     public bool Visible { get; set; } = true;
