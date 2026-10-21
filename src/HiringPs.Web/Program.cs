@@ -379,10 +379,11 @@ app.Use(
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; "
-            + "script-src 'self'; "
+            + "script-src 'self' https://www.googletagmanager.com; "
             + "style-src 'self'; "
             + "font-src 'self'; "
-            + "img-src 'self' data:; "
+            + "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; "
+            + "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; "
             + "frame-ancestors 'none'; "
             + "base-uri 'self'; "
             + "form-action 'self' https://checkout.lahza.io https://accounts.google.com https://www.facebook.com https://www.linkedin.com";
