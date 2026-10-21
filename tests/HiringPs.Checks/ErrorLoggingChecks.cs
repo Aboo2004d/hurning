@@ -63,6 +63,18 @@ public static class ErrorLoggingChecks
         var entity = db.Model.FindEntityType(typeof(ApplicationError))!;
         Check(entity.GetTableName() == "ApplicationErrors", "Dedicated table mapped");
         Check(entity.GetIndexes().Any(i => i.Properties.Single().Name == "TraceId"), "Reference index mapped");
+        var reader = new SystemErrorReadService(db);
+        var sql = reader.Query(new SystemErrorFilterDto("trace-probe", "Web", "Error",
+            new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 21))).ToQueryString();
+        Check(sql.Contains("ORDER BY") && sql.Contains("[At] DESC") && sql.Contains("[Id] DESC"), "Stable SQL ordering");
+        Check(sql.Contains("DECLARE @search_contains") && sql.Contains("[TraceId]") && sql.Contains("[Path]"), "Search and filters translated and parameterized");
+        Check(!sql.Contains("[Details]"), "Large exception details excluded from list queries");
+        var access = typeof(HiringPs.Web.Areas.Admin.Controllers.SystemErrorsController)
+            .GetCustomAttribute<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>();
+        Check(access?.Roles == "Admin", "Diagnostic pages restricted to administrators");
+        var cache = typeof(HiringPs.Web.Areas.Admin.Controllers.SystemErrorsController)
+            .GetCustomAttribute<Microsoft.AspNetCore.Mvc.ResponseCacheAttribute>();
+        Check(cache?.NoStore == true, "Diagnostic pages cannot be cached");
         config["ConnectionStrings:Hiring"] = "unsupported-setting=true";
         using var failing = new DatabaseErrorLogging(config, accessor, sanitizer, "Worker");
         failing.CreateLogger("Failure").LogError("Preserve original failure");

@@ -1,0 +1,20 @@
+@model SystemErrorDetailsDto
+@{ ViewData["Title"] = T["SystemErrorsDetails"].Value; var entry = Model.Summary; }
+<section class="admin-list-page system-errors">
+<header class="admin-page-heading"><div><h1>@T["SystemErrorsDetails"] #<bdi>@entry.Id</bdi></h1><p class="muted"><bdi>@PaymentDisplay.Time(entry.At, seconds: true)</bdi> · @T["PalestineTime"]</p></div><a class="button button-outline" asp-action="Index" asp-route-Search="@entry.TraceId">@T["SystemErrorsRelated"]</a></header>
+<article class="operation-event operation-failed">
+<dl class="system-error-meta">
+<dt>@T["SystemErrorsApplication"]</dt><dd>@T["SystemErrorsApp_" + entry.Application]</dd>
+<dt>@T["SystemErrorsLevel"]</dt><dd>@T["SystemErrorsLevel_" + entry.Level]</dd>
+<dt>@T["SystemErrorsReference"]</dt><dd><bdi>@entry.TraceId</bdi></dd>
+<dt>@T["SystemErrorsPath"]</dt><dd><bdi>@entry.Path</bdi></dd>
+<dt>@T["SystemErrorsCategory"]</dt><dd><bdi>@entry.Category</bdi></dd>
+<dt>@T["SystemErrorsException"]</dt><dd><bdi>@entry.ExceptionType</bdi></dd>
+</dl>
+<h2>@T["SystemErrorsMessage"]</h2><p dir="auto">@entry.Message</p>
+<h2>@T["SystemErrorsDetails"]</h2>
+@if (string.IsNullOrEmpty(Model.Details)) { <p class="muted">@T["SystemErrorsNoException"]</p> }
+else { <pre class="system-error-stack" dir="ltr">@Model.Details</pre> }
+</article>
+<p><a class="button button-outline" asp-action="Index">@T["SystemErrorsBack"]</a></p>
+</section>

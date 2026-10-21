@@ -3188,4 +3188,25 @@
   <data name="SelectedCategoryQuota" xml:space="preserve"><value>المختار: {0} من {1}</value></data>
   <data name="PreferenceQuotaReached" xml:space="preserve"><value>وصلت إلى الحد الأقصى للمجالات في اشتراكك. احذف مجالًا لإضافة غيره.</value></data>
   <data name="PreferenceQuotaRemaining" xml:space="preserve"><value>يمكنك إضافة {0} مجال آخر ضمن اشتراكك.</value></data>
+  <data name="SystemErrors" xml:space="preserve"><value>أخطاء النظام</value></data>
+  <data name="SystemErrorsHelp" xml:space="preserve"><value>أخطاء الموقع والعامل مع رقم المتابعة وتفاصيل التشخيص. البحث والتواريخ بتوقيت فلسطين.</value></data>
+  <data name="SystemErrorsCount" xml:space="preserve"><value>خطأ</value></data>
+  <data name="SystemErrorsSearch" xml:space="preserve"><value>رقم المتابعة، المسار أو رسالة الخطأ</value></data>
+  <data name="SystemErrorsApplication" xml:space="preserve"><value>التطبيق</value></data>
+  <data name="SystemErrorsLevel" xml:space="preserve"><value>المستوى</value></data>
+  <data name="SystemErrorsApp_Web" xml:space="preserve"><value>الموقع</value></data>
+  <data name="SystemErrorsApp_Worker" xml:space="preserve"><value>العامل</value></data>
+  <data name="SystemErrorsLevel_Warning" xml:space="preserve"><value>تحذير</value></data>
+  <data name="SystemErrorsLevel_Error" xml:space="preserve"><value>خطأ</value></data>
+  <data name="SystemErrorsLevel_Critical" xml:space="preserve"><value>خطأ حرج</value></data>
+  <data name="SystemErrorsEmpty" xml:space="preserve"><value>لا توجد أخطاء مطابقة للبحث والفلاتر الحالية.</value></data>
+  <data name="SystemErrorsReference" xml:space="preserve"><value>رقم المتابعة</value></data>
+  <data name="SystemErrorsPath" xml:space="preserve"><value>مسار الطلب</value></data>
+  <data name="SystemErrorsDetails" xml:space="preserve"><value>تفاصيل الخطأ</value></data>
+  <data name="SystemErrorsRelated" xml:space="preserve"><value>سجلات رقم المتابعة</value></data>
+  <data name="SystemErrorsCategory" xml:space="preserve"><value>مصدر السجل</value></data>
+  <data name="SystemErrorsException" xml:space="preserve"><value>نوع الاستثناء</value></data>
+  <data name="SystemErrorsMessage" xml:space="preserve"><value>رسالة الخطأ</value></data>
+  <data name="SystemErrorsNoException" xml:space="preserve"><value>لا توجد تفاصيل استثناء إضافية لهذا السجل.</value></data>
+  <data name="SystemErrorsBack" xml:space="preserve"><value>العودة إلى أخطاء النظام</value></data>
 </root>
