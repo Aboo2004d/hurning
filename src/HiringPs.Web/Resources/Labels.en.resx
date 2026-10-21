@@ -3168,4 +3168,8 @@
   <data name="OperationEvent_Distribution" xml:space="preserve"><value>Content distribution</value></data>
   <data name="OperationEvent_MembershipWorker" xml:space="preserve"><value>Member background work</value></data>
   <data name="OperationOutcome_Uncertain" xml:space="preserve"><value>Uncertain</value></data>
+  <data name="AllOpportunities" xml:space="preserve"><value>All opportunities</value></data>
+  <data name="StatOpenOpportunities" xml:space="preserve"><value>open opportunities</value></data>
+  <data name="StatOrganizations" xml:space="preserve"><value>organizations</value></data>
+  <data name="StatNewToday" xml:space="preserve"><value>new in the last 24 hours</value></data>
 </root>

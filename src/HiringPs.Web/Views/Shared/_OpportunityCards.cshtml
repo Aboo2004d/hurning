@@ -1,5 +1,5 @@
 @model CardListModel
-@* بطاقات الفرص المشتركة بين القائمة وصفحات التصفح: العنوان رابط للتفاصيل مع شارات الإغلاق والجديد. *@
+@* بطاقات الفرص المشتركة بين القائمة وصفحات التصفح: البطاقة كلها رابط للتفاصيل، مع لون لكل نوع وشارات الإغلاق والجديد. *@
 @{
     var listing = Model.Listing;
     var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
@@ -11,7 +11,10 @@
 <div class="opportunity-grid">
     @if (!Model.Items.Any())
     {
-        <div class="empty-state">@T["Empty"]</div>
+        <div class="empty-state">
+            <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>
+            <p>@T["Empty"]</p>
+        </div>
     }
     @foreach (var item in Model.Items)
     {
@@ -20,50 +23,64 @@
         var detailsUrl = Url.Content("~" + PublicListing.DetailsPath(item));
         var closing = listing.Archive ? null : PublicListing.ClosingInDays(item, listing.Today);
         var isNew = !listing.Archive && PublicListing.IsNew(item);
-        <article class="opportunity-card">
+        var kindClass = "kind-" + item.Kind.ToString().ToLowerInvariant();
+        var initial = item.Organization.FirstOrDefault(char.IsLetterOrDigit);
+        var tone = item.Organization.Sum(c => c) % 6;
+        <article class="opportunity-card @kindClass @(allowed ? "is-linked" : null)">
             <div class="card-top">
+                <span class="org-avatar tone-@tone" aria-hidden="true">@(initial == default ? "•" : char.ToUpperInvariant(initial).ToString())</span>
                 <span class="organization" dir="auto">@item.Organization</span>
                 <span class="card-badges">
                     @if (isNew)
                     {
                         <span class="badge badge-new">@T["NewBadge"]</span>
                     }
-                    <span class="badge">@T[item.Kind.ToString()]</span>
+                    <span class="badge badge-kind">@T[item.Kind.ToString()]</span>
                 </span>
             </div>
-            <h2 id="@titleId" dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">
+            <h2 id="@titleId" dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">
                 @if (allowed)
                 {
-                    <a class="card-title-link" href="@detailsUrl">@item.Title</a>
+                    <a class="card-title-link" href="@detailsUrl">@BidiText.Render(item.Title)</a>
                 }
                 else
                 {
-                    @item.Title
+                    @BidiText.Render(item.Title)
                 }
             </h2>
-            <p class="metadata" dir="auto">
-                @item.Locations
-                @if (item.Kind == OpportunityKind.Job && item.EmploymentType.Length > 0)
-                {
-                    <span> · @FilterLabels.Employment(item.EmploymentType, english)</span>
-                }
+            @if (item.Locations.Length > 0 || (item.Kind == OpportunityKind.Job && item.EmploymentType.Length > 0))
+            {
+                <p class="metadata" dir="auto">
+                    @if (item.Locations.Length > 0)
+                    {
+                        <span class="meta-item"><span class="fa-solid fa-location-dot" aria-hidden="true"></span>@item.Locations</span>
+                    }
+                    @if (item.Kind == OpportunityKind.Job && item.EmploymentType.Length > 0)
+                    {
+                        <span class="meta-item">@FilterLabels.Employment(item.EmploymentType, english)</span>
+                    }
+                </p>
+            }
+            <p class="summary" dir="@BidiText.Direction(item.Summary, item.OriginalLanguage)" lang="@item.OriginalLanguage">
+                @BidiText.Render(item.Summary)
             </p>
-            <p class="summary" dir="@(item.OriginalLanguage=="ar"?"rtl":"ltr")" lang="@item.OriginalLanguage">
-                @item.Summary
-            </p>
-            <div class="tags">
-                @if (item.Category.Length > 0)
-                {
-                    <span>@FilterLabels.Category(item.Category, english)</span>
-                }
-                @if (item.ReferenceNumber.Length > 0)
-                {
-                    <span dir="auto">@item.ReferenceNumber</span>
-                }
-            </div>
+            @if (item.Category.Length > 0 || item.ReferenceNumber.Length > 0)
+            {
+                <div class="tags">
+                    @if (item.Category.Length > 0)
+                    {
+                        <span>@FilterLabels.Category(item.Category, english)</span>
+                    }
+                    @if (item.ReferenceNumber.Length > 0)
+                    {
+                        <span dir="auto">@item.ReferenceNumber</span>
+                    }
+                </div>
+            }
             <div class="card-bottom">
                 <span class="opportunity-deadline">
-                    @(listing.Archive ? T["Expired"] : item.Deadline is { } deadline ? T["Deadline"] + ": " + deadline.ToString("yyyy-MM-dd") : T["UnknownDeadline"])
+                    <span class="fa-solid fa-calendar" aria-hidden="true"></span>
+                    <span>@(listing.Archive ? T["Expired"] : item.Deadline is { } deadline ? T["Deadline"] + ": " + deadline.ToString("yyyy-MM-dd") : T["UnknownDeadline"])</span>
                     @if (closing is { } days)
                     {
                         <partial name="_ClosingBadge" model="days" />
@@ -72,14 +89,17 @@
                 <div class="opportunity-actions">
                     @if (allowed)
                     {
-                        <a class="button button-outline listing-action" href="@detailsUrl" aria-describedby="@titleId">
-                            <span class="fa-solid fa-eye" aria-hidden="true"></span>
-                            <span>@T["Details"]</span>
-                        </a>
+                        <span class="card-more" aria-hidden="true">
+                            @T["Details"]
+                            <span class="fa-solid @(english ? "fa-arrow-right" : "fa-arrow-left")"></span>
+                        </span>
                     }
                     else
                     {
-                        <p class="subscriber-details-hint"><a href="@plansUrl">@T["SubscribeForDetails"]</a></p>
+                        <p class="subscriber-details-hint">
+                            <span class="fa-solid fa-key" aria-hidden="true"></span>
+                            <a href="@plansUrl">@T["SubscribeForDetails"]</a>
+                        </p>
                     }
                     @if (member)
                     {

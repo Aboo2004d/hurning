@@ -136,4 +136,34 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
                 return new BrowseFacets(cities, organizations);
             }
         )!;
+
+    /// <summary>Current counts per kind and organizations for the home page header.</summary>
+    public Task<HomeStats> StatsAsync(CancellationToken ct) =>
+        cache.GetOrCreateAsync(
+            "home-stats",
+            async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = Lifetime;
+                var current = db.Opportunities.AsNoTracking().Current(TextRules.PalestineToday());
+                var counts = await current
+                    .GroupBy(x => x.Kind)
+                    .Select(g => new { g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+                var organizations = await current
+                    .Where(x => x.NormalizedOrganization != "")
+                    .Select(x => x.NormalizedOrganization)
+                    .Distinct()
+                    .CountAsync(ct);
+                var since = DateTimeOffset.UtcNow.AddDays(-1);
+                var fresh = await current.CountAsync(x => x.CreatedAt >= since, ct);
+                return new HomeStats(counts, organizations, fresh);
+            }
+        )!;
+}
+
+public sealed record HomeStats(Dictionary<OpportunityKind, int> Counts, int Organizations, int NewToday)
+{
+    public int Total => Counts.Values.Sum();
+
+    public int Count(OpportunityKind kind) => Counts.GetValueOrDefault(kind);
 }

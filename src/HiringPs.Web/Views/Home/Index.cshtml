@@ -11,6 +11,7 @@
     var member = signedIn && !User.IsInRole("Admin");
     var currentUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
     var facets = ViewBag.Facets as BrowseFacets;
+    var stats = ViewBag.Stats as HomeStats;
     string ListingUrl(int page, string? sort = null)
     {
         var values = Model.RouteValues(page);
@@ -23,11 +24,80 @@
         return Url.Action("Index", "Home", values.ToDictionary(x => x.Key, x => (object?)x.Value))!;
     }
 }
-<section class="intro">
-    <h1>@heading</h1>
-    <p>@T[subtitle]</p>
+<section class="intro hero @(Model.Kind is null && !Model.Archive ? "hero-home" : null)">
+    <div class="hero-text">
+        <h1>@heading</h1>
+        <p>@T[subtitle]</p>
+    </div>
+    <div class="hero-search" role="search">
+        <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>
+        <label class="visually-hidden" for="listing-query">@T["Search"]</label>
+        <input id="listing-query" type="search" name="q" value="@Model.Query" form="listing-form"
+               placeholder="@T["SearchPlaceholder"]" />
+        <button class="button" type="submit" form="listing-form">@T["Search"]</button>
+    </div>
+    @if (stats is not null)
+    {
+        <nav class="kind-tabs" aria-label="@T["OpportunityTypes"]">
+            <a href="@Url.Action("Index", "Home", new { archive = Model.Archive ? "true" : null })"
+               aria-current="@(Model.Kind is null ? "page" : null)">
+                <span>@T["AllOpportunities"]</span>
+                <span class="kind-count">@stats.Total</span>
+            </a>
+            @foreach (var kind in Enum.GetValues<OpportunityKind>())
+            {
+                <a class="kind-@kind.ToString().ToLowerInvariant()" href="@Url.Action("Index", "Home", new { kind })"
+                   aria-current="@(Model.Kind == kind ? "page" : null)">
+                    <span class="kind-dot" aria-hidden="true"></span>
+                    <span>@T[kind == OpportunityKind.Job ? "Jobs" : kind.ToString()]</span>
+                    <span class="kind-count">@stats.Count(kind)</span>
+                </a>
+            }
+        </nav>
+        @if (Model.Kind is null)
+        {
+            <ul class="hero-stats">
+                <li><strong>@stats.Total</strong> @T["StatOpenOpportunities"]</li>
+                <li><strong>@stats.Organizations</strong> @T["StatOrganizations"]</li>
+                @if (stats.NewToday > 0)
+                {
+                    <li><strong>@stats.NewToday</strong> @T["StatNewToday"]</li>
+                }
+            </ul>
+        }
+    }
 </section>
-<partial name="/Views/Home/_ClosingWeek.cshtml" model="Model" />
+@if (Model.ClosingSoon.Count > 0)
+{
+    <section class="closing-week" aria-labelledby="closing-week-title">
+        <h2 id="closing-week-title">
+            <span class="fa-solid fa-clock" aria-hidden="true"></span>
+            <span>@T["ClosingThisWeek"]</span>
+        </h2>
+        <ul class="closing-week-list">
+            @foreach (var item in Model.ClosingSoon)
+            {
+                <li>
+                    @if (Model.AllowedDetails.Contains(item.Kind))
+                    {
+                        <a href="@Url.Content("~" + PublicListing.DetailsPath(item))" dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</a>
+                    }
+                    else
+                    {
+                        <span dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</span>
+                    }
+                    <span class="closing-week-meta">
+                        <bdi>@item.Organization</bdi>
+                        @if (PublicListing.ClosingInDays(item, Model.Today) is { } days)
+                        {
+                            <partial name="_ClosingBadge" model="days" />
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    </section>
+}
 <form method="get" asp-action="Index" id="listing-form">
     @if (Model.Archive)
     {
@@ -45,15 +115,6 @@
         <aside class="filter-panel">
             <details open>
                 <summary>@T["Filters"]</summary>
-                <div class="listing-search">
-                    <label for="listing-query">@T["Search"]</label>
-                    <input id="listing-query" type="search" name="q" value="@Model.Query"
-                           placeholder="@T["SearchPlaceholder"]" />
-                    <button class="button button-outline listing-action" type="submit">
-                        <span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>
-                        <span>@T["Search"]</span>
-                    </button>
-                </div>
                 <label>
                     @T["Location"]
                     <select name="city">
@@ -157,15 +218,16 @@
             @if (cities.Count > 0)
             {
                 <div>
-                    <h2><span class="browse-section-icon fa-solid fa-city" aria-hidden="true"></span>@T["BrowseByCity"]</h2>
+                    <h2><span class="fa-solid fa-city" aria-hidden="true"></span>@T["BrowseByCity"]</h2>
                     <ul>
                         @foreach (var facet in cities)
                         {
                             var kindLabel = T[facet.Kind == OpportunityKind.Job ? "Jobs" : facet.Kind.ToString()].Value;
                             <li>
-                                <a href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(facet.Kind, facet.City))">
+                                <a class="chip kind-@facet.Kind.ToString().ToLowerInvariant()" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(facet.Kind, facet.City))">
+                                    <span class="kind-dot" aria-hidden="true"></span>
                                     <span>@string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, facet.City.Name(english))</span>
-                                    <span class="browse-count"><bdi>@facet.Count</bdi></span>
+                                    <span class="chip-count">@facet.Count</span>
                                 </a>
                             </li>
                         }
@@ -175,13 +237,14 @@
             @if (organizations.Count > 0)
             {
                 <div>
-                    <h2><span class="browse-section-icon fa-solid fa-building" aria-hidden="true"></span>@T["BrowseByOrganization"]</h2>
+                    <h2><span class="fa-solid fa-building" aria-hidden="true"></span>@T["BrowseByOrganization"]</h2>
                     <ul>
                         @foreach (var organization in organizations)
                         {
                             <li>
-                                <a href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organization.Slug))" dir="auto">
-                                    <span>@organization.Name</span><span class="browse-count"><bdi>@organization.Count</bdi></span>
+                                <a class="chip" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organization.Slug))">
+                                    <span dir="auto">@organization.Name</span>
+                                    <span class="chip-count">@organization.Count</span>
                                 </a>
                             </li>
                         }

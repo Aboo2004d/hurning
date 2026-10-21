@@ -15,8 +15,9 @@
     <span class="fa-solid @(english ? "fa-arrow-left" : "fa-arrow-right")" aria-hidden="true"></span>
     <span>@T["Back"]</span>
 </a>
-<article class="detail-panel">
+<article class="detail-panel kind-@Model.Kind.ToString().ToLowerInvariant()">
     <div class="card-top">
+        <span class="org-avatar tone-@(Model.Organization.Sum(c => c) % 6)" aria-hidden="true">@(Model.Organization.FirstOrDefault(char.IsLetterOrDigit) is var initial && initial != default ? char.ToUpperInvariant(initial).ToString() : "•")</span>
         @if (organizationFacet is not null)
         {
             <a dir="auto" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organizationFacet.Slug))">@Model.Organization</a>
@@ -30,36 +31,57 @@
             {
                 <partial name="_ClosingBadge" model="days" />
             }
-            <span class="badge">@T[Model.Kind.ToString()]</span>
+            <span class="badge badge-kind">@T[Model.Kind.ToString()]</span>
         </span>
     </div>
-    <h1 dir="auto" lang="@Model.OriginalLanguage">@Model.Title</h1>
+    <h1 dir="@BidiText.Direction(Model.Title, Model.OriginalLanguage)" lang="@Model.OriginalLanguage">@BidiText.Render(Model.Title)</h1>
     @if (expired)
     {
         <div class="notice">@T["Expired"]</div>
     }
+    <ul class="detail-facts">
+        <li>
+            <span class="fa-solid fa-calendar" aria-hidden="true"></span>
+            <span>
+                <small>@T["Deadline"]</small>
+                <strong>@(Model.Deadline?.ToString("yyyy-MM-dd") ?? T["UnknownDeadline"].Value)</strong>
+            </span>
+        </li>
+        @if (Model.Locations.Length > 0)
+        {
+            <li>
+                <span class="fa-solid fa-location-dot" aria-hidden="true"></span>
+                <span>
+                    <small>@T["Location"]</small>
+                    <strong dir="auto">@Model.Locations</strong>
+                </span>
+            </li>
+        }
+        @if (Model.Category.Length > 0)
+        {
+            <li>
+                <span class="fa-solid fa-list" aria-hidden="true"></span>
+                <span>
+                    <small>@T["Category"]</small>
+                    <strong dir="auto">@FilterLabels.Category(Model.Category, english)</strong>
+                </span>
+            </li>
+        }
+    </ul>
+    @if (cityLinks.Count > 0)
+    {
+        <p class="detail-city-links">
+            @foreach (var city in cityLinks)
+            {
+                var kindLabel = T[Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind.ToString()].Value;
+                <a class="chip kind-@Model.Kind.ToString().ToLowerInvariant()" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(Model.Kind, city))">
+                    <span class="kind-dot" aria-hidden="true"></span>
+                    <span>@string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, city.Name(english))</span>
+                </a>
+            }
+        </p>
+    }
     <dl class="detail-grid">
-        <div>
-            <dt>@T["Location"]</dt>
-            <dd dir="auto">
-                @Model.Locations
-                @foreach (var city in cityLinks)
-                {
-                    var kindLabel = T[Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind.ToString()].Value;
-                    <a class="detail-browse-link" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(Model.Kind, city))">
-                        @string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, city.Name(english))
-                    </a>
-                }
-            </dd>
-        </div>
-        <div>
-            <dt>@T["Category"]</dt>
-            <dd dir="auto">@FilterLabels.Category(Model.Category, english)</dd>
-        </div>
-        <div>
-            <dt>@T["Deadline"]</dt>
-            <dd>@(Model.Deadline?.ToString("yyyy-MM-dd")??T["UnknownDeadline"].Value)</dd>
-        </div>
         <div>
             <dt>@T["AddedToSite"] · @T["PalestineTime"]</dt>
             <dd>@TimeZoneInfo.ConvertTime(Model.CreatedAt, SourceSchedule.Zone).ToString("yyyy-MM-dd")</dd>
@@ -120,16 +142,22 @@
         }
     </dl>
     <h2>@T["Summary"]</h2>
-    <p dir="auto" lang="@Model.OriginalLanguage">@Model.Summary</p>
+    <p class="detail-summary" dir="@BidiText.Direction(Model.Summary, Model.OriginalLanguage)" lang="@Model.OriginalLanguage">@BidiText.Render(Model.Summary)</p>
     <p class="muted">@T["SummaryNote"]</p>
-    <div class="actions">
+    <div class="actions apply-bar">
         @if (sourceUrl is not null)
         {
-            <a class="button" href="@sourceUrl" rel="noopener noreferrer">@T["Original"]</a>
+            <a class="button button-apply" href="@sourceUrl" rel="noopener noreferrer">
+                <span>@T["Original"]</span>
+                <span class="fa-solid @(english ? "fa-arrow-right" : "fa-arrow-left")" aria-hidden="true"></span>
+            </a>
         }
         else if (!expired && Model.ApplyUrl.Length > 0)
         {
-            <a class="button" href="@Model.ApplyUrl" rel="noopener noreferrer">@T["Original"]</a>
+            <a class="button button-apply" href="@Model.ApplyUrl" rel="noopener noreferrer">
+                <span>@T["Original"]</span>
+                <span class="fa-solid @(english ? "fa-arrow-right" : "fa-arrow-left")" aria-hidden="true"></span>
+            </a>
         }
     </div>
     <div class="sources">
@@ -187,7 +215,7 @@
         </form>
     </details>
 </article>
-@if (ViewBag.VerifiedDates is IEnumerable<VerifiedOpportunityDateDto> dateRecords)
+@if (ViewBag.VerifiedDates is IEnumerable<OpportunityDateRecord> dateRecords && dateRecords.Any())
 {
     <section class="detail-panel">
         <h2>@T["VerifiedSourceDates"]</h2>

@@ -142,15 +142,31 @@
         <footer class="site-footer">
             <div class="footer-inner">
                 <div class="footer-description">
-                    <span class="footer-copyright">
-                        © @TextRules.PalestineToday().Year
+                    <span class="footer-brand">
+                        <img src="~/images/brand/basket-logo.png" width="40" height="40" alt="" />
                         <bdi>@T["SiteName"]</bdi>
                     </span>
                     <p>
                         @T["SourceLinkNote"]
                     </p>
+                    <span class="footer-copyright">© @DateTime.UtcNow.Year <bdi>@T["SiteName"]</bdi></span>
                 </div>
+                @if (!adminArea)
+                {
+                    <nav class="footer-links footer-browse" aria-label="@T["OpportunityTypes"]">
+                        <strong>@T["OpportunityTypes"]</strong>
+                        @foreach (var kind in Enum.GetValues<OpportunityKind>())
+                        {
+                            <a asp-area="" asp-controller="Home" asp-action="Index" asp-route-kind="@kind">@T[kind == OpportunityKind.Job ? "Jobs" : kind.ToString()]</a>
+                        }
+                        <a href="@(mount + "/feeds/jobs.xml")" type="application/rss+xml">
+                            <span class="fa-solid fa-rss" aria-hidden="true"></span>
+                            @T["RssFeed"]
+                        </a>
+                    </nav>
+                }
                 <nav class="footer-links" aria-label="@T["FooterNavigation"]">
+                    <strong>@T["SiteName"]</strong>
                     <a asp-area="" asp-controller="About" asp-action="Index">
                         @T["About"]
                     </a>

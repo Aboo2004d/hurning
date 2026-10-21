@@ -84,6 +84,7 @@ public class HomeController(
             english
         );
         ViewBag.Facets = !archive && !model.HasFilters && page == 1 ? await catalog.FacetsAsync(ct) : null;
+        ViewBag.Stats = archive ? null : await catalog.StatsAsync(ct);
         return View(model);
     }
 

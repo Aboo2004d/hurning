@@ -3168,4 +3168,8 @@
   <data name="OperationEvent_Distribution" xml:space="preserve"><value>توزيع المحتوى</value></data>
   <data name="OperationEvent_MembershipWorker" xml:space="preserve"><value>معالجة خدمات الأعضاء</value></data>
   <data name="OperationOutcome_Uncertain" xml:space="preserve"><value>غير محسومة</value></data>
+  <data name="AllOpportunities" xml:space="preserve"><value>كل الفرص</value></data>
+  <data name="StatOpenOpportunities" xml:space="preserve"><value>فرصة مفتوحة</value></data>
+  <data name="StatOrganizations" xml:space="preserve"><value>جهة معلنة</value></data>
+  <data name="StatNewToday" xml:space="preserve"><value>جديدة خلال 24 ساعة</value></data>
 </root>
