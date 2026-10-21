@@ -40,16 +40,14 @@ public sealed class MemberNotifications(
             )
             .Select(x => new { x.StartsAt, x.PlanVersion.AlertKinds, x.PlanVersion.MaxPreferredCategories })
             .ToListAsync(ct);
+        if (rights.Count == 0) return false;
         if (!saved)
         {
             var limit = PreferenceLimitRules.Effective(rights.Select(x => x.MaxPreferredCategories));
-            if (limit is not null)
-            {
-                var categoriesJson = await db.MemberPreferences.Where(x => x.UserId == member.UserId)
-                    .Select(x => x.CategoriesJson).SingleAsync(ct);
-                if (!PreferenceLimitRules.AllowsAlerts(System.Text.Json.JsonSerializer.Deserialize<string[]>(categoriesJson) ?? [], limit))
-                    return false;
-            }
+            var categoriesJson = await db.MemberPreferences.Where(x => x.UserId == member.UserId)
+                .Select(x => x.CategoriesJson).SingleAsync(ct);
+            if (!PreferenceLimitRules.AllowsAlerts(System.Text.Json.JsonSerializer.Deserialize<string[]>(categoriesJson) ?? [], limit))
+                return false;
         }
         return rights.Any(right => right.StartsAt <= eventAt && MembershipRules.Includes(right.AlertKinds, item.Kind));
     }

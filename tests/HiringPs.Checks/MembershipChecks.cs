@@ -111,8 +111,8 @@ public static class MembershipChecks
         preference.CategoriesJson = "[]";
         preference.LocationsJson = "[]";
         Check(
-            MembershipRules.Matches(preference, opportunity),
-            "Empty category/location preferences match all"
+            !MembershipRules.Matches(preference, opportunity),
+            "Empty category preferences never enable all-category alerts"
         );
         context.Request.Headers.Cookie = "";
         context.Request.Headers.AcceptLanguage = "invalid;q=not-a-number";
@@ -211,6 +211,7 @@ public static class MembershipChecks
         builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
         builder.Services.AddSingleton<SiteSeo>();
         builder.Services.AddScoped<OperationReadService>();
+        builder.Services.AddSingleton<ICategoryCatalogReadService, FixtureCategoryCatalog>();
         builder.Services.AddScoped<HiringPs.Web.Services.Authentication.GoogleLinkReadService>();
         builder.Services.AddSingleton<UrlPolicy>();
         builder.Services.AddScoped<MembershipService>();

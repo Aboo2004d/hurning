@@ -56,10 +56,15 @@
             @T["Location"]
             <input asp-for="Locations" dir="auto" required />
         </label>
-        <label>
-            @T["Category"]
-            <input asp-for="Category" dir="auto" />
-        </label>
+        <div class="category-picker" data-category-picker data-new-label="@T["UseNewCategory"]">
+            <label>@T["Category"]
+                <input asp-for="Category" dir="auto" autocomplete="off" list="opportunity-category-options"
+                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="opportunity-category-results" />
+            </label>
+            <datalist id="opportunity-category-options">@foreach (var category in Model.AvailableCategories) { <option value="@category"></option> }</datalist>
+            <div id="opportunity-category-results" class="category-suggestions" role="listbox" aria-label="@T["CategorySuggestions"]" hidden></div>
+            <p class="muted">@T["CategorySuggestionsHelp"]</p>
+        </div>
         <label>
             @T["Deadline"]
             <input asp-for="Deadline" type="date" />

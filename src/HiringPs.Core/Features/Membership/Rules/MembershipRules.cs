@@ -42,8 +42,9 @@ public static class MembershipRules
         var locations = JsonSerializer.Deserialize<string[]>(preference.LocationsJson) ?? [];
         return Includes(preference.Kinds, opportunity.Kind)
             && (
-                categories.Length == 0
-                || categories.Contains(opportunity.Category, StringComparer.OrdinalIgnoreCase)
+                !string.IsNullOrWhiteSpace(opportunity.Category)
+                && categories.Any(category => !string.IsNullOrWhiteSpace(category)
+                    && CategoryRules.Key(category) == CategoryRules.Key(opportunity.Category))
             )
             && (
                 locations.Length == 0

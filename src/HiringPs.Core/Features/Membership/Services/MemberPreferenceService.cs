@@ -40,7 +40,7 @@ public sealed class MemberPreferenceService(HiringDb db)
             return false;
         var pref = await db.MemberPreferences.SingleAsync(x => x.UserId == owner, ct);
         pref.Kinds = input.Kinds;
-        pref.CategoriesJson = JsonSerializer.Serialize(input.Categories);
+        pref.CategoriesJson = JsonSerializer.Serialize(input.Categories.Select(CategoryRules.Clean).Where(x => x.Length > 0).DistinctBy(CategoryRules.Key));
         pref.LocationsJson = JsonSerializer.Serialize(input.Locations);
         pref.ChangedAt = DateTimeOffset.UtcNow;
         if (input.SavedReminders is { } reminders)

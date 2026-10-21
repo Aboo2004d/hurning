@@ -14,13 +14,16 @@ public class OpportunitiesController : AdminControllerBase
 {
     private readonly OpportunityManagementService management;
     private readonly AdminOpportunityReadService reader;
+    private readonly ICategoryCatalogReadService categories;
 
     public OpportunitiesController(HiringDb database, UrlPolicy urls, IConfiguration settings,
-        OpportunityManagementService? managementService = null, AdminOpportunityReadService? readService = null)
+        OpportunityManagementService? managementService = null, AdminOpportunityReadService? readService = null,
+        ICategoryCatalogReadService? categoryCatalog = null)
         : base(database, urls, settings)
     {
         management = managementService ?? new(database);
         reader = readService ?? new(database);
+        categories = categoryCatalog ?? new CategoryCatalogService(database);
     }
 
     public async Task<IActionResult> Opportunities(
@@ -38,10 +41,11 @@ public class OpportunitiesController : AdminControllerBase
     }
 
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create(CancellationToken ct)
     {
         ViewBag.OriginalSources = Array.Empty<string>();
-        return View("OpportunityForm", new OpportunityInput { Status = PublicationStatus.Draft });
+        return View("OpportunityForm", new OpportunityInput { Status = PublicationStatus.Draft,
+            AvailableCategories = await categories.OptionsAsync(ct) });
     }
 
     [HttpGet]
@@ -53,7 +57,9 @@ public class OpportunitiesController : AdminControllerBase
         if (opportunity is null)
             return NotFound();
         await SetOriginalSourcesAsync(opportunity.Id, ct);
-        return View("OpportunityForm", OpportunityInput.From(opportunity));
+        var input = OpportunityInput.From(opportunity);
+        input.AvailableCategories = await categories.OptionsAsync(ct);
+        return View("OpportunityForm", input);
     }
 
     [HttpPost]
@@ -94,6 +100,7 @@ public class OpportunitiesController : AdminControllerBase
     )
     {
         NormalizeStrings(input);
+        input.AvailableCategories = await categories.OptionsAsync(ct);
         await SetOriginalSourcesAsync(input.Id, ct);
         if (!ModelState.IsValid)
         {

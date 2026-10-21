@@ -17,6 +17,8 @@ public sealed class OpportunityInput
     public string Summary { get; set; } = "";
     public string Locations { get; set; } = "";
     public string Category { get; set; } = "";
+    [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+    public string[] AvailableCategories { get; set; } = [];
     public string EmploymentType { get; set; } = "";
     public string ExperienceLevel { get; set; } = "";
     public string WorkMode { get; set; } = "";

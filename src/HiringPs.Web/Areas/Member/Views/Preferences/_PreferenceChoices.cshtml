@@ -34,7 +34,7 @@
             <span class="fa-solid fa-trash-can" aria-hidden="true"></span><span>@T["ClearAllPreferences"]</span>
         </button>
     </div>
-    <p class="muted preference-bulk-help">@T[Model.Limit is null ? "EmptyPreferencesMeansAll" : "LimitedCategoriesHelp"]</p>
+    <p class="muted preference-bulk-help">@T[Model.Field == "Categories" ? "CategoryAlertsSelectionHelp" : "EmptyPreferencesMeansAll"]</p>
     <div class="preference-chips" data-preference-selected="@Model.Field">
         @foreach (var value in Model.Selected)
         {
@@ -49,15 +49,22 @@
         }
         @if (Model.Selected.Length == 0)
         {
-            <p class="member-empty-hint">@T[Model.Field == "Categories" ? (Model.Limit is null ? "AllCategoriesSelected" : "NoCategoriesSelected") : "AllLocationsSelected"]</p>
+            <p class="member-empty-hint">@T[Model.Field == "Categories" ? "NoCategoriesSelected" : "AllLocationsSelected"]</p>
         }
     </div>
     <details class="member-disclosure" data-preference-list="@Model.Field">
         <summary><span>@T["AvailablePreferences"]</span><span class="badge">@available.Length</span></summary>
-        <div class="preference-chips">
+        @if (Model.Field == "Categories")
+        {
+            <label>@T["SearchCategories"]<input type="search" data-preference-category-search autocomplete="off" maxlength="200" /></label>
+            <button type="submit" class="button button-outline" name="addCategory" data-preference-new-category
+                    data-new-label="@T["UseNewCategory"]" disabled="@limitReached" hidden></button>
+            <p class="muted">@T["CategorySuggestionsHelp"]</p>
+        }
+        <div class="preference-chips" data-preference-options>
             @foreach (var value in available)
             {
-                <div class="preference-chip">
+                <div class="preference-chip" data-preference-value="@value">
                     <span dir="auto">@value</span>
                     <button class="preference-chip-action" type="submit" name="@addName" value="@value" disabled="@limitReached"
                             aria-label="@T["AddPreference"]: @value" title="@T["AddPreference"]">

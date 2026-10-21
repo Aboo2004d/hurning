@@ -61,6 +61,10 @@ public sealed class OpportunityManagementService(HiringDb db)
         )
             errors.Add("A source or application link is required.");
         if (errors.Count > 0) return new(OpportunitySaveOutcome.Invalid, errors);
+        var catalog = await new CategoryCatalogService(db).OptionsAsync(ct);
+        var category = CategoryRules.Resolve(input.Category, catalog);
+        if (category.Length > 0 && !catalog.Contains(category) && !CategoryRules.ValidNew(category))
+            return new(OpportunitySaveOutcome.Invalid, ["CategoryNameInvalid"]);
         var entity =
             input.Id == 0 ? new Opportunity() : await db.Opportunities.FindAsync([input.Id], ct);
         if (entity is null)
@@ -73,7 +77,7 @@ public sealed class OpportunityManagementService(HiringDb db)
         entity.OriginalLanguage = input.OriginalLanguage;
         entity.Summary = input.Summary.Trim();
         entity.Locations = input.Locations;
-        entity.Category = input.Category;
+        entity.Category = category;
         entity.EmploymentType = input.EmploymentType;
         entity.ExperienceLevel = input.ExperienceLevel;
         entity.WorkMode = input.WorkMode;

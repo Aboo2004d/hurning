@@ -23,6 +23,7 @@ public static class AdministrationRegistration
         services.TryAddScoped<CollectorDiagnosticReadService>();
         services.TryAddScoped<OperationReadService>();
         services.TryAddScoped<SystemErrorReadService>();
+        services.TryAddScoped<ICategoryCatalogReadService, CategoryCatalogService>();
         return services;
     }
 }

@@ -86,9 +86,12 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
             return false;
         if (addCategory is not null)
         {
-            if (!input.AvailableCategories.Contains(addCategory))
+            var category = CategoryRules.Resolve(addCategory, input.AvailableCategories.Concat(priorCategories));
+            if (!input.AvailableCategories.Contains(category) && !priorCategories.Contains(category) && !CategoryRules.ValidNew(category))
                 return false;
-            input.Categories = input.Categories.Append(addCategory).Distinct().ToArray();
+            input.Categories = input.Categories.Append(category).DistinctBy(CategoryRules.Key).ToArray();
+            // Only the explicitly submitted new category is allowed beyond the existing catalog.
+            priorCategories = priorCategories.Append(category).ToArray();
         }
         if (removeCategory is not null)
             input.Categories = input.Categories.Where(x => x != removeCategory).ToArray();

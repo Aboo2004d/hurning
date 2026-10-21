@@ -192,15 +192,15 @@ public static class MemberWorkspaceSqlChecks
             Check(
                 (await db.MemberPreferences.SingleAsync(x => x.UserId == owner)).CategoriesJson
                     == "[]",
-                "Removing the last category persists all-category preference semantics"
+                "Removing the last category persists paused opportunity alerts"
             );
         Check(
             await Change(addCategory: category) is PartialViewResult,
             "A currently available category can be selected"
         );
         Check(
-            await Change(addCategory: "not-in-the-source-catalog") is BadRequestResult,
-            "A forged category is rejected by the server"
+            await Change(addCategory: new string('x', 201)) is BadRequestResult,
+            "An invalid new category is rejected by the server"
         );
         Check(
             await Change(removeLocation: "غزة") is PartialViewResult,
@@ -221,6 +221,25 @@ public static class MemberWorkspaceSqlChecks
                     == "[\"legacy-category\"]",
                 "Preference changes cannot alter a different member"
             );
+        }
+        Check(await Change(addCategory: "A new future category") is PartialViewResult, "Explicit new category is selectable");
+        Check(await Change(removeCategory: "A new future category") is PartialViewResult, "New category can be removed");
+        await using (var db = new HiringDb(options))
+        {
+            var preferences = new MemberPreferenceService(db);
+            Check(await preferences.LimitAsync(other, default) == 3, "Non-subscriber limit is three in SQL-backed service");
+            Check(!await preferences.SaveAsync(other, new(15, ["A", "B", "C", "D"], [], null), default),
+                "Direct service request cannot bypass non-subscriber cap");
+            Check((await db.MemberPreferences.SingleAsync(x => x.UserId == other)).CategoriesJson == "[\"legacy-category\"]",
+                "Rejected over-limit save preserves old preferences");
+            // Large catalog round-trip checks explicitly use an active unlimited subscription.
+            var plan = new MembershipPlan();
+            db.MembershipPlans.Add(plan);
+            await db.SaveChangesAsync();
+            var version = new MembershipPlanVersion { PlanId = plan.Id, NameAr = "تجربة", NameEn = "Fixture", AlertKinds = 15 };
+            db.MemberSubscriptions.Add(new MemberSubscription { UserId = owner, PlanVersion = version,
+                StartsAt = DateTimeOffset.UtcNow.AddDays(-1), EndsAt = DateTimeOffset.UtcNow.AddDays(1) });
+            await db.SaveChangesAsync();
         }
         foreach (var field in new[] { "categories", "locations" })
         {

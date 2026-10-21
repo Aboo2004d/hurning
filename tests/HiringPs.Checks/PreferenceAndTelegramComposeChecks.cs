@@ -12,14 +12,14 @@ public static class PreferenceAndTelegramComposeChecks
             if (!valid) throw new Exception(description);
             passed++;
         }
-        Check(PreferenceLimitRules.Effective([]) is null, "No subscription preserves preparation of preferences.");
+        Check(PreferenceLimitRules.Effective([]) == 3, "No active subscription has a three-category limit.");
         Check(PreferenceLimitRules.Effective([2, 5]) == 5, "Concurrent subscriptions use the most generous cap.");
         Check(PreferenceLimitRules.Effective([2, null]) is null, "Unlimited subscription remains unlimited.");
         Check(PreferenceLimitRules.Count([" IT ", "it", "", "Accounting"]) == 2, "Duplicates and blanks do not consume slots.");
         Check(!PreferenceLimitRules.AllowsAlerts([], 3), "Empty capped preferences cannot bypass the quota as all categories.");
         Check(!PreferenceLimitRules.AllowsAlerts(["A", "B"], 1), "Old excess preferences cannot bypass a smaller active quota.");
         Check(PreferenceLimitRules.AllowsAlerts(["A", "B"], 2), "The exact cap permits alerts.");
-        Check(PreferenceLimitRules.AllowsAlerts([], null), "Unlimited subscriptions retain wildcard semantics.");
+        Check(!PreferenceLimitRules.AllowsAlerts([], null), "Unlimited subscriptions must explicitly select categories.");
         using var db = new HiringDb(new DbContextOptionsBuilder<HiringDb>()
             .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ShapeOnly;Trusted_Connection=True").Options);
         Check(!db.Database.HasPendingModelChanges(), "Migration snapshot matches the new columns.");

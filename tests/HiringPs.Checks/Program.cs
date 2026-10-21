@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--category-preference-check"))
+{
+    CategoryPreferenceChecks.Run();
+    return;
+}
+
 if (args.Contains("--protection-key-check"))
 {
     ProtectionKeyChecks.Run();

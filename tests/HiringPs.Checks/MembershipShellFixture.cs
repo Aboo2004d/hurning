@@ -174,6 +174,10 @@ public class AdminShellFixtureController : Controller
         };
         return screen switch
         {
+            "opportunitycategories" => View("/Areas/Admin/Views/Opportunities/OpportunityForm.cshtml", new OpportunityInput
+            {
+                AvailableCategories = ["هندسة", "هندسة برمجيات", "إدارة أعمال", "محاسبة", "Programming", "Programming languages", "Design & UX <sample>"],
+            }),
             "telegramcompose" => View("/Areas/Admin/Views/TelegramCompose/Index.cshtml", new TelegramComposeDto(
                 42, "مبرمج / Software developer", "📢 وظيفة\nمبرمج / Software developer\nتفاصيل الإعلان", "https://example.test/ar/Opportunities/Details/42",
                 null, [new("Jobs", "@jobs_fixture", true, null), new("All", "@all_fixture", true, null)])),
