@@ -189,6 +189,9 @@ p {
     margin: auto;
     min-height: 65vh;
 }
+.container-wide {
+    max-width: 1600px;
+}
 /* مقدمة صفحات الفرص والفلاتر والنتائج. */
 .intro p,
 .muted {
@@ -1324,45 +1327,42 @@ footer {
 }
 
 /* فتح نص البرومبت لا يضغط أعمدة التاريخ والملاحظة. */
+.prompt-history {
+    table-layout: fixed;
+    min-width: 960px;
+}
 .prompt-history th,
 .prompt-history td {
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     word-break: normal;
 }
+.prompt-history-id { width: 64px; }
+.prompt-history-date { width: 220px; }
+.prompt-history-note { width: 30%; }
+.prompt-history-timestamp bdi { display: block; white-space: nowrap; }
+.prompt-history-timestamp > span { display: block; }
 .prompt-history pre {
     max-width: 100%;
     min-width: 0;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
-@media (min-width: 641px) {
-    .prompt-history {
-        table-layout: fixed;
-    }
-    .prompt-history-id {
-        width: 52px;
-    }
-    .prompt-history-date {
-        width: 190px;
-    }
-    .prompt-history-note {
-        width: 25%;
-    }
-    .prompt-history-timestamp {
-        white-space: nowrap;
-    }
-}
-@media (max-width: 640px) {
-    .prompt-history colgroup {
-        display: none;
-    }
-}
 
 /* قائمة الإدارة: روابط أساسية ومجموعات صغيرة بدل تكديس جميع الصفحات. */
+.admin-site-header {
+    padding-inline: 24px;
+}
 .site-header .admin-header-nav {
     gap: 6px;
     flex-wrap: nowrap;
     font-size: 14px;
+}
+@media (min-width: 1101px) and (max-width: 1450px) {
+    .admin-site-header { gap: 12px; }
+    .admin-site-header .admin-header-nav { gap: 2px; font-size: 13px; }
+    .admin-site-header .admin-header-nav > a,
+    .admin-site-header .admin-nav-group > summary { padding-inline: 7px; }
+    .admin-site-header .header-actions { gap: 6px; font-size: 13px; }
 }
 .admin-header-nav > a,
 .admin-nav-group > summary {

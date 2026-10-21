@@ -73,6 +73,25 @@ const {chromium} = require(process.env.HIRING_PLAYWRIGHT_MODULE || 'playwright')
         await theme(page, 'dark');
         await theme(other, 'dark');
         await session.close();
+        for (const language of ['ar', 'en']) {
+            for (const width of [360, 1100, 1120, 1280, 1440, 1920]) {
+                const area = await context({viewport: {width, height: 900}, extraHTTPHeaders: {'X-Fixture-Role': 'Admin'}});
+                const page = await area.newPage();
+                await page.goto(new URL(`/${language}/Admin/AdminShellFixture/Tools`, base).href);
+                await page.evaluate(() => document.fonts.ready);
+                await openMenu(page);
+                check(await page.evaluate(() => {
+                    const actions = document.querySelector('.header-actions').getBoundingClientRect();
+                    const overlap = [...document.querySelector('.admin-header-nav').children].some(child => {
+                        const nav = child.getBoundingClientRect();
+                        return Math.min(nav.right, actions.right) - Math.max(nav.left, actions.left) > 1
+                            && Math.min(nav.bottom, actions.bottom) - Math.max(nav.top, actions.top) > 1;
+                    });
+                    return !overlap && document.documentElement.scrollWidth <= innerWidth + 1;
+                }), `Admin navigation and actions never overlap: ${language} ${width}`);
+                await area.close();
+            }
+        }
         for (const [role, url] of [['Admin', '/ar/Admin/AdminShellFixture/Tools'], ['Member', '/ar/Member/MemberShellFixture/Settings']]) {
             const area = await context({viewport: {width: 360, height: 900}, extraHTTPHeaders: {'X-Fixture-Role': role}});
             const page = await area.newPage();
