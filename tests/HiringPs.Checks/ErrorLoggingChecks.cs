@@ -18,6 +18,23 @@ public static class ErrorLoggingChecks
             if (!value) throw new Exception(description);
             count++;
         }
+        var mvcServices = new ServiceCollection();
+        mvcServices.AddLogging();
+        mvcServices.AddControllersWithViews();
+        using var mvc = mvcServices.BuildServiceProvider();
+        var validator = mvc.GetRequiredService<Microsoft.AspNetCore.Mvc.ModelBinding.Validation.IObjectModelValidator>();
+        Microsoft.AspNetCore.Mvc.ActionContext ValidateFilter(SystemErrorFilterDto filter)
+        {
+            var action = new Microsoft.AspNetCore.Mvc.ActionContext(new DefaultHttpContext { RequestServices = mvc },
+                new Microsoft.AspNetCore.Routing.RouteData(), new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor());
+            validator.Validate(action, null, "filter", filter);
+            return action;
+        }
+        Check(ValidateFilter(new()).ModelState.IsValid, "MVC accepts empty record filters without throwing");
+        Check(ValidateFilter(new("trace", "Web", "Error")).ModelState.IsValid, "MVC accepts valid filters");
+        Check(!ValidateFilter(new(new string('x', 201))).ModelState.IsValid, "MVC enforces search maximum");
+        Check(!ValidateFilter(new(Application: new string('x', 33))).ModelState.IsValid, "MVC enforces application maximum");
+        Check(!ValidateFilter(new(Level: new string('x', 17))).ModelState.IsValid, "MVC enforces severity maximum");
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Integrations:Google:ClientSecret"] = "known-private-value",
