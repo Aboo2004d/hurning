@@ -1,7 +1,6 @@
 @model PromptEditor
 @{
     ViewData["Title"] = T["AiPrompt"];
-    ViewData["WideContent"] = true;
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var preview = PromptAdministrationService.Preview(Model.Template, Model.GeographicScope,
         Model.AllowedKinds, Model.SummaryLimit, Model.AllowUnknownDeadline);
@@ -13,7 +12,7 @@
 <p>
     @(ar ? "النسخة الفعّالة" : "Active version"): @Model.Settings?.ActivePromptVersionId · @(ar ? "بانتظار التفعيل" : "Pending version"): @(Model.Settings?.PendingPromptVersionId?.ToString() ?? "—")
 </p>
-<form method="post" class="edit-form">
+<form method="post" class="edit-form prompt-editor">
     <div asp-validation-summary="All" class="validation"></div>
     <input asp-for="Version" type="hidden" />
     <div class="form-grid">

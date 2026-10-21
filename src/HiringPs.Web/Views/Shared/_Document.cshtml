@@ -132,7 +132,7 @@
             <img src="~/images/brand/basket-logo.png" width="72" height="72" alt="" />
             <span>@T["Loading"]</span>
         </div>
-        <main class="container @(ViewData["WideContent"] is true ? "container-wide" : null)" id="main-content" tabindex="-1">
+        <main class="container" id="main-content" tabindex="-1">
             @if (TempData["Notice"] is string notice)
             {
                 <div class="notice" role="status">

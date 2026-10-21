@@ -189,9 +189,6 @@ p {
     margin: auto;
     min-height: 65vh;
 }
-.container-wide {
-    max-width: 1600px;
-}
 /* مقدمة صفحات الفرص والفلاتر والنتائج. */
 .intro p,
 .muted {
@@ -475,6 +472,10 @@ td {
 }
 .edit-form {
     max-width: 950px;
+}
+.edit-form.prompt-editor {
+    max-width: none;
+    width: 100%;
 }
 .checkbox {
     display: flex;
