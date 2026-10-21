@@ -10,6 +10,7 @@ public sealed class PromptVersionConfiguration : IEntityTypeConfiguration<Prompt
     /// <summary>يطبق تعريف جدول الكيان؛ لا ينفذ migration أو اتصال قاعدة بيانات.</summary>
     public void Configure(EntityTypeBuilder<PromptVersion> builder)
     {
-        builder.HasData(PromptDefaults.Initial());
+        // Prompt data is initialized once by the final data migration;
+        // later versions are saved explicitly through the administration UI.
     }
 }

@@ -31,7 +31,7 @@ public static class WorkflowChecks
             "current model matches migrations without connecting to SQL Server"
         );
         var upgradeSql = modelDb.GetService<IMigrator>().GenerateScript(
-            "20261020182000_OperationHistoryIndex", "20261021120000_ConsolidateUnusedDefaultPrompt"
+            "20261021120000_ConsolidateUnusedDefaultPrompt", "20261021140000_InitializeCurrentDefaultPrompt"
         );
         string FrozenLiteral(string name)
         {
@@ -42,21 +42,30 @@ public static class WorkflowChecks
             return match.Groups[1].Value.Replace("''", "'");
         }
         Check(
-            FrozenLiteral("originalTemplate") == PromptDefaults.Template.ReplaceLineEndings("\n")
-                && FrozenLiteral("template") == PromptDefaults.CurrentTemplate.ReplaceLineEndings("\n")
+            FrozenLiteral("template") == PromptDefaults.CurrentTemplate.ReplaceLineEndings("\n")
                 && FrozenLiteral("dates") == PromptDatePolicy.CurrentDateContract,
-            "single-base migration freezes the exact historical guard and latest default instructions"
+            "final initialization freezes the exact latest default title and date instructions"
         );
         Check(
-            upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [AiUsage])")
-                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [SourceItems])")
-                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [Opportunities])")
-                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [OpportunityDates])")
-                && upgradeSql.Contains("[CreatedBy] <> N'Migration'")
-                && upgradeSql.Contains("SET [ActivePromptVersionId] = 1, [PendingPromptVersionId] = NULL")
-                && upgradeSql.Contains("DELETE FROM [PromptVersions] WHERE [Id] <> 1")
-                && !upgradeSql.Contains("INSERT INTO [PromptVersions]"),
-            "unused defaults consolidate into base one without new versions or rewriting used/admin history"
+            upgradeSql.Contains("IF NOT EXISTS (SELECT 1 FROM [PromptVersions] WITH (UPDLOCK, HOLDLOCK))")
+                && upgradeSql.Contains("SET IDENTITY_INSERT [PromptVersions] ON")
+                && upgradeSql.Contains("VALUES (1, 1, NULL)")
+                && !upgradeSql.Contains("DELETE FROM [PromptVersions]")
+                && !upgradeSql.Contains("UPDATE [PromptVersions]"),
+            "single-base initialization preserves existing admin and usage history"
+        );
+        var completeSql = modelDb.GetService<IMigrator>().GenerateScript();
+        var previousSql = modelDb.GetService<IMigrator>().GenerateScript(
+            toMigration: "20261021120000_ConsolidateUnusedDefaultPrompt");
+        Check(
+            !previousSql.Contains("INSERT INTO [PromptVersions]")
+                && !previousSql.Contains("INSERT INTO [WorkflowSettings]")
+                && !previousSql.Contains("You extract Palestinian opportunities")
+                && System.Text.RegularExpressions.Regex.Matches(completeSql,
+                    @"INSERT INTO \[PromptVersions\]").Count == 1
+                && System.Text.RegularExpressions.Regex.Matches(completeSql,
+                    @"INSERT INTO \[WorkflowSettings\]").Count == 1,
+            "full migration chain initializes only the latest base prompt, never an intermediate old version"
         );
         var prompt = PromptDefaults.Initial();
         var currentDefault = PromptDefaults.Current();

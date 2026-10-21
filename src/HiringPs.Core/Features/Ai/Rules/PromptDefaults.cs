@@ -1,7 +1,7 @@
 namespace HiringPs.Core;
 
-// نسخة البداية التاريخية: المهاجرة تحفظ قيمتها حرفيًا. أي تعديل لاحق ينشئ إصدارًا جديدًا.
-/// <summary>يبني نسخة تعليمات الاستخراج الأولية التي تحفظ ضمن بيانات التهيئة.</summary>
+// القالب التاريخي مرجع توافق فقط؛ تهيئة قاعدة جديدة تحفظ Current وحده.
+/// <summary>يبني البرومبت الأساسي الحالي ويحفظ مرجع التعليمات التاريخية لاختبارات التوافق.</summary>
 public static class PromptDefaults
 {
     public const string Legacy = """
@@ -75,6 +75,7 @@ DEFAULT DATE POLICY v1: If the announcement contains no indication of an applica
     {
         var current = Initial();
         current.Id = 0;
+        current.LegacySnapshot = "";
         current.Template = CurrentTemplate.ReplaceLineEndings("\n");
         current.DateContract = PromptDatePolicy.CurrentDateContract;
         current.Note = "Current default title and date policies";
@@ -82,7 +83,7 @@ DEFAULT DATE POLICY v1: If the announcement contains no indication of an applica
         return current;
     }
 
-    /// <summary>ينشئ نسخة التعليمات الأولية المستخدمة في تهيئة قاعدة البيانات.</summary>
+    /// <summary>يعيد بناء المرجع التاريخي للتوافق؛ لا يضاف إلى قاعدة البيانات.</summary>
     public static PromptVersion Initial()
     {
         var initial = new PromptVersion

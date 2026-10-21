@@ -12,8 +12,6 @@ public sealed class WorkflowSettingsConfiguration : IEntityTypeConfiguration<Wor
     {
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder
-            .HasData(new WorkflowSettings { Id = 1, ActivePromptVersionId = 1 });
-        builder
             .HasOne<PromptVersion>()
             .WithMany()
             .HasForeignKey(x => x.ActivePromptVersionId)
