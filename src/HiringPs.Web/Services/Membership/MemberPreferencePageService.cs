@@ -11,6 +11,8 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
     {
         var options = await preferences.OptionsAsync(ct);
         input.CategoryLimit = await preferences.LimitAsync(owner, ct);
+        input.CategoryGroups = options.Groups ?? CategoryGroupMap.Empty;
+        input.Categories = input.Categories.DistinctBy(input.CategoryGroups.Identity).ToArray();
         input.AvailableCategories = options.Categories;
         input.AvailableLocations = options.ApprovedLocations.Concat(CityCatalog.ArabicNames).Distinct().OrderBy(x => x).ToArray();
     }
@@ -45,11 +47,9 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
         var locations = pref.Locations;
         if (!string.IsNullOrWhiteSpace(category))
         {
-            // Equivalent spellings share one listing filter; keep all that the catalog offers.
-            var added = FilterLabels
-                .Equivalents(category, input.AvailableCategories, FilterLabels.Category)
-                .Where(input.AvailableCategories.Contains)
-                .ToArray();
+            // Presentation aliases do not grant alert equivalence: only approved groups may expand it.
+            var added = input.AvailableCategories.Where(value => input.CategoryGroups.Matches(category, value))
+                .DistinctBy(input.CategoryGroups.Identity).ToArray();
             if (added.Length == 0)
                 return PreferenceSaveOutcome.Invalid;
             categories = categories.Concat(added).Distinct().ToArray();
@@ -89,7 +89,7 @@ public sealed class MemberPreferencePageService(MemberPreferenceService preferen
             var category = CategoryRules.Resolve(addCategory, input.AvailableCategories.Concat(priorCategories));
             if (!input.AvailableCategories.Contains(category) && !priorCategories.Contains(category) && !CategoryRules.ValidNew(category))
                 return false;
-            input.Categories = input.Categories.Append(category).DistinctBy(CategoryRules.Key).ToArray();
+            input.Categories = input.Categories.Append(category).DistinctBy(input.CategoryGroups.Identity).ToArray();
             // Only the explicitly submitted new category is allowed beyond the existing catalog.
             priorCategories = priorCategories.Append(category).ToArray();
         }

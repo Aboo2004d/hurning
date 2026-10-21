@@ -1,0 +1,42 @@
+@model CategoryGroupsPage
+@{ ViewData["Title"] = T["SimilarCategories"].Value; }
+<section class="admin-list-page category-groups">
+<header class="admin-page-heading"><div><h1>@T["SimilarCategories"]</h1><p class="muted">@T["CategoryGroupsHelp"]</p></div><a class="button" asp-controller="CategoryGroups" asp-action="Create">@T["CategoryGroupCreate"]</a></header>
+<form method="get" class="operation-filters"><label>@T["Search"]<input name="search" value="@Model.Search" maxlength="200" /></label><div class="actions"><button>@T["Filter"]</button><a class="button button-outline" asp-controller="CategoryGroups" asp-action="Index">@T["OperationReset"]</a></div></form>
+<section id="ungrouped-categories">
+<header class="member-section-heading"><h2>@T["UngroupedCategories"]</h2><span class="badge">@Model.UngroupedPager.TotalRecords</span></header>
+<p class="notice">@T["CategorySuggestionsApprovalHelp"]</p>
+@if (Model.Ungrouped.Length == 0) { <p class="muted">@T["CategoryGroupsNoPending"]</p> }
+<div class="operation-events">
+@foreach (var category in Model.Ungrouped) {
+<article class="operation-event category-pending"><header><h3 dir="auto">@category.Label</h3><span class="badge">@T["CategoryIndependent"]</span></header>
+@if (category.Suggestions.Length == 0) { <p class="muted">@T["CategoryNoSuggestions"]</p> }
+else {
+<ul class="category-group-suggestions">
+@foreach (var suggestion in category.Suggestions) {
+<li><div><strong dir="auto">@suggestion.Label</strong><span class="badge">@(suggestion.KnownEquivalent ? T["CategoryKnownVariant"].Value : T["CategorySimilarityPercent", suggestion.Percent].Value)</span></div>
+@if (suggestion.GroupId is { } groupId) {
+<span class="muted">@suggestion.GroupName</span><a class="button button-outline" asp-controller="CategoryGroups" asp-action="Edit" asp-route-id="@groupId" asp-route-add="@category.Label">@T["CategoryReviewJoin"]</a>
+} else { <a class="button button-outline" asp-controller="CategoryGroups" asp-action="Create" asp-route-first="@category.Label" asp-route-second="@suggestion.Label">@T["CategoryReviewProposal"]</a> }
+</li>
+}
+</ul>
+}
+<a class="textlink" asp-controller="CategoryGroups" asp-action="Create" asp-route-first="@category.Label">@T["CategoryGroupCreate"]</a>
+</article>
+}
+</div><partial name="_AdminPagination" model="Model.UngroupedPager" />
+</section>
+<section id="approved-groups">
+<header class="member-section-heading"><h2>@T["ApprovedCategoryGroups"]</h2><span class="badge">@Model.Groups.Pager.TotalRecords</span></header>
+@if (Model.Groups.Items.Count == 0) { <p class="muted">@T["CategoryGroupsEmpty"]</p> }
+<div class="operation-events">
+@foreach (var group in Model.Groups.Items) {
+<article class="operation-event"><header><h3 dir="auto">@group.Name</h3><span class="badge">@T["CategoryGroupCountsAsOne"]</span><time datetime="@group.UpdatedAt.ToString("O")"><bdi>@PaymentDisplay.Time(group.UpdatedAt, seconds: true)</bdi> · @T["PalestineTime"]</time></header>
+<div class="category-group-labels">@foreach (var label in group.Members) { <span class="badge" dir="auto">@label</span> }</div>
+<a class="button button-outline" asp-controller="CategoryGroups" asp-action="Edit" asp-route-id="@group.Id">@T["Edit"]</a>
+</article>
+}
+</div><partial name="_AdminPagination" model="Model.Groups.Pager" />
+</section>
+</section>

@@ -3215,4 +3215,32 @@
   <data name="SearchCategories" xml:space="preserve"><value>Search categories or enter a new category</value></data>
   <data name="CategoryAlertsSelectionHelp" xml:space="preserve"><value>Opportunity alerts match only your selected categories. Leaving categories empty pauses opportunity alerts.</value></data>
   <data name="CategoryNameInvalid" xml:space="preserve"><value>Enter a valid category name of at most 200 characters.</value></data>
+  <data name="SimilarCategories" xml:space="preserve"><value>Similar categories</value></data>
+  <data name="CategoryGroupsHelp" xml:space="preserve"><value>Approve groups of equivalent category names. Suggestions never change alerts until you approve a group.</value></data>
+  <data name="CategoryGroupCreate" xml:space="preserve"><value>Create group</value></data>
+  <data name="UngroupedCategories" xml:space="preserve"><value>Ungrouped categories</value></data>
+  <data name="CategorySuggestionsApprovalHelp" xml:space="preserve"><value>New names stay independent. Similarity above 80% and known variants are suggestions for review, not proof of equal meaning.</value></data>
+  <data name="CategoryGroupsNoPending" xml:space="preserve"><value>No matching ungrouped categories.</value></data>
+  <data name="CategoryIndependent" xml:space="preserve"><value>Independent</value></data>
+  <data name="CategoryNoSuggestions" xml:space="preserve"><value>No close suggestion. Create a group or add this name through an existing group editor.</value></data>
+  <data name="CategoryKnownVariant" xml:space="preserve"><value>Known variant — approval required</value></data>
+  <data name="CategorySimilarityPercent" xml:space="preserve"><value>Spelling similarity {0}%</value></data>
+  <data name="CategoryReviewJoin" xml:space="preserve"><value>Review joining group</value></data>
+  <data name="CategoryReviewProposal" xml:space="preserve"><value>Review proposal</value></data>
+  <data name="ApprovedCategoryGroups" xml:space="preserve"><value>Approved groups</value></data>
+  <data name="CategoryGroupsEmpty" xml:space="preserve"><value>No matching approved groups.</value></data>
+  <data name="CategoryGroupCountsAsOne" xml:space="preserve"><value>The group counts as one preference category</value></data>
+  <data name="CategoryGroupEdit" xml:space="preserve"><value>Edit group</value></data>
+  <data name="CategoryGroupEditorHelp" xml:space="preserve"><value>Choose names that mean the same category. New names never join automatically, and original announcement labels are preserved.</value></data>
+  <data name="CategoryGroupName" xml:space="preserve"><value>Group name</value></data>
+  <data name="CategoryGroupSelectionHelp" xml:space="preserve"><value>Add or remove names before approval. A name in another group is unavailable until removed from that group.</value></data>
+  <data name="CategoryGroupApprove" xml:space="preserve"><value>Approve and save group</value></data>
+  <data name="CategoryGroupRemove" xml:space="preserve"><value>Ungroup categories</value></data>
+  <data name="CategoryGroupDeleteHelp" xml:space="preserve"><value>Only the grouping is deleted; announcements and preferences remain. Names become independent for alerts and quotas, so older preferences may need reducing.</value></data>
+  <data name="CategoryGroupConfirmRemove" xml:space="preserve"><value>Confirm ungrouping</value></data>
+  <data name="CategoryGroupConflict" xml:space="preserve"><value>The group changed, a name belongs to another group, or the group name is already in use. Reload and review your choices.</value></data>
+  <data name="CategoryGroupInvalid" xml:space="preserve"><value>Choose a valid group name and at least one available category.</value></data>
+  <data name="CategoryGroupSaved" xml:space="preserve"><value>Group approved and saved.</value></data>
+  <data name="CategoryGroupDeleted" xml:space="preserve"><value>Group removed; original data preserved.</value></data>
+  <data name="CategoryGroupsPreferenceHelp" xml:space="preserve"><value>Names in an approved group count as one category, and opportunity alerts include the other names in that group.</value></data>
 </root>

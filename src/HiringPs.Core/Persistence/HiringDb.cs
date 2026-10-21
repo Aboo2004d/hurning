@@ -32,6 +32,8 @@ public class HiringDb(
     public DbSet<AuditEntry> Audit => Set<AuditEntry>();
     public DbSet<ApplicationError> ApplicationErrors => Set<ApplicationError>();
     public DbSet<ProtectionKeyRecord> ProtectionKeys => Set<ProtectionKeyRecord>();
+    public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
+    public DbSet<CategoryGroupMember> CategoryGroupMembers => Set<CategoryGroupMember>();
     public DbSet<WorkerHeartbeat> Heartbeats => Set<WorkerHeartbeat>();
     public DbSet<PipelineState> PipelineStates => Set<PipelineState>();
     public DbSet<OrganizationAlias> OrganizationAliases => Set<OrganizationAlias>();
@@ -74,6 +76,8 @@ public class HiringDb(
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<CategoryGroup>().Property(x => x.NormalizedName).UseCollation("Latin1_General_100_BIN2");
+        b.Entity<CategoryGroupMember>().Property(x => x.NormalizedKey).UseCollation("Latin1_General_100_BIN2");
         b.ApplyConfiguration(new AuditEntryConfiguration());
         b.ApplyConfiguration(new SocialTemplateVersionConfiguration());
         b.ApplyConfiguration(new SocialPublicationConfiguration());

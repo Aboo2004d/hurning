@@ -5,5 +5,6 @@ public sealed record PreferenceChoices(
     string LabelKey,
     string[] Selected,
     string[] Available,
-    int? Limit = null
+    int? Limit = null,
+    HiringPs.Core.CategoryGroupMap? Groups = null
 );

@@ -18,7 +18,8 @@ public sealed class MemberNotifications(
         Opportunity item,
         DateTimeOffset eventAt,
         bool saved,
-        CancellationToken ct
+        CancellationToken ct,
+        CategoryGroupMap? groups = null
     )
     {
         var now = DateTimeOffset.UtcNow;
@@ -46,7 +47,7 @@ public sealed class MemberNotifications(
             var limit = PreferenceLimitRules.Effective(rights.Select(x => x.MaxPreferredCategories));
             var categoriesJson = await db.MemberPreferences.Where(x => x.UserId == member.UserId)
                 .Select(x => x.CategoriesJson).SingleAsync(ct);
-            if (!PreferenceLimitRules.AllowsAlerts(System.Text.Json.JsonSerializer.Deserialize<string[]>(categoriesJson) ?? [], limit))
+            if (!PreferenceLimitRules.AllowsAlerts(System.Text.Json.JsonSerializer.Deserialize<string[]>(categoriesJson) ?? [], limit, groups ?? await new CategoryGroupReadService(db).MapAsync(ct)))
                 return false;
         }
         return rights.Any(right => right.StartsAt <= eventAt && MembershipRules.Includes(right.AlertKinds, item.Kind));
@@ -94,13 +95,14 @@ public sealed class MemberNotifications(
             .OrderBy(x => x.UserId)
             .Take(100)
             .ToListAsync(ct);
+        var groups = await new CategoryGroupReadService(db).MapAsync(ct);
         foreach (var member in members)
         {
             var pref = await db.MemberPreferences.SingleAsync(x => x.UserId == member.UserId, ct);
             if (
                 pref.ChangedAt <= publication.PublishedAt
-                && MembershipRules.Matches(pref, item)
-                && await EntitledAsync(member, item, publication.PublishedAt, false, ct)
+                && MembershipRules.Matches(pref, item, groups)
+                && await EntitledAsync(member, item, publication.PublishedAt, false, ct, groups)
             )
                 await EnqueueAsync(
                     member,
@@ -279,6 +281,7 @@ public sealed class MemberNotifications(
             .Select(x => x.Id)
             .Take(5)
             .ToListAsync(ct);
+        var groups = await new CategoryGroupReadService(db).MapAsync(ct);
         foreach (var id in ids)
         {
             if (
@@ -322,7 +325,7 @@ public sealed class MemberNotifications(
                         item,
                         message.EventAt ?? now,
                         message.Kind == MemberMessageKind.SavedDeadline,
-                        ct
+                        ct, groups
                     );
                 if (valid && message.Kind == MemberMessageKind.Opportunity)
                 {
@@ -331,7 +334,7 @@ public sealed class MemberNotifications(
                         ct
                     );
                     valid =
-                        pref.ChangedAt <= message.EventAt && MembershipRules.Matches(pref, item!);
+                        pref.ChangedAt <= message.EventAt && MembershipRules.Matches(pref, item!, groups);
                 }
                 if (!valid)
                 {

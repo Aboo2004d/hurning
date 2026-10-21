@@ -30,17 +30,19 @@ public sealed class MemberPreferenceService(HiringDb db)
         var categories = await db.Opportunities.Where(x => x.Category != ""
             && (x.Status == PublicationStatus.Published || x.Status == PublicationStatus.Archived))
             .Select(x => x.Category).Distinct().OrderBy(x => x).ToArrayAsync(ct);
-        return new(categories, await LocationCatalog.ApprovedAsync(db, ct));
+        var groups = await new CategoryGroupReadService(db).MapAsync(ct);
+        return new(categories.DistinctBy(groups.Identity).ToArray(), await LocationCatalog.ApprovedAsync(db, ct), groups);
     }
 
     /// <summary>يحفظ الاختيارات وعلامة التذكيرات عند تقديمها في SaveChanges واحدة؛ لا يرسل تنبيهًا.</summary>
     public async Task<bool> SaveAsync(string owner, MemberPreferenceUpdateDto input, CancellationToken ct)
     {
-        if (await LimitAsync(owner, ct) is { } limit && PreferenceLimitRules.Count(input.Categories) > limit)
+        var groups = await new CategoryGroupReadService(db).MapAsync(ct);
+        if (await LimitAsync(owner, ct) is { } limit && PreferenceLimitRules.Count(input.Categories, groups) > limit)
             return false;
         var pref = await db.MemberPreferences.SingleAsync(x => x.UserId == owner, ct);
         pref.Kinds = input.Kinds;
-        pref.CategoriesJson = JsonSerializer.Serialize(input.Categories.Select(CategoryRules.Clean).Where(x => x.Length > 0).DistinctBy(CategoryRules.Key));
+        pref.CategoriesJson = JsonSerializer.Serialize(input.Categories.Select(CategoryRules.Clean).Where(x => x.Length > 0).DistinctBy(groups.Identity));
         pref.LocationsJson = JsonSerializer.Serialize(input.Locations);
         pref.ChangedAt = DateTimeOffset.UtcNow;
         if (input.SavedReminders is { } reminders)

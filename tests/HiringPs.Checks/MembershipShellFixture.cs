@@ -174,6 +174,16 @@ public class AdminShellFixtureController : Controller
         };
         return screen switch
         {
+            "categorygroups" => View("/Areas/Admin/Views/CategoryGroups/Index.cshtml", new CategoryGroupsPage("education",
+                new AdminPage<CategoryGroupSummaryDto> { Items = [new(7, "التعليم", now, ["education", "educations", "تعليم", "التعليم"], new byte[8])],
+                    Pager = new AdminPager { Page = 2, TotalRecords = 25, Parameter = "groupPage", Anchor = "#approved-groups" } },
+                [new UngroupedCategoryDto("educatoin", [new("education", 7, "التعليم", 89), new("educaton", null, null, 89)])],
+                new AdminPager { Page = 2, TotalRecords = 12, Parameter = "categoryPage", Anchor = "#ungrouped-categories" })),
+            "categorygroupeditor" => View("/Areas/Admin/Views/CategoryGroups/Editor.cshtml", new CategoryGroupInput
+            {
+                Id = 7, Name = "التعليم", Members = ["education", "تعليم"], Version = Convert.ToBase64String(new byte[8]),
+                Options = [new("education", 7, "التعليم"), new("تعليم", 7, "التعليم"), new("educatoin", null, null), new("Programming", 8, "البرمجة")]
+            }),
             "opportunitycategories" => View("/Areas/Admin/Views/Opportunities/OpportunityForm.cshtml", new OpportunityInput
             {
                 AvailableCategories = ["هندسة", "هندسة برمجيات", "إدارة أعمال", "محاسبة", "Programming", "Programming languages", "Design & UX <sample>"],
@@ -310,7 +320,8 @@ public class MemberShellFixtureController : Controller
         string? addLocation,
         string? removeLocation,
         string? bulkAction = null,
-        int? categoryLimit = null
+        int? categoryLimit = null,
+        bool grouped = false
     )
     {
         input.CategoryLimit = categoryLimit;
@@ -322,6 +333,13 @@ public class MemberShellFixtureController : Controller
         }
         input.AvailableCategories = ["برمجة", "هندسة", "Design & UX <sample>"];
         input.AvailableLocations = ["رام الله", "غزة", "القدس"];
+        if (grouped)
+        {
+            input.CategoryGroups = new CategoryGroupMap([("education", 7, "التعليم"), ("تعليم", 7, "التعليم"), ("educations", 7, "التعليم")]);
+            if (HttpMethods.IsGet(Request.Method)) input.Categories = ["education", "تعليم", "Engineering", "Accounting"];
+            input.Categories = input.Categories.DistinctBy(input.CategoryGroups.Identity).ToArray();
+            input.AvailableCategories = ["education", "تعليم", "educations", "Engineering", "Accounting", "New field"];
+        }
         if (addCategory is not null)
             input.Categories = input.Categories.Append(addCategory).Distinct().ToArray();
         if (removeCategory is not null)

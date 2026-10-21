@@ -36,7 +36,7 @@ public static class MembershipRules
     }
 
     /// <summary>يطابق القيمة مع القيم أو الشروط المعتمدة في هذا المجال.</summary>
-    public static bool Matches(MemberPreference preference, Opportunity opportunity)
+    public static bool Matches(MemberPreference preference, Opportunity opportunity, CategoryGroupMap? groups = null)
     {
         var categories = JsonSerializer.Deserialize<string[]>(preference.CategoriesJson) ?? [];
         var locations = JsonSerializer.Deserialize<string[]>(preference.LocationsJson) ?? [];
@@ -44,7 +44,7 @@ public static class MembershipRules
             && (
                 !string.IsNullOrWhiteSpace(opportunity.Category)
                 && categories.Any(category => !string.IsNullOrWhiteSpace(category)
-                    && CategoryRules.Key(category) == CategoryRules.Key(opportunity.Category))
+                    && (groups ?? CategoryGroupMap.Empty).Matches(category, opportunity.Category))
             )
             && (
                 locations.Length == 0

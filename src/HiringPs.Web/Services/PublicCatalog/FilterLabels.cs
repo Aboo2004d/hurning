@@ -11,28 +11,8 @@ public static partial class FilterLabels
     /// <summary>ينفذ Label وفق قواعد FilterLabels الحالية دون تغيير عقد المستدعين.</summary>
     private sealed record Label(string Key, string Arabic, string English, string[] Aliases);
 
-    private static readonly Label[] Categories =
-    [
-        new("business", "إدارة أعمال", "Business administration", ["ادارة اعمال", "ادارة الاعمال", "ادارة واعمال", "business administration"]),
-        new("administration", "إدارة", "Administration", ["ادارة", "administration", "management"]),
-        new("it", "تكنولوجيا المعلومات", "Information technology", ["تكنولوجيا المعلومات", "information technology", "it"]),
-        new("health", "الصحة", "Health", ["الصحة", "صحة", "health"]),
-        new("sales", "مبيعات", "Sales", ["مبيعات", "المبيعات", "sales"]),
-        new("accounting", "محاسبة", "Accounting", ["محاسبة", "المحاسبة", "accounting", "finance"]),
-        new("education", "التعليم", "Education", ["تعليم", "التعليم", "education"]),
-        new("nursing", "التمريض", "Nursing", ["تمريض", "التمريض", "nursing", "التمريض والقبالة"]),
-        new("procurement", "توريد وشراء", "Procurement and supply", ["توريد وشراء", "المشتريات", "procurement"]),
-        new("services", "خدمات عامة", "General services", ["خدمات عامة", "general services"]),
-        new("engineering", "هندسة", "Engineering", ["هندسة", "الهندسة", "engineering"]),
-        new("archiving", "أرشفة", "Archiving", ["ارشفة", "الارشفة", "archiving"]),
-        new("security", "الأمن", "Security", ["امن", "الامن", "security"]),
-        new("projects", "إدارة المشاريع", "Project management", ["ادارة المشاريع", "project management"]),
-        new("social", "العمل الاجتماعي", "Social work", ["العمل الاجتماعي", "social work"]),
-        new("media", "إعلام", "Media", ["اعلام", "الاعلام", "media"]),
-        new("food-security", "أمن غذائي وسبل عيش", "Food security and livelihoods", ["امن غذائي وسبل عيش", "food security and livelihoods"]),
-        new("warehouse", "إدارة مستودعات", "Warehouse management", ["ادارة مستودعات", "warehouse management"]),
-        new("academic", "أكاديمي", "Academic", ["اكاديمي", "academic"]),
-    ];
+    private static readonly Label[] Categories = CategoryDefinitions.All
+        .Select(x => new Label(x.Key, x.Arabic, x.English, x.Aliases)).ToArray();
 
     private static readonly Label[] EmploymentTypes =
     [

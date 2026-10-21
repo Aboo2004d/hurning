@@ -3215,4 +3215,32 @@
   <data name="SearchCategories" xml:space="preserve"><value>ابحث عن مجال أو اكتب مجالًا جديدًا</value></data>
   <data name="CategoryAlertsSelectionHelp" xml:space="preserve"><value>تصلك تنبيهات الفرص المطابقة للمجالات التي تختارها فقط. ترك المجالات فارغة يوقف تنبيهات الفرص.</value></data>
   <data name="CategoryNameInvalid" xml:space="preserve"><value>أدخل اسم مجال صالحًا لا يتجاوز 200 حرف.</value></data>
+  <data name="SimilarCategories" xml:space="preserve"><value>المجالات المتشابهة</value></data>
+  <data name="CategoryGroupsHelp" xml:space="preserve"><value>اجمع المسميات المتكافئة بقرارك. الاقتراحات لا تغيّر التنبيهات حتى تعتمد المجموعة.</value></data>
+  <data name="CategoryGroupCreate" xml:space="preserve"><value>إنشاء مجموعة</value></data>
+  <data name="UngroupedCategories" xml:space="preserve"><value>مجالات غير مصنفة</value></data>
+  <data name="CategorySuggestionsApprovalHelp" xml:space="preserve"><value>الأسماء الجديدة تبقى مستقلة. التشابه فوق 80% والصيغ المعروفة اقتراحات للمراجعة فقط، ولا تثبت تساوي المعنى.</value></data>
+  <data name="CategoryGroupsNoPending" xml:space="preserve"><value>لا توجد مجالات غير مصنفة تطابق البحث.</value></data>
+  <data name="CategoryIndependent" xml:space="preserve"><value>مستقل</value></data>
+  <data name="CategoryNoSuggestions" xml:space="preserve"><value>لا يوجد اقتراح قريب؛ يمكنك إنشاء مجموعة أو إضافته لمجموعة من محررها.</value></data>
+  <data name="CategoryKnownVariant" xml:space="preserve"><value>صيغة معروفة — تحتاج اعتمادك</value></data>
+  <data name="CategorySimilarityPercent" xml:space="preserve"><value>تشابه إملائي {0}%</value></data>
+  <data name="CategoryReviewJoin" xml:space="preserve"><value>مراجعة إضافته للمجموعة</value></data>
+  <data name="CategoryReviewProposal" xml:space="preserve"><value>مراجعة الاقتراح</value></data>
+  <data name="ApprovedCategoryGroups" xml:space="preserve"><value>المجموعات المعتمدة</value></data>
+  <data name="CategoryGroupsEmpty" xml:space="preserve"><value>لا توجد مجموعات معتمدة تطابق البحث.</value></data>
+  <data name="CategoryGroupCountsAsOne" xml:space="preserve"><value>تُحسب المجموعة مجالًا واحدًا في التفضيلات</value></data>
+  <data name="CategoryGroupEdit" xml:space="preserve"><value>تعديل المجموعة</value></data>
+  <data name="CategoryGroupEditorHelp" xml:space="preserve"><value>اختر المسميات التي تعتبرها نفس المجال. لا تنضم الأسماء الجديدة تلقائيًا، وتبقى الأسماء الأصلية في الإعلانات محفوظة.</value></data>
+  <data name="CategoryGroupName" xml:space="preserve"><value>اسم المجموعة</value></data>
+  <data name="CategoryGroupSelectionHelp" xml:space="preserve"><value>يمكنك إضافة وإزالة المسميات قبل الاعتماد. المجال الموجود بمجموعة أخرى غير متاح حتى تفصله عنها.</value></data>
+  <data name="CategoryGroupApprove" xml:space="preserve"><value>اعتماد وحفظ المجموعة</value></data>
+  <data name="CategoryGroupRemove" xml:space="preserve"><value>فك تجميع المجالات</value></data>
+  <data name="CategoryGroupDeleteHelp" xml:space="preserve"><value>يُحذف التجميع فقط وتبقى الإعلانات والتفضيلات. تصبح الأسماء مستقلة في التنبيهات والحد؛ وقد يحتاج صاحب تفضيلات قديمة إلى تقليل اختياراته.</value></data>
+  <data name="CategoryGroupConfirmRemove" xml:space="preserve"><value>تأكيد فك التجميع</value></data>
+  <data name="CategoryGroupConflict" xml:space="preserve"><value>تغيرت المجموعة أو أحد المجالات انضم إلى مجموعة أخرى، أو اسم المجموعة مستخدم. أعد تحميل الصفحة وراجع الاختيارات.</value></data>
+  <data name="CategoryGroupInvalid" xml:space="preserve"><value>اختر اسم مجموعة صالحًا ومجالًا واحدًا على الأقل من القائمة المتاحة.</value></data>
+  <data name="CategoryGroupSaved" xml:space="preserve"><value>تم اعتماد المجموعة وحفظها.</value></data>
+  <data name="CategoryGroupDeleted" xml:space="preserve"><value>تم فك التجميع مع الحفاظ على البيانات الأصلية.</value></data>
+  <data name="CategoryGroupsPreferenceHelp" xml:space="preserve"><value>المسميات ضمن مجموعة معتمدة تُحسب مجالًا واحدًا، وتشمل تنبيهات الفرص بقية مسميات المجموعة.</value></data>
 </root>

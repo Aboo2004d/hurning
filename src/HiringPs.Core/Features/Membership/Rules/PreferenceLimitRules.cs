@@ -12,12 +12,12 @@ public static class PreferenceLimitRules
         return values.Length == 0 ? NonSubscriberLimit : values.Any(x => x is null) ? null : values.Max();
     }
 
-    /// <summary>يحسب المجالات المختلفة دون احتساب اختلاف حالة الأحرف أو المسافات الخارجية.</summary>
-    public static int Count(IEnumerable<string> categories) => categories
-        .Where(x => !string.IsNullOrWhiteSpace(x)).Select(CategoryRules.Key)
+    /// <summary>يحسب المجموعة المعتمدة وحدة واحدة، ويبقي المجالات المستقلة منفصلة دون احتساب اختلاف التنسيق.</summary>
+    public static int Count(IEnumerable<string> categories, CategoryGroupMap? groups = null) => categories
+        .Where(x => !string.IsNullOrWhiteSpace(x)).Select(value => (groups ?? CategoryGroupMap.Empty).Identity(value))
         .Distinct(StringComparer.OrdinalIgnoreCase).Count();
 
     /// <summary>لا تنبيهات فرص دون مجال مختار حتى للباقة غير المحدودة؛ يمنع تجاوز الحد.</summary>
-    public static bool AllowsAlerts(IEnumerable<string> categories, int? limit) =>
-        Count(categories) is var count && count > 0 && (limit is null || count <= limit);
+    public static bool AllowsAlerts(IEnumerable<string> categories, int? limit, CategoryGroupMap? groups = null) =>
+        Count(categories, groups) is var count && count > 0 && (limit is null || count <= limit);
 }

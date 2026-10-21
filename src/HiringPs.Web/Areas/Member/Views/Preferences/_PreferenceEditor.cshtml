@@ -8,6 +8,7 @@
     {
         <p class="notice">@T["MaxPreferredCategories"]: @limit · @T["LimitedCategoriesHelp"]</p>
     }
+    <p class="muted">@T["CategoryGroupsPreferenceHelp"]</p>
     <form asp-controller="Preferences" asp-action="Index" method="post" class="membership-card member-panel preference-editor" data-preferences-form>
         <fieldset class="preference-kinds">
             <legend>@T["OpportunityTypes"]</legend>
@@ -19,7 +20,7 @@
                 </label>
             }
         </fieldset>
-        <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Categories", "Category", Model.Categories, Model.AvailableCategories, Model.CategoryLimit)' />
+        <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Categories", "Category", Model.Categories, Model.AvailableCategories, Model.CategoryLimit, Model.CategoryGroups)' />
         <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Locations", "Location", Model.Locations, Model.AvailableLocations)' />
         <label class="check member-reminders"><input asp-for="SavedReminders" />@T["SavedReminders"]</label>
         <button class="button button-outline member-action" type="submit">

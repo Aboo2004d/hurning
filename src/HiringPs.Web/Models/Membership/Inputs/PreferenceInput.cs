@@ -10,6 +10,8 @@ public sealed class PreferenceInput
     public string[] Locations { get; set; } = [];
     public string[] AvailableCategories { get; set; } = [];
     public string[] AvailableLocations { get; set; } = [];
+    [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+    public CategoryGroupMap CategoryGroups { get; set; } = CategoryGroupMap.Empty;
     public bool SavedReminders { get; set; }
     [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
     public int? CategoryLimit { get; set; }

@@ -1,0 +1,28 @@
+@model CategoryGroupInput
+@{ ViewData["Title"] = T[Model.Id == 0 ? "CategoryGroupCreate" : "CategoryGroupEdit"].Value; var selected = Model.Members.Select(CategoryGroupMap.Key).ToHashSet(); }
+<section class="admin-list-page category-groups">
+<header class="admin-page-heading"><div><h1>@ViewData["Title"]</h1><p class="muted">@T["CategoryGroupEditorHelp"]</p></div><a class="button button-outline" asp-controller="CategoryGroups" asp-action="Index">@T["SimilarCategories"]</a></header>
+<form asp-action="Save" asp-controller="CategoryGroups" method="post" class="membership-card category-group-editor" data-category-group-editor>
+<input asp-for="Id" type="hidden" /><input asp-for="Version" type="hidden" />
+@if (!ViewData.ModelState.IsValid) { <div class="validation" role="alert">@foreach (var error in ViewData.ModelState.Values.SelectMany(x => x.Errors)) { <p>@T[error.ErrorMessage is "CategoryGroupConflict" or "CategoryGroupInvalid" ? error.ErrorMessage : "CategoryGroupInvalid"]</p> }</div> }
+<label>@T["CategoryGroupName"]<input asp-for="Name" maxlength="160" required dir="auto" /></label>
+<label>@T["SearchCategories"]<input type="search" data-category-group-filter autocomplete="off" /></label>
+<p class="notice">@T["CategoryGroupCountsAsOne"] · @T["CategoryGroupSelectionHelp"]</p>
+<div class="category-group-choices">
+@foreach (var option in Model.Options) {
+var unavailable = option.GroupId is { } owner && owner != Model.Id;
+<label class="category-group-choice" data-group-choice data-label="@option.Label">
+<input type="checkbox" name="Members" value="@option.Label" checked="@selected.Contains(CategoryGroupMap.Key(option.Label))" disabled="@unavailable" />
+<span dir="auto">@option.Label @if (unavailable) { <small class="muted">· @option.GroupName</small> }</span>
+</label>
+}
+</div>
+<div class="actions"><button type="submit">@T["CategoryGroupApprove"]</button><a class="button button-outline" asp-controller="CategoryGroups" asp-action="Index">@T["Cancel"]</a></div>
+</form>
+@if (Model.Id > 0) {
+<details class="report-panel"><summary>@T["CategoryGroupRemove"]</summary><p class="muted">@T["CategoryGroupDeleteHelp"]</p>
+<form asp-action="Delete" asp-controller="CategoryGroups" method="post"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="version" value="@Model.Version" /><button type="submit" class="button button-outline">@T["CategoryGroupConfirmRemove"]</button></form>
+</details>
+}
+</section>
+@section Scripts { <script src="~/js/category-groups.js" asp-append-version="true" defer></script> }

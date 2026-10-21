@@ -1,10 +1,13 @@
 @model PreferenceChoices
 @{
-    var available = Model.Available.Except(Model.Selected).ToArray();
+    var groups = Model.Groups ?? CategoryGroupMap.Empty;
+    var available = Model.Field == "Categories"
+        ? Model.Available.Where(value => !Model.Selected.Any(selected => groups.Matches(selected, value))).DistinctBy(groups.Identity).ToArray()
+        : Model.Available.Except(Model.Selected).ToArray();
     var addName = Model.Field == "Categories" ? "addCategory" : "addLocation";
     var group = Model.Field == "Categories" ? "categories" : "locations";
     var removeName = Model.Field == "Categories" ? "removeCategory" : "removeLocation";
-    var selectedCount = PreferenceLimitRules.Count(Model.Selected);
+    var selectedCount = PreferenceLimitRules.Count(Model.Selected, Model.Groups);
     var limitReached = Model.Limit is { } capLimit && selectedCount >= capLimit;
 }
 <section class="preference-group" aria-labelledby="preference-@Model.Field">
@@ -27,7 +30,7 @@
         </p>
     }
     <div class="preference-bulk-actions">
-        <button class="button button-outline member-action" type="submit" name="bulkAction" value="select-@group" disabled="@(available.Length == 0 || Model.Limit is { } cap && PreferenceLimitRules.Count(Model.Selected.Concat(available)) > cap)">
+        <button class="button button-outline member-action" type="submit" name="bulkAction" value="select-@group" disabled="@(available.Length == 0 || Model.Limit is { } cap && PreferenceLimitRules.Count(Model.Selected.Concat(available), Model.Groups) > cap)">
             <span class="fa-solid fa-check" aria-hidden="true"></span><span>@T["SelectAllPreferences"]</span>
         </button>
         <button class="button button-outline member-action" type="submit" name="bulkAction" value="clear-@group" disabled="@(Model.Selected.Length == 0)">
@@ -39,7 +42,7 @@
         @foreach (var value in Model.Selected)
         {
             <div class="preference-chip is-selected">
-                <span dir="auto">@value</span>
+                <span dir="auto">@value @if (Model.Field == "Categories" && groups.GroupName(value) is { } groupName) { <small class="muted">· @groupName</small> }</span>
                 <input type="hidden" name="@Model.Field" value="@value" />
                 <button class="preference-chip-action" type="submit" name="@removeName" value="@value"
                         aria-label="@T["RemovePreference"]: @value" title="@T["RemovePreference"]">
@@ -65,7 +68,7 @@
             @foreach (var value in available)
             {
                 <div class="preference-chip" data-preference-value="@value">
-                    <span dir="auto">@value</span>
+                    <span dir="auto">@value @if (Model.Field == "Categories" && groups.GroupName(value) is { } groupName) { <small class="muted">· @groupName</small> }</span>
                     <button class="preference-chip-action" type="submit" name="@addName" value="@value" disabled="@limitReached"
                             aria-label="@T["AddPreference"]: @value" title="@T["AddPreference"]">
                         <span class="fa-solid fa-check" aria-hidden="true"></span>

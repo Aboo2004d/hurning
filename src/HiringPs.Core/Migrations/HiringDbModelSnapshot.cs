@@ -179,6 +179,76 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("Audit");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.CategoryGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("CategoryGroups");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.CategoryGroupMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryGroupId");
+
+                    b.HasIndex("NormalizedKey")
+                        .IsUnique();
+
+                    b.ToTable("CategoryGroupMembers");
+                });
+
             modelBuilder.Entity("HiringPs.Core.ContactMessage", b =>
                 {
                     b.Property<long>("Id")
@@ -2635,6 +2705,17 @@ namespace HiringPs.Core.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HiringPs.Core.CategoryGroupMember", b =>
+                {
+                    b.HasOne("HiringPs.Core.CategoryGroup", "CategoryGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("CategoryGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CategoryGroup");
+                });
+
             modelBuilder.Entity("HiringPs.Core.DiscountCode", b =>
                 {
                     b.HasOne("HiringPs.Core.MembershipPlan", null)
@@ -2969,6 +3050,11 @@ namespace HiringPs.Core.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.CategoryGroup", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("HiringPs.Core.Opportunity", b =>
