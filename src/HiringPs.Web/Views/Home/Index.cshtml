@@ -142,7 +142,6 @@
         <section>
             <div class="results-header">
                 <strong>@Model.Count @T["Results"]</strong>
-                <a class="textlink feed-link" type="application/rss+xml" href="@((Context.Items["MountPath"] is PathString mount ? mount.Value : "") + FeedLinks.ForListing(Model))"><i class="fa-solid fa-rss" aria-hidden="true"></i> @T["RssFeed"]</a>
                 <nav class="sort-links" aria-label="@T["SortBy"]">
                     <span class="sort-label" aria-hidden="true">@T["SortBy"]:</span>
                     <a href="@ListingUrl(1, ListingSort.Newest)" aria-current="@(Model.Sort == ListingSort.Newest ? "true" : null)">@T["Newest"]</a>
