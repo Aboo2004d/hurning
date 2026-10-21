@@ -175,6 +175,42 @@ public static class WorkflowChecks
                 "semantic closing classification is not restricted to known keywords: " + quote
             );
         }
+        foreach (var quote in new[]
+        {
+            "to obtain the tender documents starting from Wednesday07/10/2026 until Wednesday14/10/2026",
+            "شراء كراسة العطاء ابتداء من 07/10/2026 ولغاية يوم 14/10/2026",
+            "الحصول على وثائق العطاء من 07/10/2026 حتى 14/10/2026",
+        })
+        {
+            foreach (var day in new[] { 7, 14 })
+            {
+                var rangeResult = Dates(quote, new()
+                {
+                    OtherDates = [new()
+                    {
+                        Kind = OpportunityDateKind.BookletPurchase,
+                        Date = new(2026, 10, day), Evidence = quote,
+                    }],
+                });
+                Check((rangeResult.Errors.Count == 0) == (day == 14),
+                    "document range verifies its closing date, not opening: " + day + " " + quote);
+            }
+            Check(Dates(quote, new() { Deadline = new(2026, 10, 14), DeadlineEvidence = quote }).Errors.Count > 0,
+                "document acquisition closing is not submission deadline");
+        }
+        foreach (var quote in new[]
+        {
+            "يبدأ استقبال الطلبات اعتبارا من يوم الاثنين الموافق 5/10/2026",
+            "Applications starting from Wednesday07/10/2026 until Wednesday14/10/2026",
+        })
+        {
+            var day = quote.StartsWith("Applications") ? 7 : 5;
+            Check(Dates(quote, new() { Deadline = new(2026, 10, day), DeadlineEvidence = quote }).Errors.Count > 0,
+                "application opening cannot be accepted as closing: " + quote);
+        }
+        const string closingOnly = "و لغاية يوم الاربعاء الموافق 2026/08/12";
+        Check(Dates(closingOnly, new() { Deadline = new(2026, 8, 12), DeadlineEvidence = closingOnly }).Errors.Count == 0,
+            "semantic closing date accepts year-first slash quotation");
         const string registrationClosing = "نهاية التسجيل تكون نهاية يوم الاثنين 2026/10/19.";
         var registrationDate = new DateOnly(2026, 10, 19);
         var registrationCheck = Dates(

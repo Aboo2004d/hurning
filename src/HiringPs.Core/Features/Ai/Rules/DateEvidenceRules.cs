@@ -10,7 +10,7 @@ public static class DateEvidenceRules
     private const string Months =
         "January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec|يناير|كانون الثاني|فبراير|شباط|مارس|اذار|ابريل|نيسان|مايو|ايار|يونيو|حزيران|يوليو|تموز|اغسطس|اب|سبتمبر|ايلول|اكتوبر|تشرين الاول|نوفمبر|تشرين الثاني|ديسمبر|كانون الاول";
     private const string Roles =
-        @"(?<Publication>تاريخ\s+النشر|نشر\s+بتاريخ|publication\s+date|date\s+posted|posted\s+on|published(?:\s+on)?)|(?<Modification>اخر\s+تحديث|تاريخ\s+(?:التعديل|التحديث)|تم\s+(?:التحديث|التعديل)|last\s+(?:updated|modified)|updated\s+on|modified\s+on)|(?<BookletPurchase>شراء\s+(?:كراس[ةه]|وثائق)|(?:كراس[ةه]|وثائق)\s+العطاء|booklet\s+purchase|purchase\s+(?:the\s+)?(?:documents|tender))|(?<SiteVisit>زيار[ةه]\s+(?:الموقع|ميداني[ةه])|site\s+visit)|(?<BidOpening>فتح\s+(?:المظاريف|العروض)|فض\s+العروض|bid\s+opening|opening\s+of\s+(?:bids|tenders))|(?<Deadline>(?:نهاي[ةه]|انتهاء|اغلاق|اقفال)\s+(?:التسجيل|التقديم|استقبال\s+الطلبات)|اخر\s+موعد|الموعد\s+النهائي|موعد\s+(?:الاغلاق|انتهاء|اقفال|التقديم|تقديم\s+العروض)|موعد.{0,30}لتقديم|deadline|closing\s+date|close[sd]?\s+on|apply\s+(?:by|before)|submit.{0,25}(?:by|before)|تمديد\s+موعد|extended\s+(?:to|until))";
+        @"(?<Publication>تاريخ\s+النشر|نشر\s+بتاريخ|publication\s+date|date\s+posted|posted\s+on|published(?:\s+on)?)|(?<Modification>اخر\s+تحديث|تاريخ\s+(?:التعديل|التحديث)|تم\s+(?:التحديث|التعديل)|last\s+(?:updated|modified)|updated\s+on|modified\s+on)|(?<BookletPurchase>شراء\s+(?:كراس[ةه]|وثائق)|(?:كراس[ةه]|وثائق)\s+العطاء|booklet\s+purchase|(?:purchase|obtain|collect|collecting|obtaining|purchasing)\s+(?:the\s+)?(?:tender\s+documents|bidding\s+documents|documents|tender)|(?:الحصول|استلام)\s+(?:عل[ىي]\s+)?(?:كراس[ةه]|وثائق|مستندات))|(?<SiteVisit>زيار[ةه]\s+(?:الموقع|ميداني[ةه])|site\s+visit)|(?<BidOpening>فتح\s+(?:المظاريف|العروض)|فض\s+العروض|bid\s+opening|opening\s+of\s+(?:bids|tenders))|(?<Deadline>(?:نهاي[ةه]|انتهاء|اغلاق|اقفال)\s+(?:التسجيل|التقديم|استقبال\s+الطلبات)|اخر\s+موعد|الموعد\s+النهائي|موعد\s+(?:الاغلاق|انتهاء|اقفال|التقديم|تقديم\s+العروض)|موعد.{0,30}لتقديم|deadline|closing\s+date|close[sd]?\s+on|apply\s+(?:by|before)|submit.{0,25}(?:by|before)|تمديد\s+موعد|extended\s+(?:to|until))";
 
     // These are conflicting events, not an allowlist of closing expressions.
     private const string NonClosingEvents =
@@ -139,6 +139,9 @@ public static class DateEvidenceRules
         {
             if (!ExtractionValidator.DateEvidenceMatches(date.Value, entry.Date))
                 continue;
+            if (entry.Kind is OpportunityDateKind.Deadline or OpportunityDateKind.BookletPurchase
+                && IsOpeningDate(quote, dates, date))
+                continue;
             var preceding = quote[..date.Index];
             var role = Regex
                 .Matches(
@@ -176,6 +179,26 @@ public static class DateEvidenceRules
                 return true;
         }
         return false;
+    }
+
+    /// <summary>يرفض تاريخ بداية الإجراء عند استخدامه كنهاية، دون افتراض أن آخر تاريخ في النص هو الصحيح.</summary>
+    private static bool IsOpeningDate(string quote, MatchCollection dates, Match date)
+    {
+        var previous = dates.Cast<Match>().LastOrDefault(x => x.Index < date.Index);
+        var start = previous is null ? 0 : previous.Index + previous.Length;
+        var context = quote[start..date.Index];
+        // Use the closest temporal cue, so "applications close ... starting from"
+        // cannot turn the beginning of a range into its closing date.
+        var cues = Regex.Matches(context,
+            @"(?<Opening>starting\s+from|starting|starts?\s+(?:on|from)|begin(?:s|ning)?(?:\s+(?:on|from))?|(?:اعتبارا|ابتداء)\s+من|بدء|يبدا|تبدأ|تبدا|بداي[ةه]|(?<!\p{L})و?من(?!\p{L})(?:\s+يوم)?)|(?<Closing>until|through|no\s+later\s+than|on\s+or\s+before|before|by|closing|deadline|ل?غاي[ةه]|حتي|حتى|اخر\s+موعد|اقصاه|ينتهي|تنتهي)",
+            RegexOptions.IgnoreCase).Cast<Match>().ToList();
+        // English cues must be words; Arabic conjunctions may be attached.
+        var cue = cues.LastOrDefault(x =>
+            (x.Index == 0 || !char.IsAsciiLetter(context[x.Index - 1]))
+            && (x.Index + x.Length == context.Length
+                || !char.IsAsciiLetter(context[x.Index + x.Length]))
+        );
+        return cue is not null && cue.Groups["Opening"].Success;
     }
 
     /// <summary>ينفذ AtPalestineMidnight وفق قواعد DateEvidenceRules الحالية دون تغيير عقد المستدعين.</summary>
