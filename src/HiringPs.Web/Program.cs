@@ -324,12 +324,7 @@ builder.Services.AddRateLimiter(options =>
 // ========================================
 // 9. Data Protection
 // ========================================
-var keyPath = builder.Configuration["DataProtection:KeyPath"];
-var protection = builder.Services.AddDataProtection().SetApplicationName("HiringPs");
-if (!string.IsNullOrWhiteSpace(keyPath))
-{
-    protection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
-}
+builder.Services.AddHiringDataProtection();
 
 // ========================================
 // 10. Build Application

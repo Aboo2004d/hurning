@@ -101,9 +101,7 @@ if (!isProbe)
     builder.Services.AddSingleton<PaymentEnvironment>();
     builder.Services.AddScoped<PaymentToolProbes>();
     builder.Services.AddSocialPublishing();
-    var socialKeys = builder.Services.AddDataProtection().SetApplicationName("HiringPs");
-    if (!string.IsNullOrWhiteSpace(builder.Configuration["DataProtection:KeyPath"]))
-        socialKeys.PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["DataProtection:KeyPath"]!));
+    builder.Services.AddHiringDataProtection();
     builder.Services.AddLahza();
     builder.Services.AddJawwalPay();
     builder.Services.AddScoped<TelegramCommands>();
