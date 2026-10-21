@@ -3,6 +3,8 @@ using System.Text;
 using System.Text.Json;
 using HiringPs.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 
 public static class WorkflowChecks
@@ -28,7 +30,52 @@ public static class WorkflowChecks
             !modelDb.Database.HasPendingModelChanges(),
             "current model matches migrations without connecting to SQL Server"
         );
+        var upgradeSql = modelDb.GetService<IMigrator>().GenerateScript(
+            "20261020182000_OperationHistoryIndex", "20261021120000_ConsolidateUnusedDefaultPrompt"
+        );
+        string FrozenLiteral(string name)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(upgradeSql,
+                "DECLARE @" + name + " nvarchar\\(max\\) = N'((?:''|[^'])*)';",
+                System.Text.RegularExpressions.RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+            Check(match.Success, "frozen migration contains " + name);
+            return match.Groups[1].Value.Replace("''", "'");
+        }
+        Check(
+            FrozenLiteral("originalTemplate") == PromptDefaults.Template.ReplaceLineEndings("\n")
+                && FrozenLiteral("template") == PromptDefaults.CurrentTemplate.ReplaceLineEndings("\n")
+                && FrozenLiteral("dates") == PromptDatePolicy.CurrentDateContract,
+            "single-base migration freezes the exact historical guard and latest default instructions"
+        );
+        Check(
+            upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [AiUsage])")
+                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [SourceItems])")
+                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [Opportunities])")
+                && upgradeSql.Contains("AND NOT EXISTS (SELECT 1 FROM [OpportunityDates])")
+                && upgradeSql.Contains("[CreatedBy] <> N'Migration'")
+                && upgradeSql.Contains("SET [ActivePromptVersionId] = 1, [PendingPromptVersionId] = NULL")
+                && upgradeSql.Contains("DELETE FROM [PromptVersions] WHERE [Id] <> 1")
+                && !upgradeSql.Contains("INSERT INTO [PromptVersions]"),
+            "unused defaults consolidate into base one without new versions or rewriting used/admin history"
+        );
         var prompt = PromptDefaults.Initial();
+        var currentDefault = PromptDefaults.Current();
+        Check(
+            currentDefault.Render().Contains(PromptDefaults.TitleInstructions)
+                && currentDefault.Render().Contains(PromptDefaults.CurrentDateInstructions)
+                && !currentDefault.Render().Contains("{{scope}}"),
+            "current default includes original-role titles, optional closing and opening-date separation"
+        );
+        Check(
+            !prompt.Template.Contains("TITLE POLICY v1")
+                && !prompt.Template.Contains("DEFAULT DATE POLICY v1"),
+            "new default does not rewrite historical migration seed"
+        );
+        Check(
+            new PromptVersion { FinalText = "Saved custom prompt" }.Render() == "Saved custom prompt"
+                && !new PromptVersion { Template = "Custom extraction instructions" }.Compose().Contains("TITLE POLICY v1"),
+            "saved admin instructions take precedence over current default policies"
+        );
         Check(
             !prompt.LegacySnapshot.Contains('\r')
                 && !prompt.Template.Contains('\r')

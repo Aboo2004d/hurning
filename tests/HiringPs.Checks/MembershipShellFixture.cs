@@ -174,6 +174,18 @@ public class AdminShellFixtureController : Controller
         };
         return screen switch
         {
+            "prompt" => View("/Areas/Admin/Views/AiPrompt/AiPrompt.cshtml", new PromptEditor
+            {
+                Template = PromptDefaults.CurrentTemplate,
+                AllowedKinds = "Job,Training,Tender,ProcurementNotice",
+                GeographicScope = "West Bank, Gaza and Jerusalem",
+                History = [new PromptVersionSummaryDto(2, now,
+                    "اعتماد دلالة نهاية التقديم من سياق المصدر دون حصر الصياغات",
+                    PromptDefaults.Current().FinalText, PromptDefaults.Legacy),
+                    new PromptVersionSummaryDto(1, now.AddDays(-4),
+                    "Initial version, preserving the complete previous prompt",
+                    PromptDefaults.Initial().FinalText, PromptDefaults.Legacy)],
+            }),
             "operations" => View("/Areas/Admin/Views/Operations/Index.cshtml", new OperationLogPage(
                 new OperationFilterDto("Source", OperationArea.Collection, OperationOutcome.Failed),
                 new AdminPage<OperationSummaryDto>

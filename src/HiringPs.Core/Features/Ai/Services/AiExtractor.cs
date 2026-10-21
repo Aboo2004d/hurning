@@ -156,7 +156,7 @@ public class AiExtractor
             throw new AiUnavailableException("AI model is not configured; item remains queued.");
         if (!System.Text.RegularExpressions.Regex.IsMatch(model, @"\A[a-zA-Z0-9._-]+\z"))
             throw new AiUnavailableException("AI model is invalid; item remains queued.");
-        var prompt = execution?.Version ?? PromptDefaults.Initial();
+        var prompt = execution?.Version ?? PromptDefaults.Current();
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"

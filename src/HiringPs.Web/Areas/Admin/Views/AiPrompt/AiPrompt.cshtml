@@ -1,6 +1,7 @@
 @model PromptEditor
 @{
     ViewData["Title"] = T["AiPrompt"];
+    ViewData["WideContent"] = true;
     var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var preview = PromptAdministrationService.Preview(Model.Template, Model.GeographicScope,
         Model.AllowedKinds, Model.SummaryLimit, Model.AllowUnknownDeadline);
@@ -96,7 +97,10 @@
             {
                 <tr>
                     <td>@version.Id</td>
-                    <td class="prompt-history-timestamp"><bdi>@PaymentDisplay.Time(version.CreatedAt)</bdi> @T["PalestineTime"]</td>
+                    <td class="prompt-history-timestamp">
+                        <bdi>@PaymentDisplay.Time(version.CreatedAt)</bdi>
+                        <span class="muted">@T["PalestineTime"]</span>
+                    </td>
                     <td>@version.Note</td>
                     <td>
                         <a asp-controller="AiPrompt" asp-action="AiPrompt" asp-route-inspect="@version.Id">@(ar ? "عرض / نسخ" : "Inspect / copy")</a>

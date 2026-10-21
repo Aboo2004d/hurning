@@ -12,7 +12,7 @@
     var adminArea = ViewData["HeaderKind"] as string == "Admin";
     var memberArea = ViewData["HeaderKind"] as string == "Member";
 }
-        <header class="topbar site-header">
+        <header class="topbar site-header @(adminArea ? "admin-site-header" : null)">
             <a
                 class="brand"
                 asp-area="" asp-controller="Home"
