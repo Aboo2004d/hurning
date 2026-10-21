@@ -9,6 +9,7 @@
     var organizationFacet = ViewBag.OrganizationFacet as OrganizationFacet;
     var cityLinks = ViewBag.CityFacets as List<City> ?? [];
     var attachments = Model.Attachments;
+    var avatar = OrganizationAvatarPresenter.Create(Model.Organization);
     var closing = expired ? null : PublicListing.ClosingInDays(Model, TextRules.PalestineToday());
 }
 <a class="textlink back-link" asp-controller="Home" asp-action="Index" asp-route-kind="@Model.Kind">
@@ -17,7 +18,7 @@
 </a>
 <article class="detail-panel kind-@Model.Kind.ToString().ToLowerInvariant()">
     <div class="card-top">
-        <span class="org-avatar tone-@(Model.Organization.Sum(c => c) % 6)" aria-hidden="true">@(Model.Organization.FirstOrDefault(char.IsLetterOrDigit) is var initial && initial != default ? char.ToUpperInvariant(initial).ToString() : "•")</span>
+        <span class="org-avatar tone-@avatar.Tone" aria-hidden="true">@avatar.Initial</span>
         @if (organizationFacet is not null)
         {
             <a dir="auto" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organizationFacet.Slug))">@Model.Organization</a>
@@ -215,7 +216,7 @@
         </form>
     </details>
 </article>
-@if (ViewBag.VerifiedDates is IEnumerable<OpportunityDateRecord> dateRecords && dateRecords.Any())
+@if (ViewBag.VerifiedDates is IEnumerable<VerifiedOpportunityDateDto> dateRecords && dateRecords.Any())
 {
     <section class="detail-panel">
         <h2>@T["VerifiedSourceDates"]</h2>

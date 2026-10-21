@@ -2,36 +2,29 @@
 @if (Model.ClosingSoon.Count > 0)
 {
     <section class="closing-week" aria-labelledby="closing-week-title">
-        <header class="closing-week-heading">
-            <div>
-                <h2 id="closing-week-title"><span class="fa-solid fa-clock" aria-hidden="true"></span>@T["JobsClosingThisWeek"]</h2>
-                <p>@T["JobsClosingThisWeekHelp"]</p>
-            </div>
-            <span class="closing-week-count"><bdi>@Model.ClosingSoon.Count</bdi> @T["Jobs"]</span>
-        </header>
+        <h2 id="closing-week-title">
+            <span class="fa-solid fa-clock" aria-hidden="true"></span>
+            <span>@T["ClosingThisWeek"]</span>
+        </h2>
         <ul class="closing-week-list">
             @foreach (var item in Model.ClosingSoon)
             {
                 <li>
-                    <div class="closing-week-meta">
-                        <span class="organization" dir="auto">@item.Organization</span>
+                    @if (Model.AllowedDetails.Contains(item.Kind))
+                    {
+                        <a href="@Url.Content("~" + PublicListing.DetailsPath(item))" dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</a>
+                    }
+                    else
+                    {
+                        <span dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</span>
+                    }
+                    <span class="closing-week-meta">
+                        <bdi>@item.Organization</bdi>
                         @if (PublicListing.ClosingInDays(item, Model.Today) is { } days)
                         {
                             <partial name="_ClosingBadge" model="days" />
                         }
-                    </div>
-                    @if (Model.AllowedDetails.Contains(item.Kind))
-                    {
-                        <a class="closing-week-title" href="@Url.Content("~" + PublicListing.DetailsPath(item))" dir="auto" lang="@item.OriginalLanguage">@item.Title</a>
-                    }
-                    else
-                    {
-                        <span class="closing-week-title" dir="auto" lang="@item.OriginalLanguage">@item.Title</span>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(item.Locations))
-                    {
-                        <span class="closing-week-place" dir="auto">@item.Locations</span>
-                    }
+                    </span>
                 </li>
             }
         </ul>

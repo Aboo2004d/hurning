@@ -53,8 +53,16 @@ public class ListingShellFixtureController : Controller
         bool saved = false,
         bool closing = false,
         int page = 1
-    ) =>
-        View(
+    )
+    {
+        ViewBag.Stats = archive ? null : new HomeStatsDto(new Dictionary<OpportunityKind, int>
+        {
+            [OpportunityKind.Job] = 10,
+            [OpportunityKind.Training] = 8,
+            [OpportunityKind.Tender] = 4,
+            [OpportunityKind.ProcurementNotice] = 2,
+        }, 6, 3);
+        return View(
             "/Views/Home/Index.cshtml",
             new ListingModel
             {
@@ -98,6 +106,38 @@ public class ListingShellFixtureController : Controller
                 ],
             }
         );
+    }
+
+    public IActionResult Overview()
+    {
+        var result = (ViewResult)Index();
+        ((ListingModel)result.Model!).Kind = null;
+        return result;
+    }
+
+    public IActionResult Details()
+    {
+        ViewBag.VerifiedDates = new List<VerifiedOpportunityDateDto>
+        {
+            new(OpportunityDateKind.Deadline, new DateOnly(2026, 11, 1), "موعد مثبت", "Verified fixture evidence", false),
+        };
+        return View("/Views/Opportunities/Details.cshtml", new OpportunityDetailsDto
+        {
+            Id = 1,
+            Kind = OpportunityKind.Job,
+            Title = "متدرب (GS Support Intern) <اختبار>",
+            Organization = "مؤسسة تجريبية",
+            OriginalLanguage = "ar",
+            Summary = "ملخص عربي (English summary)",
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastVerifiedAt = DateTimeOffset.UtcNow,
+            Status = PublicationStatus.Published,
+            Locations = "غزة",
+            Category = "برمجة",
+            Deadline = new DateOnly(2026, 11, 1),
+            Sources = [new("مصدر", "https://example.test/job")],
+        });
+    }
 }
 
 [Area("Admin"), Authorize(Roles = "Admin")]

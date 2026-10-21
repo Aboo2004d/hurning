@@ -138,7 +138,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
         )!;
 
     /// <summary>Current counts per kind and organizations for the home page header.</summary>
-    public Task<HomeStats> StatsAsync(CancellationToken ct) =>
+    public Task<HomeStatsDto> StatsAsync(CancellationToken ct) =>
         cache.GetOrCreateAsync(
             "home-stats",
             async entry =>
@@ -156,14 +156,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
                     .CountAsync(ct);
                 var since = DateTimeOffset.UtcNow.AddDays(-1);
                 var fresh = await current.CountAsync(x => x.CreatedAt >= since, ct);
-                return new HomeStats(counts, organizations, fresh);
+                return new HomeStatsDto(counts, organizations, fresh);
             }
         )!;
-}
-
-public sealed record HomeStats(Dictionary<OpportunityKind, int> Counts, int Organizations, int NewToday)
-{
-    public int Total => Counts.Values.Sum();
-
-    public int Count(OpportunityKind kind) => Counts.GetValueOrDefault(kind);
 }

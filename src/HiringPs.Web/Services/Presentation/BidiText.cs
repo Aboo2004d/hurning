@@ -11,12 +11,14 @@ namespace HiringPs.Web.Models;
 /// </summary>
 public static partial class BidiText
 {
-    [GeneratedRegex(@"\([^()؀-ۿ]*[A-Za-z][^()؀-ۿ]*\)")]
+    // Stop at the first Latin letter to avoid ambiguous overlapping repetitions.
+    [GeneratedRegex(@"\([^()\u0600-\u06FFA-Za-z]*[A-Za-z][^()\u0600-\u06FF]*\)")]
     private static partial Regex LatinGroup();
 
-    [GeneratedRegex(@"[؀-ۿ]")]
+    [GeneratedRegex(@"[\u0600-\u06FF]")]
     private static partial Regex Arabic();
 
+    /// <summary>يرمز النص دائمًا قبل عزل الأقواس اللاتينية؛ لا يعامل محتوى الإعلان كـHTML موثوق.</summary>
     public static IHtmlContent Render(string? value)
     {
         if (string.IsNullOrEmpty(value))
@@ -42,11 +44,11 @@ public static partial class BidiText
     {
         foreach (var c in value ?? "")
         {
-            if (c is >= '؀' and <= 'ۿ')
+            if (c is >= '\u0600' and <= '\u06FF' && char.IsLetter(c))
                 return "rtl";
             if (char.IsLetter(c))
                 return "ltr";
         }
-        return language == "ar" ? "rtl" : "ltr";
+        return language?.StartsWith("ar", StringComparison.OrdinalIgnoreCase) == true ? "rtl" : "ltr";
     }
 }

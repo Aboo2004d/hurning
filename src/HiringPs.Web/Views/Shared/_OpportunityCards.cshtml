@@ -24,11 +24,10 @@
         var closing = listing.Archive ? null : PublicListing.ClosingInDays(item, listing.Today);
         var isNew = !listing.Archive && PublicListing.IsNew(item);
         var kindClass = "kind-" + item.Kind.ToString().ToLowerInvariant();
-        var initial = item.Organization.FirstOrDefault(char.IsLetterOrDigit);
-        var tone = item.Organization.Sum(c => c) % 6;
+        var avatar = OrganizationAvatarPresenter.Create(item.Organization);
         <article class="opportunity-card @kindClass @(allowed ? "is-linked" : null)">
             <div class="card-top">
-                <span class="org-avatar tone-@tone" aria-hidden="true">@(initial == default ? "•" : char.ToUpperInvariant(initial).ToString())</span>
+                <span class="org-avatar tone-@avatar.Tone" aria-hidden="true">@avatar.Initial</span>
                 <span class="organization" dir="auto">@item.Organization</span>
                 <span class="card-badges">
                     @if (isNew)

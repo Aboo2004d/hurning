@@ -11,7 +11,7 @@
     var member = signedIn && !User.IsInRole("Admin");
     var currentUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
     var facets = ViewBag.Facets as BrowseFacets;
-    var stats = ViewBag.Stats as HomeStats;
+    var stats = ViewBag.Stats as HomeStatsDto;
     string ListingUrl(int page, string? sort = null)
     {
         var values = Model.RouteValues(page);
@@ -67,37 +67,7 @@
         }
     }
 </section>
-@if (Model.ClosingSoon.Count > 0)
-{
-    <section class="closing-week" aria-labelledby="closing-week-title">
-        <h2 id="closing-week-title">
-            <span class="fa-solid fa-clock" aria-hidden="true"></span>
-            <span>@T["ClosingThisWeek"]</span>
-        </h2>
-        <ul class="closing-week-list">
-            @foreach (var item in Model.ClosingSoon)
-            {
-                <li>
-                    @if (Model.AllowedDetails.Contains(item.Kind))
-                    {
-                        <a href="@Url.Content("~" + PublicListing.DetailsPath(item))" dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</a>
-                    }
-                    else
-                    {
-                        <span dir="@BidiText.Direction(item.Title, item.OriginalLanguage)" lang="@item.OriginalLanguage">@BidiText.Render(item.Title)</span>
-                    }
-                    <span class="closing-week-meta">
-                        <bdi>@item.Organization</bdi>
-                        @if (PublicListing.ClosingInDays(item, Model.Today) is { } days)
-                        {
-                            <partial name="_ClosingBadge" model="days" />
-                        }
-                    </span>
-                </li>
-            }
-        </ul>
-    </section>
-}
+<partial name="/Views/Home/_ClosingWeek.cshtml" model="Model" />
 <form method="get" asp-action="Index" id="listing-form">
     @if (Model.Archive)
     {
