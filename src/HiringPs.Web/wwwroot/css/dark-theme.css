@@ -1,0 +1,32 @@
+/* Shared dark palette: media defaults to the system preference; theme.js applies an explicit choice. */
+:root {
+    --bg: #0e1512;
+    --surface: #15201b;
+    --surface-2: #1b2822;
+    --ink: #e3ece7;
+    --muted: #9db1a7;
+    --line: #283830;
+    --accent: #4cbb8f;
+    --accent-strong: #7fd5b0;
+    --accent-ring: #2f7d63;
+    --soft: #183128;
+    --on-accent: #062519;
+    --gold: #e0b45c;
+    --danger: #f08b80;
+    --danger-soft: #3a1c19;
+    --warning: #f0c36a;
+    --warning-soft: #362a12;
+    --shadow: 0 1px 2px #0006, 0 6px 20px #0005;
+    --shadow-lift: 0 2px 4px #0007, 0 14px 32px #0008;
+    --footer-bg: #0a120f;
+    --footer-ink: #b9cdc4;
+    --kind-job: #5cc79b;
+    --kind-job-soft: #163126;
+    --kind-training: #7fb0ec;
+    --kind-training-soft: #162538;
+    --kind-tender: #e9b95a;
+    --kind-tender-soft: #34280f;
+    --kind-procurementnotice: #c3a1ef;
+    --kind-procurementnotice-soft: #2a1d3a;
+    color-scheme: dark;
+}

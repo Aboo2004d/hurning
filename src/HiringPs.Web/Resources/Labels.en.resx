@@ -3172,4 +3172,6 @@
   <data name="StatOpenOpportunities" xml:space="preserve"><value>open opportunities</value></data>
   <data name="StatOrganizations" xml:space="preserve"><value>organizations</value></data>
   <data name="StatNewToday" xml:space="preserve"><value>new in the last 24 hours</value></data>
+  <data name="ThemeSwitchToDark" xml:space="preserve"><value>Dark mode</value></data>
+  <data name="ThemeSwitchToLight" xml:space="preserve"><value>Light mode</value></data>
 </root>

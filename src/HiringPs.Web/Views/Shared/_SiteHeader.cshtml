@@ -102,6 +102,7 @@
                     <a class="language-toggle" href="@alternateUrl" hreflang="@otherCulture" lang="@otherCulture">
                         @(ar?"English":"العربية")
                     </a>
+                    <partial name="_ThemeToggle" />
                     @if (adminArea || memberArea)
                     {
                         <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">

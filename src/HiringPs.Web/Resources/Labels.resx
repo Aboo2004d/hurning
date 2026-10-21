@@ -3172,4 +3172,6 @@
   <data name="StatOpenOpportunities" xml:space="preserve"><value>فرصة مفتوحة</value></data>
   <data name="StatOrganizations" xml:space="preserve"><value>جهة معلنة</value></data>
   <data name="StatNewToday" xml:space="preserve"><value>جديدة خلال 24 ساعة</value></data>
+  <data name="ThemeSwitchToDark" xml:space="preserve"><value>الوضع الليلي</value></data>
+  <data name="ThemeSwitchToLight" xml:space="preserve"><value>الوضع النهاري</value></data>
 </root>
