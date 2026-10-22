@@ -160,7 +160,7 @@ builder.Services.AddHttpClient<SourceSetupAssistant>(client =>
     client.Timeout = TimeSpan.FromSeconds(75)
 );
 
-builder.Services.AddDatabaseErrorLogging("Web");
+builder.Services.AddHiringElmah();
 
 // ========================================
 // 5. Identity Configuration
@@ -391,17 +391,6 @@ app.Use(
 // ========================================
 // 14. Middleware
 // ========================================
-// Capture failed HTTP responses, including those without an exception. Never log bodies or query strings.
-app.Use(async (context, next) =>
-{
-    var originalPath = context.Request.PathBase + context.Request.Path;
-    await next(context);
-    if (context.Response.StatusCode >= 400)
-        app.Logger.LogError("HTTP request failed: {Method} {Path}; status {StatusCode}; reference {TraceId}",
-            context.Request.Method, originalPath, context.Response.StatusCode,
-            System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier);
-});
-
 app.UseExceptionHandler(
     new ExceptionHandlerOptions
     {
@@ -459,6 +448,7 @@ app.UseStaticFiles(
 // Authentication must capture the real mount path before language is added to PathBase.
 // Changing PathBase inside a controller is too late for OAuth's original callback base.
 app.UseAuthentication();
+app.UseHiringElmah();
 app.UseMiddleware<LanguagePathMiddleware>();
 app.UseRequestLocalization(SiteLocalization.Options());
 

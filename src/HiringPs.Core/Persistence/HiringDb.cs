@@ -30,7 +30,6 @@ public class HiringDb(
     public DbSet<ScrapeRun> Runs => Set<ScrapeRun>();
     public DbSet<UserReport> Reports => Set<UserReport>();
     public DbSet<AuditEntry> Audit => Set<AuditEntry>();
-    public DbSet<ApplicationError> ApplicationErrors => Set<ApplicationError>();
     public DbSet<ProtectionKeyRecord> ProtectionKeys => Set<ProtectionKeyRecord>();
     public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
     public DbSet<CategoryGroupMember> CategoryGroupMembers => Set<CategoryGroupMember>();

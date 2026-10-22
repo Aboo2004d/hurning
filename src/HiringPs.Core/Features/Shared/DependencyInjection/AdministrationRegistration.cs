@@ -22,7 +22,6 @@ public static class AdministrationRegistration
         services.TryAddScoped<PromptAdministrationService>();
         services.TryAddScoped<CollectorDiagnosticReadService>();
         services.TryAddScoped<OperationReadService>();
-        services.TryAddScoped<SystemErrorReadService>();
         services.TryAddScoped<CategoryGroupReadService>();
         services.TryAddScoped<CategoryGroupManagementService>();
         services.TryAddScoped<CategoryGroupSuggestionService>();

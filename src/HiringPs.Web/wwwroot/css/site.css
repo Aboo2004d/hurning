@@ -3165,11 +3165,6 @@ article.detail-panel {
 }
 
 /* System diagnostics use the same cards and filters as the operation log. */
-.system-error-meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .6rem 1rem; }
-.system-error-meta dt { color: var(--muted); }
-.system-error-meta dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.system-error-stack { max-width: 100%; max-height: 36rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; font-size: .875rem; text-align: left; }
-@media (max-width: 480px) { .system-error-meta { grid-template-columns: minmax(0, 1fr); gap: .25rem; } .system-error-meta dd { margin-block-end: .75rem; } }
 
 .category-picker { position: relative; min-width: 0; }
 .category-picker label { display: grid; gap: .4rem; }

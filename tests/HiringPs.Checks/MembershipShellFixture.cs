@@ -207,17 +207,6 @@ public class AdminShellFixtureController : Controller
                     "Initial version, preserving the complete previous prompt",
                     PromptDefaults.Initial().FinalText, PromptDefaults.Legacy)],
             }),
-            "systemerrors" => View("/Areas/Admin/Views/SystemErrors/Index.cshtml", new SystemErrorsPage(
-                new SystemErrorFilterDto("trace-probe"), new AdminPage<SystemErrorSummaryDto>
-                {
-                    Items = [new(1, now, "Web", "Error", "Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware",
-                        "00-trace-probe-long-reference-1234567890abcdef-00", "/ar/Account/Login", "System.IO.IOException", "Fixture diagnostic message <script>alert(1)</script>")],
-                    Pager = new AdminPager { Page = 2, TotalRecords = 21 },
-                })),
-            "systemerrordetails" => View("/Areas/Admin/Views/SystemErrors/Details.cshtml", new SystemErrorDetailsDto(
-                new(1, now, "Web", "Error", "Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware",
-                    "00-trace-probe-long-reference-1234567890abcdef-00", "/ar/Account/Login", "System.IO.IOException", "Fixture diagnostic message"),
-                "System.IO.IOException: <script>alert(1)</script>\n at Fixture.File()\n" + new string('x', 400))),
             "operations" => View("/Areas/Admin/Views/Operations/Index.cshtml", new OperationLogPage(
                 new OperationFilterDto("Source", OperationArea.Collection, OperationOutcome.Failed),
                 new AdminPage<OperationSummaryDto>

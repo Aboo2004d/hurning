@@ -29,7 +29,7 @@ if (args.Contains("--protection-key-check"))
 
 if (args.Contains("--error-log-check"))
 {
-    ErrorLoggingChecks.Run();
+    await ErrorLoggingChecks.RunAsync();
     return;
 }
 

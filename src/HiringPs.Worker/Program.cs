@@ -8,7 +8,6 @@ var builder = Host.CreateApplicationBuilder(
     new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
 );
 
-builder.Services.AddDatabaseErrorLogging("Worker");
 
 // ========================================
 // 1. Command Arguments

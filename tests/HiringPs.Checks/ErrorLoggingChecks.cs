@@ -1,104 +1,158 @@
 using System.Diagnostics;
+using System.Net;
 using System.Reflection;
-using System.Threading.Channels;
+using System.Security.Claims;
+using ElmahCore;
 using HiringPs.Core;
+using HiringPs.Web.Infrastructure;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Playwright;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 public static class ErrorLoggingChecks
 {
-    public static void Run()
+    public static async Task RunAsync()
     {
         var count = 0;
         void Check(bool value, string description)
         {
             if (!value) throw new Exception(description);
             count++;
+            Console.WriteLine("PASS " + description);
         }
-        var mvcServices = new ServiceCollection();
-        mvcServices.AddLogging();
-        mvcServices.AddControllersWithViews();
-        using var mvc = mvcServices.BuildServiceProvider();
-        var validator = mvc.GetRequiredService<Microsoft.AspNetCore.Mvc.ModelBinding.Validation.IObjectModelValidator>();
-        Microsoft.AspNetCore.Mvc.ActionContext ValidateFilter(SystemErrorFilterDto filter)
-        {
-            var action = new Microsoft.AspNetCore.Mvc.ActionContext(new DefaultHttpContext { RequestServices = mvc },
-                new Microsoft.AspNetCore.Routing.RouteData(), new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor());
-            validator.Validate(action, null, "filter", filter);
-            return action;
-        }
-        Check(ValidateFilter(new()).ModelState.IsValid, "MVC accepts empty record filters without throwing");
-        Check(ValidateFilter(new("trace", "Web", "Error")).ModelState.IsValid, "MVC accepts valid filters");
-        Check(!ValidateFilter(new(new string('x', 201))).ModelState.IsValid, "MVC enforces search maximum");
-        Check(!ValidateFilter(new(Application: new string('x', 33))).ModelState.IsValid, "MVC enforces application maximum");
-        Check(!ValidateFilter(new(Level: new string('x', 17))).ModelState.IsValid, "MVC enforces severity maximum");
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Integrations:Google:ClientSecret"] = "known-private-value",
-            ["ConnectionStrings:Hiring"] = "Server=.;Database=test;Password=sql-private-value"
-        }).Build();
-        var sanitizer = new ErrorLogSanitizer(config);
-        Check(!sanitizer.Clean("failed known-private-value", 8000).Contains("known-private-value"), "Configuration secrets redacted");
-        Check(!sanitizer.Clean("Password=sql-private-value;", 8000).Contains("sql-private-value"), "Password assignments redacted");
-        Check(!sanitizer.Clean("Bearer abc.def.ghi", 8000).Contains("abc.def.ghi"), "Bearer tokens redacted");
-        Check(sanitizer.Clean("https://host/callback?code=private&state=secret", 8000) == "https://host/callback", "URL query omitted");
-        Check(!sanitizer.Clean("\"access_token\": \"dynamic-private-token\"", 8000).Contains("dynamic-private-token"), "JSON token redacted");
-        Check(!sanitizer.Clean("https://api.telegram.org/bot12345:dynamic-secret/sendMessage", 8000).Contains("dynamic-secret"), "Telegram URL token redacted");
-        Check(sanitizer.Clean(new string('a', 10000), 8000).Length == 8000, "Text bounded");
+            ["ConnectionStrings:Hiring"] = "Server=.;Database=test;Password=sql-private-value",
+        });
+        builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+        builder.Services.AddAuthentication("Fixture").AddCookie("Fixture", options => options.LoginPath = "/Account/Login");
+        var initialProviders = builder.Services.Count(x => x.ServiceType == typeof(ILoggerProvider));
+        builder.Services.AddHiringElmah();
+        Check(initialProviders == builder.Services.Count(x => x.ServiceType == typeof(ILoggerProvider)),
+            "ELMAH registration adds no ILogger provider or legacy bridge");
+        builder.Services.RemoveAll<ErrorLog>();
+        builder.Services.AddSingleton<ErrorLog, MemoryErrorLog>();
+        await using var app = builder.Build();
+        var options = app.Services.GetRequiredService<IOptions<ElmahOptions>>().Value;
+        Check(!options.LogRequestBody, "Request body capture disabled");
+        Check(options.SqlServerDatabaseTableName == "ELMAH_Error", "Native ELMAH SQL table selected");
+        var policy = app.Services.GetRequiredService<ElmahErrorPolicy>();
         var context = new DefaultHttpContext();
         context.Request.Path = "/ar/Account/Login";
-        context.Request.QueryString = new QueryString("?password=never-collected");
-        context.Request.Headers.Cookie = "session=never-collected";
-        var accessor = new HttpContextAccessor { HttpContext = context };
-        using var provider = new DatabaseErrorLogging(config, accessor, sanitizer, "Web");
-        var logger = provider.CreateLogger("Tests");
-        var queue = (Channel<ApplicationError>)typeof(DatabaseErrorLogging)
-            .GetField("queue", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(provider)!;
-        logger.LogInformation("ordinary event");
-        logger.LogWarning("ordinary warning");
-        Check(!queue.Reader.TryRead(out _), "Ordinary logs excluded");
-        using var activity = new Activity("request").Start();
-        logger.LogError(new InvalidOperationException("known-private-value"), "Login failed");
-        Check(queue.Reader.TryRead(out var entry), "Error queued without database IO");
-        Check(entry!.TraceId == activity.Id, "Reference matches displayed Activity ID");
-        Check(entry.Path == "/ar/Account/Login", "Only request path collected");
-        Check(!entry.Details.Contains("known-private-value") && entry.Details.Contains("InvalidOperationException"), "Exception type retained and secret removed");
-        Check(entry.At.Offset == TimeSpan.Zero, "UTC storage");
-        logger.LogWarning(new IOException("failed"), "Handled failure");
-        Check(queue.Reader.TryRead(out _), "Warning exceptions captured");
-        logger.LogCritical("fatal");
-        Check(queue.Reader.TryRead(out _), "Critical messages captured");
-        accessor.HttpContext = null;
-        logger.LogError("worker failure");
-        Check(queue.Reader.TryRead(out entry) && entry.Path == "", "Non-HTTP logs supported");
-        for (var i = 0; i < 2050; i++) logger.LogError("burst");
-        Check(queue.Reader.Count == 2048, "Queue is bounded and producers never block");
-        using var db = new HiringDb(new DbContextOptionsBuilder<HiringDb>().UseSqlServer("Server=.;Database=metadata").Options);
-        var entity = db.Model.FindEntityType(typeof(ApplicationError))!;
-        Check(entity.GetTableName() == "ApplicationErrors", "Dedicated table mapped");
-        Check(entity.GetIndexes().Any(i => i.Properties.Single().Name == "TraceId"), "Reference index mapped");
-        var reader = new SystemErrorReadService(db);
-        var sql = reader.Query(new SystemErrorFilterDto("trace-probe", "Web", "Error",
-            new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 21))).ToQueryString();
-        Check(sql.Contains("ORDER BY") && sql.Contains("[At] DESC") && sql.Contains("[Id] DESC"), "Stable SQL ordering");
-        Check(sql.Contains("DECLARE @search_contains") && sql.Contains("[TraceId]") && sql.Contains("[Path]"), "Search and filters translated and parameterized");
-        Check(!sql.Contains("[Details]"), "Large exception details excluded from list queries");
+        context.TraceIdentifier = "trace-probe";
+        var probe = new Error(new IOException("known-private-value Password=sql-private-value; Bearer abc.def.ghi"));
+        probe.QueryString["code"] = "private-query";
+        probe.Form["password"] = "private-form";
+        probe.Cookies["session"] = "private-cookie";
+        probe.ServerVariables["Authorization"] = "private-header";
+        policy.Describe(probe, context);
+        var xml = ErrorXml.EncodeString(probe);
+        Check(!xml.Contains("known-private-value") && !xml.Contains("sql-private-value") && !xml.Contains("abc.def.ghi"),
+            "Exception secrets removed before native ELMAH serialization");
+        Check(!xml.Contains("private-query") && !xml.Contains("private-form") && !xml.Contains("private-cookie") && !xml.Contains("private-header"),
+            "ELMAH request collections cleared");
+        Check(probe.Detail.Contains("IOException"), "Exception type retained");
+        Check(probe.ServerVariables["TraceId"] == "trace-probe", "Tracking reference retained");
+        Check(probe.ServerVariables["Path"] == "/ar/Account/Login", "Request path retained");
+        Check(probe.Time.Kind == DateTimeKind.Utc && probe.ServerVariables["PalestineTime"]!.Contains("توقيت فلسطين"),
+            "UTC storage with canonical Palestine time metadata");
         var access = typeof(HiringPs.Web.Areas.Admin.Controllers.SystemErrorsController)
             .GetCustomAttribute<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>();
-        Check(access?.Roles == "Admin", "Diagnostic pages restricted to administrators");
-        var cache = typeof(HiringPs.Web.Areas.Admin.Controllers.SystemErrorsController)
-            .GetCustomAttribute<Microsoft.AspNetCore.Mvc.ResponseCacheAttribute>();
-        Check(cache?.NoStore == true, "Diagnostic pages cannot be cached");
-        config["ConnectionStrings:Hiring"] = "unsupported-setting=true";
-        using var failing = new DatabaseErrorLogging(config, accessor, sanitizer, "Worker");
-        failing.CreateLogger("Failure").LogError("Preserve original failure");
-        failing.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
-        using var shutdown = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        failing.StopAsync(shutdown.Token).GetAwaiter().GetResult();
-        Check(!shutdown.IsCancellationRequested, "Invalid database configuration cannot crash or recurse in logger");
-        Console.WriteLine($"Error logging: {count} checks passed; no database or external calls.");
+        Check(access?.Roles == "Admin", "Navigation redirect restricted to administrators");
+        Check(LanguageUrls.IsInfrastructure("/elmah/api/errors"), "ELMAH resource URLs bypass language redirects");
+        using var db = new HiringDb(new DbContextOptionsBuilder<HiringDb>().UseSqlServer("Server=.;Database=metadata").Options);
+        Check(!db.Model.GetEntityTypes().Any(x => x.GetTableName() == "ApplicationErrors"), "Old error entity removed from EF");
+        Check(!db.Database.HasPendingModelChanges(), "Migration snapshot matches current model");
+
+        // Fixture identities only; production uses the existing Identity cookie middleware.
+        app.UseExceptionHandler(handler => handler.Run(ctx => { ctx.Response.StatusCode = 500; return ctx.Response.WriteAsync("safe error"); }));
+        app.UseAuthentication();
+        app.Use(async (ctx, next) =>
+        {
+            if (ctx.Request.Headers.TryGetValue("X-Fixture-Role", out var role))
+                ctx.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "fixture"), new Claim(ClaimTypes.Role, role!)], "Fixture"));
+            await next(ctx);
+        });
+        app.UseHiringElmah();
+        app.Run(ctx =>
+        {
+            if (ctx.Request.Path == "/Errors/Status")
+            {
+                ctx.Response.StatusCode = 500;
+                ctx.Response.ContentType = "text/html";
+                return ctx.Response.WriteAsync("<p>Status 500 without an exception</p>");
+            }
+            throw new InvalidOperationException("fixture failure known-private-value");
+        });
+        await app.StartAsync();
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
+        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri(address) };
+        foreach (var path in new[] { "/elmah/", "/elmah/api/errors", "/elmah/xml?id=probe", "/elmah/js/app.8cac919f.js" })
+        {
+            using var denied = await client.GetAsync(path);
+            Check(denied.StatusCode == HttpStatusCode.Redirect
+                && denied.Headers.Location!.ToString().Contains("/Account/Login"), "Anonymous blocked: " + path);
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("X-Fixture-Role", "Member");
+            using var member = await client.SendAsync(request);
+            Check(member.StatusCode == HttpStatusCode.Forbidden, "Member blocked: " + path);
+        }
+        client.DefaultRequestHeaders.Add("X-Fixture-Role", "Admin");
+        using var page = await client.GetAsync("/elmah/");
+        var html = await page.Content.ReadAsStringAsync();
+        Check(page.IsSuccessStatusCode && html.Contains("ELMAH", StringComparison.OrdinalIgnoreCase), "Administrator receives native ELMAH UI");
+        Check(page.Headers.CacheControl?.NoStore == true && page.Headers.Contains("X-Robots-Tag"), "Native diagnostic UI is private and non-cacheable");
+        using var activity = new Activity("fixture-request").Start();
+        using var failure = await client.GetAsync("/fail?code=private-query");
+        Check(failure.StatusCode == HttpStatusCode.InternalServerError, "Native middleware preserves safe exception handler response");
+        var entries = new List<ErrorLogEntry>();
+        var log = app.Services.GetRequiredService<ErrorLog>();
+        log.GetErrors(0, 50, entries);
+        Check(entries.Count == 1, "Unhandled web exception recorded once by ELMAH");
+        var saved = log.GetError(entries.Single().Id).Error;
+        Check(saved.Message.Contains("fixture failure") && !ErrorXml.EncodeString(saved).Contains("known-private-value"),
+            "Native persisted error is sanitized");
+        Check(saved.ServerVariables["Path"] == "/fail", "Captured path excludes query string");
+        Check(!string.IsNullOrEmpty(saved.ServerVariables["TraceId"]), "Native error retains tracking reference");
+        using var api = await client.GetAsync("/elmah/api/errors?s=50");
+        Check(api.IsSuccessStatusCode && (await api.Content.ReadAsStringAsync()).Contains("fixture failure"), "Native ELMAH API lists saved errors");
+        using var statusOnly = await client.GetAsync("/Errors/Status?code=500");
+        var afterStatus = new List<ErrorLogEntry>();
+        log.GetErrors(0, 50, afterStatus);
+        Check(statusOnly.StatusCode == HttpStatusCode.InternalServerError && afterStatus.Count == entries.Count,
+            "Opening an explicit rendered status 500 page is not an exception and does not add a false error");
+        if (File.Exists("/usr/bin/chromium"))
+        {
+            using var playwright = await Playwright.CreateAsync();
+            await using var browser = await playwright.Chromium.LaunchAsync(new() { ExecutablePath = "/usr/bin/chromium", Headless = true, Args = ["--no-sandbox"] });
+            var browserContext = await browser.NewContextAsync(new()
+            {
+                ExtraHTTPHeaders = new Dictionary<string, string> { ["X-Fixture-Role"] = "Admin" },
+                TimezoneId = "Asia/Hebron",
+            });
+            var browserPage = await browserContext.NewPageAsync();
+            var browserErrors = new List<string>();
+            browserPage.PageError += (_, error) => browserErrors.Add(error);
+            browserPage.Console += (_, message) => { if (message.Type == "error" && message.Text.Contains("Content Security")) browserErrors.Add(message.Text); };
+            await browserPage.GotoAsync(address + "/elmah/");
+            await browserPage.GetByText("fixture failure", new() { Exact = false }).First.WaitForAsync(new() { Timeout = 15000 });
+            Check(browserErrors.Count == 0, "Native ELMAH browser UI works under the scoped CSP: " + string.Join("; ", browserErrors));
+            Check(await browserPage.Locator("#app").InnerTextAsync() != "", "Native ELMAH browser application renders");
+        }
+        await app.StopAsync();
+        Console.WriteLine($"ELMAH: {count} checks passed; native in-memory store used, no SQL writes.");
     }
 }

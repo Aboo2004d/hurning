@@ -2,6 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="ElmahCore" Version="2.1.2" />
+        <PackageReference Include="ElmahCore.Sql" Version="2.1.2" />
+        <!-- Override legacy transitive dependencies used by ElmahCore. -->
+        <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
+        <PackageReference Include="HtmlAgilityPack" Version="1.13.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
         <PackageReference Include="Microsoft.Playwright" Version="1.63.0" />

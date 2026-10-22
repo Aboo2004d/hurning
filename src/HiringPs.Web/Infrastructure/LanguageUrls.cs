@@ -92,7 +92,8 @@ public static class LanguageUrls
         || path.Value is "/favicon.ico";
 
     public static bool IsInfrastructure(PathString path) =>
-        path.StartsWithSegments("/signin-google")
+        path.StartsWithSegments(HiringPs.Core.ElmahLoggingRegistration.Path)
+        || path.StartsWithSegments("/signin-google")
         || path.StartsWithSegments("/images")
         || path.StartsWithSegments("/css")
         || path.StartsWithSegments("/js")
