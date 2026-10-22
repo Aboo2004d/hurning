@@ -53,17 +53,38 @@ public static class ErrorLoggingChecks
         var context = new DefaultHttpContext();
         context.Request.Path = "/ar/Account/Login";
         context.TraceIdentifier = "trace-probe";
+        context.User = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.Name, "member@example.test"),
+            new Claim(ClaimTypes.NameIdentifier, "member-42"),
+            new Claim(ClaimTypes.Email, "member@example.test"),
+            new Claim(ClaimTypes.Role, "Admin")], "Fixture"));
         var probe = new Error(new IOException("known-private-value Password=sql-private-value; Bearer abc.def.ghi"));
         probe.QueryString["code"] = "private-query";
         probe.Form["password"] = "private-form";
         probe.Cookies["session"] = "private-cookie";
         probe.ServerVariables["Authorization"] = "private-header";
+        probe.Detail += "\n" + new string('x', 70000) + "\nEND-OF-FULL-DETAIL";
         policy.Describe(probe, context);
         var xml = ErrorXml.EncodeString(probe);
-        Check(!xml.Contains("known-private-value") && !xml.Contains("sql-private-value") && !xml.Contains("abc.def.ghi"),
-            "Exception secrets removed before native ELMAH serialization");
-        Check(!xml.Contains("private-query") && !xml.Contains("private-form") && !xml.Contains("private-cookie") && !xml.Contains("private-header"),
-            "ELMAH request collections cleared");
+        Check(xml.Contains("known-private-value") && xml.Contains("abc.def.ghi") && !xml.Contains("sql-private-value"),
+            "Only passwords redacted; other diagnostic text retained");
+        Check(xml.Contains("private-query") && !xml.Contains("private-form") && xml.Contains("private-cookie") && xml.Contains("private-header"),
+            "Native request context retained with password fields masked");
+        Check(probe.User == "member@example.test" && probe.ServerVariables["UserId"] == "member-42"
+            && probe.ServerVariables["UserEmail"] == "member@example.test" && probe.ServerVariables["UserRoles"] == "Admin",
+            "User identity and roles retained in native error details");
+        Check(probe.Detail.Length > 70000 && probe.Detail.EndsWith("END-OF-FULL-DETAIL"), "Full exception details are not truncated");
+        var cleaner = app.Services.GetRequiredService<ErrorLogSanitizer>();
+        foreach (var text in new[]
+        {
+            "Password=secret-value; User=admin", "{\"password\":\"a long secret; value\",\"name\":\"member\"}",
+            "<Password>secret-value</Password>", "https://test/login?password=secret-value&user=member",
+        })
+        {
+            var cleaned = cleaner.Clean(text);
+            Check(!cleaned.Contains("secret-value") && !cleaned.Contains("a long secret; value") && cleaned.Contains("[REDACTED]"),
+                "Password syntax masked without dropping surrounding data");
+        }
         Check(probe.Detail.Contains("IOException"), "Exception type retained");
         Check(probe.ServerVariables["TraceId"] == "trace-probe", "Tracking reference retained");
         Check(probe.ServerVariables["Path"] == "/ar/Account/Login", "Request path retained");
@@ -83,7 +104,7 @@ public static class ErrorLoggingChecks
         app.Use(async (ctx, next) =>
         {
             if (ctx.Request.Headers.TryGetValue("X-Fixture-Role", out var role))
-                ctx.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "fixture"), new Claim(ClaimTypes.Role, role!)], "Fixture"));
+                ctx.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "fixture"), new Claim(ClaimTypes.NameIdentifier, "user-42"), new Claim(ClaimTypes.Role, role!)], "Fixture"));
             await next(ctx);
         });
         app.UseHiringElmah();
@@ -95,7 +116,7 @@ public static class ErrorLoggingChecks
                 ctx.Response.ContentType = "text/html";
                 return ctx.Response.WriteAsync("<p>Status 500 without an exception</p>");
             }
-            throw new InvalidOperationException("fixture failure known-private-value");
+            throw new InvalidOperationException("fixture failure known-private-value Password=fixture-password;", new IOException("inner failure details"));
         });
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
@@ -123,12 +144,17 @@ public static class ErrorLoggingChecks
         log.GetErrors(0, 50, entries);
         Check(entries.Count == 1, "Unhandled web exception recorded once by ELMAH");
         var saved = log.GetError(entries.Single().Id).Error;
-        Check(saved.Message.Contains("fixture failure") && !ErrorXml.EncodeString(saved).Contains("known-private-value"),
-            "Native persisted error is sanitized");
+        Check(saved.Detail.Contains("fixture failure known-private-value") && !ErrorXml.EncodeString(saved).Contains("fixture-password")
+            && saved.Detail.Contains("inner failure details") && saved.User == "fixture",
+            "Native persisted error includes user, inner exception and full message with password masked");
         Check(saved.ServerVariables["Path"] == "/fail", "Captured path excludes query string");
         Check(!string.IsNullOrEmpty(saved.ServerVariables["TraceId"]), "Native error retains tracking reference");
         using var api = await client.GetAsync("/elmah/api/errors?s=50");
-        Check(api.IsSuccessStatusCode && (await api.Content.ReadAsStringAsync()).Contains("fixture failure"), "Native ELMAH API lists saved errors");
+        Check(api.IsSuccessStatusCode && (await api.Content.ReadAsStringAsync()).Contains("inner failure details"), "Native ELMAH API lists saved errors");
+        using var detail = await client.GetAsync("/elmah/api/error?id=" + entries.Single().Id);
+        var detailJson = await detail.Content.ReadAsStringAsync();
+        Check(detail.IsSuccessStatusCode && detailJson.Contains("inner failure details") && detailJson.Contains("fixture")
+            && !detailJson.Contains("fixture-password"), "Native details API exposes full exception and user without password");
         using var statusOnly = await client.GetAsync("/Errors/Status?code=500");
         var afterStatus = new List<ErrorLogEntry>();
         log.GetErrors(0, 50, afterStatus);
@@ -148,9 +174,14 @@ public static class ErrorLoggingChecks
             browserPage.PageError += (_, error) => browserErrors.Add(error);
             browserPage.Console += (_, message) => { if (message.Type == "error" && message.Text.Contains("Content Security")) browserErrors.Add(message.Text); };
             await browserPage.GotoAsync(address + "/elmah/");
-            await browserPage.GetByText("fixture failure", new() { Exact = false }).First.WaitForAsync(new() { Timeout = 15000 });
+            await browserPage.GetByText("inner failure details", new() { Exact = false }).First.WaitForAsync(new() { Timeout = 15000 });
             Check(browserErrors.Count == 0, "Native ELMAH browser UI works under the scoped CSP: " + string.Join("; ", browserErrors));
             Check(await browserPage.Locator("#app").InnerTextAsync() != "", "Native ELMAH browser application renders");
+            await browserPage.GotoAsync(address + "/elmah/detail/" + entries.Single().Id);
+            await browserPage.GetByText("inner failure details", new() { Exact = false }).First.WaitForAsync(new() { Timeout = 15000 });
+            var detailText = await browserPage.Locator("body").InnerTextAsync();
+            Check(detailText.Contains("fixture") && detailText.Contains("inner failure details") && !detailText.Contains("fixture-password"),
+                "Native error details page renders user and full exception while masking password");
         }
         await app.StopAsync();
         Console.WriteLine($"ELMAH: {count} checks passed; native in-memory store used, no SQL writes.");

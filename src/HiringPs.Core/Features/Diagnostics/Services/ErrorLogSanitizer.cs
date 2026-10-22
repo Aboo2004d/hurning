@@ -1,23 +1,63 @@
+using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace HiringPs.Core;
 
-/// <summary>يحجب أسرار الإعدادات وأنماط الاعتماد المعروفة قبل تخزين الأخطاء.</summary>
+/// <summary>يحجب كلمات المرور فقط مع الحفاظ على النص التشخيصي وروابطه دون اختصار.</summary>
 public sealed class ErrorLogSanitizer(IConfiguration configuration)
 {
-    /// <summary>ينظف النص ويحد حجمه؛ لا تُجمع أجسام الطلبات أو الكوكيز أصلًا.</summary>
-    public string Clean(string? value, int limit)
+    private const string PasswordName = @"[\w.\[\]-]*(?:password|passwd|passphrase|pwd)[\w.\[\]-]*|كلمة\s*المرور|كلمه\s*المرور";
+
+    /// <summary>يتعرف على حقول كلمة المرور، بما فيها التأكيد والحقول المتداخلة.</summary>
+    public static bool IsPasswordField(string? key) => key is not null
+        && Regex.IsMatch(key, PasswordName, RegexOptions.IgnoreCase);
+
+    /// <summary>يحجب كلمات المرور المعروفة من الإعدادات والطلب وصيغ JSON/XML والاتصالات دون حذف بقية التفاصيل.</summary>
+    public string Clean(string? value, IEnumerable<string>? requestPasswords = null)
     {
         var text = value ?? "";
+        var passwords = new HashSet<string>(requestPasswords ?? [], StringComparer.Ordinal);
         foreach (var item in configuration.AsEnumerable())
-            if (!string.IsNullOrEmpty(item.Value) && item.Value.Length >= 4
-                && Regex.IsMatch(item.Key, "password|secret|token|apikey|connectionstrings|privatekey", RegexOptions.IgnoreCase))
-                text = text.Replace(item.Value, "[REDACTED]", StringComparison.Ordinal);
-        text = Regex.Replace(text, @"(?i)((?:bearer|basic)\s+)[A-Za-z0-9._~+/=-]+", "$1[REDACTED]");
-        text = Regex.Replace(text, @"(?i)((?:password|pwd|client_secret|access_token|refresh_token|api_key|code|state)[""']?\s*[=:]\s*[""']?)[^\s;&""']+", "$1[REDACTED]");
-        text = Regex.Replace(text, @"(?i)/bot[0-9]+:[A-Za-z0-9_-]+", "/bot[REDACTED]");
-        text = Regex.Replace(text, @"https?://[^\s<>""']+", match => match.Value.Split('?', '#')[0]);
-        return text.Length <= limit ? text : text[..limit];
+        {
+            if (IsPasswordField(item.Key) && !string.IsNullOrEmpty(item.Value)) passwords.Add(item.Value);
+            if (item.Key.StartsWith("ConnectionStrings:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(item.Value))
+            {
+                try
+                {
+                    var password = new SqlConnectionStringBuilder(item.Value).Password;
+                    if (!string.IsNullOrEmpty(password)) passwords.Add(password);
+                }
+                catch (ArgumentException) { /* Non-SQL connection strings still receive textual redaction. */ }
+            }
+        }
+        foreach (var password in passwords.Where(x => !string.IsNullOrEmpty(x)).OrderByDescending(x => x.Length))
+        {
+            text = text.Replace(password, "[REDACTED]", StringComparison.Ordinal);
+            text = text.Replace(Uri.EscapeDataString(password), "[REDACTED]", StringComparison.OrdinalIgnoreCase);
+        }
+        // Quoted values may contain spaces, semicolons or escaped JSON characters.
+        text = Regex.Replace(text,
+            "(?<![\\w.\\[\\]-])(?<prefix>(?:[\\\"']?(?:" + PasswordName + ")[\\\"']?)\\s*[=:]\\s*)(?:\\\"(?:\\\\.|[^\\\"\\\\])*\\\"|'(?:''|[^'])*')",
+            "${prefix}\"[REDACTED]\"", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text,
+            "(?<![\\w.\\[\\]-])(?<prefix>(?:[\\\"']?(?:" + PasswordName + ")[\\\"']?)\\s*[=:]\\s*)(?![\\\"'])[^\\s;&<>\\\"']+",
+            "${prefix}[REDACTED]", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"(?<open><(?<name>" + PasswordName + @")(?:\s[^>]*)?>)[\s\S]*?(?<close></\k<name>\s*>)",
+            "${open}[REDACTED]${close}", RegexOptions.IgnoreCase);
+        return text;
+    }
+
+    /// <summary>ينظف مجموعات ELMAH الأصلية دون إسقاط الهيدرز أو النماذج أو معلومات الطلب.</summary>
+    public void CleanCollection(NameValueCollection values, IEnumerable<string> passwords)
+    {
+        foreach (var key in values.AllKeys)
+        {
+            var original = values.GetValues(key) ?? [];
+            values.Remove(key);
+            foreach (var value in original)
+                values.Add(key, IsPasswordField(key) ? "[REDACTED]" : Clean(value, passwords));
+        }
     }
 }
