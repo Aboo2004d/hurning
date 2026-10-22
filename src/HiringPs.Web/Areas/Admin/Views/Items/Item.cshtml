@@ -2,7 +2,10 @@
 @{
     ViewData["Title"] = T["Content"];
 }
-<h1>@Model.SourceName · @Model.ExternalId</h1>
+@{
+    var statusText = Model.ExternalId.ToString();
+}
+<h1>@Model.SourceName · @(statusText.Length > 20 ? statusText[..20] + " ..." : statusText)</h1>
 <p>@T["Status"]: @UiMessages.State(Model.Status.ToString(),T)</p>
 <div class="notice">
     <partial name="_Diagnostic" model="Model.Error"/>
