@@ -11,8 +11,8 @@
         <bdi>@ViewBag.Email</bdi> · <bdi>@Model.Mobile</bdi>
     </p>
     <p>@T["SuspensionReason"]: @Model.SuspensionReason</p>
-    <a asp-controller="Subscriptions" asp-action="Index" asp-route-q="@Model.UserId">@T["Subscriptions"]</a>
-    <a asp-controller="Payments" asp-action="Index" asp-route-q="@Model.UserId">@T["Payments"]</a>
+    <a asp-controller="Subscriptions" asp-action="Index" asp-route-q="@ViewBag.Email">@T["Subscriptions"]</a>
+    <a asp-controller="Payments" asp-action="Index" asp-route-q="@ViewBag.Email">@T["Payments"]</a>
     <form asp-action="Suspend" method="post" class="membership-card">
         <input name="id" value="@Model.UserId" type="hidden" />
         <input name="suspended" value="@((!Model.Suspended).ToString())" type="hidden" />

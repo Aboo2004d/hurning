@@ -5,7 +5,8 @@
         <h1>@T["NotificationDelivery"]</h1>
     </header>
     <form method="get" class="membership-card admin-filters">
-        <label>@T["MemberId"]<input name="userId" value="@Context.Request.Query["userId"]" />
+        <label>@T["Email"]<input name="email" type="email" dir="ltr" maxlength="256" value="@Context.Request.Query["email"]" />
+            @if (ViewBag.FilterMemberName is string memberName) { <span class="muted" dir="auto">@memberName</span> }
         </label>
         <label>@T["Status"]<select name="state">
                 <option value="">@T["All"]</option>
@@ -24,7 +25,7 @@
         <table class="table-nowrap">
             <thead>
                 <tr>
-                    <th>@T["MemberId"]</th>
+                    <th>@T["MemberName"]</th>
                     <th>@T["Message"]</th>
                     <th>@T["Status"]</th>
                     <th>@T["Attempts"]</th>
@@ -37,7 +38,7 @@
                 {
                     <tr>
                         <td>
-                            <a asp-controller="Members" asp-action="Details" asp-route-id="@message.UserId">@message.UserId</a>
+                            <a asp-controller="Members" asp-action="Details" asp-route-id="@message.UserId">@(string.IsNullOrWhiteSpace(message.MemberName) ? T["UnknownMember"].Value : message.MemberName)</a>
                         </td>
                         <td class="admin-message-cell" dir="auto">@message.Text</td>
                         <td>@T[message.SentAt != null ? "Deliverysent" : message.CancelledAt != null ? "Deliverycancelled" : message.LastError.Length > 0 ? "Deliveryfailed" : "Deliverypending"]<br />@T[message.LastError]</td>

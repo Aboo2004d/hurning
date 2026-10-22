@@ -3223,4 +3223,12 @@
   <data name="CategoryGroupSaved" xml:space="preserve"><value>تم اعتماد المجموعة وحفظها.</value></data>
   <data name="CategoryGroupDeleted" xml:space="preserve"><value>تم فك التجميع مع الحفاظ على البيانات الأصلية.</value></data>
   <data name="CategoryGroupsPreferenceHelp" xml:space="preserve"><value>المسميات ضمن مجموعة معتمدة تُحسب مجالًا واحدًا، وتشمل تنبيهات الفرص بقية مسميات المجموعة.</value></data>
+  <data name="MemberName" xml:space="preserve"><value>اسم المستخدم</value></data>
+  <data name="UnknownMember" xml:space="preserve"><value>مستخدم غير متاح</value></data>
+  <data name="ReviewMemberBeforeGrant" xml:space="preserve"><value>عرض الحساب للتأكيد</value></data>
+  <data name="ConfirmGrantMember" xml:space="preserve"><value>تأكيد منح الاشتراك</value></data>
+  <data name="ConfirmGrantMemberHelp" xml:space="preserve"><value>تحقق من الاسم والبريد قبل تأكيد منح الاشتراك لهذا الحساب.</value></data>
+  <data name="MemberEmailNotFound" xml:space="preserve"><value>لم يتم العثور على عضو ببريد مطابق وفريد. تحقق من البريد وأعد المحاولة.</value></data>
+  <data name="MemberEmailConfirmationChanged" xml:space="preserve"><value>تعذر تأكيد الحساب. أعد البحث بالبريد وراجع الاسم قبل المنح.</value></data>
+  <data name="PaymentMemberSearch" xml:space="preserve"><value>اسم المستخدم، البريد، رقم الطلب أو المعاملة</value></data>
 </root>

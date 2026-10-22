@@ -6,11 +6,14 @@ namespace HiringPs.Core;
 public sealed class NotificationAdministrationService(HiringDb db, MembershipService membership)
 {
     /// <summary>Filters delivery state and projects rows before the web layer applies pagination.</summary>
-    public IQueryable<MemberMessageSummaryDto> Messages(string? userId, string? state)
+    public IQueryable<MemberMessageSummaryDto> Messages(string? emailOrId, string? state)
     {
         var query = db.MemberMessages.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(userId))
-            query = query.Where(x => x.UserId == userId);
+        if (!string.IsNullOrWhiteSpace(emailOrId))
+        {
+            var normalized = new Microsoft.AspNetCore.Identity.UpperInvariantLookupNormalizer().NormalizeEmail(emailOrId.Trim());
+            query = query.Where(x => x.UserId == emailOrId || db.Users.Any(u => u.Id == x.UserId && u.NormalizedEmail == normalized));
+        }
         query = state switch
         {
             "failed" => query.Where(x => x.SentAt == null && x.CancelledAt == null && x.LastError != ""),
@@ -19,7 +22,8 @@ public sealed class NotificationAdministrationService(HiringDb db, MembershipSer
             "cancelled" => query.Where(x => x.CancelledAt != null),
             _ => query,
         };
-        return query.OrderByDescending(x => x.Id).Select(x => new MemberMessageSummaryDto(x.Id, x.UserId, x.Text, x.SentAt, x.CancelledAt, x.LastError, x.Attempts));
+        return query.OrderByDescending(x => x.Id).Select(x => new MemberMessageSummaryDto(x.Id, x.UserId, x.Text, x.SentAt, x.CancelledAt, x.LastError, x.Attempts,
+            db.MemberProfiles.Where(m => m.UserId == x.UserId).Select(m => m.Name).FirstOrDefault() ?? ""));
     }
 
     /// <summary>Lists unprocessed bot updates without loading their JSON bodies.</summary>

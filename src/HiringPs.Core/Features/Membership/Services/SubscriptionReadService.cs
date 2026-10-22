@@ -12,7 +12,8 @@ public sealed class SubscriptionReadService(HiringDb db)
         var query = db.MemberSubscriptions.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(q))
             query = query.Where(x => x.UserId == q || db.MemberProfiles.Any(m =>
-                m.UserId == x.UserId && (m.Name.Contains(q) || m.Mobile.Contains(q))));
+                m.UserId == x.UserId && (m.Name.Contains(q) || m.Mobile.Contains(q)))
+                || db.Users.Any(u => u.Id == x.UserId && u.Email != null && u.Email.Contains(q)));
         query = status switch
         {
             "current" => query.Where(x => !x.Cancelled && x.StartsAt <= now && x.EndsAt > now),
@@ -25,6 +26,7 @@ public sealed class SubscriptionReadService(HiringDb db)
             .Select(x => new SubscriptionSummaryDto
             {
                 Id = x.Id, UserId = x.UserId, CreatedAt = x.CreatedAt,
+                MemberName = db.MemberProfiles.Where(m => m.UserId == x.UserId).Select(m => m.Name).FirstOrDefault() ?? "",
                 StartsAt = x.StartsAt, EndsAt = x.EndsAt, Cancelled = x.Cancelled,
                 PlanVersion = new MembershipPlanLabelDto(x.PlanVersion.Id,
                     x.PlanVersion.NameAr, x.PlanVersion.NameEn),

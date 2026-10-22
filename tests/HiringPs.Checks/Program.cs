@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--member-identity-check"))
+{
+    await MemberIdentityChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--category-group-check"))
 {
     await CategoryGroupChecks.RunAsync();

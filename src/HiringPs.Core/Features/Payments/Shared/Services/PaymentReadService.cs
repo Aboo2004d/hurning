@@ -35,6 +35,8 @@ public sealed class PaymentReadService(HiringDb db)
             Guid.TryParse(q, out var orderId);
             long.TryParse(q, out var transactionId);
             query = query.Where(x => x.Id == orderId || x.ProviderReference == q || x.UserId == q
+                || db.Users.Any(u => u.Id == x.UserId && u.Email != null && u.Email.Contains(q))
+                || db.MemberProfiles.Any(m => m.UserId == x.UserId && m.Name.Contains(q))
                 || db.WalletPaymentSessions.Any(session => session.OrderId == x.Id
                     && (session.JawwalReference == q || session.TransactionId == transactionId)));
         }

@@ -3223,4 +3223,12 @@
   <data name="CategoryGroupSaved" xml:space="preserve"><value>Group approved and saved.</value></data>
   <data name="CategoryGroupDeleted" xml:space="preserve"><value>Group removed; original data preserved.</value></data>
   <data name="CategoryGroupsPreferenceHelp" xml:space="preserve"><value>Names in an approved group count as one category, and opportunity alerts include the other names in that group.</value></data>
+  <data name="MemberName" xml:space="preserve"><value>User name</value></data>
+  <data name="UnknownMember" xml:space="preserve"><value>User unavailable</value></data>
+  <data name="ReviewMemberBeforeGrant" xml:space="preserve"><value>Review account</value></data>
+  <data name="ConfirmGrantMember" xml:space="preserve"><value>Confirm subscription grant</value></data>
+  <data name="ConfirmGrantMemberHelp" xml:space="preserve"><value>Check the name and email before granting this account a subscription.</value></data>
+  <data name="MemberEmailNotFound" xml:space="preserve"><value>No unique member account matches this email. Check the email and try again.</value></data>
+  <data name="MemberEmailConfirmationChanged" xml:space="preserve"><value>The account could not be confirmed. Look up the email and review the name again.</value></data>
+  <data name="PaymentMemberSearch" xml:space="preserve"><value>User name, email, order or transaction reference</value></data>
 </root>

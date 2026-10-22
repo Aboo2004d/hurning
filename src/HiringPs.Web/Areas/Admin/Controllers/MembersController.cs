@@ -35,8 +35,12 @@ public class MembersController(
         var member = await reader.MemberAsync(id, ct);
         if (member is null) return NotFound();
         ViewBag.Email = await reader.EmailAsync(id, ct);
-        ViewBag.Audit = await reader.Audit(id)
+        var audit = await reader.Audit(id)
             .PageAsync(int.TryParse(Request.Query["page"], out var page) ? page : 1, ct);
+        var names = await new AdminMemberLookupService(db).ReferencedNamesAsync(audit.Items.Select(x => x.Detail), ct);
+        for (var i = 0; i < audit.Items.Count; i++)
+            audit.Items[i] = audit.Items[i] with { Detail = MemberReferenceDisplay.Render(audit.Items[i].Detail, names) };
+        ViewBag.Audit = audit;
         return View(member);
     }
 

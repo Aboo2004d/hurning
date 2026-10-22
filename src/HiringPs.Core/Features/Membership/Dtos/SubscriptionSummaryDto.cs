@@ -5,6 +5,7 @@ public sealed record SubscriptionSummaryDto
 {
     public long Id { get; init; }
     public string UserId { get; init; } = "";
+    public string MemberName { get; init; } = "";
     public MembershipPlanLabelDto PlanVersion { get; init; } = null!;
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset StartsAt { get; init; }

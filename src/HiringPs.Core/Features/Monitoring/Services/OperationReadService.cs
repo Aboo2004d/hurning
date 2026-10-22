@@ -40,7 +40,9 @@ public sealed class OperationReadService(HiringDb db)
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var search = filter.Search.Trim().Truncate(200);
-            query = query.Where(x => x.Action.Contains(search) || x.Detail.Contains(search) || x.Actor.Contains(search));
+            query = query.Where(x => x.Action.Contains(search) || x.Detail.Contains(search) || x.Actor.Contains(search)
+                || db.MemberProfiles.Any(m => m.Name.Contains(search) && x.Detail.Contains("Member " + m.UserId + ";"))
+                || db.Users.Any(u => u.Email != null && u.Email.Contains(search) && x.Detail.Contains("Member " + u.Id + ";")));
         }
         if (!string.IsNullOrWhiteSpace(filter.Actor))
             query = query.Where(x => x.Actor == filter.Actor.Trim());

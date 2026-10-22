@@ -24,7 +24,7 @@
         <table class="table-nowrap">
             <thead>
                 <tr>
-                    <th>@T["MemberId"]</th>
+                    <th>@T["MemberName"]</th>
                     <th>@T["Plan"]</th>
                     <th>@T["CreatedPalestineTime"]</th>
                     <th>@T["StartsPalestineTime"]</th>
@@ -39,7 +39,7 @@
                 {
                     <tr>
                         <td>
-                            <a asp-controller="Members" asp-action="Details" asp-route-id="@sub.UserId">@sub.UserId</a>
+                            <a asp-controller="Members" asp-action="Details" asp-route-id="@sub.UserId">@(string.IsNullOrWhiteSpace(sub.MemberName) ? T["UnknownMember"].Value : sub.MemberName)</a>
                         </td>
                         <td>@sub.PlanVersion.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</td>
                         <td><bdi dir="ltr">@PaymentDisplay.Time(sub.CreatedAt)</bdi></td>
@@ -70,11 +70,11 @@
         </table>
     </div>
     <partial name="_AdminPagination" model="Model.Pager" />
-    <form asp-action="Grant" method="post" class="membership-card admin-grant-form">
+    <form asp-controller="Subscriptions" asp-action="PreviewGrant" method="post" class="membership-card admin-grant-form">
         <h2>@T["GrantSubscription"]</h2>
         <label>
-            @T["MemberId"]
-            <input name="userId" value="@Context.Request.Query["q"]" required />
+            @T["Email"]
+            <input name="Email" type="email" dir="ltr" maxlength="256" value="@(Context.Request.Query["q"].ToString().Contains('@') ? Context.Request.Query["q"].ToString() : "")" required />
         </label>
         <label>
             @T["Plan"]
@@ -95,7 +95,7 @@
         </label>
         <button class="button button-outline admin-action" type="submit">
             <span class="fa-solid fa-check" aria-hidden="true"></span>
-            <span>@T["Confirm"]</span>
+            <span>@T["ReviewMemberBeforeGrant"]</span>
         </button>
     </form>
 </section>

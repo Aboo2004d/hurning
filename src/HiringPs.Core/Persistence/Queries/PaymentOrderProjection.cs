@@ -8,7 +8,8 @@ public static class PaymentOrderProjection
     /// <summary>حقول الطلب والباقة المسموحة لصفحات الدفع الحالية.</summary>
     public static Expression<Func<PaymentOrder, PaymentOrderSummaryDto>> For(HiringDb db) => order => new PaymentOrderSummaryDto
     {
-        Id = order.Id, UserId = order.UserId, AmountIls = order.AmountIls, Gateway = order.Gateway,
+        Id = order.Id, UserId = order.UserId,
+        MemberName = db.MemberProfiles.Where(m => m.UserId == order.UserId).Select(m => m.Name).FirstOrDefault() ?? "", AmountIls = order.AmountIls, Gateway = order.Gateway,
         GatewayEnvironment = order.GatewayEnvironment, ProviderReference = order.ProviderReference,
         State = order.State, CreatedAt = order.CreatedAt, ExpiresAt = order.ExpiresAt,
         CheckoutStartedAt = order.CheckoutStartedAt, LastCheckedAt = order.LastCheckedAt,

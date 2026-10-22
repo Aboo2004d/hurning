@@ -211,6 +211,7 @@ public static class MembershipChecks
         builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
         builder.Services.AddSingleton<SiteSeo>();
         builder.Services.AddScoped<OperationReadService>();
+        builder.Services.AddScoped<AdminMemberLookupService>();
         builder.Services.AddSingleton<ICategoryCatalogReadService, FixtureCategoryCatalog>();
         builder.Services.AddScoped<HiringPs.Web.Services.Authentication.GoogleLinkReadService>();
         builder.Services.AddSingleton<UrlPolicy>();

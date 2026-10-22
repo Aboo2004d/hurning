@@ -29,7 +29,7 @@
             <dt>@T["WalletNetTotal"]</dt><dd>@MembershipRules.Money(receipt.NetCredited ?? 0)</dd>
         </dl>
     }
-    <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.UserId">@T["MemberAccount"]</a>
+    <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.UserId">@(string.IsNullOrWhiteSpace(Model.MemberName) ? T["UnknownMember"].Value : Model.MemberName)</a>
     <form asp-action="Check" method="post">
         <input name="id" value="@Model.Id" type="hidden" />
         <button class="secondary" type="submit">@T["CheckPayment"]</button>

@@ -9,6 +9,7 @@ public static class AdministrationRegistration
     /// <summary>Registers read/write features without starting workers or calling external providers.</summary>
     public static IServiceCollection AddAdministrationFeatures(this IServiceCollection services)
     {
+        services.TryAddScoped<AdminMemberLookupService>();
         services.TryAddScoped<ContactInboxService>();
         services.TryAddScoped<ReportManagementService>();
         services.TryAddScoped<MergeAdministrationService>();

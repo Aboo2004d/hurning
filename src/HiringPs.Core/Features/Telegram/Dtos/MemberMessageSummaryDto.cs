@@ -8,5 +8,6 @@ public sealed record MemberMessageSummaryDto(
     DateTimeOffset? SentAt,
     DateTimeOffset? CancelledAt,
     string LastError,
-    int Attempts
+    int Attempts,
+    string MemberName = ""
 );

@@ -1,0 +1,22 @@
+@model SubscriptionGrantConfirmation
+@{ ViewData["Title"] = T["ConfirmGrantMember"].Value; }
+<section class="admin-list-page">
+    <header class="admin-page-heading"><h1>@T["ConfirmGrantMember"]</h1></header>
+    <div class="membership-card">
+        <p>@T["ConfirmGrantMemberHelp"]</p>
+        <p><strong>@T["MemberName"]:</strong> <span dir="auto">@Model.Member.Name</span></p>
+        <p><strong>@T["Email"]:</strong> <bdi>@Model.Member.Email</bdi></p>
+        <p><strong>@T["Plan"]:</strong> @Model.Plan.Name(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)</p>
+        @if (Model.Input.Days is { } days) { <p>@T["CustomDays"]: @days</p> }
+        <p><strong>@T["Reason"]:</strong> <span dir="auto">@Model.Input.Reason</span></p>
+        <form asp-controller="Subscriptions" asp-action="Grant" method="post">
+            <input name="Email" type="hidden" value="@Model.Member.Email" />
+            <input name="confirmedUserId" type="hidden" value="@Model.Member.UserId" />
+            <input name="VersionId" type="hidden" value="@Model.Input.VersionId" />
+            <input name="Days" type="hidden" value="@Model.Input.Days" />
+            <input name="Reason" type="hidden" value="@Model.Input.Reason" />
+            <button type="submit" class="button">@T["Confirm"]</button>
+            <a asp-action="Index" asp-route-q="@Model.Member.Email" class="button button-outline">@T["Back"]</a>
+        </form>
+    </div>
+</section>

@@ -207,6 +207,10 @@ public class AdminShellFixtureController : Controller
                     "Initial version, preserving the complete previous prompt",
                     PromptDefaults.Initial().FinalText, PromptDefaults.Legacy)],
             }),
+            "subscriptionsconfirm" => View("/Areas/Admin/Views/Subscriptions/ConfirmGrant.cshtml",
+                new SubscriptionGrantConfirmation(new SubscriptionGrantInput { Email = "member@example.test", VersionId = 1, Reason = "Fixture" },
+                    new AdminMemberIdentityDto("fixture-internal-id", "عضو تجريبي", "member@example.test"),
+                    new MembershipPlanLabelDto(1, "باقة تجريبية", "Test plan"))),
             "operations" => View("/Areas/Admin/Views/Operations/Index.cshtml", new OperationLogPage(
                 new OperationFilterDto("Source", OperationArea.Collection, OperationOutcome.Failed),
                 new AdminPage<OperationSummaryDto>
@@ -244,7 +248,7 @@ public class AdminShellFixtureController : Controller
             }),
             "notifications" => View("/Areas/Admin/Views/Notifications/Index.cshtml", new AdminPage<MemberMessageSummaryDto>
             {
-                Items = [new MemberMessageSummaryDto(1, "fixture", "رسالة اختبار محلية", null, null, "TelegramDeliveryProblem", 1)],
+                Items = [new MemberMessageSummaryDto(1, "fixture", "رسالة اختبار محلية", null, null, "TelegramDeliveryProblem", 1, "عضو تجريبي")],
             }),
             "pages" => View("/Areas/Admin/Views/Pages/Pages.cshtml", new List<SitePageSummaryDto> { new("about", now) }),
             "item" => View("/Areas/Admin/Views/Items/Item.cshtml", new SourceItemDetailsDto(
@@ -648,6 +652,7 @@ public class AdminFormShellFixtureController : Controller
                     new SubscriptionSummaryDto
                     {
                         UserId = "fixture",
+                        MemberName = "عضو تجريبي",
                         PlanVersion = new MembershipPlanLabelDto(version.Id, version.NameAr, version.NameEn),
                         StartsAt = DateTimeOffset.UtcNow,
                         EndsAt = DateTimeOffset.UtcNow.AddDays(30),
@@ -659,7 +664,7 @@ public class AdminFormShellFixtureController : Controller
                 PageOf(
                     new MemberMessageSummaryDto(0, "fixture",
                         "تم العثور على فرص جديدة تطابق تفضيلاتك في الموقع. يمكنك فتح الموقع للاطلاع على التفاصيل.",
-                        null, null, "", 0)
+                        null, null, "", 0, "عضو تجريبي")
                 )
             ),
             "Discounts" => View(

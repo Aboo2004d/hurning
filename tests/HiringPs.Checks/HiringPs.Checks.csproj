@@ -5,6 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
         <ProjectReference Include="../../src/HiringPs.Core/HiringPs.Core.csproj" />
         <ProjectReference Include="../../src/HiringPs.Web/HiringPs.Web.csproj" />
     </ItemGroup>
