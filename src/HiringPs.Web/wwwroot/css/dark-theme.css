@@ -1,4 +1,4 @@
-/* Shared dark palette: media defaults to the system preference; theme.js applies an explicit choice. */
+/* Shared dark palette: off by default (media="not all"); theme.js enables it when the visitor picks dark. */
 :root {
     --bg: #0e1512;
     --surface: #15201b;

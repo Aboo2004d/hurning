@@ -18,6 +18,10 @@ public static class BrowserSettings
         // Local build output is nested; deployed web and worker folders are siblings.
         if (path.Replace('\\', '/') == "../.playwright-browsers")
         {
+            // A publish that carries the browsers inside the app folder (single-site deployment).
+            var bundled = Path.Combine(AppContext.BaseDirectory, ".playwright-browsers");
+            if (Directory.Exists(bundled))
+                return bundled;
             for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
                 directory is not null; directory = directory.Parent)
             {

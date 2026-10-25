@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.DataProtection;
 // تهيئة عامل الجمع المستقل واختيار وضع التشغيل المطلوب من وسائط الأمر.
 using HiringPs.Core;
-using HiringPs.Worker;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(
     new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
 );
+PdfToolPaths.Configure(builder.Configuration);
 
 
 // ========================================
@@ -64,11 +65,11 @@ if (installBrowser)
 // ========================================
 // 2. Application Services
 // ========================================
+BrowserSettings.Configure(builder.Configuration);
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<AttachmentReader>();
-// One Chromium process for the worker; each item still gets its own context and page.
-builder.Services.AddSingleton<BrowserHost>();
 builder.Services.AddScoped<BrowserCollector>();
+builder.Services.AddBackgroundDependencies();
 
 // ========================================
 // 3. Database & Processing Services
@@ -103,8 +104,6 @@ if (!isProbe)
     builder.Services.AddHiringDataProtection();
     builder.Services.AddLahza();
     builder.Services.AddJawwalPay();
-    builder.Services.AddScoped<TelegramCommands>();
-    builder.Services.AddScoped<MemberNotifications>();
     builder
         .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
         .RemoveAllLoggers();
@@ -125,13 +124,7 @@ builder.Services.AddWindowsService(options =>
 // 5. Background Worker
 // ========================================
 if (!isOnce && !isProbe)
-{
-    builder.Services.AddSingleton<ToolWorkerRuntime>();
-    builder.Services.AddHostedService<Worker>();
-    builder.Services.AddHostedService<ToolMonitor>();
-    builder.Services.AddHostedService<MembershipWorker>();
-    builder.Services.AddHostedService<DistributionWorker>();
-}
+    builder.Services.AddBackgroundWorkers();
 
 // ========================================
 // 6. Build Host

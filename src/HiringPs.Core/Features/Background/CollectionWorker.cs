@@ -1,11 +1,15 @@
 // حلقة تشغيل عامل الجمع في الخلفية وتسجيل حالته.
-using HiringPs.Core;
 
-namespace HiringPs.Worker;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-public class Worker(
+namespace HiringPs.Core;
+
+public class CollectionWorker(
     IServiceScopeFactory scopes,
-    ILogger<Worker> logger,
+    ILogger<CollectionWorker> logger,
     IConfiguration configuration,
     ToolWorkerRuntime runtime
 ) : BackgroundService

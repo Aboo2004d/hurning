@@ -30,8 +30,7 @@
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <!-- Google tag (gtag.js); initialization stays local to comply with CSP. -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-TTF6JQSFVP"></script>
-        <script src="~/js/google-analytics.js" asp-append-version="true"></script>
+        <script src="~/js/google-analytics.js" asp-append-version="true" defer></script>
         <link
             rel="icon"
             type="image/png"
@@ -97,7 +96,11 @@
             <script type="application/ld+json">@Html.Raw(metadata.StructuredData)</script>
         }
         <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
-        <link rel="stylesheet" href="~/css/dark-theme.css" asp-append-version="true" media="(prefers-color-scheme: dark)" data-dark-theme />
+        @if (adminArea)
+        {
+            <link rel="stylesheet" href="~/css/admin-tools.css" asp-append-version="true"/>
+        }
+        <link rel="stylesheet" href="~/css/dark-theme.css" asp-append-version="true" media="not all" data-dark-theme />
         <script src="~/js/theme.js" asp-append-version="true"></script>
         <script src="~/js/site.js" asp-append-version="true" defer>
         </script>

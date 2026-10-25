@@ -148,6 +148,13 @@ builder
     .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
     .RemoveAllLoggers();
 builder.Services.AddScoped<CollectionPipeline>();
+BrowserSettings.Configure(builder.Configuration);
+PdfToolPaths.Configure(builder.Configuration);
+builder.Services.AddBackgroundDependencies();
+// Single-site deployment: the website runs collection, tool checks, member alerts and
+// distribution itself. Keep it off when the separate Windows service is installed.
+if (BackgroundRegistration.RunInWeb(builder.Configuration))
+    builder.Services.AddBackgroundWorkers();
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<BrowserCollector>();
 builder.Services.AddScoped<AttachmentReader>();

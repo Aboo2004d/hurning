@@ -1,6 +1,10 @@
-using HiringPs.Core;
 
-namespace HiringPs.Worker;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace HiringPs.Core;
 
 // Telegram channel posts and IndexNow pings run apart from collection rounds and member delivery.
 public sealed class DistributionWorker(

@@ -1,7 +1,7 @@
 // Run in <head> so the saved appearance applies before page content is painted.
+// Light is the default; dark applies only after the visitor chooses it.
 (() => {
     const storageKey = 'hiring.theme.v1';
-    const system = window.matchMedia('(prefers-color-scheme: dark)');
     const palette = document.querySelector('[data-dark-theme]');
     const valid = value => value === 'light' || value === 'dark';
     const readPreference = () => {
@@ -12,7 +12,7 @@
     };
     let preference = readPreference();
     const apply = () => {
-        const theme = preference || (system.matches ? 'dark' : 'light');
+        const theme = preference || 'light';
         document.documentElement.dataset.theme = theme;
         if (palette) palette.media = theme === 'dark' ? 'all' : 'not all';
         const target = theme === 'dark' ? 'light' : 'dark';
@@ -35,7 +35,6 @@
         try { localStorage.setItem(storageKey, preference); } catch { /* Switching still works on this page. */ }
         apply();
     });
-    system.addEventListener('change', () => { if (!preference) apply(); });
     window.addEventListener('storage', event => {
         if (event.key === storageKey || event.key === null) {
             preference = readPreference();

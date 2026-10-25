@@ -1,7 +1,11 @@
-using HiringPs.Core;
 using Microsoft.EntityFrameworkCore;
 
-namespace HiringPs.Worker;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace HiringPs.Core;
 
 // A separate hosted service keeps bot delivery independent of collection rounds.
 public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<MembershipWorker> logger)
