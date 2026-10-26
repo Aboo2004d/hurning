@@ -46,13 +46,13 @@ public sealed class ToolProbes(IConfiguration configuration)
                 _ => throw new ArgumentException("Unknown diagnostic tool."),
             };
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
         {
-            return new(tool, ToolState.Problem, "CheckTimeout");
+            return new(tool, ToolState.Problem, "CheckTimeout", Detail(ex));
         }
         catch (PdfToolFailureException ex)
         {
-            return new(tool, ToolState.Problem, "ToolExecutionFailed", ex.Message.Truncate(1000));
+            return new(tool, ToolState.Problem, "ToolExecutionFailed", Detail(ex));
         }
         catch (ContentNeedsReviewException ex)
         {
@@ -81,16 +81,7 @@ public sealed class ToolProbes(IConfiguration configuration)
         }
     }
 
-    // The first lines of the failure (exception type, message, Playwright's browser log)
-    // are shown to administrators so a server problem can be diagnosed without file access.
-    private static string Detail(Exception ex)
-    {
-        var lines = ex.Message.Split(
-            '\n',
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
-        return (ex.GetType().Name + ": " + string.Join(" | ", lines.Take(12))).Truncate(1000);
-    }
+    private string Detail(Exception ex) => ToolFailureDetail.Describe(ex, configuration, 1000);
 
     /// <summary>يتحقق من وجود مفتاح AI وصيغة النموذج دون إرسال طلب مدفوع.</summary>
     private ToolProbe AiConfiguration()
@@ -108,18 +99,7 @@ public sealed class ToolProbes(IConfiguration configuration)
     private async Task<ToolProbe> ChromiumAsync()
     {
         using var runtime = await BrowserSettings.CreateAsync(configuration);
-        await using var browser = await runtime.Chromium.LaunchAsync(
-            new()
-            {
-                Headless = true,
-                ExecutablePath = BrowserSettings.ExecutablePath(configuration),
-                Timeout = 20000,
-                Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
-                    ? channel
-                    : null,
-                Args = BrowserSettings.Args(configuration),
-            }
-        );
+        await using var browser = await BrowserSettings.LaunchAsync(runtime, configuration);
         var page = await browser.NewPageAsync();
         page.SetDefaultTimeout(5000);
         await page.SetContentAsync("<!doctype html><title>Tool diagnostic</title>");

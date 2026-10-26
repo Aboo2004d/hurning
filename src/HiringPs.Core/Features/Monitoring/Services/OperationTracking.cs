@@ -78,7 +78,7 @@ public sealed class OperationTracking
                     "Request", (added ? $"New AI request; SourceItem {x.SourceItemId}" : $"AI {x.Id}; SourceItem {x.SourceItemId}; HTTP {x.HttpStatus}; Tokens {x.TotalTokens}"));
             case ToolCheckResult x when added:
                 return (OperationArea.Tools, x.State is ToolState.Problem or ToolState.NotConfigured ? OperationOutcome.Failed : OperationOutcome.Succeeded,
-                    "Check", $"{x.Tool}; {x.State}; {x.Code}; Request {x.RequestId}");
+                    "Check", $"{x.Tool}; {x.State}; {x.Code}; Request {x.RequestId}; Worker {x.WorkerId}; {x.Detail}");
         }
         return null;
     }

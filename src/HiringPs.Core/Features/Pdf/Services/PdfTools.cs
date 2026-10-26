@@ -89,10 +89,10 @@ public sealed class PdfTools(IConfiguration configuration)
             }
             return await output + "\n" + await error;
         }
-        catch (Win32Exception)
+        catch (Win32Exception ex)
         {
             throw new ContentNeedsReviewException(
-                $"PDF tool is unavailable: {fallback}; configure Pdf:{setting} and executable permissions."
+                $"PDF tool is unavailable: {executable}; Win32 {ex.NativeErrorCode}; {ex.Message}; configure Pdf:{setting} and executable permissions."
             );
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)

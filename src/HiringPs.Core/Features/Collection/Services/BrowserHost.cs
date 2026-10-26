@@ -33,17 +33,7 @@ public sealed class BrowserHost(IConfiguration configuration, ILogger<BrowserHos
             try
             {
                 playwright ??= await BrowserSettings.CreateAsync(configuration);
-                browser = await playwright.Chromium.LaunchAsync(
-                    new()
-                    {
-                        Headless = true,
-                        ExecutablePath = BrowserSettings.ExecutablePath(configuration),
-                        Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
-                            ? channel
-                            : null,
-                        Args = BrowserSettings.Args(configuration),
-                    }
-                );
+                browser = await BrowserSettings.LaunchAsync(playwright, configuration);
             }
             catch
             {

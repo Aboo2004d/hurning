@@ -103,6 +103,7 @@ public sealed class SourceDiscoveryService(HiringDb db, BrowserCollector browser
                     }
                 );
             await db.Entry(source).ReloadAsync(ct);
+            ToolFailureDetail.Record(db, config, $"Source {source.Id}; Discovery", ex);
             source.LastError = CollectionErrorRules.SafeError(ex);
             // Exponential backoff (30 min doubling, 24 h cap); flagged for review after N failures.
             SourceHealth.RecordFailure(source, config, DateTimeOffset.UtcNow);

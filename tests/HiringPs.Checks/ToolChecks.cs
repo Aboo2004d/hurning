@@ -5,6 +5,7 @@ internal static class ToolChecks
 {
     public static async Task RunAsync()
     {
+        await BrowserFallbackChecks.RunAsync();
         var count = 0;
         void Check(bool condition, string label)
         {
@@ -307,7 +308,7 @@ internal static class ToolChecks
                 "disabled OCR is distinct from installed language data"
             );
             var archive = await new ToolProbes(
-                Config(new() { ["Pdf:WorkDirectory"] = Path.Combine(folder, "wwwroot", "archive") })
+                Config(new() { ["Pdf:WorkDirectory"] = Path.Combine(AppContext.BaseDirectory, "wwwroot", "archive") })
             ).CheckAsync("PdfWorkspace", default);
             Check(
                 archive.State == ToolState.Problem,

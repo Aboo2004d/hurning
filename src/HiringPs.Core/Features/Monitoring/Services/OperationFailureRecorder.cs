@@ -15,7 +15,7 @@ public static class OperationFailureRecorder
             timeout.CancelAfter(TimeSpan.FromSeconds(5));
             await using var scope = scopes.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
-            db.Audit.Add(OperationTracking.Create(area, OperationOutcome.Failed, operation, error.GetType().Name));
+            db.Audit.Add(OperationTracking.Create(area, OperationOutcome.Failed, operation, ToolFailureDetail.Describe(error, scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>())));
             await db.SaveChangesAsync(timeout.Token);
             return true;
         }

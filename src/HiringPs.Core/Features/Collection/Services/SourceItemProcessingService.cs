@@ -116,6 +116,7 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
         }
         catch (AiQuotaException ex)
         {
+            ToolFailureDetail.Record(itemDb, config, $"AI; Item {itemId}; Source {item.SourceId}", ex);
             // Quota or credentials: pause every AI call globally and stop this item loop.
             var until = DateTimeOffset.UtcNow + AiGovernor.QuotaPause(ex, config);
             await AiGovernor.PauseAsync(itemDb, until, ex.Message, ct);
@@ -131,12 +132,14 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
         }
         catch (AiUnavailableException ex)
         {
+            ToolFailureDetail.Record(itemDb, config, $"AI; Item {itemId}; Source {item.SourceId}", ex);
             item.Status = ProcessingStatus.AwaitingAi;
             item.Error = ex.Message;
             item.RetryAt = DateTimeOffset.UtcNow.AddHours(6);
         }
         catch (AiTransientException ex)
         {
+            ToolFailureDetail.Record(itemDb, config, $"AI; Item {itemId}; Source {item.SourceId}", ex);
             item.Attempts++;
             if (item.Attempts >= AiGovernor.MaxTransientAttempts(config))
             {
@@ -167,6 +170,7 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
             else
                 ScheduleRetry(item);
 
+            ToolFailureDetail.Record(itemDb, config, $"Item {itemId}; Source {item.SourceId}; Processing", ex);
             item.Error = CollectionErrorRules.SafeError(ex);
         }
         catch (ContentNeedsReviewException ex)
@@ -174,6 +178,7 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
             itemDb.ChangeTracker.Clear();
             item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
             item.Status = ProcessingStatus.NeedsReview;
+            ToolFailureDetail.Record(itemDb, config, $"Item {itemId}; Source {item.SourceId}; Processing", ex);
             item.Error = ex.Message.Truncate(1800);
         }
         catch (JsonException)
@@ -193,6 +198,7 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
             itemDb.ChangeTracker.Clear();
             item = await itemDb.SourceItems.SingleAsync(x => x.Id == itemId, ct);
             ScheduleRetry(item);
+            ToolFailureDetail.Record(itemDb, config, $"Item {itemId}; Source {item.SourceId}; Processing", ex);
             item.Error = CollectionErrorRules.SafeError(ex);
         }
 

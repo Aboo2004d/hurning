@@ -172,20 +172,20 @@ public static class ToolCheckQueue
                     key,
                     ToolState.Problem,
                     code,
-                    status.Length == 3 ? "HTTP " + status : ""
+                    ToolFailureDetail.Describe(ex, config, 1000)
                 );
             }
-            catch (AiTransientException)
+            catch (AiTransientException ex)
             {
-                result = new(key, ToolState.Problem, "AiNetworkFailed");
+                result = new(key, ToolState.Problem, "AiNetworkFailed", ToolFailureDetail.Describe(ex, config, 1000));
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
-                result = new(key, ToolState.Problem, "CheckTimeout");
+                result = new(key, ToolState.Problem, "CheckTimeout", ToolFailureDetail.Describe(ex, config, 1000));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                result = new(key, ToolState.Problem, "CheckFailed");
+                result = new(key, ToolState.Problem, "CheckFailed", ToolFailureDetail.Describe(ex, config, 1000));
             }
             await gate.VerifyAsync(ct);
             failed |= result.State is ToolState.Problem or ToolState.NotConfigured;

@@ -42,6 +42,23 @@ public static class OperationChecks
             "20261020052258_PlatformImprovements", "20261020182000_OperationHistoryIndex");
         Check(upgrade.Contains("CREATE INDEX [IX_Audit_At_Id]") && !upgrade.Contains("DROP TABLE")
             && !db.Database.HasPendingModelChanges(), "operation history migration only adds its index and matches the EF model");
+        var diagnosticConfig = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        var diagnostic = ToolFailureDetail.Describe(new Exception("launch failed " + new string('x', 3000) + " exitCode=5"), diagnosticConfig, 1000);
+        Check(diagnostic.Length == 1000 && diagnostic.Contains("launch failed") && diagnostic.Contains("exitCode=5"),
+            "bounded diagnostic preserves both launch context and final process exit code");
+        var probeDb = new HiringDb(new DbContextOptionsBuilder<HiringDb>()
+            .UseSqlServer("Server=127.0.0.1;Database=unused;User Id=unused;Password=unused;TrustServerCertificate=True").Options);
+        using (probeDb)
+        {
+            probeDb.ToolCheckResults.Add(new ToolCheckResult { Tool = "Chromium", State = ToolState.Problem,
+                Code = "BrowserLaunchFailed", Detail = "Edge failed; Chromium exitCode=5", RequestId = 13, WorkerId = "worker" });
+            new OperationTracking().Stage(probeDb);
+            Check(probeDb.Audit.Local.Single().Detail.Contains("Chromium exitCode=5"),
+                "tool-check operation event retains the original failure detail");
+            ToolFailureDetail.Record(probeDb, diagnosticConfig, "Item 42; PDF", new IOException("access denied"));
+            Check(probeDb.Audit.Local.Any(x => x.Action == "Activity.Tools.Failed.Execution" && x.Detail.Contains("Item 42") && x.Detail.Contains("access denied")),
+                "real execution failures carry their item context and cause without replaying work");
+        }
         var tracker = new OperationTracking();
         var opportunity = new Opportunity { Title = "Public job", Summary = "PRIVATE SOURCE PAYLOAD", Status = PublicationStatus.NeedsReview };
         var source = new Source { Name = "Public source", ConfigurationJson = "SECRET CONFIG" };

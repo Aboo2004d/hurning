@@ -46,6 +46,49 @@ public static class BrowserSettings
             ? Path.GetFullPath(path, AppContext.BaseDirectory)
             : null;
 
+    /// <summary>
+    /// يشغل Edge المثبت أولًا، ثم Chromium المضمّن إذا تعذر إطلاق Edge.
+    /// المسار التنفيذي الصريح يبقى تجاوزًا اختياريًا للتشخيص والبيئات المخصصة.
+    /// لا يعيد تنفيذ عملية الجمع عند فشلها؛ البديل يخص إطلاق المتصفح فقط.
+    /// </summary>
+    public static async Task<IBrowser> LaunchAsync(
+        IPlaywright runtime,
+        IConfiguration configuration,
+        float timeout = 20000
+    )
+    {
+        var options = new BrowserTypeLaunchOptions
+        {
+            Headless = true,
+            Timeout = timeout,
+            Args = Args(configuration),
+            ExecutablePath = ExecutablePath(configuration),
+        };
+        if (options.ExecutablePath is not null)
+            return await runtime.Chromium.LaunchAsync(options);
+
+        options.Channel = "msedge";
+        try
+        {
+            return await runtime.Chromium.LaunchAsync(options);
+        }
+        catch (PlaywrightException edgeError)
+        {
+            // Null channel selects Playwright's matching bundled Chromium revision.
+            options.Channel = null;
+            try
+            {
+                return await runtime.Chromium.LaunchAsync(options);
+            }
+            catch (PlaywrightException chromiumError)
+            {
+                throw new PlaywrightException(
+                    $"Edge launch failed: {edgeError.Message}\nChromium fallback failed: {chromiumError.Message}"
+                );
+            }
+        }
+    }
+
     /// <summary>يطبق إعدادات الخدمة وفق عقدها الحالي قبل التشغيل.</summary>
     public static void Configure(IConfiguration configuration)
     {
