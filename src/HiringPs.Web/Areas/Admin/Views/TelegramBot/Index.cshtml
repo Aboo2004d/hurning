@@ -1,0 +1,46 @@
+@model TelegramBotStatusDto
+@{
+    ViewData["Title"] = T["TelegramBotSetup"].Value;
+    var registered = Model.State == TelegramBotSetupState.Registered;
+}
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <div><h1>@T["TelegramBotSetup"]</h1><p class="muted">@T["TelegramBotSetupIntro"]</p></div>
+        <a class="button button-outline" asp-controller="Distribution" asp-action="Index">@T["ChannelDistribution"]</a>
+    </header>
+    @if (ViewData["RegistrationResult"] is string result)
+    {
+        <p class="notice" role="status">@T[result]</p>
+    }
+    <section class="tool-card integration-card" id="telegram-bot-setup">
+        <header class="integration-card-heading">
+            <span class="integration-mark" aria-hidden="true"><span class="fa-brands fa-telegram"></span></span>
+            <div><h2>@T["TelegramBotConnection"]</h2><p class="muted">@T["TelegramBotState_" + Model.State]</p></div>
+        </header>
+        <span class="tool-status @(registered ? "tool-ready" : Model.Configured ? "tool-problem" : "tool-neutral")">@T["TelegramBotState_" + Model.State]</span>
+        @if (Model.FailureCode.Length > 0)
+        {
+            <p class="notice" role="alert">@T["TelegramBotIssue_" + Model.FailureCode]</p>
+            @if (Model.FailureDescription.Length > 0) { <p class="muted">@BidiText.Render(Model.FailureDescription)</p> }
+        }
+        <dl class="integration-facts">
+            <dt>@T["TelegramBotUsername"]</dt><dd><bdi dir="ltr">@(Model.BotUsername.Length > 0 ? "@" + Model.BotUsername : "—")</bdi></dd>
+            <dt>@T["TelegramBotExpectedWebhook"]</dt><dd><bdi dir="ltr">@(Model.ExpectedWebhook.Length > 0 ? Model.ExpectedWebhook : "—")</bdi></dd>
+            <dt>@T["TelegramBotCurrentWebhook"]</dt><dd><bdi dir="ltr">@(Model.CurrentWebhook.Length > 0 ? Model.CurrentWebhook : "—")</bdi></dd>
+            <dt>@T["TelegramBotPendingUpdates"]</dt><dd>@(Model.PendingUpdates?.ToString() ?? "—")</dd>
+            @if (Model.LastErrorAt is not null || Model.LastError.Length > 0)
+            {
+                <dt>@T["TelegramBotLastError"] · @T["PalestineTime"]</dt><dd><bdi>@PaymentDisplay.Time(Model.LastErrorAt)</bdi></dd>
+                <dt>@T["Details"]</dt><dd>@BidiText.Render(Model.LastError)</dd>
+            }
+        </dl>
+        <p class="muted">@T["TelegramBotDeliveryNote"]</p>
+        <p class="muted">@T["TelegramBotActivationNote"]</p>
+        <div class="actions">
+            <a class="button button-outline" asp-controller="TelegramBot" asp-action="Index"><span class="fa-solid fa-rotate" aria-hidden="true"></span>@T["TelegramBotCheck"]</a>
+            <form asp-controller="TelegramBot" asp-action="Activate" method="post">
+                <button class="button" type="submit" disabled="@(!Model.Configured)"><span class="fa-solid fa-link" aria-hidden="true"></span>@T[registered ? "TelegramBotReregister" : "TelegramBotActivate"]</button>
+            </form>
+        </div>
+    </section>
+</section>

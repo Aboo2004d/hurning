@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.ComponentModel;
 using Microsoft.Playwright;
 
 namespace HiringPs.Core;
@@ -72,7 +73,17 @@ public static class BrowserSettings
             ExecutablePath = ExecutablePath(configuration),
         };
         if (options.ExecutablePath is not null)
-            return new(await runtime.Chromium.LaunchAsync(options), "Custom executable", false);
+        {
+            try
+            {
+                return new(await runtime.Chromium.LaunchAsync(options), "Custom executable", false);
+            }
+            catch (PlaywrightException ex)
+            {
+                throw new BrowserRuntimeException(IsDriverExit(ex) ? BrowserFailureStage.DriverConnection : BrowserFailureStage.CustomBrowserLaunch,
+                    $"Executable={options.ExecutablePath}; {ex.Message}", ex);
+            }
+        }
 
         options.Channel = "msedge";
         try
@@ -81,6 +92,10 @@ public static class BrowserSettings
         }
         catch (PlaywrightException edgeError)
         {
+            if (IsDriverExit(edgeError))
+                throw new BrowserRuntimeException(BrowserFailureStage.DriverConnection,
+                    "Driver exited while launching Edge; Chromium cannot use the closed driver. "
+                    + edgeError.Message + "; " + BrowserDriverDiagnostics.Context(BrowserDriverDiagnostics.Paths()), edgeError);
             // Null channel selects Playwright's matching bundled Chromium revision.
             options.Channel = null;
             try
@@ -89,8 +104,10 @@ public static class BrowserSettings
             }
             catch (PlaywrightException chromiumError)
             {
-                throw new PlaywrightException(
-                    $"Edge launch failed: {edgeError.Message}\nChromium fallback failed: {chromiumError.Message}"
+                throw new BrowserRuntimeException(
+                    IsDriverExit(chromiumError) ? BrowserFailureStage.DriverConnection : BrowserFailureStage.BrowserLaunch,
+                    $"Edge launch failed: {edgeError.Message}\nChromium fallback failed: {chromiumError.Message}; "
+                    + $"Chromium executable={runtime.Chromium.ExecutablePath}", chromiumError
                 );
             }
         }
@@ -104,9 +121,30 @@ public static class BrowserSettings
     }
 
     /// <summary>ينشئ محرك Playwright بعد تطبيق مسار المتصفح وإعدادات تشغيله.</summary>
-    public static Task<IPlaywright> CreateAsync(IConfiguration configuration)
+    public static async Task<IPlaywright> CreateAsync(IConfiguration configuration, CancellationToken ct = default)
     {
         Configure(configuration);
-        return Playwright.CreateAsync();
+        var paths = BrowserDriverDiagnostics.Paths();
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            BrowserDriverDiagnostics.ValidateBundle(paths);
+            return await Playwright.CreateAsync();
+        }
+        catch (Exception ex) when (ex is PlaywrightException or Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            var probe = await BrowserDriverDiagnostics.ProbeAsync(paths, ct);
+            throw new BrowserRuntimeException(BrowserFailureStage.DriverStartup,
+                $"Original={ex.Message}; {probe}; {BrowserDriverDiagnostics.Context(paths)}", ex);
+        }
+    }
+
+    private static bool IsDriverExit(PlaywrightException error)
+    {
+        // TargetClosedException is internal in Playwright .NET; inspect its stable type name and signal.
+        for (Exception? current = error; current is not null; current = current.InnerException)
+            if (current.GetType().Name == "TargetClosedException"
+                && current.Message.Contains("Process exited", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 }

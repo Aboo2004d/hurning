@@ -4,7 +4,7 @@
     string Time(DateTimeOffset? value) => PaymentDisplay.Time(value);
 }
 <section class="admin-list-page">
-<header class="admin-page-heading"><h1>@T["ChannelDistribution"]</h1></header>
+<header class="admin-page-heading"><h1>@T["ChannelDistribution"]</h1><a class="button button-outline" asp-controller="TelegramBot" asp-action="Index">@T["TelegramBotSetup"]</a></header>
 <p class="muted">@T["TelegramChannelIntro"]</p>
 @if (!Model.BotReady) { <p class="notice" role="alert">@T["TelegramBotNotConfigured"]</p> }
 <div class="integrations-grid">

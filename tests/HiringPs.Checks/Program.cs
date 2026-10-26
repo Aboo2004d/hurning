@@ -135,6 +135,19 @@ if (args.Contains("--public-kind-check"))
     return;
 }
 
+if (args.Contains("--browser-runtime-check"))
+{
+    await BrowserDriverChecks.RunAsync();
+    await BrowserFallbackChecks.RunAsync();
+    return;
+}
+
+if (args.Contains("--telegram-bot-setup-check"))
+{
+    await TelegramBotSetupChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--tools-check"))
 {
     await ToolChecks.RunAsync();

@@ -132,6 +132,11 @@ builder.Services.AddJawwalPay();
 builder
     .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
     .RemoveAllLoggers();
+builder.Services.AddHttpClient<TelegramBotSetupService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.MaxResponseContentBufferSize = 65536;
+}).RemoveAllLoggers();
 builder.Services.AddScoped<CollectionPipeline>();
 BrowserSettings.Configure(builder.Configuration);
 PdfToolPaths.Configure(builder.Configuration);

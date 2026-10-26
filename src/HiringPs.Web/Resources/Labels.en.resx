@@ -3233,4 +3233,39 @@
   <data name="PaymentMemberSearch" xml:space="preserve"><value>User name, email, order or transaction reference</value></data>
   <data name="TendersAndProcurement" xml:space="preserve"><value>Tenders and procurement notices</value></data>
   <data name="TendersAndProcurementSubtitle" xml:space="preserve"><value>Browse tenders and procurement notices in Palestine.</value></data>
+  <data name="ToolCode_BrowserDriverFailed" xml:space="preserve"><value>The Playwright driver failed before browser startup completed; inspect the stage, bundled node files and service account permissions.</value></data>
+  <data name="ToolCode_BrowserVerificationFailed" xml:space="preserve"><value>The browser started, but page creation or verification failed; inspect the details.</value></data>
+  <data name="TelegramBotSetup" xml:space="preserve"><value>Telegram bot setup</value></data>
+  <data name="TelegramBotSetupIntro" xml:space="preserve"><value>Inspect and register bot updates using server settings, without terminal commands.</value></data>
+  <data name="TelegramBotConnection" xml:space="preserve"><value>Bot connection status</value></data>
+  <data name="TelegramBotUsername" xml:space="preserve"><value>Bot username</value></data>
+  <data name="TelegramBotExpectedWebhook" xml:space="preserve"><value>Expected webhook for this site</value></data>
+  <data name="TelegramBotCurrentWebhook" xml:space="preserve"><value>Webhook registered with Telegram</value></data>
+  <data name="TelegramBotPendingUpdates" xml:space="preserve"><value>Pending Telegram updates</value></data>
+  <data name="TelegramBotLastError" xml:space="preserve"><value>Last delivery error reported by Telegram</value></data>
+  <data name="TelegramBotDeliveryNote" xml:space="preserve"><value>Webhook registration does not verify alert delivery. Background jobs and a linked user who started the bot are required. A past delivery error may remain visible after recovery.</value></data>
+  <data name="TelegramBotActivationNote" xml:space="preserve"><value>Activation registers the displayed webhook and refreshes its verification secret without dropping pending updates. Credentials stay in server settings.</value></data>
+  <data name="TelegramBotCheck" xml:space="preserve"><value>Check connection again</value></data>
+  <data name="TelegramBotActivate" xml:space="preserve"><value>Activate connection</value></data>
+  <data name="TelegramBotReregister" xml:space="preserve"><value>Register connection again</value></data>
+  <data name="TelegramBotRegistered" xml:space="preserve"><value>Webhook registered and verified. Send a new bot command to verify reception and processing.</value></data>
+  <data name="TelegramBotRegistrationUnverified" xml:space="preserve"><value>Telegram accepted registration, but the final state could not be confirmed. Check the connection again.</value></data>
+  <data name="TelegramBotRegistrationFailed" xml:space="preserve"><value>Connection was not registered. Review the status and details below.</value></data>
+  <data name="TelegramBotState_Disabled" xml:space="preserve"><value>Bot disabled in server settings</value></data>
+  <data name="TelegramBotState_InvalidConfiguration" xml:space="preserve"><value>Connection settings are incomplete or invalid</value></data>
+  <data name="TelegramBotState_Unavailable" xml:space="preserve"><value>Telegram could not be reached or rejected the request</value></data>
+  <data name="TelegramBotState_IdentityMismatch" xml:space="preserve"><value>Bot identity does not match the configured username</value></data>
+  <data name="TelegramBotState_NotRegistered" xml:space="preserve"><value>No bot webhook is registered</value></data>
+  <data name="TelegramBotState_DifferentWebhook" xml:space="preserve"><value>Bot webhook points to another address</value></data>
+  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>Webhook matches but message updates are not enabled</value></data>
+  <data name="TelegramBotState_Registered" xml:space="preserve"><value>Webhook registered for this site</value></data>
+  <data name="TelegramBotIssue_Origin" xml:space="preserve"><value>Set Seo:PublicOrigin to the public HTTPS site origin without a path or extra components.</value></data>
+  <data name="TelegramBotIssue_Token" xml:space="preserve"><value>Complete Telegram:BotToken in server settings.</value></data>
+  <data name="TelegramBotIssue_Username" xml:space="preserve"><value>Review Telegram:BotUsername in server settings.</value></data>
+  <data name="TelegramBotIssue_Secret" xml:space="preserve"><value>Set Telegram:WebhookSecret to 24–256 ASCII letters, digits, underscores or hyphens.</value></data>
+  <data name="TelegramBotIssue_Provider" xml:space="preserve"><value>Telegram rejected the request; review the error description.</value></data>
+  <data name="TelegramBotIssue_Network" xml:space="preserve"><value>The server could not connect to api.telegram.org.</value></data>
+  <data name="TelegramBotIssue_Timeout" xml:space="preserve"><value>The request to Telegram timed out.</value></data>
+  <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>Bot API returned an invalid response.</value></data>
+  <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>Telegram bot webhook registration</value></data>
 </root>

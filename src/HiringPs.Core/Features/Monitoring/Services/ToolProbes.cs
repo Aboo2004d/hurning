@@ -18,7 +18,7 @@ public sealed class ToolProbes(IConfiguration configuration)
             return tool switch
             {
                 "AiConfiguration" => AiConfiguration(),
-                "Chromium" => await ChromiumAsync(),
+                "Chromium" => await ChromiumAsync(budget.Token),
                 "PdfText" => await VersionAsync(
                     tool,
                     "TextExecutable",
@@ -65,6 +65,13 @@ public sealed class ToolProbes(IConfiguration configuration)
                 Detail(ex)
             );
         }
+        catch (BrowserRuntimeException ex)
+        {
+            var code = ex.Stage is BrowserFailureStage.DriverStartup or BrowserFailureStage.DriverConnection
+                ? "BrowserDriverFailed" : ex.Stage == BrowserFailureStage.BrowserVerification
+                    ? "BrowserVerificationFailed" : "BrowserLaunchFailed";
+            return new(tool, ToolState.Problem, code, Detail(ex));
+        }
         catch (PlaywrightException ex)
         {
             var code = ex.Message.Contains(
@@ -96,19 +103,27 @@ public sealed class ToolProbes(IConfiguration configuration)
     }
 
     /// <summary>يشغّل Chromium ويفحص تنفيذ JavaScript محليًا دون جمع مصدر خارجي.</summary>
-    private async Task<ToolProbe> ChromiumAsync()
+    private async Task<ToolProbe> ChromiumAsync(CancellationToken ct)
     {
-        using var runtime = await BrowserSettings.CreateAsync(configuration);
+        using var runtime = await BrowserSettings.CreateAsync(configuration, ct);
         var launch = await BrowserSettings.LaunchWithDetailsAsync(runtime, configuration);
         await using var browser = launch.Browser;
-        var page = await browser.NewPageAsync();
-        page.SetDefaultTimeout(5000);
-        await page.SetContentAsync("<!doctype html><title>Tool diagnostic</title>");
-        var correct = await page.EvaluateAsync<int>("() => 21 * 2") == 42;
+        bool correct;
+        try
+        {
+            var page = await browser.NewPageAsync();
+            page.SetDefaultTimeout(5000);
+            await page.SetContentAsync("<!doctype html><title>Tool diagnostic</title>");
+            correct = await page.EvaluateAsync<int>("() => 21 * 2") == 42;
+        }
+        catch (PlaywrightException ex)
+        {
+            throw new BrowserRuntimeException(BrowserFailureStage.BrowserVerification, launch.Display + "; " + ex.Message, ex);
+        }
         return new(
             "Chromium",
             correct ? ToolState.Ready : ToolState.Problem,
-            correct ? "BrowserReady" : "BrowserLaunchFailed",
+            correct ? "BrowserReady" : "BrowserVerificationFailed",
             correct ? launch.Display : "JavaScript verification failed; " + launch.Display
         );
     }

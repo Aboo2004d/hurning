@@ -13,6 +13,7 @@ internal static class BrowserFallbackChecks
             var expected = Proxy<IBrowser>((_, _) => throw new NotSupportedException());
             var browserType = Proxy<IBrowserType>((method, args) =>
             {
+                if (method.Name == "get_ExecutablePath") return "fixture-chromium";
                 if (method.Name != "LaunchAsync") throw new NotSupportedException();
                 var options = (BrowserTypeLaunchOptions)args![0]!;
                 channels.Add(options.Channel);
@@ -38,8 +39,27 @@ internal static class BrowserFallbackChecks
                 || (channels.Count == 2 && channels[1] is not null))
                 throw new Exception("Edge must precede bundled Chromium, with at most two attempts");
         }
+        var deadAttempts = 0;
+        var deadType = Proxy<IBrowserType>((_, _) =>
+        {
+            deadAttempts++;
+            return Task.FromException<IBrowser>(new TargetClosedException("Process exited"));
+        });
+        var deadRuntime = Proxy<IPlaywright>((_, _) => deadType);
+        try
+        {
+            await BrowserSettings.LaunchWithDetailsAsync(deadRuntime, new ConfigurationBuilder().Build());
+            throw new Exception("Expected dead driver failure");
+        }
+        catch (BrowserRuntimeException ex)
+        {
+            if (ex.Stage != BrowserFailureStage.DriverConnection || deadAttempts != 1)
+                throw new Exception("A closed Playwright driver cannot launch a fallback browser");
+        }
         Console.WriteLine("PASS Edge preference, Chromium fallback, and combined launch failures");
     }
+
+    private sealed class TargetClosedException(string message) : PlaywrightException(message);
 
     private static T Proxy<T>(Func<MethodInfo, object?[]?, object?> handler) where T : class
     {

@@ -3233,4 +3233,39 @@
   <data name="PaymentMemberSearch" xml:space="preserve"><value>اسم المستخدم، البريد، رقم الطلب أو المعاملة</value></data>
   <data name="TendersAndProcurement" xml:space="preserve"><value>العطاءات والمناقصات</value></data>
   <data name="TendersAndProcurementSubtitle" xml:space="preserve"><value>تصفح فرص العطاءات والمناقصات في فلسطين.</value></data>
+  <data name="ToolCode_BrowserDriverFailed" xml:space="preserve"><value>تعطل محرك اتصال Playwright قبل اكتمال تشغيل المتصفح؛ راجع تفاصيل المرحلة وملفات node وصلاحيات الحساب.</value></data>
+  <data name="ToolCode_BrowserVerificationFailed" xml:space="preserve"><value>بدأ المتصفح لكن فشل إنشاء الصفحة أو تنفيذ الفحص؛ راجع التفاصيل.</value></data>
+  <data name="TelegramBotSetup" xml:space="preserve"><value>ربط بوت التليجرام</value></data>
+  <data name="TelegramBotSetupIntro" xml:space="preserve"><value>فحص الربط وتسجيل استقبال تحديثات البوت من إعدادات السيرفر، دون أوامر يدوية.</value></data>
+  <data name="TelegramBotConnection" xml:space="preserve"><value>حالة ربط البوت</value></data>
+  <data name="TelegramBotUsername" xml:space="preserve"><value>اسم مستخدم البوت</value></data>
+  <data name="TelegramBotExpectedWebhook" xml:space="preserve"><value>عنوان الاستقبال المطلوب لهذا الموقع</value></data>
+  <data name="TelegramBotCurrentWebhook" xml:space="preserve"><value>عنوان الاستقبال المسجل لدى تليجرام</value></data>
+  <data name="TelegramBotPendingUpdates" xml:space="preserve"><value>التحديثات المعلقة لدى تليجرام</value></data>
+  <data name="TelegramBotLastError" xml:space="preserve"><value>آخر خطأ توصيل مسجل لدى تليجرام</value></data>
+  <data name="TelegramBotDeliveryNote" xml:space="preserve"><value>تسجيل الربط لا يثبت إرسال التنبيهات. يلزم تشغيل مهام الخلفية وربط حساب المستخدم وبدء المحادثة مع البوت. قد يبقى آخر خطأ ظاهرًا بعد زواله.</value></data>
+  <data name="TelegramBotActivationNote" xml:space="preserve"><value>التفعيل يربط البوت بعنوان الاستقبال المعروض ويحدّث سر التحقق دون حذف التحديثات المعلقة. إعدادات المفاتيح تبقى على السيرفر.</value></data>
+  <data name="TelegramBotCheck" xml:space="preserve"><value>فحص الربط مجددًا</value></data>
+  <data name="TelegramBotActivate" xml:space="preserve"><value>تفعيل الربط</value></data>
+  <data name="TelegramBotReregister" xml:space="preserve"><value>إعادة تسجيل الربط</value></data>
+  <data name="TelegramBotRegistered" xml:space="preserve"><value>تم تسجيل عنوان الاستقبال والتحقق منه. جرّب أمرًا جديدًا في البوت للتحقق من الاستقبال والمعالجة.</value></data>
+  <data name="TelegramBotRegistrationUnverified" xml:space="preserve"><value>قبل تليجرام طلب التسجيل، لكن لم نتمكن من تأكيد حالته النهائية. افحص الربط مجددًا.</value></data>
+  <data name="TelegramBotRegistrationFailed" xml:space="preserve"><value>لم يتم تسجيل الربط. راجع الحالة والتفاصيل أدناه.</value></data>
+  <data name="TelegramBotState_Disabled" xml:space="preserve"><value>البوت معطل في إعدادات السيرفر</value></data>
+  <data name="TelegramBotState_InvalidConfiguration" xml:space="preserve"><value>إعدادات الربط غير مكتملة أو غير صالحة</value></data>
+  <data name="TelegramBotState_Unavailable" xml:space="preserve"><value>تعذر التواصل مع تليجرام أو رفض الطلب</value></data>
+  <data name="TelegramBotState_IdentityMismatch" xml:space="preserve"><value>هوية البوت لا تطابق اسم المستخدم في الإعدادات</value></data>
+  <data name="TelegramBotState_NotRegistered" xml:space="preserve"><value>لم يسجل عنوان استقبال للبوت</value></data>
+  <data name="TelegramBotState_DifferentWebhook" xml:space="preserve"><value>البوت مربوط بعنوان آخر</value></data>
+  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>العنوان صحيح لكن استقبال رسائل البوت غير مفعّل</value></data>
+  <data name="TelegramBotState_Registered" xml:space="preserve"><value>عنوان الاستقبال مسجل لهذا الموقع</value></data>
+  <data name="TelegramBotIssue_Origin" xml:space="preserve"><value>اضبط Seo:PublicOrigin بعنوان HTTPS العام للموقع دون مسار أو بيانات إضافية.</value></data>
+  <data name="TelegramBotIssue_Token" xml:space="preserve"><value>أكمل Telegram:BotToken في إعدادات السيرفر.</value></data>
+  <data name="TelegramBotIssue_Username" xml:space="preserve"><value>راجع Telegram:BotUsername في إعدادات السيرفر.</value></data>
+  <data name="TelegramBotIssue_Secret" xml:space="preserve"><value>اضبط Telegram:WebhookSecret بقيمة من 24 إلى 256 حرفًا من الحروف الإنجليزية والأرقام و _ و -.</value></data>
+  <data name="TelegramBotIssue_Provider" xml:space="preserve"><value>رفض تليجرام الطلب؛ راجع وصف الخطأ.</value></data>
+  <data name="TelegramBotIssue_Network" xml:space="preserve"><value>تعذر الاتصال بـ api.telegram.org من السيرفر.</value></data>
+  <data name="TelegramBotIssue_Timeout" xml:space="preserve"><value>انتهت مهلة التواصل مع تليجرام.</value></data>
+  <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>لم تصل استجابة صالحة من Bot API.</value></data>
+  <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>تسجيل ربط بوت التليجرام</value></data>
 </root>

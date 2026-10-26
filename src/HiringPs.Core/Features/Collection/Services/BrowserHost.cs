@@ -32,7 +32,7 @@ public sealed class BrowserHost(IConfiguration configuration, ILogger<BrowserHos
             }
             try
             {
-                playwright ??= await BrowserSettings.CreateAsync(configuration);
+                playwright ??= await BrowserSettings.CreateAsync(configuration, ct);
                 browser = await BrowserSettings.LaunchAsync(playwright, configuration);
             }
             catch

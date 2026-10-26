@@ -11,7 +11,7 @@ namespace HiringPs.Web.Controllers;
 [AllowAnonymous, IgnoreAntiforgeryToken]
 public class TelegramWebhookController(HiringDb db, IConfiguration configuration) : Controller
 {
-    [HttpPost("/integrations/telegram"), RequestSizeLimit(32768)]
+    [HttpPost(TelegramBotSetupService.WebhookPath), RequestSizeLimit(32768)]
     public async Task<IActionResult> Receive(CancellationToken ct)
     {
         var secret = configuration["Telegram:WebhookSecret"] ?? "";

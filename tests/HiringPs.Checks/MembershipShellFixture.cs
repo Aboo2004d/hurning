@@ -143,6 +143,15 @@ public class ListingShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminShellFixtureController : Controller
 {
+    public IActionResult TelegramBot(string state = "DifferentWebhook") => View("/Areas/Admin/Views/TelegramBot/Index.cshtml", new TelegramBotStatusDto
+    {
+        State = Enum.Parse<TelegramBotSetupState>(state), Configured = state != "Disabled", BotUsername = "HiringFixtureBot",
+        ExpectedWebhook = "https://hiring.example/integrations/telegram",
+        CurrentWebhook = "https://old-tunnel.example/integrations/telegram",
+        PendingUpdates = 5, LastErrorAt = DateTimeOffset.UtcNow.AddMinutes(-10),
+        LastError = "Wrong response from the webhook: 401 Unauthorized",
+    });
+
     public IActionResult Tools(bool checkedTools = false, bool single = false)
     {
         var now = DateTimeOffset.UtcNow;
