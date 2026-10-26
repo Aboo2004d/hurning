@@ -129,6 +129,12 @@ if (args.Contains("--admin-pagination-check"))
     return;
 }
 
+if (args.Contains("--public-kind-check"))
+{
+    await PublicKindChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--tools-check"))
 {
     await ToolChecks.RunAsync();

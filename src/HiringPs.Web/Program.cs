@@ -27,6 +27,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 builder.Services.AddSingleton<HiringPs.Web.Models.SiteSeo>();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<PublicCatalogCache>();
+builder.Services.AddSingleton<IPublicCatalogInvalidator>(sp => sp.GetRequiredService<PublicCatalogCache>());
+builder.Services.AddSingleton<PublicCatalogTransactionInterceptor>();
 builder.Services.AddScoped<HiringPs.Web.Models.PublicCatalog>();
 builder.Services.AddResponseCompression(options =>
 {
@@ -45,26 +48,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 );
 // The framework's default output-cache policy already skips authenticated requests,
 // non-GET/HEAD requests and responses that set cookies.
-builder.Services.AddOutputCache(options =>
-{
-    options.AddPolicy(
-        SiteCache.Files,
-        policy => policy.Expire(TimeSpan.FromMinutes(10)).SetVaryByQuery("*")
-    );
-    options.AddPolicy(
-        SiteCache.Listing,
-        policy =>
-            policy
-                .Expire(TimeSpan.FromSeconds(60))
-                .SetVaryByQuery("*")
-                .VaryByValue(context =>
-                    new(
-                        "culture",
-                        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
-                    )
-                )
-    );
-});
+builder.Services.AddOutputCache(PublicCatalogCaching.Configure);
 
 // ======================================
 // Database
@@ -72,9 +56,10 @@ builder.Services.AddOutputCache(options =>
 var connectionString =
     builder.Configuration.GetConnectionString("Hiring")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:Hiring.");
-builder.Services.AddDbContext<HiringDb>(options =>
+builder.Services.AddDbContext<HiringDb>((services, options) =>
 {
     options.UseSqlServer(connectionString);
+    options.AddInterceptors(services.GetRequiredService<PublicCatalogTransactionInterceptor>());
 });
 
 // ======================================

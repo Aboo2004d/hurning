@@ -2,9 +2,9 @@
 @* صفحة قائمة الفرص: العنوان وما يغلق هذا الأسبوع والبحث والفلاتر والترتيب والبطاقات ثم الترقيم وروابط التصفح. *@
 @{
     var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
-    var kindHeading = Model.Kind == OpportunityKind.Job ? "Jobs" : Model.Kind?.ToString() ?? "Headline";
+    var kindHeading = PublicListingKinds.Label(Model.Kind);
     var heading = Model.Archive ? T["Archive"].Value + (Model.Kind is null ? "" : " · " + T[kindHeading].Value) : T[kindHeading].Value;
-    var subtitle = Model.Kind is null ? "Subtitle" : Model.Kind + "Subtitle";
+    var subtitle = PublicListingKinds.Group(Model.Kind) == OpportunityKind.Tender ? "TendersAndProcurementSubtitle" : Model.Kind is null ? "Subtitle" : Model.Kind + "Subtitle";
     ViewData["Title"] = heading;
     ViewData["Description"] = T[subtitle].Value;
     var signedIn = User.Identity?.IsAuthenticated == true;
@@ -44,13 +44,13 @@
                 <span>@T["AllOpportunities"]</span>
                 <span class="kind-count">@stats.Total</span>
             </a>
-            @foreach (var kind in Enum.GetValues<OpportunityKind>())
+            @foreach (var kind in PublicListingKinds.Tabs)
             {
                 <a class="kind-@kind.ToString().ToLowerInvariant()" href="@Url.Action("Index", "Home", new { kind })"
-                   aria-current="@(Model.Kind == kind ? "page" : null)">
+                   aria-current="@(PublicListingKinds.Group(Model.Kind) == kind ? "page" : null)">
                     <span class="kind-dot" aria-hidden="true"></span>
-                    <span>@T[kind == OpportunityKind.Job ? "Jobs" : kind.ToString()]</span>
-                    <span class="kind-count">@stats.Count(kind)</span>
+                    <span>@T[PublicListingKinds.Label(kind)]</span>
+                    <span class="kind-count">@stats.GroupCount(kind)</span>
                 </a>
             }
         </nav>

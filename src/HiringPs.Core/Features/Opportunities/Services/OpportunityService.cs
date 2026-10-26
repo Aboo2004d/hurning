@@ -54,11 +54,12 @@ public class OpportunityService(HiringDb db, OpportunityExtractionService? extra
         );
         if (sourceId is not null)
             query = query.Where(x => x.SourceLinks.Any(l => l.SourceItem.SourceId == sourceId));
-        await query.ExecuteUpdateAsync(
+        var archived = await query.ExecuteUpdateAsync(
             s =>
                 s.SetProperty(x => x.Status, PublicationStatus.Archived)
                     .SetProperty(x => x.ClosureEvidence, "Published deadline has passed."),
             ct
         );
+        if (archived > 0) db.PublicCatalogChanged();
     }
 }

@@ -3231,4 +3231,6 @@
   <data name="MemberEmailNotFound" xml:space="preserve"><value>لم يتم العثور على عضو ببريد مطابق وفريد. تحقق من البريد وأعد المحاولة.</value></data>
   <data name="MemberEmailConfirmationChanged" xml:space="preserve"><value>تعذر تأكيد الحساب. أعد البحث بالبريد وراجع الاسم قبل المنح.</value></data>
   <data name="PaymentMemberSearch" xml:space="preserve"><value>اسم المستخدم، البريد، رقم الطلب أو المعاملة</value></data>
+  <data name="TendersAndProcurement" xml:space="preserve"><value>العطاءات والمناقصات</value></data>
+  <data name="TendersAndProcurementSubtitle" xml:space="preserve"><value>تصفح فرص العطاءات والمناقصات في فلسطين.</value></data>
 </root>

@@ -65,9 +65,9 @@
                     }
                     else
                     {
-                        @foreach (var kind in Enum.GetValues<OpportunityKind>())
+                        @foreach (var kind in PublicListingKinds.Tabs)
                         {
-                            var selected = listing && !archive && activeKind == kind;
+                            var selected = listing && !archive && PublicListingKinds.Group(activeKind) == kind;
                             <a
                                 asp-area="" asp-controller="Home"
                                 asp-action="Index"
@@ -75,7 +75,7 @@
                                 class="@(selected?"is-current":null)"
                                 aria-current="@(selected?"page":null)"
                             >
-                                @T[kind==OpportunityKind.Job?"Jobs":kind.ToString()]
+                                @T[PublicListingKinds.Label(kind)]
                             </a>
                         }
                         <a

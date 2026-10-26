@@ -10,7 +10,8 @@ namespace HiringPs.Core;
 /// <summary>مكون HiringDb ضمن مجال HiringPs.Core؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public class HiringDb(
     DbContextOptions<HiringDb> options,
-    PaymentEnvironment? paymentEnvironment = null
+    PaymentEnvironment? paymentEnvironment = null,
+    IPublicCatalogInvalidator? publicCatalog = null
 ) : IdentityDbContext<IdentityUser>(options)
 {
     private readonly OperationTracking operations = new();
@@ -238,12 +239,39 @@ public class HiringDb(
         }
     }
 
+    private bool pendingCatalogChanges;
+
+    private bool HasCatalogChanges() => ChangeTracker.Entries().Any(x =>
+        (x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+        && (x.Entity is Opportunity or OpportunityAccessRule
+            || x.Entity is AuditEntry { Action: "Location.Approved" }));
+
+    /// <summary>يبلغ عن تعديل محفوظ، بما فيه SQL الجماعي؛ ينتظر اعتماد المعاملة إن وجدت.</summary>
+    public void PublicCatalogChanged()
+    {
+        if (Database.CurrentTransaction is not null) pendingCatalogChanges = true;
+        else publicCatalog?.Invalidate();
+    }
+
+    /// <summary>يطبق الإبطال المؤجل بعد اعتماد معاملة الفرص.</summary>
+    public void CommitPublicCatalogChanges()
+    {
+        if (pendingCatalogChanges) publicCatalog?.Invalidate();
+        pendingCatalogChanges = false;
+    }
+
+    /// <summary>يهمل التغييرات المؤجلة عند التراجع عن المعاملة.</summary>
+    public void DiscardPublicCatalogChanges() => pendingCatalogChanges = false;
+
     /// <summary>يطبق التطبيع وقواعد الثبات قبل الحفظ المتزامن.</summary>
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         NormalizeRecords();
         operations.Stage(this);
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        var changed = HasCatalogChanges();
+        var saved = base.SaveChanges(acceptAllChangesOnSuccess);
+        if (changed && saved > 0) PublicCatalogChanged();
+        return saved;
     }
 
     /// <summary>يطبق التطبيع وقواعد الثبات ثم يحفظ التغييرات بصورة غير متزامنة.</summary>
@@ -254,6 +282,9 @@ public class HiringDb(
     {
         await NormalizeRecordsAsync(cancellationToken);
         operations.Stage(this);
-        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        var changed = HasCatalogChanges();
+        var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (changed && saved > 0) PublicCatalogChanged();
+        return saved;
     }
 }

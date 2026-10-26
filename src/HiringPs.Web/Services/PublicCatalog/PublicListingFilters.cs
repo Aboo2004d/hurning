@@ -26,8 +26,7 @@ public static class PublicListingFilters
                 query = query.Where(x => x.SearchText.Contains(term));
         }
 
-        if (kind is not null)
-            query = query.Where(x => x.Kind == kind);
+        query = PublicListingKinds.Apply(query, kind);
         if (!string.IsNullOrWhiteSpace(city))
         {
             var normalizedCity = CityCatalog.Find(city)?.SearchKey ?? LocationSearch.Normalize(city);

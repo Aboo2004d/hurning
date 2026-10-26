@@ -161,9 +161,9 @@
                 {
                     <nav class="footer-links footer-browse" aria-label="@T["OpportunityTypes"]">
                         <strong>@T["OpportunityTypes"]</strong>
-                        @foreach (var kind in Enum.GetValues<OpportunityKind>())
+                        @foreach (var kind in PublicListingKinds.Tabs)
                         {
-                            <a asp-area="" asp-controller="Home" asp-action="Index" asp-route-kind="@kind">@T[kind == OpportunityKind.Job ? "Jobs" : kind.ToString()]</a>
+                            <a asp-area="" asp-controller="Home" asp-action="Index" asp-route-kind="@kind">@T[PublicListingKinds.Label(kind)]</a>
                         }
                         <a href="@(mount + "/feeds/jobs.xml")" type="application/rss+xml">
                             <span class="fa-solid fa-rss" aria-hidden="true"></span>

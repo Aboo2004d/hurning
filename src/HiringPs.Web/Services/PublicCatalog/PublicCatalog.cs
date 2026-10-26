@@ -6,13 +6,25 @@ using Microsoft.Extensions.Caching.Memory;
 namespace HiringPs.Web.Models;
 
 /// <summary>مكون PublicCatalog ضمن مجال Services؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
-public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
+public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalogCache? coherence = null)
 {
+    private readonly PublicCatalogCache coherence = coherence ?? new();
+
+    private async Task<T> CachedAsync<T>(string key, Func<ICacheEntry, Task<T>> create)
+    {
+        var snapshot = coherence.Snapshot();
+        return (await cache.GetOrCreateAsync(key + ":" + snapshot.Version, entry =>
+        {
+            entry.AddExpirationToken(snapshot.Changed);
+            return create(entry);
+        }))!;
+    }
+
     private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(10);
 
     /// <summary>ينفذ FiltersAsync وفق قواعد PublicCatalog الحالية دون تغيير عقد المستدعين.</summary>
     public Task<FilterValues> FiltersAsync(OpportunityKind? kind, bool archive, CancellationToken ct) =>
-        cache.GetOrCreateAsync(
+        CachedAsync(
             $"filters:{kind}:{archive}",
             async entry =>
             {
@@ -31,8 +43,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
                             : x.Status == PublicationStatus.Published
                                 && (x.Deadline == null || x.Deadline >= today)
                     );
-                if (kind is not null)
-                    query = query.Where(x => x.Kind == kind);
+                query = PublicListingKinds.Apply(query, kind);
                 var categories = await query
                     .Where(x => x.Category != "")
                     .Select(x => x.Category)
@@ -54,7 +65,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
 
     /// <summary>Catalog cities plus admin-approved locations; also the member preference location catalog.</summary>
     public Task<List<string>> LocationsAsync(CancellationToken ct) =>
-        cache.GetOrCreateAsync(
+        CachedAsync(
             "locations",
             async entry =>
             {
@@ -69,7 +80,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
 
     /// <summary>ينفذ PublicDetailKindsAsync وفق قواعد PublicCatalog الحالية دون تغيير عقد المستدعين.</summary>
     public Task<HashSet<OpportunityKind>> PublicDetailKindsAsync(CancellationToken ct) =>
-        cache.GetOrCreateAsync(
+        CachedAsync(
             "public-detail-kinds",
             async entry =>
             {
@@ -86,7 +97,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
 
     /// <summary>Kind × city and organization pages that currently have at least one public opportunity.</summary>
     public Task<BrowseFacets> FacetsAsync(CancellationToken ct) =>
-        cache.GetOrCreateAsync(
+        CachedAsync(
             "browse-facets",
             async entry =>
             {
@@ -139,7 +150,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache)
 
     /// <summary>Current counts per kind and organizations for the home page header.</summary>
     public Task<HomeStatsDto> StatsAsync(CancellationToken ct) =>
-        cache.GetOrCreateAsync(
+        CachedAsync(
             "home-stats",
             async entry =>
             {

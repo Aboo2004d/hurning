@@ -26,7 +26,10 @@ const {chromium} = require(process.env.HIRING_PLAYWRIGHT_MODULE || 'playwright')
                         check(response.status() === 200, `Render ${url}`);
                         check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `No page overflow: ${screen} ${colorScheme} ${language} ${width}`);
                         if (screen === 'Overview') {
-                            check(await page.locator('.hero-stats').count() === 1 && await page.locator('.kind-tabs a').count() === 5, 'Approved hero, statistics and kind tabs remain present');
+                            check(await page.locator('.hero-stats').count() === 1 && await page.locator('.kind-tabs a').count() === 4, 'Hero keeps separate jobs/training and one combined procurement tab');
+                            check((await page.locator('.kind-tender .kind-count').textContent()).trim() === '6'
+                                && (await page.locator('.kind-training .kind-count').textContent()).trim() === '8',
+                                'Combined procurement count and training count are visible');
                             check(await page.locator('.org-avatar').first().textContent() === 'م', 'Approved organization initial remains present');
                             if (language === 'ar' && width === 1280 && colorScheme === 'light')
                                 await page.screenshot({path: path.join(__dirname, '../artifacts/public-design/home.png'), fullPage: true});
