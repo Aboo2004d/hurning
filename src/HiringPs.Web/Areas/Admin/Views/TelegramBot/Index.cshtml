@@ -14,7 +14,7 @@
     }
     <section class="tool-card integration-card" id="telegram-bot-setup">
         <header class="integration-card-heading">
-            <span class="integration-mark" aria-hidden="true"><span class="fa-brands fa-telegram"></span></span>
+            <span class="integration-mark" aria-hidden="true"><span class="fa-solid fa-telegram"></span></span>
             <div><h2>@T["TelegramBotConnection"]</h2><p class="muted">@T["TelegramBotState_" + Model.State]</p></div>
         </header>
         <span class="tool-status @(registered ? "tool-ready" : Model.Configured ? "tool-problem" : "tool-neutral")">@T["TelegramBotState_" + Model.State]</span>
@@ -37,9 +37,9 @@
         <p class="muted">@T["TelegramBotDeliveryNote"]</p>
         <p class="muted">@T["TelegramBotActivationNote"]</p>
         <div class="actions">
-            <a class="button button-outline" asp-controller="TelegramBot" asp-action="Index"><span class="fa-solid fa-rotate" aria-hidden="true"></span>@T["TelegramBotCheck"]</a>
+            <a class="button button-outline" asp-controller="TelegramBot" asp-action="Index"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 11a9 9 0 0 1 15.3-6.3L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.3 6.3L3 17M3 21v-4h4" /></svg>@T["TelegramBotCheck"]</a>
             <form asp-controller="TelegramBot" asp-action="Activate" method="post">
-                <button class="button" type="submit" disabled="@(!Model.Configured)"><span class="fa-solid fa-link" aria-hidden="true"></span>@T[registered ? "TelegramBotReregister" : "TelegramBotActivate"]</button>
+                <button class="button" type="submit" disabled="@(!Model.Configured)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>@T[registered ? "TelegramBotReregister" : "TelegramBotActivate"]</button>
             </form>
         </div>
     </section>
