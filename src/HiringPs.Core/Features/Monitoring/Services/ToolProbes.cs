@@ -61,7 +61,8 @@ public sealed class ToolProbes(IConfiguration configuration)
                 ToolState.Problem,
                 ex.Message.Contains("unavailable", StringComparison.OrdinalIgnoreCase)
                     ? "ToolMissing"
-                    : "ToolExecutionFailed"
+                    : "ToolExecutionFailed",
+                Detail(ex)
             );
         }
         catch (PlaywrightException ex)
@@ -72,12 +73,23 @@ public sealed class ToolProbes(IConfiguration configuration)
             )
                 ? "BrowserMissing"
                 : "BrowserLaunchFailed";
-            return new(tool, ToolState.Problem, code);
+            return new(tool, ToolState.Problem, code, Detail(ex));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return new(tool, ToolState.Problem, "AccessFailed");
+            return new(tool, ToolState.Problem, "AccessFailed", Detail(ex));
         }
+    }
+
+    // The first lines of the failure (exception type, message, Playwright's browser log)
+    // are shown to administrators so a server problem can be diagnosed without file access.
+    private static string Detail(Exception ex)
+    {
+        var lines = ex.Message.Split(
+            '\n',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
+        return (ex.GetType().Name + ": " + string.Join(" | ", lines.Take(12))).Truncate(1000);
     }
 
     /// <summary>يتحقق من وجود مفتاح AI وصيغة النموذج دون إرسال طلب مدفوع.</summary>
@@ -105,6 +117,7 @@ public sealed class ToolProbes(IConfiguration configuration)
                 Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                     ? channel
                     : null,
+                Args = BrowserSettings.Args(configuration),
             }
         );
         var page = await browser.NewPageAsync();

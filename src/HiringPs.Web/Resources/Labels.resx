@@ -1276,7 +1276,7 @@
         <value>اتصال AI الفعلي</value>
     </data>
   <data name="Tool_Chromium" xml:space="preserve">
-        <value>متصفح Chromium</value>
+        <value>المتصفح (Edge أو Chromium)</value>
     </data>
   <data name="Tool_PdfText" xml:space="preserve">
         <value>Poppler — قراءة النص</value>
@@ -2944,7 +2944,7 @@
     <value>إعدادات AI</value>
   </data>
   <data name="ToolKind_Chromium">
-    <value>متصفح Chromium</value>
+    <value>المتصفح (Edge أو Chromium)</value>
   </data>
   <data name="ToolKind_PdfText">
     <value>Poppler — قراءة النص</value>

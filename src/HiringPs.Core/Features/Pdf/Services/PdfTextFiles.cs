@@ -17,9 +17,12 @@ public static class PdfTextFiles
             configuration["Pdf:WorkDirectory"]
             ?? Path.Combine(Path.GetTempPath(), "hiring-pdf-work");
         var path = Path.GetFullPath(configured, AppContext.BaseDirectory);
+        // Only the app's own static web root is public. IIS sites commonly live under
+        // C:\inetpub\wwwroot\<site>, so a "wwwroot" segment above the app folder is fine.
+        var webRoot = Path.TrimEndingDirectorySeparator(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
         if (
-            path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .Any(x => x.Equals("wwwroot", StringComparison.OrdinalIgnoreCase))
+            path.Equals(webRoot, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(webRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
         )
             throw new ContentNeedsReviewException("PDF work directory must be outside wwwroot.");
         return path;

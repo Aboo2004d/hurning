@@ -1276,7 +1276,7 @@
         <value>Live AI connectivity</value>
     </data>
   <data name="Tool_Chromium" xml:space="preserve">
-        <value>Chromium browser</value>
+        <value>Browser (Edge or Chromium)</value>
     </data>
   <data name="Tool_PdfText" xml:space="preserve">
         <value>Poppler — text extraction</value>
@@ -2944,7 +2944,7 @@
     <value>AI configuration</value>
   </data>
   <data name="ToolKind_Chromium">
-    <value>Chromium browser</value>
+    <value>Browser (Edge or Chromium)</value>
   </data>
   <data name="ToolKind_PdfText">
     <value>Poppler — text extraction</value>

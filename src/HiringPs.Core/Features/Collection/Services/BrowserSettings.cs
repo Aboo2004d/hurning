@@ -33,6 +33,13 @@ public static class BrowserSettings
         return Path.GetFullPath(path, AppContext.BaseDirectory);
     }
 
+    /// <summary>
+    /// وسائط إضافية للمتصفح من Browser:Args (مثل --disable-gpu) لبيئات الاستضافة المقيدة،
+    /// تُضبط من الإعدادات دون إعادة نشر.
+    /// </summary>
+    public static IEnumerable<string>? Args(IConfiguration configuration) =>
+        configuration.GetSection("Browser:Args").Get<string[]>() is { Length: > 0 } args ? args : null;
+
     /// <summary>يحسب مسار المتصفح التنفيذي الاختياري من الإعدادات.</summary>
     public static string? ExecutablePath(IConfiguration configuration) =>
         configuration["Browser:ExecutablePath"] is { Length: > 0 } path

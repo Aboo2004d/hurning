@@ -41,6 +41,7 @@ public sealed class BrowserHost(IConfiguration configuration, ILogger<BrowserHos
                         Channel = configuration["Browser:Channel"] is { Length: > 0 } channel
                             ? channel
                             : null,
+                        Args = BrowserSettings.Args(configuration),
                     }
                 );
             }
