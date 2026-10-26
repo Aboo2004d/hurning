@@ -24,8 +24,10 @@ internal static class BrowserFallbackChecks
                 method.Name == "get_Chromium" ? browserType : throw new NotSupportedException());
             try
             {
-                var result = await BrowserSettings.LaunchAsync(runtime, new ConfigurationBuilder().Build());
-                if (failures == 2 || result != expected) throw new Exception("Incorrect browser launch result");
+                var result = await BrowserSettings.LaunchWithDetailsAsync(runtime, new ConfigurationBuilder().Build());
+                if (failures == 2 || result.Browser != expected) throw new Exception("Incorrect browser launch result");
+                if (result.Name != (failures == 0 ? "Microsoft Edge" : "Chromium") || result.UsedFallback != (failures == 1))
+                    throw new Exception("Browser identity must match the successful launch attempt");
             }
             catch (PlaywrightException ex) when (failures == 2)
             {

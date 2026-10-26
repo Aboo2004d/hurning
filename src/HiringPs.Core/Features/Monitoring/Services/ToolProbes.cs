@@ -99,7 +99,8 @@ public sealed class ToolProbes(IConfiguration configuration)
     private async Task<ToolProbe> ChromiumAsync()
     {
         using var runtime = await BrowserSettings.CreateAsync(configuration);
-        await using var browser = await BrowserSettings.LaunchAsync(runtime, configuration);
+        var launch = await BrowserSettings.LaunchWithDetailsAsync(runtime, configuration);
+        await using var browser = launch.Browser;
         var page = await browser.NewPageAsync();
         page.SetDefaultTimeout(5000);
         await page.SetContentAsync("<!doctype html><title>Tool diagnostic</title>");
@@ -108,7 +109,7 @@ public sealed class ToolProbes(IConfiguration configuration)
             "Chromium",
             correct ? ToolState.Ready : ToolState.Problem,
             correct ? "BrowserReady" : "BrowserLaunchFailed",
-            correct ? browser.Version.Truncate(80) : ""
+            correct ? launch.Display : "JavaScript verification failed; " + launch.Display
         );
     }
 

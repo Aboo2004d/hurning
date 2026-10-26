@@ -227,6 +227,10 @@ internal static class ToolChecks
                     probe.State == ToolState.Ready,
                     "real worker-environment probe: " + key + " / " + probe.Code
                 );
+                if (key == "Chromium")
+                    Check(probe.Detail.Contains("Version ") &&
+                        (probe.Detail.StartsWith("Microsoft Edge;") || probe.Detail.StartsWith("Chromium;") || probe.Detail.StartsWith("Custom executable;")),
+                        "browser probe reports its actual launch selection and version");
             }
             Check(
                 !Directory.EnumerateFiles(settings["Pdf:WorkDirectory"]!).Any(),

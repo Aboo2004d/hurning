@@ -55,6 +55,13 @@ public static class BrowserSettings
         IPlaywright runtime,
         IConfiguration configuration,
         float timeout = 20000
+    ) => (await LaunchWithDetailsAsync(runtime, configuration, timeout)).Browser;
+
+    /// <summary>يشغل المتصفح ويعيد هويته من مسار الإطلاق الفعلي بدل تخمينها من رقم الإصدار.</summary>
+    public static async Task<BrowserLaunchResultDto> LaunchWithDetailsAsync(
+        IPlaywright runtime,
+        IConfiguration configuration,
+        float timeout = 20000
     )
     {
         var options = new BrowserTypeLaunchOptions
@@ -65,12 +72,12 @@ public static class BrowserSettings
             ExecutablePath = ExecutablePath(configuration),
         };
         if (options.ExecutablePath is not null)
-            return await runtime.Chromium.LaunchAsync(options);
+            return new(await runtime.Chromium.LaunchAsync(options), "Custom executable", false);
 
         options.Channel = "msedge";
         try
         {
-            return await runtime.Chromium.LaunchAsync(options);
+            return new(await runtime.Chromium.LaunchAsync(options), "Microsoft Edge", false);
         }
         catch (PlaywrightException edgeError)
         {
@@ -78,7 +85,7 @@ public static class BrowserSettings
             options.Channel = null;
             try
             {
-                return await runtime.Chromium.LaunchAsync(options);
+                return new(await runtime.Chromium.LaunchAsync(options), "Chromium", true);
             }
             catch (PlaywrightException chromiumError)
             {
