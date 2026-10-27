@@ -208,6 +208,48 @@ public static class WorkflowChecks
             Check(Dates(quote, new() { Deadline = new(2026, 10, day), DeadlineEvidence = quote }).Errors.Count > 0,
                 "application opening cannot be accepted as closing: " + quote);
         }
+        foreach (var opening in new[]
+        {
+            "يبدأ موعد استقبال الطلبات اعتبارا من يوم الثلاثاء الموافق 14/07/2026",
+            "يبدأ استقبال الطلبات اعتباراً من يوم الثلاثاء الموافق 14/07/2026",
+            "Applications open starting from 14/07/2026",
+        })
+        {
+            var openingDate = new DateOnly(2026, 7, 14);
+            const string closing = "آخر موعد لتقديم الطلبات : 08-11-2026";
+            var input = new ExtractedOpportunity
+            {
+                PublicationDate = openingDate, PublicationEvidence = opening,
+                Deadline = new(2026, 11, 8), DeadlineEvidence = closing,
+                OtherDates = [new() { Kind = OpportunityDateKind.Publication,
+                    Date = openingDate, Label = opening, Evidence = opening }],
+            };
+            var openingResult = Dates(opening + " " + closing, input);
+            Check(openingResult.Errors.Count == 0 && openingResult.Dates.Count == 2
+                && openingResult.Dates.Count(x => x.Kind == OpportunityDateKind.Other) == 1
+                && openingResult.Dates.Any(x => x.Kind == OpportunityDateKind.Deadline && x.Date == input.Deadline)
+                && !openingResult.Dates.Any(x => x.Kind == OpportunityDateKind.Publication),
+                "verified application opening is deduplicated as Other without losing closing: " + opening);
+            Check(input.PublicationDate == openingDate && input.OtherDates[0].Kind == OpportunityDateKind.Publication,
+                "opening correction preserves raw extracted dates for audit");
+            Check(Dates(opening, new() { PublicationDate = openingDate, PublicationEvidence = opening })
+                is { Errors.Count: 0 } noClosing && !noClosing.Dates.Any(x => x.Kind == OpportunityDateKind.Deadline),
+                "opening without deadline does not invent a closing date");
+            Check(Dates("different source", input).Errors.Count > 0,
+                "opening correction requires original quotation");
+            Check(Dates(opening, new() { PublicationDate = openingDate.AddDays(1), PublicationEvidence = opening }).Errors.Count > 0,
+                "opening correction rejects incorrect date value");
+        }
+        const string openingRange = "يبدأ استقبال الطلبات اعتبارا من 14/07/2026 ولغاية 08/11/2026";
+        Check(Dates(openingRange, new() { PublicationDate = new(2026, 11, 8), PublicationEvidence = openingRange }).Errors.Count > 0,
+            "range closing cannot be corrected as application opening");
+        const string publishedQuote = "تاريخ النشر 14/07/2026";
+        Check(Dates(publishedQuote, new() { PublicationDate = new(2026, 7, 14), PublicationEvidence = publishedQuote })
+            .Dates.Single().Kind == OpportunityDateKind.Publication,
+            "explicit publication date retains its kind");
+        const string unsupportedPublication = "تاريخ بدء العمل 14/07/2026";
+        Check(Dates(unsupportedPublication, new() { PublicationDate = new(2026, 7, 14), PublicationEvidence = unsupportedPublication }).Errors.Count > 0,
+            "other unsupported publication events still require review");
         const string closingOnly = "و لغاية يوم الاربعاء الموافق 2026/08/12";
         Check(Dates(closingOnly, new() { Deadline = new(2026, 8, 12), DeadlineEvidence = closingOnly }).Errors.Count == 0,
             "semantic closing date accepts year-first slash quotation");

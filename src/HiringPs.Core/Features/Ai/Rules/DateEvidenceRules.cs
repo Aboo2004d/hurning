@@ -53,8 +53,9 @@ public static class DateEvidenceRules
         entries.AddRange(opportunity.OtherDates ?? []);
         var errors = new List<string>();
         var valid = new List<ExtractedDate>();
-        foreach (var entry in entries)
+        foreach (var extracted in entries)
         {
+            var entry = extracted;
             if (entry is null)
             {
                 errors.Add("Date validation: missing date record.");
@@ -62,6 +63,21 @@ public static class DateEvidenceRules
             }
             entry.Evidence ??= "";
             entry.Label ??= "";
+            // Preserve a verified opening event without accepting it as publication.
+            // Work on a copy so the original model response remains available for audit.
+            if (entry.Kind == OpportunityDateKind.Publication
+                && TextEvidence.Contains(source, entry.Evidence)
+                && IsApplicationOpening(entry)
+                && !MatchesRole(entry))
+            {
+                entry = new ExtractedDate
+                {
+                    Kind = OpportunityDateKind.Other,
+                    Date = entry.Date,
+                    Label = entry.Evidence,
+                    Evidence = entry.Evidence,
+                };
+            }
             if (
                 !Enum.IsDefined(entry.Kind)
                 || !TextEvidence.Contains(source, entry.Evidence)
@@ -125,16 +141,7 @@ public static class DateEvidenceRules
     private static bool MatchesRole(ExtractedDate entry)
     {
         var quote = TextEvidence.Normalize(entry.Evidence);
-        var dates = Regex.Matches(
-            quote,
-            Numeric
-                + @"|\d{1,2}\s+(?:"
-                + Months
-                + @")\.?[\s,،]+\d{4}|(?:"
-                + Months
-                + @")\.?\s+\d{1,2}(?:st|nd|rd|th)?[\s,،]+\d{4}",
-            RegexOptions.IgnoreCase
-        );
+        var dates = QuotedDates(quote);
         foreach (Match date in dates)
         {
             if (!ExtractionValidator.DateEvidenceMatches(date.Value, entry.Date))
@@ -180,6 +187,28 @@ public static class DateEvidenceRules
         }
         return false;
     }
+
+    /// <summary>يثبت بداية استقبال الطلبات من الاقتباس وقيمته، دون تحويل نهاية النطاق إلى بداية.</summary>
+    private static bool IsApplicationOpening(ExtractedDate entry)
+    {
+        var quote = TextEvidence.Normalize(entry.Evidence);
+        if (!Regex.IsMatch(quote,
+            @"(?:يبدا|تبدا|بدء|بداي[ةه])\s+(?:موعد\s+)?(?:استقبال|تلقي|تقديم)\s+الطلبات|(?:applications?|registration)\s+(?:open|opens|opening|start|starts)",
+            RegexOptions.IgnoreCase))
+            return false;
+        var dates = QuotedDates(quote);
+        return dates.Cast<Match>().Any(date =>
+            ExtractionValidator.DateEvidenceMatches(date.Value, entry.Date)
+            && IsOpeningDate(quote, dates, date));
+    }
+
+    /// <summary>يحدد التواريخ الصريحة في الاقتباس بالقواعد نفسها لجميع أنواع الأحداث.</summary>
+    private static MatchCollection QuotedDates(string quote) => Regex.Matches(
+        quote,
+        Numeric + @"|\d{1,2}\s+(?:" + Months
+            + @")\.?[\s,،]+\d{4}|(?:" + Months
+            + @")\.?\s+\d{1,2}(?:st|nd|rd|th)?[\s,،]+\d{4}",
+        RegexOptions.IgnoreCase);
 
     /// <summary>يرفض تاريخ بداية الإجراء عند استخدامه كنهاية، دون افتراض أن آخر تاريخ في النص هو الصحيح.</summary>
     private static bool IsOpeningDate(string quote, MatchCollection dates, Match date)
