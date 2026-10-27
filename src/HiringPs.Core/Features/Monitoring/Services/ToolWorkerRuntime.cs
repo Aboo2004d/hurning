@@ -22,6 +22,9 @@ public sealed class ToolWorkerRuntime
             }
         );
 
+    /// <summary>ينهي علامة الجمع عند الخروج أو الإلغاء دون ادعاء نجاح الجولة.</summary>
+    public void Stop() => Volatile.Write(ref snapshot, Snapshot with { Collecting = false });
+
     /// <summary>يسجل نجاح جولة الجمع وتوقيتها في حالة العامل.</summary>
     public void Succeed() =>
         Volatile.Write(

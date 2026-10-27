@@ -129,6 +129,8 @@ public class SourcesController : AdminControllerBase
         CancellationToken ct
     )
     {
+        if (ApplicationRuntime.Mode(configuration) != ApplicationRuntimeMode.Local)
+            return StatusCode(409, new { error = "SourceSetupLocalOnly" });
         if (!await SourceSetupGate.WaitAsync(0, ct))
             return StatusCode(429, new { error = "SourceSetupBusy" });
         try

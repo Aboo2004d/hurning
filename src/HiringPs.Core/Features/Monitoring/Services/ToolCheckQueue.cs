@@ -72,7 +72,8 @@ public static class ToolCheckQueue
         IConfiguration config,
         ToolWorkerRuntime runtime,
         IServiceProvider services,
-        CancellationToken ct
+        CancellationToken ct,
+        long? maximumRequestId = null
     )
     {
         await using var gate = new SqlRunLock(
@@ -92,10 +93,9 @@ public static class ToolCheckQueue
                         .SetProperty(x => x.Outcome, "Interrupted"),
                 ct
             );
-        var request = await db
-            .ToolCheckRequests.Where(x => x.Status == ToolRequestStatus.Pending)
-            .OrderBy(x => x.Id)
-            .FirstOrDefaultAsync(ct);
+        var pending = db.ToolCheckRequests.Where(x => x.Status == ToolRequestStatus.Pending);
+        if (maximumRequestId is not null) pending = pending.Where(x => x.Id <= maximumRequestId);
+        var request = await pending.OrderBy(x => x.Id).FirstOrDefaultAsync(ct);
         if (request is null)
             return;
         request.Status = ToolRequestStatus.Running;

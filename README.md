@@ -1,3 +1,5 @@
+> **Current deployment:** Web + Core on the server; explicit local Worker collection commands, shared SQL revision cache. See [Local collection](Docs/LOCAL-COLLECTION.md). Earlier separate always-running Worker instructions below are historical.
+
 # Hiring.ps
 
 منصة فرص فلسطينية: وظائف وتدريب وعطاءات ومناقصات. ASP.NET Core 10 MVC وSQL Server وعامل .NET مستقل يستخدم Playwright/Chromium.

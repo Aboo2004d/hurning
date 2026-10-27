@@ -1,3 +1,5 @@
+> Current execution roles and cache synchronization: [LOCAL-COLLECTION.md](LOCAL-COLLECTION.md). Server jobs and local collection are deliberately separated; previous automatic collector deployment descriptions are historical.
+
 # تنظيم المشروع وقواعد جودة الكود
 
 الموقع والعامل تطبيقان يستخدمان مكتبة Core مشتركة. فصل لحظة وجوال باي وتليجرام والمتصفح وPDF وAI والنشر يتم داخل المكتبة بالخدمات وحقن الاعتماديات؛ لا تحتاج هذه المجالات إلى تطبيقات مستقلة أو اتصالات شبكة داخلية.

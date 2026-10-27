@@ -3268,4 +3268,8 @@
   <data name="TelegramBotIssue_Timeout" xml:space="preserve"><value>The request to Telegram timed out.</value></data>
   <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>Bot API returned an invalid response.</value></data>
   <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>Telegram bot webhook registration</value></data>
+  <data name="SourceSetupLocalOnly" xml:space="preserve"><value>Browser-assisted source setup is available on the local site only. Open the site on the collection computer to preview a source.</value></data>
+  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>Tool checks run on the local collection computer. Queued requests remain saved until the local worker runs.</value></data>
+  <data name="OperationEvent_ManualRound" xml:space="preserve"><value>Local collection round started</value></data>
+  <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>Local collection round finished</value></data>
 </root>

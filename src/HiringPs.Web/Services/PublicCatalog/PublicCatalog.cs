@@ -6,12 +6,13 @@ using Microsoft.Extensions.Caching.Memory;
 namespace HiringPs.Web.Models;
 
 /// <summary>مكون PublicCatalog ضمن مجال Services؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
-public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalogCache? coherence = null)
+public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalogCache? coherence = null, PublicCatalogRevisionMonitor? revisionMonitor = null)
 {
     private readonly PublicCatalogCache coherence = coherence ?? new();
 
     private async Task<T> CachedAsync<T>(string key, Func<ICacheEntry, Task<T>> create)
     {
+        if (revisionMonitor is not null) await revisionMonitor.RefreshAsync(CancellationToken.None);
         var snapshot = coherence.Snapshot();
         return (await cache.GetOrCreateAsync(key + ":" + snapshot.Version, entry =>
         {

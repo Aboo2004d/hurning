@@ -11,12 +11,14 @@ namespace HiringPs.Core;
 public class HiringDb(
     DbContextOptions<HiringDb> options,
     PaymentEnvironment? paymentEnvironment = null,
-    IPublicCatalogInvalidator? publicCatalog = null
+    IPublicCatalogInvalidator? publicCatalog = null,
+    PublicCatalogRevisionWriter? revisionWriter = null
 ) : IdentityDbContext<IdentityUser>(options)
 {
     private readonly OperationTracking operations = new();
 
     public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
+    public DbSet<PublicCatalogRevision> PublicCatalogRevisions => Set<PublicCatalogRevision>();
     public DbSet<SocialTemplateVersion> SocialTemplateVersions => Set<SocialTemplateVersion>();
     public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
     public DbSet<SocialPublication> SocialPublications => Set<SocialPublication>();
@@ -109,6 +111,7 @@ public class HiringDb(
         b.ApplyConfiguration(new MembershipRuntimeStateConfiguration());
         b.ApplyConfiguration(new TelegramInboxConfiguration());
         b.ApplyConfiguration(new PaymentGatewaySettingConfiguration());
+        b.ApplyConfiguration(new PublicCatalogRevisionConfiguration());
         b.ApplyConfiguration(new MemberProfileConfiguration());
         b.ApplyConfiguration(new MemberPreferenceConfiguration());
         b.ApplyConfiguration(new SavedOpportunityConfiguration());
@@ -253,6 +256,13 @@ public class HiringDb(
         else publicCatalog?.Invalidate();
     }
 
+    /// <summary>يسجل إصدار تغييرات SQL الجماعية ضمن معاملة يستدعيها الكاتب.</summary>
+    public async Task PublicCatalogBulkChangedAsync(CancellationToken ct)
+    {
+        if (revisionWriter is not null) await revisionWriter.IncrementAsync(this, ct);
+        PublicCatalogChanged();
+    }
+
     /// <summary>يطبق الإبطال المؤجل بعد اعتماد معاملة الفرص.</summary>
     public void CommitPublicCatalogChanges()
     {
@@ -269,8 +279,14 @@ public class HiringDb(
         NormalizeRecords();
         operations.Stage(this);
         var changed = HasCatalogChanges();
+        using var transaction = changed && revisionWriter is not null && Database.CurrentTransaction is null ? Database.BeginTransaction() : null;
         var saved = base.SaveChanges(acceptAllChangesOnSuccess);
-        if (changed && saved > 0) PublicCatalogChanged();
+        if (changed && saved > 0)
+        {
+            revisionWriter?.Increment(this);
+            PublicCatalogChanged();
+        }
+        transaction?.Commit();
         return saved;
     }
 
@@ -283,8 +299,15 @@ public class HiringDb(
         await NormalizeRecordsAsync(cancellationToken);
         operations.Stage(this);
         var changed = HasCatalogChanges();
+        await using var transaction = changed && revisionWriter is not null && Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(cancellationToken) : null;
         var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-        if (changed && saved > 0) PublicCatalogChanged();
+        if (changed && saved > 0)
+        {
+            if (revisionWriter is not null) await revisionWriter.IncrementAsync(this, cancellationToken);
+            PublicCatalogChanged();
+        }
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         return saved;
     }
 }

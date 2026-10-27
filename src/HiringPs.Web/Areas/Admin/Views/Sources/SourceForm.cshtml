@@ -1,4 +1,5 @@
 @model SourceInput
+@inject IConfiguration Configuration
 @{
     ViewData["Title"] = T[Model.Id == 0 ? "AddSource" : "EditSource"].Value;
 }
@@ -6,12 +7,13 @@
 <section class="edit-form source-setup" data-source-setup>
     <h2>@T["SourceSetupTitle"]</h2>
     <p class="muted">@T["SourceSetupIntro"]</p>
+    @if (ApplicationRuntime.Mode(Configuration) != ApplicationRuntimeMode.Local) { <p class="notice">@T["SourceSetupLocalOnly"]</p> }
     <form asp-controller="Sources" asp-action="SuggestSource" method="post" data-setup-form>
         <input type="hidden" name="sourceId" value="@Model.Id" />
         <label for="source-setup-url">@T["SourceSetupWebsite"]</label>
         <div class="source-setup-input">
             <input id="source-setup-url" name="url" type="url" value="@Model.Url" dir="ltr" maxlength="1000" required placeholder="https://example.ps" />
-            <button type="submit" data-setup-submit>@T["SourceSetupSuggest"]</button>
+            <button type="submit" disabled="@(ApplicationRuntime.Mode(Configuration) != ApplicationRuntimeMode.Local)" data-setup-submit>@T["SourceSetupSuggest"]</button>
         </div>
         <p class="muted">@T["SourceSetupCost"]</p>
     </form>
@@ -45,7 +47,7 @@
             "SourceSetupHttpFailed", "SourceSetupRequestReference", "SourceSetupNetworkFailed", "SourceSetupSampleInvalid", "SourceSetupBrowserFailed",
             "SourceSetupDuplicate", "SourceSetupInvalidUrl", "SourceSetupSocialDeferred", "SourceSetupUnsupported", "SourceSetupUnseenUrl",
             "SourceSetupInvalidReply", "SourceSetupNoLinks", "SourceSetupPageTooLarge", "SourceSetupInteractivePagination",
-            "SourceSetupPaginationMissing", "SourceSetupAiMissing", "SourceSetupAiRejected", "SourceSetupBusy", "SourceSetupTimeout"
+            "SourceSetupPaginationMissing", "SourceSetupAiMissing", "SourceSetupAiRejected", "SourceSetupBusy", "SourceSetupTimeout", "SourceSetupLocalOnly"
         })
         {
             <span data-code="@key">@T[key]</span>

@@ -1,3 +1,5 @@
+> **Current topology:** browser/PDF execution and tool checks run on the local collection computer. Server Web runs lightweight services only. See [LOCAL-COLLECTION.md](LOCAL-COLLECTION.md).
+
 # صفحة الأدوات في لوحة الإدارة
 
 الحالة: أضيفت بتاريخ 16 أكتوبر 2026. افتح لوحة التحكم ← **الأدوات**، أو `/Admin/Tools`. الرابط موجود في قائمة الأدمن المكتبية وقائمة الهاتف، والصفحة عربية وإنجليزية.

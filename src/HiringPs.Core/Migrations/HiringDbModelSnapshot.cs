@@ -1519,6 +1519,26 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.PublicCatalogRevision", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PublicCatalogRevisions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Version = 0L
+                        });
+                });
+
             modelBuilder.Entity("HiringPs.Core.RetentionPolicy", b =>
                 {
                     b.Property<int>("Id")

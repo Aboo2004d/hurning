@@ -17,34 +17,43 @@ public sealed class ToolMonitor(
     protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
         Task.WhenAll(PulseLoopAsync(stoppingToken), CheckLoopAsync(stoppingToken));
 
+    /// <summary>يبقي العامل اليدوي ظاهرًا أثناء الجولة دون تشغيل حلقة مهام دائمة.</summary>
+    public Task PulseAsync(CancellationToken ct) => PulseLoopAsync(ct);
+
+    /// <summary>يحفظ لقطة واحدة للنبضة، بما فيها الحالة النهائية قبل خروج العامل المحلي.</summary>
+    public async Task PublishStateAsync(CancellationToken ct)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
+        var state = await db.ToolWorkers.SingleOrDefaultAsync(x => x.Id == runtime.Id, ct);
+        if (state is null)
+        {
+            state = new()
+            {
+                Id = runtime.Id,
+                StartedAt = runtime.StartedAt,
+                Host = Environment.MachineName.Truncate(200),
+                Account = Environment.UserName.Truncate(200),
+            };
+            db.ToolWorkers.Add(state);
+        }
+        var snapshot = runtime.Snapshot;
+        state.At = DateTimeOffset.UtcNow;
+        state.Collecting = snapshot.Collecting;
+        state.LastLoopAt = snapshot.LastLoopAt;
+        state.LastSuccessAt = snapshot.LastSuccessAt;
+        state.LastFailureAt = snapshot.LastFailureAt;
+        state.ErrorType = snapshot.ErrorType;
+        await db.SaveChangesAsync(ct);
+    }
+
     private async Task PulseLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
             try
             {
-                await using var scope = scopes.CreateAsyncScope();
-                var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
-                var state = await db.ToolWorkers.SingleOrDefaultAsync(x => x.Id == runtime.Id, ct);
-                if (state is null)
-                {
-                    state = new()
-                    {
-                        Id = runtime.Id,
-                        StartedAt = runtime.StartedAt,
-                        Host = Environment.MachineName.Truncate(200),
-                        Account = Environment.UserName.Truncate(200),
-                    };
-                    db.ToolWorkers.Add(state);
-                }
-                var snapshot = runtime.Snapshot;
-                state.At = DateTimeOffset.UtcNow;
-                state.Collecting = snapshot.Collecting;
-                state.LastLoopAt = snapshot.LastLoopAt;
-                state.LastSuccessAt = snapshot.LastSuccessAt;
-                state.LastFailureAt = snapshot.LastFailureAt;
-                state.ErrorType = snapshot.ErrorType;
-                await db.SaveChangesAsync(ct);
+                await PublishStateAsync(ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {

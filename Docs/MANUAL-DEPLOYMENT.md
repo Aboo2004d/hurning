@@ -1,97 +1,13 @@
-# النشر اليدوي على Windows VPS
-التطبيق قابل للتجهيز والنقل يدويًا. تشغيله الفعلي بالكامل على VPS لم يُختبر هنا؛ اختار المستخدم نموذج AI وجربه بالفعل.
+# Manual deployment
 
-## ما سيتم تثبيته على السيرفر
-| المكوّن | الحاجة |
-|---|---|
-| IIS | استضافة الموقع عبر HTTP/HTTPS |
-| .NET 10 Hosting Bundle x64 | Runtime وASP.NET Core Runtime ووحدة IIS (ANCM)؛ لا يلزم SDK على السيرفر |
-| IIS Application Initialization | بدء الموقع تلقائيًا مع Preload عند تشغيل/إعادة تشغيل IIS |
-| Chromium وملفات Playwright المتوافقة | تشغيل JavaScript وجمع الصفحات بواسطة العامل، داخل مسار متصفح محدد |
-| Poppler وTesseract 5.x مع ara+eng | قراءة PDF العربي والمصور محليًا؛ إعداد الأدوات والأرشيف في [دليل PDF](PDF-TEXT.md) |
-| Windows Service باسم HiringPsCollector | بدء العامل تلقائيًا وإعادة تشغيله عند التعطل |
-| SQL Server / SQL Express إذا لم يكن متوفرًا | قاعدة إنتاجية بصلاحيات وترخيص مناسبين؛ لا نستخدم LocalDB تحت حساب خدمة إنتاجية |
+Current topology is documented in [LOCAL-COLLECTION.md](LOCAL-COLLECTION.md).
 
-لا Python ولا Crawl4AI ولا Node.js منفصل ولا Redis ولا خدمة Firecrawl مدفوعة مطلوبة. Playwright يضم driver ومتطلبات متصفح؛ الاسم .NET لا يعني انعدام ملفات المتصفح. تجديد شهادة HTTPS يحتاج آلية تجديد يختارها مسؤول السيرفر.
+1. Publish **HiringPs.Web** from Visual Studio using Folder Publish, or run `scripts/publish.ps1`.
+2. Upload the Web package only. Core is included automatically. Default publishing excludes browsers, Playwright driver files and native PDF/OCR tools.
+3. Keep `Runtime:Mode=Server` on hosting. The site runs payment/Telegram/member/distribution jobs; it never starts the collector.
+4. The new PublicCatalogRevision migration must be applied before the updated local collector. The existing Web startup applies migrations; do not delete/recreate the database.
+5. Stop any old standalone collection service. Remove obsolete browser/native tool folders from the old deployment only after checking they are not application data; fresh publishing does not remove files already on the hosting account.
+6. Run the local Web with its Local profile, connected to the same SQL database. Start `scripts/collect.ps1` in another terminal for all sources, or pass `-SourceId`.
+7. Validate a local round, the shared operation/tool results, server cache refresh after five seconds, and server member/Telegram jobs. Register the Telegram webhook on the public site.
 
-## 1. تجهيز الحزم على جهازك
-```powershell
-cd F:\Uni\Files\Works\HiringPs
-.\scripts\publish.ps1
-```
-
-المخرجات: `artifacts/manual-publish/web` و`artifacts/manual-publish/worker`.
-بديل يدوي من Visual Studio: Publish → Folder لكل مشروع، مع Worker على win-x64 وAppHost مفعّل. انقل ناتج Publish لا مجلد المصدر ولا bin كاملًا.
-
-## 2. نسخة احتياطية وتجهيز SQL
-- خذ نسخة احتياطية من القاعدة قبل تحديث إصدار قائم.
-- ضع اتصال الإنتاج الصحيح خارجيًا لكل من الموقع والعامل؛ لا تغير إعدادات اللوكال التي ضبطتها.
-- سلوكك الحالي محفوظ: الموقع يطبق المهاجرات وSeedData تلقائيًا عند أول تشغيل. حساب SQL للموقع يحتاج صلاحيات schema اللازمة وقت التحديث. لا توجد عملية حذف/إعادة إنشاء قاعدة في أدوات النشر.
-- مهاجرات الساعة والطلبات اليدوية أضيفت؛ ملفات مهاجراتك السابقة لم تتغير. تحديث snapshot مولّد مطلوب لوصف النموذج الجديد.
-- غيّر كلمة المرور الأولية بعد التهيئة وقبل إتاحة الإدارة للعامة؛ لا تتضمن الوثيقة قيمتها ولا تغيّر SeedData.
-
-## 3. نقل الملفات وتهيئة IIS
-مثال تنظيم يمكنك تغييره:
-```
-C:\Apps\HiringPs\Web
-C:\Apps\HiringPs\Worker
-C:\Apps\HiringPs\Browsers
-C:\Apps\HiringPs\Keys
-```
-
-1. فعّل IIS ثم ثبّت Hosting Bundle. إن ثُبت Bundle قبل IIS، أعد إصلاح تثبيته بعد IIS.
-2. أنشئ Application Pool مخصصًا x64، No Managed Code، واضبط Start Mode=AlwaysRunning.
-3. أنشئ موقعًا يشير إلى Web، مع Preload Enabled وربط hiring.ps وHTTPS وشهادة صالحة. اضبط DNS وعناوين binding بما يناسب VPS.
-4. اضبط إعدادات التشغيل بشكل محمي: ConnectionStrings__Hiring وDataProtection__KeyPath إلى Keys خارج wwwroot. حساب الموقع يحتاج كتابة مفاتيح الحماية؛ لا تمنح Everyone الوصول.
-5. ابدأ الموقع، وتحقق من تطبيق المهاجرات والبيانات الأولية ونجاح /Admin قبل تشغيل العامل.
-
-## 4. تثبيت متصفح العامل
-اضبط `Browser:BrowsersPath` في appsettings.json أولًا. القيمة النسبية `.playwright-browsers` تُحسب من مجلد تشغيل التطبيق. إذا أردت مجلدًا مشتركًا بين Web وWorker، اكتب المسار الكامل نفسه في ملفيهما. على VPS، من Worker:
-```powershell
-.\HiringPs.Worker.exe --install-browser
-```
-إذا كانت حزمة النشر تتضمن المتصفح الموافق لنظام VPS وإصدار Playwright فلا يلزم تنزيله مرة أخرى. التحميل قد يتطلب مئات MB. هذا ينشئ Chromium ومتطلباته، وليس تثبيت Chrome مرئي يدويًا. امنح حساب العامل صلاحية قراءة/تنفيذ ملفات المتصفح وكتابة المجلدات اللازمة فقط.
-
-## 5. تثبيت العامل وتشغيله تلقائيًا
-انسخ سكربت install-worker.ps1 إلى مكان إداري وشغله من PowerShell مرتفع الصلاحيات على VPS:
-```powershell
-.\install-worker.ps1 -WorkerDirectory "C:\Apps\HiringPs\Worker" -ServiceAccount ".\HiringCollector"
-```
-
-الحساب المخصص ينشئه مسؤول السيرفر؛ لا نشغّل Chromium تحت LocalSystem. السكربت يطلب اعتماد الحساب واتصال SQL والمفتاح بشكل آمن، ويقيد قراءة إعدادات الخدمة، ويضبط Automatic وRecovery. لا يبدأ الخدمة قبل اكتمال الإعداد.
-
-```powershell
-Start-Service HiringPsCollector
-Get-Service HiringPsCollector
-```
-
-بعد الإعداد يعمل العامل مستقلًا عن زيارات الموقع وخمول IIS، ويتابع الجدولة والطلبات والطوابير. ملفات البرامج تُحدّث بعد إيقاف الخدمة، ثم تعاد بداية الموقع لتطبيق المهاجرات وبعده العامل.
-
-## 6. اختبار التشغيل الذاتي
-- لا تفتح الموقع لمدة مناسبة وتحقق من استمرار Heartbeat والجمع حسب موعد المصدر.
-- أعد تشغيل VPS وتحقق من عودة IIS والعامل دون تشغيل يدوي.
-- اضغط جمع المصدر الأول وتحقق من ظهور الجولة الخاصة به وعدم تحريك مواعيد المصادر الأخرى.
-- اختبر 00:00 / 24 ساعة ودورية قصيرة في بيئة اختبار؛ راقب الموعد المقبل بتوقيت فلسطين.
-- اختبر قطع الشبكة وفشل مصدر وعودة SQL، ثم الاستئناف وعدم التكرار.
-- تحقق من انتهاء الموعد الموثوق، وبقاء الموعد المجهول، ومن الانتظار عند نفاد AI.
-- نسخ احتياطي خارج VPS واستعادة تجريبية ومراقبة امتلاء القرص وأخطاء الخدمة.
-
-الأتمتة تخص التشغيل الطبيعي والاستئناف والجدولة. تغيير قالب مصدر، نقص الصلاحيات، انتهاء الحصة، والحالات الملتبسة لا تُحل بالتخمين؛ تظهر للإدارة. لا نضمن تشغيلًا كاملًا دون مفتاح AI أو اتصال سليم أو إعداد خدمة صحيح.
-
-## حالة الجاهزية
-الحزم وخطوات النقل اليدوي قابلة للتجهيز محليًا. اعتماد النشر الإنتاجي يحتاج اختبار المفتاح والمصادر وVPS وHTTPS والنسخ الاحتياطي. لم تُثبّت IIS أو خدمة Windows على جهازك أثناء هذه المهمة، ولم ينشر شيء إلى VPS.
-
-المراجع: [IIS/.NET](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/iis/?view=aspnetcore-10.0)، [Playwright](https://playwright.dev/dotnet/docs/browsers)، [Windows Service](https://learn.microsoft.com/en-us/dotnet/core/extensions/windows-service).
-
-
-## تحديث قراءة PDF وOCR — 16 أكتوبر 2026
-
-قبل تشغيل جمع ملفات PDF، ثبّت Poppler وTesseract واللغتين على VPS، واضبط مسارات الأدوات لخدمة العامل ومجلد عمل مؤقت بصلاحيات إنشاء وحذف لحساب العامل. إذا وضعت توزيعات الأدوات واللغات داخل مجلدي Tools وtessdata في مشروع العامل، تُنسخ تلقائيًا عند build وpublish، وتعمل المسارات النسبية من مجلد التشغيل. تعليمات Windows المحلي وVPS والسكربت وأوامر الفحص والصلاحيات في [PDF-TEXT.md](PDF-TEXT.md). النص الذي يستخدم OCR يحتاج مراجعة بصرية افتراضيًا قبل النشر. لا يلزم مفتاح OCR مدفوع أو مهاجرة جديدة لهذه الإضافة.
-
-
-## تحديث صفحة الأدوات
-
-تتطلب [صفحة الأدوات](TOOLS.md) مهاجرة ToolMonitoring وتحديث Worker مع Web. شغّل الموقع لتطبيق المهاجرة قبل إعادة تشغيل الخدمة، ثم افتح الأدوات وتحقق من نبضة العامل واطلب الفحص. النتائج من حساب العامل الفعلي؛ اختبار AI الذي يستهلك حصة له زر مستقل ولا يعمل تلقائيًا.
-
-
-إعدادات PDF تُكتب مباشرةً في `appsettings.json` الخاص بالعامل المنشور. سكربت configure-pdf.ps1 يفحصها فقط ولا يكتب Environment أو Registry. إزالة تجاوزات PDF القديمة إن سبق استخدامها موثقة في [دليل PDF](PDF-TEXT.md).
+Never upload development secrets or the optional local Worker package. Production payment credentials and environment selection remain as configured by the host.

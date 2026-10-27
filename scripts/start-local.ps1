@@ -1,4 +1,4 @@
-# بدء الموقع والعامل محليًا مع حفظ معرفات العمليات التي أنشأها السكربت فقط.
+# بدء واجهة الموقع المحلية فقط؛ يبدأ الجمع بأمر منفصل في التيرمينال.
 param(
     [ValidateRange(1, 65535)][int]$Port = 5186,
     [switch]$NoBuild,
@@ -19,7 +19,11 @@ function Get-LocalSourceFingerprint
         Sort-Object FullName |
         ForEach-Object { $_.FullName.Substring($root.Length) + ':' + (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
     $solutionHash = (Get-FileHash -LiteralPath (Join-Path $root 'HiringPs.sln') -Algorithm SHA256).Hash
-    $bytes = [Text.Encoding]::UTF8.GetBytes(($entries -join "`n") + "`n" + $solutionHash)
+    $buildRules = @('Directory.Build.props', 'Directory.Build.targets') | ForEach-Object {
+        $rulesPath = Join-Path $root $_
+        if (Test-Path -LiteralPath $rulesPath) { (Get-FileHash -LiteralPath $rulesPath -Algorithm SHA256).Hash }
+    }
+    $bytes = [Text.Encoding]::UTF8.GetBytes(($entries -join "`n") + "`n" + $solutionHash + "`n" + ($buildRules -join "`n"))
     $algorithm = [Security.Cryptography.SHA256]::Create()
     try { return [BitConverter]::ToString($algorithm.ComputeHash($bytes)).Replace('-', '') }
     finally { $algorithm.Dispose() }
@@ -50,7 +54,7 @@ if ($NoBuild)
 }
 if (-not $NoBuild)
 {
-    Write-Output 'Building the current solution in Release mode before starting web and worker.'
+    Write-Output 'Building the current solution in Release mode before starting the local web UI.'
     Push-Location -LiteralPath $root;
     try
     {
@@ -76,17 +80,15 @@ $logRoot = Join-Path $root 'artifacts\local-logs';
 New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 $dotnet = (Get-Command dotnet).Source
 $webDll = Join-Path $root 'src\HiringPs.Web\bin\Release\net10.0\HiringPs.Web.dll'
-$workerDll = Join-Path $root 'src\HiringPs.Worker\bin\Release\net10.0\HiringPs.Worker.dll'
 $webDir = Join-Path $root 'src\HiringPs.Web'
 $previousEnvironment = $env:DOTNET_ENVIRONMENT;
 $previousSqlLogging = [Environment]::GetEnvironmentVariable('Logging__LogLevel__Microsoft.EntityFrameworkCore')
-$web = $null;
-$worker = $null
+$web = $null
 try
 {
     $env:DOTNET_ENVIRONMENT = 'Development';
     [Environment]::SetEnvironmentVariable('Logging__LogLevel__Microsoft.EntityFrameworkCore', 'Warning')
-    $web = Start-Process -FilePath $dotnet -ArgumentList @(('"' + $webDll + '"'), '--environment', 'Development', '--contentRoot', ('"' + $webDir + '"'), '--urls', "http://127.0.0.1:$Port") -WorkingDirectory $webDir -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logRoot 'web.out.log') -RedirectStandardError (Join-Path $logRoot 'web.err.log') -PassThru
+    $web = Start-Process -FilePath $dotnet -ArgumentList @(('"' + $webDll + '"'), '--environment', 'Development', '--Runtime:Mode', 'Local', '--contentRoot', ('"' + $webDir + '"'), '--urls', "http://127.0.0.1:$Port") -WorkingDirectory $webDir -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logRoot 'web.out.log') -RedirectStandardError (Join-Path $logRoot 'web.err.log') -PassThru
     $ready = $false
     $startupTimer = [Diagnostics.Stopwatch]::StartNew()
     while ($startupTimer.Elapsed.TotalSeconds -lt $StartupTimeoutSeconds)
@@ -116,18 +118,13 @@ try
     {
         throw "Web did not become ready within $StartupTimeoutSeconds seconds; inspect artifacts/local-logs."
     }
-    $worker = Start-Process -FilePath $dotnet -ArgumentList ('"' + $workerDll + '"') -WorkingDirectory (Split-Path $workerDll) -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logRoot 'worker.out.log') -RedirectStandardError (Join-Path $logRoot 'worker.err.log') -PassThru
-    @($web, $worker) | ForEach-Object { [pscustomobject]@{Id = $_.Id;
+    @($web) | ForEach-Object { [pscustomobject]@{Id = $_.Id;
             StartTicks = $_.StartTime.ToUniversalTime().Ticks
         } } | ConvertTo-Json | Set-Content -LiteralPath $statePath
-    Write-Output "Web and worker running: http://127.0.0.1:$Port/ (Admin: /Admin). Automatic migrations and your SeedData run at web startup."
+    Write-Output "Local Web running (collection is started separately with scripts/collect.ps1): http://127.0.0.1:$Port/ (Admin: /Admin). Automatic migrations and your SeedData run at web startup."
 }
 catch
 {
-    if ($worker -and -not $worker.HasExited)
-    {
-        Stop-Process -Id $worker.Id
-    };
     if ($web -and -not $web.HasExited)
     {
         Stop-Process -Id $web.Id

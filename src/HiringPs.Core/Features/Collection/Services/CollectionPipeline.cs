@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace HiringPs.Core;
 
 /// <summary>مكون CollectionPipeline ضمن مجال Collection؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
-public class CollectionPipeline(
+public partial class CollectionPipeline(
     HiringDb db,
     BrowserCollector browser,
     OpportunityService opportunities,
@@ -164,11 +164,13 @@ public class CollectionPipeline(
     }
 
     /// <summary>يرتب العناصر المؤهلة ويمرر حالة إيقاف AI بين معالجاتها.</summary>
-    private async Task ProcessPendingAsync(
+    private async Task<(int Count, long LastId, bool Stop)> ProcessPendingAsync(
         SqlRunLock gate,
         SourceCollectionRequest? manual,
         PromptVersion activePrompt,
-        CancellationToken ct
+        CancellationToken ct,
+        long? afterId = null,
+        long? maximumId = null
     )
     {
         var now = DateTimeOffset.UtcNow;
@@ -192,13 +194,17 @@ public class CollectionPipeline(
             pendingQuery = pendingQuery.Where(x => x.Status != ProcessingStatus.AwaitingAi);
         if (manual is not null)
             pendingQuery = pendingQuery.Where(x => x.SourceId == manual.SourceId);
-        // New announcements first; re-verifications of known items follow.
-        var pending = await pendingQuery
-            .OrderBy(x => x.ExtractionPromptVersionId == null ? 0 : 1)
-            .ThenBy(x => x.FirstSeenAt)
+        if (afterId is not null) pendingQuery = pendingQuery.Where(x => x.Id > afterId && x.Id <= maximumId);
+        // Manual rounds visit every eligible ID at most once, even if its state remains AwaitingAi.
+        var ordered = afterId is not null ? pendingQuery.OrderBy(x => x.Id)
+            : pendingQuery.OrderBy(x => x.ExtractionPromptVersionId == null ? 0 : 1).ThenBy(x => x.FirstSeenAt);
+        var pending = await ordered
             .Select(x => x.Id)
             .Take(15)
             .ToListAsync(ct);
+        var count = 0;
+        var lastId = afterId ?? 0;
+        var stopped = false;
         foreach (var itemId in pending)
         {
             await gate.VerifyAsync(ct);
@@ -207,8 +213,11 @@ public class CollectionPipeline(
             var result = await processor.ProcessAsync(itemId, activePrompt, aiPausedUntil,
                 gate.VerifyAsync, PauseForBudgetAsync, ct);
             aiPausedUntil = result.AiPausedUntil;
-            if (result.StopAi) break;
+            count++;
+            lastId = itemId;
+            if (result.StopAi) { stopped = true; break; }
         }
+        return (count, lastId, stopped);
     }
 
     /// <summary>يوقف AI حتى بداية اليوم الفلسطيني التالي عند بلوغ الميزانية.</summary>

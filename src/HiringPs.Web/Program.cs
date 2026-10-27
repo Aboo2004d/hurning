@@ -13,6 +13,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
+// Collection defaults have the lowest priority: private JSON, environment and command-line settings still win.
+if (ApplicationRuntime.Mode(builder.Configuration) == ApplicationRuntimeMode.Local)
+    builder.Configuration.Sources.Insert(0, new Microsoft.Extensions.Configuration.Json.JsonConfigurationSource
+    {
+        Path = "appsettings.Collection.json", Optional = false, FileProvider = builder.Environment.ContentRootFileProvider,
+    });
 
 // ngrok and local reverse proxies connect from loopback, which ASP.NET trusts by default.
 // Add the actual proxy IP in hosting configuration when it is not a loopback address.
@@ -30,6 +36,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<PublicCatalogCache>();
 builder.Services.AddSingleton<IPublicCatalogInvalidator>(sp => sp.GetRequiredService<PublicCatalogCache>());
 builder.Services.AddSingleton<PublicCatalogTransactionInterceptor>();
+builder.Services.AddSingleton<PublicCatalogRevisionWriter>();
+builder.Services.AddSingleton<PublicCatalogRevisionMonitor>();
 builder.Services.AddScoped<HiringPs.Web.Models.PublicCatalog>();
 builder.Services.AddResponseCompression(options =>
 {
@@ -141,10 +149,10 @@ builder.Services.AddScoped<CollectionPipeline>();
 BrowserSettings.Configure(builder.Configuration);
 PdfToolPaths.Configure(builder.Configuration);
 builder.Services.AddBackgroundDependencies();
-// Single-site deployment: the website runs collection, tool checks, member alerts and
-// distribution itself. Keep it off when the separate Windows service is installed.
+// Server delivers member/payment/publication work. Local Web has no background loops.
+// Collection and tool checks are explicit foreground Worker commands.
 if (BackgroundRegistration.RunInWeb(builder.Configuration))
-    builder.Services.AddBackgroundWorkers();
+    builder.Services.AddServerWorkers();
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<BrowserCollector>();
 builder.Services.AddScoped<AttachmentReader>();

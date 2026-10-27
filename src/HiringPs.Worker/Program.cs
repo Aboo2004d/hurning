@@ -4,27 +4,42 @@ using HiringPs.Core;
 
 using Microsoft.EntityFrameworkCore;
 
-var builder = Host.CreateApplicationBuilder(
-    new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
-);
+CollectorCommandOptions command;
+try { command = CollectorArguments.Parse(args); }
+catch (ArgumentException ex) { Console.Error.WriteLine(ex.Message); Environment.ExitCode = 1; return; }
+if (command.Help)
+{
+    Console.WriteLine("Local collector: --collect [--source ID] [--checks] [--settings FILE] [--environment NAME]");
+    Console.WriteLine("Checks only: --checks [--settings FILE]. Other diagnostics: --pdf-check, --pdf-read FILE, --probe, --install-browser.");
+    Console.WriteLine("--once is an alias for a complete manual --collect round. No command starts a background service.");
+    return;
+}
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = [], ContentRootPath = AppContext.BaseDirectory, EnvironmentName = command.EnvironmentName,
+});
+if (command.SettingsFile is { } settings)
+{
+    builder.Configuration.AddJsonFile(settings, optional: false, reloadOnChange: false);
+    builder.Configuration.AddJsonFile(Path.Combine(Path.GetDirectoryName(settings)!, $"appsettings.{builder.Environment.EnvironmentName}.json"), optional: true, reloadOnChange: false);
+    builder.Configuration.AddEnvironmentVariables();
+}
+builder.Configuration["Runtime:Mode"] = "Local";
 PdfToolPaths.Configure(builder.Configuration);
-
 
 // ========================================
 // 1. Command Arguments
 // ========================================
 // PDF diagnostics are independent of SQL, AI credentials and the collection schedule.
-if (args.Contains("--pdf-check") || args.Contains("--pdf-read"))
+if (command.PdfCheck || command.PdfRead is not null)
 {
     try
     {
         var reader = new PdfTextReader(builder.Configuration);
         await reader.CheckSetupAsync(CancellationToken.None);
-        if (Array.IndexOf(args, "--pdf-read") is var index && index >= 0)
+        if (command.PdfRead is { } pdfFile)
         {
-            if (index + 1 >= args.Length)
-                throw new ArgumentException("Specify a local PDF path after --pdf-read.");
-            var file = new FileInfo(args[index + 1]);
+            var file = new FileInfo(pdfFile);
             if (!file.Exists || file.Length > AttachmentReader.MaxBytes)
                 throw new ArgumentException("PDF must exist and be at most 8 MB.");
             var result = await reader.ReadAsync(
@@ -52,9 +67,8 @@ if (args.Contains("--pdf-check") || args.Contains("--pdf-read"))
     return;
 }
 
-bool isProbe = args.Contains("--probe");
-bool isOnce = args.Contains("--once");
-bool installBrowser = args.Contains("--install-browser");
+bool isProbe = command.Probe;
+bool installBrowser = command.InstallBrowser;
 if (installBrowser)
 {
     BrowserSettings.Configure(builder.Configuration);
@@ -81,9 +95,12 @@ if (!isProbe)
         ?? throw new InvalidOperationException(
             "Missing ConnectionStrings:Hiring in appsettings.json."
         );
-    builder.Services.AddDbContext<HiringDb>(options =>
+    builder.Services.AddSingleton<PublicCatalogRevisionWriter>();
+    builder.Services.AddSingleton<PublicCatalogTransactionInterceptor>();
+    builder.Services.AddDbContext<HiringDb>((services, options) =>
     {
         options.UseSqlServer(connectionString);
+        options.AddInterceptors(services.GetRequiredService<PublicCatalogTransactionInterceptor>());
     });
     // Keep collection queues and tool diagnostics available when AI is not configured.
     // AiExtractor leaves those items awaiting AI instead of stopping the whole service.
@@ -112,19 +129,7 @@ if (!isProbe)
     builder.Services.AddHttpClient<AiExtractor>();
 }
 
-// ========================================
-// 4. Windows Service
-// ========================================
-builder.Services.AddWindowsService(options =>
-{
-    options.ServiceName = builder.Configuration["Service:Name"] ?? "HiringPsCollector";
-});
-
-// ========================================
-// 5. Background Worker
-// ========================================
-if (!isOnce && !isProbe)
-    builder.Services.AddBackgroundWorkers();
+// Collection is explicitly started by the terminal command. No membership or publication hosted services run here.
 
 // ========================================
 // 6. Build Host
@@ -203,21 +208,73 @@ if (isProbe)
     return;
 }
 
-// ========================================
-// 8. Run Once
-// ========================================
-if (isOnce)
+// A manual job owns only its heartbeat and pending diagnostics. Server jobs are never started here.
+await host.StartAsync();
+var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+using var job = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
+var runtime = host.Services.GetRequiredService<ToolWorkerRuntime>();
+var monitor = new ToolMonitor(host.Services.GetRequiredService<IServiceScopeFactory>(), runtime,
+    builder.Configuration, host.Services.GetRequiredService<ILogger<ToolMonitor>>());
+Task pulse = Task.CompletedTask;
+var monitoringStarted = false;
+try
 {
-    await using var scope = host.Services.CreateAsyncScope();
-    await scope
-        .ServiceProvider.GetRequiredService<CollectionPipeline>()
-        .TickAsync(CancellationToken.None);
-    return;
+    await using (var schema = host.Services.CreateAsyncScope())
+    {
+        var db = schema.ServiceProvider.GetRequiredService<HiringDb>();
+        if ((await db.Database.GetPendingMigrationsAsync(job.Token)).Any())
+            throw new InvalidOperationException("Apply database migrations through the Web project before running the local collector.");
+        _ = await db.PublicCatalogRevisions.SingleAsync(x => x.Id == 1, job.Token);
+    }
+    await monitor.PublishStateAsync(job.Token);
+    monitoringStarted = true;
+    pulse = monitor.PulseAsync(job.Token);
+    await LocalToolCheckRunner.DrainAsync(host.Services, job.Token);
+    if (command.Checks)
+    {
+        await using var checkScope = host.Services.CreateAsyncScope();
+        var queued = await ToolCheckQueue.EnqueueAsync(checkScope.ServiceProvider.GetRequiredService<HiringDb>(),
+            builder.Configuration, ToolCheckKind.Standard, "Local terminal", job.Token);
+        if (!queued) Console.WriteLine("A standard check is already queued or was requested recently; duplicate request skipped.");
+        await LocalToolCheckRunner.DrainAsync(host.Services, job.Token);
+    }
+    if (command.Collect)
+    {
+        runtime.Begin();
+        await using var scope = host.Services.CreateAsyncScope();
+        var summary = await scope.ServiceProvider.GetRequiredService<CollectionPipeline>().CollectManualAsync(command.SourceId, job.Token);
+        if (summary.FailedSources > 0) runtime.Fail(new InvalidOperationException("ManualSourceFailures"));
+        else runtime.Succeed();
+        Console.WriteLine($"Round finished: sources={summary.Sources}; failed={summary.FailedSources}; processed={summary.ProcessedItems}; pending AI/retries={summary.PendingItems}.");
+        if (summary.FailedSources > 0) Environment.ExitCode = 2;
+        await LocalToolCheckRunner.DrainAsync(host.Services, job.Token);
+    }
 }
-
-// ========================================
-// 9. Run Windows Service
-// ========================================
-await host.RunAsync();
+catch (OperationCanceledException) when (job.IsCancellationRequested)
+{
+    Console.Error.WriteLine("Local collection cancelled; saved checkpoints and pending items remain in the database.");
+    Environment.ExitCode = 130;
+}
+catch (Exception ex)
+{
+    runtime.Fail(ex);
+    await OperationFailureRecorder.TryRecordAsync(host.Services.GetRequiredService<IServiceScopeFactory>(), OperationArea.Collection,
+        "ManualRound", ex, CancellationToken.None);
+    Console.Error.WriteLine(ToolFailureDetail.Describe(ex, builder.Configuration));
+    Environment.ExitCode = 1;
+}
+finally
+{
+    await job.CancelAsync();
+    try { await pulse; } catch (OperationCanceledException) { }
+    runtime.Stop();
+    try
+    {
+        using var finalPulse = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        if (monitoringStarted) await monitor.PublishStateAsync(finalPulse.Token);
+    }
+    catch (Exception ex) { Console.Error.WriteLine($"Final local worker heartbeat was not saved ({ex.GetType().Name})."); }
+    await host.StopAsync();
+}
 
 public partial class Program;

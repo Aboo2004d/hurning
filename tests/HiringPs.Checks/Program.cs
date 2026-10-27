@@ -148,6 +148,12 @@ if (args.Contains("--telegram-bot-setup-check"))
     return;
 }
 
+if (args.Contains("--split-runtime-check"))
+{
+    await SplitRuntimeChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--tools-check"))
 {
     await ToolChecks.RunAsync();

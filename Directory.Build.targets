@@ -1,13 +1,36 @@
 <Project>
-    <!-- The existing project-root browser cache travels with Web and Worker.
-         Keep its revision folders intact so Playwright selects its matching build. -->
+    <PropertyGroup Condition="'$(MSBuildProjectName)' == 'HiringPs.Web' Or '$(MSBuildProjectName)' == 'HiringPs.Worker'">
+        <IncludeCollectionAssets Condition="'$(IncludeCollectionAssets)' == '' And '$(MSBuildProjectName)' == 'HiringPs.Worker'">true</IncludeCollectionAssets>
+        <IncludeCollectionAssets Condition="'$(IncludeCollectionAssets)' == ''">false</IncludeCollectionAssets>
+        <HiringToolsSource Condition="'$(HiringToolsSource)' == ''">$(MSBuildThisFileDirectory)src/HiringPs.Worker/Tools</HiringToolsSource>
+        <HiringOcrSource Condition="'$(HiringOcrSource)' == ''">$(MSBuildThisFileDirectory)src/HiringPs.Worker/tessdata</HiringOcrSource>
+        <HiringBrowserSource Condition="Exists('$(MSBuildThisFileDirectory).playwright-browsers')">$(MSBuildThisFileDirectory).playwright-browsers</HiringBrowserSource>
+        <HiringBrowserSource Condition="'$(HiringBrowserSource)' == ''">$(MSBuildThisFileDirectory)src/.playwright-browsers</HiringBrowserSource>
+    </PropertyGroup>
     <ItemGroup Condition="'$(MSBuildProjectName)' == 'HiringPs.Web' Or '$(MSBuildProjectName)' == 'HiringPs.Worker'">
-        <Content Include="$(MSBuildThisFileDirectory).playwright-browsers/**/*"
-                 Exclude="$(MSBuildThisFileDirectory).playwright-browsers/.links/**/*">
-            <Link>.playwright-browsers/%(RecursiveDir)%(Filename)%(Extension)</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <Visible>false</Visible>
+        <Content Include="$(HiringBrowserSource)/**/*" Exclude="$(HiringBrowserSource)/.links/**/*"
+                 Link=".playwright-browsers/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"
+                 CopyToPublishDirectory="Never" Visible="false">
+            <CopyToPublishDirectory Condition="'$(IncludeCollectionAssets)' == 'true'">PreserveNewest</CopyToPublishDirectory>
         </Content>
     </ItemGroup>
+    <!-- Local Web can inspect sources using the ignored native tools kept with Worker. -->
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'HiringPs.Web'">
+        <Content Include="$(HiringToolsSource)/**/*" Link="Tools/%(RecursiveDir)%(Filename)%(Extension)"
+                 CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Visible="false">
+            <CopyToPublishDirectory Condition="'$(IncludeCollectionAssets)' == 'true'">PreserveNewest</CopyToPublishDirectory>
+        </Content>
+        <Content Include="$(HiringOcrSource)/**/*" Link="tessdata/%(RecursiveDir)%(Filename)%(Extension)"
+                 CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Visible="false">
+            <CopyToPublishDirectory Condition="'$(IncludeCollectionAssets)' == 'true'">PreserveNewest</CopyToPublishDirectory>
+        </Content>
+    </ItemGroup>
+    <!-- Remove both explicit assets and Playwright's transitive driver payload from the server package. -->
+    <Target Name="ExcludeServerCollectionPayload" AfterTargets="ComputeFilesToPublish"
+            Condition="'$(MSBuildProjectName)' == 'HiringPs.Web' And '$(IncludeCollectionAssets)' != 'true'">
+        <ItemGroup>
+            <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(ResolvedFileToPublish.RelativePath)', '(?i)^(\.playwright([\\/]|$)|\.playwright-browsers([\\/]|$)|Tools[\\/]|tessdata[\\/]|playwright\.ps1$)'))" />
+        </ItemGroup>
+    </Target>
 </Project>

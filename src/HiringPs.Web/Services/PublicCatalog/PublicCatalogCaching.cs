@@ -11,7 +11,11 @@ public static class PublicCatalogCaching
         options.AddPolicy(
             SiteCache.Files,
             policy => policy.Expire(TimeSpan.FromMinutes(10)).SetVaryByQuery("*")
-                .VaryByValue(context => new("catalog", context.RequestServices.GetRequiredService<PublicCatalogCache>().Snapshot().Version))
+                .VaryByValue(async (context, ct) =>
+                {
+                    if (context.RequestServices.GetService<PublicCatalogRevisionMonitor>() is { } monitor) await monitor.RefreshAsync(ct);
+                    return new KeyValuePair<string, string>("catalog", context.RequestServices.GetRequiredService<PublicCatalogCache>().Snapshot().Version);
+                })
         );
         options.AddPolicy(
             SiteCache.Listing,
@@ -19,7 +23,11 @@ public static class PublicCatalogCaching
                 policy
                     .Expire(TimeSpan.FromSeconds(60))
                     .SetVaryByQuery("*")
-                    .VaryByValue(context => new("catalog", context.RequestServices.GetRequiredService<PublicCatalogCache>().Snapshot().Version))
+                    .VaryByValue(async (context, ct) =>
+                {
+                    if (context.RequestServices.GetService<PublicCatalogRevisionMonitor>() is { } monitor) await monitor.RefreshAsync(ct);
+                    return new KeyValuePair<string, string>("catalog", context.RequestServices.GetRequiredService<PublicCatalogCache>().Snapshot().Version);
+                })
                     .VaryByValue(context =>
                         new(
                             "culture",

@@ -200,6 +200,7 @@ public static class MembershipChecks
                 EnvironmentName = environmentName,
             }
         );
+        builder.Configuration["Runtime:Mode"] = "Local";
         builder.Logging.ClearProviders();
         if (preview) builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Error);
         builder.WebHost.UseUrls("http://127.0.0.1:0");

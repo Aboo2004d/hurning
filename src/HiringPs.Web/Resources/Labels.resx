@@ -3268,4 +3268,8 @@
   <data name="TelegramBotIssue_Timeout" xml:space="preserve"><value>انتهت مهلة التواصل مع تليجرام.</value></data>
   <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>لم تصل استجابة صالحة من Bot API.</value></data>
   <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>تسجيل ربط بوت التليجرام</value></data>
+  <data name="SourceSetupLocalOnly" xml:space="preserve"><value>إعداد المصدر بالمتصفح متاح من النسخة المحلية فقط. افتح الموقع على جهاز الجمع لإجراء المعاينة.</value></data>
+  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>تنفذ فحوص الأدوات على جهاز الجمع المحلي. تبقى الطلبات المعلقة محفوظة حتى تشغيل العامل المحلي.</value></data>
+  <data name="OperationEvent_ManualRound" xml:space="preserve"><value>بدء جولة جمع محلية</value></data>
+  <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>انتهاء جولة جمع محلية</value></data>
 </root>

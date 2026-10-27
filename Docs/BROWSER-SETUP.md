@@ -1,3 +1,5 @@
+> **Current topology:** browser/PDF execution and tool checks run on the local collection computer. Server Web runs lightweight services only. See [LOCAL-COLLECTION.md](LOCAL-COLLECTION.md).
+
 # إعداد Chromium من ملف الإعدادات
 
 المسار السابق في start-local.ps1 كان `.playwright-browsers` داخل جذر المشروع. بقي هذا المجلد مكان ملفات المتصفح المحلية، وأصبح كل من Web وWorker يقرأ إعداداته من appsettings.json:
