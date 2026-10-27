@@ -81,3 +81,17 @@ This does not push updates into an already open browser tab. A transient polling
 Normal Web Folder Publish excludes `.playwright`, `.playwright-browsers`, `playwright.ps1`, native `Tools` and `tessdata`, while keeping Core and managed references. Local builds retain the collection assets. `IncludeCollectionAssets=true` is an explicit opt-in for a local full Web package. Worker publication keeps its collection assets.
 
 Publish into a fresh/clean output directory. Copying a new package over old server files does not delete old browser folders. After stopping old processes, remove the **old tool/runtime folders only** from the hosting deployment if they were previously uploaded; preserve application data, settings, evidence and logs. This project does not delete arbitrary server files. IIS still needs ordinary website/database access and continuous operation for lightweight services; it no longer needs browser subprocess permissions.
+
+## Temporary manual collection lock bypass
+
+At the user's request, `scripts/collect.ps1` temporarily sets
+`Collector__BypassManualCollectionLock=true` for its child collection process only,
+then restores the caller's previous environment value. It does not release the old
+SQL session lock. Only manual collection uses this setting; other locks are unchanged.
+The terminal and ManualRound operation history explicitly identify bypassed rounds.
+Do not start concurrent collectors while this workaround is active.
+
+Use `scripts/collect.ps1 -EnforceCollectionLock` to enforce the original SQL lock.
+Direct Worker commands continue enforcing it unless the bypass setting is explicitly
+provided. Remove the wrapper's temporary default when the user requests restoration.
+No database migration is required.

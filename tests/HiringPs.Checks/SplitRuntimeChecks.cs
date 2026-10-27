@@ -17,6 +17,18 @@ internal static class SplitRuntimeChecks
     {
         var count = 0;
         void Check(bool ok, string label) { if (!ok) throw new Exception(label); Console.WriteLine("PASS " + label); count++; }
+        // Deliberately unreachable SQL: bypass must neither acquire nor verify a server lock.
+        await using (var bypass = new SqlRunLock("Server=127.0.0.1,1;Database=unused;User Id=fixture;Password=fixture;Connect Timeout=1", bypass: true))
+        {
+            Check(await bypass.AcquireAsync(CancellationToken.None) && !bypass.Acquired,
+                "temporary bypass permits manual round without claiming SQL lock ownership");
+            await bypass.VerifyAsync(CancellationToken.None);
+            Check(true, "temporary bypass supports downstream lease checks without SQL access");
+            using var cancelled = new CancellationTokenSource();
+            cancelled.Cancel();
+            try { await bypass.VerifyAsync(cancelled.Token); throw new Exception("Cancellation ignored"); }
+            catch (OperationCanceledException) { Check(true, "temporary bypass still observes cancellation"); }
+        }
         IConfiguration Config(string role) => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Runtime:Mode"] = role }).Build();
         Check(ApplicationRuntime.Mode(new ConfigurationBuilder().Build()) == ApplicationRuntimeMode.Server, "unconfigured web defaults to server services without collection");
         Check(!BackgroundRegistration.RunInWeb(Config("Local")), "local web never starts server delivery workers");

@@ -9,7 +9,10 @@ public partial class CollectionPipeline
     /// <summary>يجمع كل المصادر المعتمدة أو مصدرًا محددًا مرة واحدة تحت قفل الجولة، دون تجاهل حدود AI أو إعادة الخصم.</summary>
     public async Task<ManualCollectionSummaryDto> CollectManualAsync(int? sourceId, CancellationToken ct)
     {
-        await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!);
+        var bypassLock = config.GetValue<bool>("Collector:BypassManualCollectionLock");
+        if (bypassLock)
+            log.LogWarning("Manual collection SQL lock is temporarily bypassed. Concurrent rounds are not prevented.");
+        await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!, bypass: bypassLock);
         if (!await gate.AcquireAsync(ct)) throw new InvalidOperationException("Another collection round already owns the pipeline lock.");
         var selected = db.Sources.Where(x => x.Enabled && x.UsageApproved && x.ApprovalNote != "");
         if (sourceId is not null) selected = selected.Where(x => x.Id == sourceId);
@@ -33,7 +36,7 @@ public partial class CollectionPipeline
             var prompt = await PromptWorkflow.ActivateAsync(db, ct);
             await RetentionCleanup.RunAsync(db, config, ct);
             db.Audit.Add(OperationTracking.Create(OperationArea.Collection, OperationOutcome.Started,
-                "ManualRound", $"Sources {ids.Count}; Selected {sourceId?.ToString() ?? "all"}", "Local collector"));
+                "ManualRound", $"Sources {ids.Count}; Selected {sourceId?.ToString() ?? "all"}; Lock {(bypassLock ? "Bypassed" : "Enforced")}", "Local collector"));
             await db.SaveChangesAsync(ct);
             var failed = 0;
             var processed = 0;
