@@ -1,0 +1,120 @@
+using HiringPs.Core;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+
+/// <summary>Exercises the durable manual queue and local worker display without SQL Server, AI or a browser.</summary>
+internal static class LocalCollectionChecks
+{
+    public static async Task RunAsync()
+    {
+        var count = 0;
+        void Check(bool ok, string label) { if (!ok) throw new Exception(label); count++; Console.WriteLine("PASS " + label); }
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        connection.CreateCollation("Latin1_General_100_BIN2", string.CompareOrdinal);
+        await using var db = new QueueFixtureDb(new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options);
+        var tables = new[] { typeof(Source), typeof(SourceCollectionRequest), typeof(ToolWorkerState), typeof(AuditEntry) }
+            .Select(type => db.Model.FindEntityType(type)!.GetTableName()).ToArray();
+        foreach (var statement in db.Database.GenerateCreateScript().Split(";", StringSplitOptions.RemoveEmptyEntries))
+            if (tables.Any(table => statement.TrimStart().StartsWith($"CREATE TABLE \"{table}\"")))
+                await db.Database.ExecuteSqlRawAsync(statement);
+        db.Sources.AddRange(
+            new Source { Id = 1, Name = "eligible", Url = "https://example.test/1", Enabled = true, UsageApproved = true, ApprovalNote = "approved" },
+            new Source { Id = 2, Name = "disabled", Url = "https://example.test/2", UsageApproved = true, ApprovalNote = "approved" },
+            new Source { Id = 3, Name = "unapproved", Url = "https://example.test/3", Enabled = true, ApprovalNote = "approved" },
+            new Source { Id = 4, Name = "missing note", Url = "https://example.test/4", Enabled = true, UsageApproved = true },
+            new Source { Id = 5, Name = "eligible too", Url = "https://example.test/5", Enabled = true, UsageApproved = true, ApprovalNote = "approved" });
+        await db.SaveChangesAsync();
+        var config = new ConfigurationBuilder().Build();
+        using var services = new ServiceCollection().AddSingleton<ToolWorkerRuntime>().BuildServiceProvider();
+        // Null browser dependencies are deliberate: an empty queue must never touch them or SQL lock configuration.
+        var pipeline = new CollectionPipeline(db, null!, null!, config, NullLogger<CollectionPipeline>.Instance,
+            services.GetRequiredService<IServiceScopeFactory>());
+        Check(await pipeline.TryCollectQueuedAsync(default) is null,
+            "due sources alone do not start scheduled discovery or AI without a manual request");
+        var queue = new SourceCollectionRequestService(db);
+        Check(await queue.QueueAsync(2, "fixture", default) == "CollectNotApproved", "disabled source cannot be queued");
+        Check(await queue.QueueAsync(3, "fixture", default) == "CollectNotApproved", "unapproved source cannot be queued");
+        Check(await queue.QueueAsync(4, "fixture", default) == "CollectNotApproved", "approval note remains mandatory");
+        Check(await queue.QueueAsync(1, "fixture", default) == "CollectQueued", "single-source action creates durable pending request");
+        var first = await db.Set<SourceCollectionRequest>().SingleAsync();
+        var token = first.RequestToken;
+        Check(await queue.QueueAsync(1, "fixture", default) == "CollectAlreadyQueued" && first.RequestToken == token,
+            "duplicate click preserves the existing pending request and token");
+        first.Status = "Running";
+        first.DiscoveryFinished = true;
+        await db.SaveChangesAsync();
+        Check(await queue.QueueAllAsync("fixture", default) == 1, "collect all queues only remaining eligible source");
+        Check(first.Status == "Running" && first.RequestToken == token && first.DiscoveryFinished,
+            "collect all preserves running request and discovery checkpoint");
+        Check(await queue.QueueAllAsync("fixture", default) == 0 && await db.Set<SourceCollectionRequest>().CountAsync() == 2,
+            "repeated collect all does not duplicate requests");
+        foreach (var request in await db.Set<SourceCollectionRequest>().ToListAsync()) request.Status = "Completed";
+        await db.SaveChangesAsync();
+        Check(await pipeline.TryCollectQueuedAsync(default) is null, "completed requests do not trigger another round");
+        Check(await queue.QueueAsync(1, "fixture", default) == "CollectQueued" && first.RequestToken != token && !first.DiscoveryFinished,
+            "explicit new request resets completed checkpoint");
+        first.Source.Enabled = false;
+        await db.SaveChangesAsync();
+        Check(await pipeline.TryCollectQueuedAsync(default) is null, "revoked source eligibility prevents queued collection");
+        var reader = new SourceReadService(db);
+        Check(!(await reader.WorkerStatusAsync(default)).Connected, "no heartbeat displays offline");
+        var now = DateTimeOffset.UtcNow;
+        db.ToolWorkers.AddRange(
+            new ToolWorkerState { Id = "busy", At = now.AddSeconds(-5), StartedAt = now.AddMinutes(-1), Collecting = true },
+            new ToolWorkerState { Id = "idle", At = now, StartedAt = now.AddMinutes(-1) },
+            new ToolWorkerState { Id = "stale", At = now.AddMinutes(-5), StartedAt = now.AddMinutes(-10), Collecting = true });
+        await db.SaveChangesAsync();
+        Check(await reader.WorkerStatusAsync(default) is { Connected: true, Collecting: true },
+            "fresh collecting worker is not hidden by a newer idle heartbeat");
+        var busy = await db.ToolWorkers.FindAsync("busy"); busy!.At = now.AddMinutes(-2);
+        await db.SaveChangesAsync();
+        Check(await reader.WorkerStatusAsync(default) is { Connected: true, Collecting: false }, "stale collecting state cannot hide online idle worker");
+        var idle = await db.ToolWorkers.FindAsync("idle"); idle!.At = now.AddMinutes(-2);
+        await db.SaveChangesAsync();
+        Check(await reader.WorkerStatusAsync(default) is { Connected: false, Collecting: false }, "expired heartbeat displays offline rather than running");
+        var options = new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options;
+        var runtime = new ToolWorkerRuntime();
+        using var hostedServices = new ServiceCollection()
+            .AddSingleton<IConfiguration>(config).AddSingleton(runtime)
+            .AddScoped<HiringDb>(_ => new QueueFixtureDb(options))
+            .AddScoped(provider => new CollectionPipeline(provider.GetRequiredService<HiringDb>(), null!, null!, config,
+                NullLogger<CollectionPipeline>.Instance, provider.GetRequiredService<IServiceScopeFactory>()))
+            .BuildServiceProvider();
+        var scopes = hostedServices.GetRequiredService<IServiceScopeFactory>();
+        using var worker = new CollectionWorker(scopes, NullLogger<CollectionWorker>.Instance, config, runtime);
+        var auditCount = await db.Audit.CountAsync();
+        await worker.StartAsync(default);
+        await Task.Delay(100);
+        using var stopBudget = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        await worker.StopAsync(stopBudget.Token);
+        Check(!runtime.Snapshot.Collecting && await db.Audit.CountAsync() == auditCount,
+            "hosted worker starts and stops without scheduled work, browser, AI or audit side effects");
+        using var monitor = new ToolMonitor(scopes, runtime, config, NullLogger<ToolMonitor>.Instance);
+        await monitor.PublishStateAsync(default);
+        Check(await db.ToolWorkers.AnyAsync(x => x.Id == runtime.Id && !x.Collecting),
+            "local heartbeat is published independently of collection work");
+        Console.WriteLine($"Local collection: {count} checks passed; isolated SQLite only.");
+    }
+
+    private sealed class QueueFixtureDb(DbContextOptions<HiringDb> options) : HiringDb(options)
+    {
+        protected override void OnModelCreating(ModelBuilder model)
+        {
+            base.OnModelCreating(model);
+            foreach (var entity in model.Model.GetEntityTypes())
+                foreach (var property in entity.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTimeOffset) || property.ClrType == typeof(DateTimeOffset?))
+                        property.SetValueConverter(new DateTimeOffsetToBinaryConverter());
+                    if (property.Name == "Version" && property.ClrType == typeof(byte[]))
+                        property.ValueGenerated = ValueGenerated.Never;
+                }
+        }
+    }
+}

@@ -149,10 +149,11 @@ builder.Services.AddScoped<CollectionPipeline>();
 BrowserSettings.Configure(builder.Configuration);
 PdfToolPaths.Configure(builder.Configuration);
 builder.Services.AddBackgroundDependencies();
-// Server delivers member/payment/publication work. Local Web has no background loops.
-// Collection and tool checks are explicit foreground Worker commands.
+// Server runs delivery jobs; Local consumes explicit collection and tool-check requests only.
 if (BackgroundRegistration.RunInWeb(builder.Configuration))
     builder.Services.AddServerWorkers();
+else
+    builder.Services.AddLocalCollectionWorkers();
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<BrowserCollector>();
 builder.Services.AddScoped<AttachmentReader>();

@@ -32,6 +32,7 @@ public class SourcesController : AdminControllerBase
     {
         var sources = await reader.Sources().PageAsync(page, ct);
         ViewBag.DiscoveryProgress = await reader.ProgressAsync(sources.Items.Select(x => x.Id).ToArray(), ct);
+        ViewBag.CollectionWorker = await reader.WorkerStatusAsync(ct);
         return View(sources);
     }
 
@@ -117,6 +118,14 @@ public class SourcesController : AdminControllerBase
             .QueueAsync(id, User.Identity?.Name ?? "Admin", ct);
         if (notice is null) return NotFound();
         TempData["Notice"] = notice;
+        return RedirectToAction(nameof(Sources));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CollectAll(CancellationToken ct)
+    {
+        await collectionRequests.QueueAllAsync(User.Identity?.Name ?? "Admin", ct);
+        TempData["Notice"] = "CollectAllQueued";
         return RedirectToAction(nameof(Sources));
     }
 

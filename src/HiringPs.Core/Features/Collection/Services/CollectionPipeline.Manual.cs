@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -9,11 +10,38 @@ public partial class CollectionPipeline
     /// <summary>يجمع كل المصادر المعتمدة أو مصدرًا محددًا مرة واحدة تحت قفل الجولة، دون تجاهل حدود AI أو إعادة الخصم.</summary>
     public async Task<ManualCollectionSummaryDto> CollectManualAsync(int? sourceId, CancellationToken ct)
     {
-        var bypassLock = config.GetValue<bool>("Collector:BypassManualCollectionLock");
-        if (bypassLock)
-            log.LogWarning("Manual collection SQL lock is temporarily bypassed. Concurrent rounds are not prevented.");
-        await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!, bypass: bypassLock);
+        await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!);
         if (!await gate.AcquireAsync(ct)) throw new InvalidOperationException("Another collection round already owns the pipeline lock.");
+        return await CollectUnderLockAsync(sourceId, gate, ct);
+    }
+
+    /// <summary>يلتقط طلبًا يدويًا واحدًا تحت قفل الجولة؛ لا يجمع المصادر المجدولة أو يبدأ العمل دون طلب.</summary>
+    public async Task<ManualCollectionSummaryDto?> TryCollectQueuedAsync(CancellationToken ct)
+    {
+        // A short read avoids opening the lock connection while the queue is empty.
+        if (!await db.Set<SourceCollectionRequest>().AnyAsync(x =>
+            (x.Status == "Pending" || x.Status == "Running")
+            && x.Source.Enabled && x.Source.UsageApproved && x.Source.ApprovalNote != "", ct))
+            return null;
+        await using var gate = new SqlRunLock(config.GetConnectionString("Hiring")!);
+        if (!await gate.AcquireAsync(ct)) return null;
+        // Recheck after acquiring the lock: another collector may have finished this request.
+        var id = await db.Set<SourceCollectionRequest>().AsNoTracking()
+            .Where(x => (x.Status == "Pending" || x.Status == "Running")
+                && x.Source.Enabled && x.Source.UsageApproved && x.Source.ApprovalNote != "")
+            .OrderBy(x => x.RequestedAt).ThenBy(x => x.SourceId)
+            .Select(x => (int?)x.SourceId).FirstOrDefaultAsync(ct);
+        if (id is null) return null;
+        using var runtimeScope = scopes.CreateScope();
+        var runtime = runtimeScope.ServiceProvider.GetRequiredService<ToolWorkerRuntime>();
+        runtime.Begin();
+        try { return await CollectUnderLockAsync(id, gate, ct); }
+        finally { runtime.Stop(); }
+    }
+
+    /// <summary>ينفذ الجولة بالقفل المكتسب نفسه لإعادة استخدام التدقيق والحدود ونقاط الاستئناف.</summary>
+    private async Task<ManualCollectionSummaryDto> CollectUnderLockAsync(int? sourceId, SqlRunLock gate, CancellationToken ct)
+    {
         var selected = db.Sources.Where(x => x.Enabled && x.UsageApproved && x.ApprovalNote != "");
         if (sourceId is not null) selected = selected.Where(x => x.Id == sourceId);
         var ids = await selected.OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(ct);
@@ -36,7 +64,7 @@ public partial class CollectionPipeline
             var prompt = await PromptWorkflow.ActivateAsync(db, ct);
             await RetentionCleanup.RunAsync(db, config, ct);
             db.Audit.Add(OperationTracking.Create(OperationArea.Collection, OperationOutcome.Started,
-                "ManualRound", $"Sources {ids.Count}; Selected {sourceId?.ToString() ?? "all"}; Lock {(bypassLock ? "Bypassed" : "Enforced")}", "Local collector"));
+                "ManualRound", $"Sources {ids.Count}; Selected {sourceId?.ToString() ?? "all"}", "Local collector"));
             await db.SaveChangesAsync(ct);
             var failed = 0;
             var processed = 0;

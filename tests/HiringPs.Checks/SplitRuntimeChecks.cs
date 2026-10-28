@@ -17,24 +17,17 @@ internal static class SplitRuntimeChecks
     {
         var count = 0;
         void Check(bool ok, string label) { if (!ok) throw new Exception(label); Console.WriteLine("PASS " + label); count++; }
-        // Deliberately unreachable SQL: bypass must neither acquire nor verify a server lock.
-        await using (var bypass = new SqlRunLock("Server=127.0.0.1,1;Database=unused;User Id=fixture;Password=fixture;Connect Timeout=1", bypass: true))
-        {
-            Check(await bypass.AcquireAsync(CancellationToken.None) && !bypass.Acquired,
-                "temporary bypass permits manual round without claiming SQL lock ownership");
-            await bypass.VerifyAsync(CancellationToken.None);
-            Check(true, "temporary bypass supports downstream lease checks without SQL access");
-            using var cancelled = new CancellationTokenSource();
-            cancelled.Cancel();
-            try { await bypass.VerifyAsync(cancelled.Token); throw new Exception("Cancellation ignored"); }
-            catch (OperationCanceledException) { Check(true, "temporary bypass still observes cancellation"); }
-        }
         IConfiguration Config(string role) => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Runtime:Mode"] = role }).Build();
         Check(ApplicationRuntime.Mode(new ConfigurationBuilder().Build()) == ApplicationRuntimeMode.Server, "unconfigured web defaults to server services without collection");
         Check(!BackgroundRegistration.RunInWeb(Config("Local")), "local web never starts server delivery workers");
         var services = new ServiceCollection().AddServerWorkers();
         var hosted = services.Where(x => x.ServiceType == typeof(IHostedService)).Select(x => x.ImplementationType).ToArray();
         Check(hosted.Length == 2 && hosted.Contains(typeof(MembershipWorker)) && hosted.Contains(typeof(DistributionWorker)), "server starts membership/payment and publication workers only");
+        var localHosted = new ServiceCollection().AddLocalCollectionWorkers()
+            .Where(x => x.ServiceType == typeof(IHostedService)).Select(x => x.ImplementationType).ToArray();
+        Check(localHosted.Length == 2 && localHosted.Contains(typeof(CollectionWorker)) && localHosted.Contains(typeof(ToolMonitor))
+            && !localHosted.Contains(typeof(MembershipWorker)) && !localHosted.Contains(typeof(DistributionWorker)),
+            "local web consumes manual requests and publishes heartbeat without server delivery jobs");
         Check(CollectorArguments.Parse([]).Help, "worker without arguments prints help rather than running forever");
         var command = CollectorArguments.Parse(["--collect", "--source", "17", "--checks"]);
         Check(command.Collect && command.SourceId == 17 && command.Checks, "explicit source collection can include queued tool checks");

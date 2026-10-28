@@ -319,7 +319,7 @@
         <value>Manual collection status</value>
     </data>
   <data name="CollectWorkerNote" xml:space="preserve">
-        <value>The worker processes requests automatically; it must be running.</value>
+        <value>Run the website locally to process collection requests automatically. Requests remain queued while it is closed.</value>
     </data>
   <data name="CollectQueued" xml:space="preserve">
         <value>Collection queued for this source only. Track its status below.</value>
@@ -1186,7 +1186,7 @@
         <value>Standard checks do not call AI. A live test uses your account quota and appears in usage history; it never collects or publishes an opportunity.</value>
     </data>
   <data name="ToolsWorkerOffline" xml:space="preserve">
-        <value>No recent worker heartbeat. Start/restart the worker and check SQL, migrations and service logs. Requests stay queued.</value>
+        <value>Local worker is offline. Run the website locally and check its database connection. Requests remain queued.</value>
     </data>
   <data name="ToolsMultipleWorkers" xml:space="preserve">
         <value>Multiple worker instances are active. Each result identifies its executor; a different instance is not current evidence for the displayed worker.</value>
@@ -1195,7 +1195,7 @@
         <value>Worker is active and running a processing round. Its heartbeat is independent of round duration.</value>
     </data>
   <data name="ToolsCollectorWaiting" xml:space="preserve">
-        <value>Worker is active, polling queues or waiting for the schedule.</value>
+        <value>Local worker is online, waiting for manual collection or tool-check requests.</value>
     </data>
   <data name="ToolsHeartbeat" xml:space="preserve">
         <value>Last heartbeat</value>
@@ -3269,7 +3269,9 @@
   <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>Bot API returned an invalid response.</value></data>
   <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>Telegram bot webhook registration</value></data>
   <data name="SourceSetupLocalOnly" xml:space="preserve"><value>Browser-assisted source setup is available on the local site only. Open the site on the collection computer to preview a source.</value></data>
-  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>Tool checks run on the local collection computer. Queued requests remain saved until the local worker runs.</value></data>
+  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>Requested tool checks run while the local website is open, or through a Worker command. Startup does not enqueue automatic checks.</value></data>
   <data name="OperationEvent_ManualRound" xml:space="preserve"><value>Local collection round started</value></data>
   <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>Local collection round finished</value></data>
+  <data name="CollectAll" xml:space="preserve"><value>Collect all</value></data>
+  <data name="CollectAllQueued" xml:space="preserve"><value>Eligible sources were queued; existing pending or running requests were preserved.</value></data>
 </root>

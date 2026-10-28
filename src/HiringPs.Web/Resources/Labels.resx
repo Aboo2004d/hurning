@@ -319,7 +319,7 @@
         <value>حالة الجمع اليدوي</value>
     </data>
   <data name="CollectWorkerNote" xml:space="preserve">
-        <value>يعالج العامل الطلب تلقائيًا؛ يلزم أن يكون العامل يعمل.</value>
+        <value>شغّل الموقع محليًا لتنفيذ طلبات الجمع تلقائيًا. عند إغلاقه تبقى الطلبات محفوظة حتى التشغيل التالي.</value>
     </data>
   <data name="CollectQueued" xml:space="preserve">
         <value>تم طلب جمع هذا المصدر فقط. يظهر التقدم في حالة الجمع.</value>
@@ -1186,7 +1186,7 @@
         <value>الفحص العادي لا يتصل بـAI. الاختبار الفعلي يستهلك طلبًا حسب حصة حسابك ويظهر في سجل الاستخدام؛ لا يجمع أو ينشر إعلانًا.</value>
     </data>
   <data name="ToolsWorkerOffline" xml:space="preserve">
-        <value>لا توجد نبضة حديثة للعامل. شغّل أو أعد تشغيل خدمة العامل، وتحقق من اتصال SQL وتطبيق المهاجرة وسجلات الخدمة. الطلبات تبقى في الانتظار.</value>
+        <value>العامل المحلي غير متصل. شغّل الموقع محليًا وتحقق من اتصال القاعدة. تبقى الطلبات محفوظة في الانتظار.</value>
     </data>
   <data name="ToolsMultipleWorkers" xml:space="preserve">
         <value>توجد عدة نسخ نشطة من العامل. كل فحص يوضح النسخة المنفذة؛ النتيجة من نسخة أخرى لا تُعد فحصًا حديثًا للنسخة المعروضة.</value>
@@ -1195,7 +1195,7 @@
         <value>العامل نشط وينفذ جولة معالجة. النبضة مستقلة عن مدة الجولة.</value>
     </data>
   <data name="ToolsCollectorWaiting" xml:space="preserve">
-        <value>العامل نشط؛ ينتظر الجدولة أو يفحص الطوابير.</value>
+        <value>العامل المحلي متصل وينتظر طلبات الجمع أو الفحص اليدوية.</value>
     </data>
   <data name="ToolsHeartbeat" xml:space="preserve">
         <value>آخر نبضة</value>
@@ -3269,7 +3269,9 @@
   <data name="TelegramBotIssue_InvalidResponse" xml:space="preserve"><value>لم تصل استجابة صالحة من Bot API.</value></data>
   <data name="OperationEvent_WebhookRegistration" xml:space="preserve"><value>تسجيل ربط بوت التليجرام</value></data>
   <data name="SourceSetupLocalOnly" xml:space="preserve"><value>إعداد المصدر بالمتصفح متاح من النسخة المحلية فقط. افتح الموقع على جهاز الجمع لإجراء المعاينة.</value></data>
-  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>تنفذ فحوص الأدوات على جهاز الجمع المحلي. تبقى الطلبات المعلقة محفوظة حتى تشغيل العامل المحلي.</value></data>
+  <data name="ToolsLocalCollectorNotice" xml:space="preserve"><value>تنفذ فحوص الأدوات المطلوبة على جهازك أثناء تشغيل الموقع محليًا، أو عبر أمر العامل. لا يبدأ فحص تلقائي عند التشغيل.</value></data>
   <data name="OperationEvent_ManualRound" xml:space="preserve"><value>بدء جولة جمع محلية</value></data>
   <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>انتهاء جولة جمع محلية</value></data>
+  <data name="CollectAll" xml:space="preserve"><value>جمع الكل</value></data>
+  <data name="CollectAllQueued" xml:space="preserve"><value>تم حجز المصادر المفعّلة والمعتمدة، مع إبقاء الطلبات الجارية دون تكرار.</value></data>
 </root>

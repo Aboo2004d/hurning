@@ -17,7 +17,7 @@ public sealed class ToolMonitor(
     protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
         Task.WhenAll(PulseLoopAsync(stoppingToken), CheckLoopAsync(stoppingToken));
 
-    /// <summary>يبقي العامل اليدوي ظاهرًا أثناء الجولة دون تشغيل حلقة مهام دائمة.</summary>
+    /// <summary>ينشر نبضات مستقلة للعامل اليدوي، أو لمستهلك الطلبات في الويب المحلي.</summary>
     public Task PulseAsync(CancellationToken ct) => PulseLoopAsync(ct);
 
     /// <summary>يحفظ لقطة واحدة للنبضة، بما فيها الحالة النهائية قبل خروج العامل المحلي.</summary>
@@ -88,7 +88,7 @@ public sealed class ToolMonitor(
                 await using var scope = scopes.CreateAsyncScope();
                 var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
                 var now = DateTimeOffset.UtcNow;
-                if (now >= nextDailyCheck)
+                if (ApplicationRuntime.Mode(configuration) != ApplicationRuntimeMode.Local && now >= nextDailyCheck)
                 {
                     var handled = await ToolCheckQueue.EnqueueAsync(
                         db,

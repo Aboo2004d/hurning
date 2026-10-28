@@ -74,6 +74,8 @@ public static class RefactoringChecks
             }
             throw new Exception("Query unexpectedly bypassed the connection guard: " + label);
         }
+        await Translates(async () => { _ = await new SourceReadService(db).WorkerStatusAsync(default); },
+            "collection worker status translates with fresh active worker ordering");
         using var statsCache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
         await Translates(async () => { _ = await new PublicCatalog(db, statsCache).StatsAsync(default); }, "home statistics per-kind aggregate");
         await Translates(async () => { _ = await new OpportunityDetailsReadService(db).ReadAsync(1, default); }, "details and source-link projection");

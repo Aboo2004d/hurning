@@ -5,6 +5,18 @@ namespace HiringPs.Core;
 /// <summary>يحجز طلب جمع يدوي بعد موافقة استخدام المصدر دون تشغيل المتصفح في HTTP.</summary>
 public sealed class SourceCollectionRequestService(HiringDb db)
 {
+    /// <summary>يحجز جمع جميع المصادر المفعلة والمعتمدة دون تكرار الطلبات الجارية، ويعيد عدد الطلبات الجديدة.</summary>
+    public async Task<int> QueueAllAsync(string actor, CancellationToken ct)
+    {
+        var ids = await db.Sources.AsNoTracking()
+            .Where(x => x.Enabled && x.UsageApproved && x.ApprovalNote != "")
+            .OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(ct);
+        var queued = 0;
+        foreach (var id in ids)
+            if (await QueueAsync(id, actor, ct) == "CollectQueued") queued++;
+        return queued;
+    }
+
     /// <summary>يعيد رمز الرسالة أو null للمصدر المفقود؛ الطلب الجاري لا يكرر الحجز.</summary>
     public async Task<string?> QueueAsync(int id, string actor, CancellationToken ct)
     {

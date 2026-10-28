@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace HiringPs.Core;
 
-/// <summary>يسجل اعتماديات الجمع منفصلة عن حلقات خدمات السيرفر الخفيفة؛ لا يبدأ جمعًا تلقائيًا.</summary>
+/// <summary>يفصل حلقات خدمات السيرفر عن مستهلك طلبات الجمع المحلية واعتمادياتهما.</summary>
 public static class BackgroundRegistration
 {
-    /// <summary>الموقع لا يبدأ الجمع تلقائيًا؛ وضع السيرفر يشغل الخدمات الخفيفة فقط.</summary>
+    /// <summary>يحدد تشغيل خدمات السيرفر؛ الوضع المحلي يستهلك الطلبات اليدوية فقط.</summary>
     public static bool RunInWeb(IConfiguration configuration) => ApplicationRuntime.Mode(configuration) == ApplicationRuntimeMode.Server;
 
     /// <summary>يشغل تسليم Telegram والدفع والنشر وIndexNow على السيرفر دون أي متصفح أو جمع.</summary>
@@ -16,6 +16,15 @@ public static class BackgroundRegistration
         services.AddBackgroundDependencies();
         services.AddHostedService<MembershipWorker>();
         services.AddHostedService<DistributionWorker>();
+        return services;
+    }
+
+    /// <summary>يشغل مستهلك الطلبات اليدوية ونبضات العامل والفحوص المطلوبة في الويب المحلي فقط.</summary>
+    public static IServiceCollection AddLocalCollectionWorkers(this IServiceCollection services)
+    {
+        services.AddBackgroundDependencies();
+        services.AddHostedService<CollectionWorker>();
+        services.AddHostedService<ToolMonitor>();
         return services;
     }
 

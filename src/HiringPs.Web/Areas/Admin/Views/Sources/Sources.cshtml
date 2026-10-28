@@ -4,10 +4,26 @@
 }
 <div class="heading-row">
     <h1>@T["Sources"]</h1>
-    <a class="button button-outline" asp-controller="Sources" asp-action="Create">@T["Add"]</a>
+    <div class="actions">
+        <form asp-controller="Sources" asp-action="CollectAll" method="post">
+            <button type="submit">@T["CollectAll"]</button>
+        </form>
+        <a class="button button-outline" asp-controller="Sources" asp-action="Create">@T["Add"]</a>
+    </div>
 </div>
 <p class="notice">@T["SourcesNote"]</p>
 <p class="muted">@T["ScheduleZone"] · @T["CollectWorkerNote"]</p>
+@if (ViewBag.CollectionWorker is CollectionWorkerStatusDto worker)
+{
+    <section class="notice" role="status">
+        <strong>@T["Tool_Collector"]:</strong>
+        @T[worker.Connected ? (worker.Collecting ? "ToolsCollectorBusy" : "ToolsCollectorWaiting") : "ToolsWorkerOffline"]
+        @if (worker.LastPulse is { } pulse)
+        {
+            <span class="muted"> · @T["ToolsHeartbeatPalestine"]: <bdi>@PaymentDisplay.Time(pulse, seconds: true)</bdi></span>
+        }
+    </section>
+}
 <div
     class="table-wrap"
     data-collection-pending="@(Model.Items.Any(s=>s.CollectionRequests.Any(r=>r.Status is "Pending" or "Running"))?"true":"false")"

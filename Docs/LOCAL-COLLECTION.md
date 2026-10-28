@@ -5,7 +5,7 @@
 The solution keeps three projects. Core is a library included automatically in the Web and Worker packages.
 
 - **Web / Runtime:Mode=Server**: IIS hosts the website, payment and Telegram webhooks, payment recovery, member bot alerts, channel publication and IndexNow. No collection or tool-check loop runs here.
-- **Web / Runtime:Mode=Local**: full local administration and browser-assisted source setup. It starts neither collection nor server delivery jobs. `dotnet run` and `dotnet watch` use Local through launchSettings; `scripts/start-local.ps1` also selects it explicitly. The legacy Collector:RunInWeb switch no longer selects background jobs. The role is independent of ASP.NET environment and does not change the existing Sandbox/Production payment rules.
+- **Web / Runtime:Mode=Local**: full local administration and browser-assisted source setup. It starts a background consumer of explicit manual collection requests and queued tool checks, plus an independent heartbeat. It does not collect due sources automatically or start server delivery jobs. `dotnet run` and `dotnet watch` use Local through launchSettings; `scripts/start-local.ps1` also selects it explicitly. The legacy Collector:RunInWeb switch no longer selects background jobs. The role is independent of ASP.NET environment and does not change the existing Sandbox/Production payment rules.
 - **Worker**: a foreground local command. It owns collection and queued diagnostics for the duration of the command. It never starts member delivery or channel publication, and no arguments print help and exit. Windows service installation is no longer supported.
 
 Stop any previously installed Worker service or previous long-running collection process before switching. Keep IIS always-on for member services. Keep the Telegram webhook on the public production site; successful outgoing channel messages do not require a webhook.
@@ -27,7 +27,30 @@ dotnet watch --project src/HiringPs.Web
 
 `appsettings.Collection.json` provides nonsecret browser/PDF defaults only for Local Web, at lowest configuration priority. Private JSON, environment variables and command-line overrides retain precedence. Native tools stay in the existing ignored Worker Tools/tessdata folders and the repository browser cache; builds copy them for local Web and Worker. They are not installed automatically or downloaded during a collection request.
 
+## Collect from the local website
+
+Run the Web with `dotnet run --project src/HiringPs.Web` or `dotnet watch --project src/HiringPs.Web`.
+The launch profiles set `Runtime:Mode=Local`. In Admin / Sources, choose **Collect now** for
+one source or **Collect all** for enabled sources with usage approval and an approval note.
+Within the next poll (normally five seconds), Local Web consumes the durable request and
+runs discovery and processing with the same SQL lock, checkpoints, AI limits and validation
+as the CLI. It does not start a separate executable or terminal.
+
+The Sources page shows online/collecting/offline from independent heartbeat rows. An active
+round keeps its heartbeat even during long discovery/OCR. Stopped workers become offline
+when the heartbeat expires (60 seconds). Requests queued from the server site use the same
+shared database and are picked up by Local Web. Pending/running requests resume after a
+restart; an idle startup without requests performs no discovery or AI work. Due schedules
+alone do not trigger collection. Completed requests do not repeat automatically.
+
+Explicit tool-check requests are consumed locally too. Startup and midnight do not queue
+new checks in Local mode. Server Web still registers only payment/member/publication jobs.
+Do not set Runtime:Mode=Local on IIS. No new migration or database field is required.
+
 The Web UI is optional for starting a terminal collection command. The CLI can run independently.
+The mandatory SQL lock arbitrates between CLI and Local Web; use only one collection route
+at a time. The temporary lock bypass has been removed. Dedicated lock connections disable
+pooling so a failed cleanup cannot return a session-owned lock to a pool.
 
 ## Manual collection commands
 
@@ -63,7 +86,7 @@ The same SQL pipeline application lock prevents two collectors from running toge
 
 Existing AI pauses, budgets, retry dates, usage approval, publication validation and saved paid extraction reuse remain enforced. A finished round may still have AwaitingAi, future retries or review items. The console and operation history distinguish these from published success. Cancellation retains saved checkpoints. Exit code 0 means the command completed, 2 reports source failures, 1 a job/setup failure, and 130 cancellation.
 
-Queued tool checks are processed on the local machine at the beginning and end of collection, or through `-ChecksOnly`; newly queued work after the final drain waits for the next command. Paid live AI checks still require an explicit queued request. No server browser starts for these requests. When the local machine is offline, requests remain queued and the existing worker heartbeat expires normally. Browser-assisted source setup must be opened in the local Web UI; server-side source editing and queuing remain available.
+Queued tool checks are processed while Local Web is running, or on the local machine at the beginning and end of a CLI collection, or through `-ChecksOnly`; when using CLI alone, newly queued work after the final drain waits for the next command. Paid live AI checks still require an explicit queued request. No server browser starts for these requests. When the local machine is offline, requests remain queued and the existing worker heartbeat expires normally. Browser-assisted source setup must be opened in the local Web UI; server-side source editing and queuing remain available.
 
 ## Shared cache
 
@@ -81,17 +104,3 @@ This does not push updates into an already open browser tab. A transient polling
 Normal Web Folder Publish excludes `.playwright`, `.playwright-browsers`, `playwright.ps1`, native `Tools` and `tessdata`, while keeping Core and managed references. Local builds retain the collection assets. `IncludeCollectionAssets=true` is an explicit opt-in for a local full Web package. Worker publication keeps its collection assets.
 
 Publish into a fresh/clean output directory. Copying a new package over old server files does not delete old browser folders. After stopping old processes, remove the **old tool/runtime folders only** from the hosting deployment if they were previously uploaded; preserve application data, settings, evidence and logs. This project does not delete arbitrary server files. IIS still needs ordinary website/database access and continuous operation for lightweight services; it no longer needs browser subprocess permissions.
-
-## Temporary manual collection lock bypass
-
-At the user's request, `scripts/collect.ps1` temporarily sets
-`Collector__BypassManualCollectionLock=true` for its child collection process only,
-then restores the caller's previous environment value. It does not release the old
-SQL session lock. Only manual collection uses this setting; other locks are unchanged.
-The terminal and ManualRound operation history explicitly identify bypassed rounds.
-Do not start concurrent collectors while this workaround is active.
-
-Use `scripts/collect.ps1 -EnforceCollectionLock` to enforce the original SQL lock.
-Direct Worker commands continue enforcing it unless the bypass setting is explicitly
-provided. Remove the wrapper's temporary default when the user requests restoration.
-No database migration is required.

@@ -18,20 +18,17 @@ public sealed class SqlRunLock : IAsyncDisposable
     public bool Acquired { get; private set; }
 
     private readonly string resource;
-    private readonly bool bypass;
 
-    public SqlRunLock(string connectionString, string resource = "HiringPs.Pipeline", bool bypass = false)
+    public SqlRunLock(string connectionString, string resource = "HiringPs.Pipeline")
     {
-        connection = new(connectionString);
+        // Session locks must never survive in a pooled connection after the round.
+        connection = new(new SqlConnectionStringBuilder(connectionString) { Pooling = false }.ConnectionString);
         this.resource = resource;
-        this.bypass = bypass;
     }
 
     /// <summary>يحاول امتلاك قفل SQL المخصص للعملية لمنع تشغيلها بالتوازي.</summary>
     public async Task<bool> AcquireAsync(CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        if (bypass) return true;
         await connection.OpenAsync(ct);
         await using var cmd = connection.CreateCommand();
         cmd.CommandText =
@@ -44,8 +41,6 @@ public sealed class SqlRunLock : IAsyncDisposable
     /// <summary>يتحقق من بقاء قفل SQL مملوكًا قبل تنفيذ خطوة حساسة.</summary>
     public async Task VerifyAsync(CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        if (bypass) return;
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT APPLOCK_MODE('public',@resource,'Session')";
         cmd.Parameters.AddWithValue("@resource", resource);
