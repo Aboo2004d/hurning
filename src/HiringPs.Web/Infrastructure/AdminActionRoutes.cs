@@ -21,6 +21,7 @@ public static class AdminActionRoutes
         ["Sources"] = "Sources",
         ["Source"] = "Sources",
         ["CollectNow"] = "Sources",
+        ["CollectAll"] = "Sources",
         ["SuggestSource"] = "Sources",
         ["Item"] = "Items",
         ["Retry"] = "Items",

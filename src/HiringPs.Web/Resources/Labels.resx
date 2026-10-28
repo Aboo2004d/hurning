@@ -3274,4 +3274,6 @@
   <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>انتهاء جولة جمع محلية</value></data>
   <data name="CollectAll" xml:space="preserve"><value>جمع الكل</value></data>
   <data name="CollectAllQueued" xml:space="preserve"><value>تم حجز المصادر المفعّلة والمعتمدة، مع إبقاء الطلبات الجارية دون تكرار.</value></data>
+  <data name="ManualRoundComplete" xml:space="preserve"><value>انتهت جولة الجمع؛ لا توجد عناصر معلّقة للمعالجة أو الذكاء الاصطناعي أو إعادة المحاولة. راجع قائمة المراجعة للفرص التي تحتاج اعتمادًا.</value></data>
+  <data name="ManualRoundPending" xml:space="preserve"><value>انتهت جولة الجمع؛ عدد العناصر المعلّقة للمعالجة أو الذكاء الاصطناعي أو إعادة المحاولة: {0}. الانتظار لا يعني نشرًا ناجحًا.</value></data>
 </root>

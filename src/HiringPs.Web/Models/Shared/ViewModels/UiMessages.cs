@@ -146,6 +146,12 @@ public static class UiMessages
         message = Regex.Replace(message, @"\s*Diagnostic ID: [a-fA-F0-9]{32}", "");
         if (message == "LoginFailed")
             return text[message];
+        var manualRound = Regex.Match(message,
+            @"^Manual discovery finished; pending processing/AI/retries: (\d+)\. Pending items are not published successes\.$");
+        if (manualRound.Success)
+            return manualRound.Groups[1].Value == "0"
+                ? text["ManualRoundComplete"].Value
+                : text["ManualRoundPending", manualRound.Groups[1].Value].Value;
         if (message.StartsWith("Discovery round finished;", StringComparison.Ordinal))
         {
             var counts = Regex.Matches(

@@ -3274,4 +3274,6 @@
   <data name="OperationEvent_ManualRoundFinished" xml:space="preserve"><value>Local collection round finished</value></data>
   <data name="CollectAll" xml:space="preserve"><value>Collect all</value></data>
   <data name="CollectAllQueued" xml:space="preserve"><value>Eligible sources were queued; existing pending or running requests were preserved.</value></data>
+  <data name="ManualRoundComplete" xml:space="preserve"><value>Collection round finished with no pending processing, AI or retries. Opportunities needing approval remain in review.</value></data>
+  <data name="ManualRoundPending" xml:space="preserve"><value>Collection round finished; pending processing, AI or retries: {0}. Pending items are not published successes.</value></data>
 </root>
