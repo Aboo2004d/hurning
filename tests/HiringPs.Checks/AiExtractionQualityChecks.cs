@@ -38,9 +38,12 @@ internal static class AiExtractionQualityChecks
             var required = item.GetProperty("required").EnumerateArray().Select(x => x.GetString()).ToHashSet();
             Check(AiExtractionContract.Fields.All(x => required.Contains(x)) && required.Count == AiExtractionContract.Fields.Length, "provider schema requires every extraction field");
             Check(item.GetProperty("propertyOrdering").EnumerateArray().Select(x => x.GetString()).SequenceEqual(AiExtractionContract.Fields), "provider field order follows the prompt schema");
-            Check(item.GetProperty("properties").GetProperty("workMode").GetProperty("enum").GetArrayLength() == 4, "work mode is a constrained short classification");
+            Check(item.GetProperty("properties").GetProperty("workMode").GetProperty("enum").GetArrayLength() == 3
+                && item.GetProperty("properties").GetProperty("workMode").GetProperty("nullable").GetBoolean(), "work mode uses a nullable enum without an invalid empty enum member");
             Check(item.GetProperty("properties").EnumerateObject().All(x => x.Value.TryGetProperty("description", out _)), "every provider field has its own semantic description");
             Check((await Extract(Json(Good()))).Opportunities[0].Locations == "HEBRON", "complete supported response passes actual HTTP parsing");
+            var unknownMode = Json(Good()); unknownMode["opportunities"]![0]!["workMode"] = null;
+            Check((await Extract(unknownMode)).Opportunities[0].WorkMode == "", "wire null for unknown mode normalizes to an empty stored value");
             var missing = Json(Good()); missing["opportunities"]![0]!.AsObject().Remove("locations");
             await Reject(missing, "omitted fields");
             var nullText = Json(Good()); nullText["opportunities"]![0]!["locations"] = null;

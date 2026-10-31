@@ -7,7 +7,7 @@ namespace HiringPs.Core;
 public static class AiResponseDiagnostics
 {
     /// <summary>يحفظ تشخيصًا محدودًا، ولا يجعل تعذر الكتابة سببًا لفقدان الخطأ الأصلي.</summary>
-    public static async Task<Guid?> SaveAsync(IConfiguration configuration, AiExecution? execution, string response, string reason)
+    public static async Task<Guid?> SaveAsync(IConfiguration configuration, AiExecution? execution, string response, string reason, bool? schemaEnabled = null)
     {
         if (configuration.GetValue<bool?>("Ai:SaveRejectedResponses") == false || response.Length > 2_000_000) return null;
         try
@@ -18,7 +18,7 @@ public static class AiResponseDiagnostics
             Directory.CreateDirectory(directory);
             var data = JsonSerializer.Serialize(new { id, at = DateTimeOffset.UtcNow, execution?.SourceItemId,
                 promptVersionId = execution?.Version.Id, model = configuration["Ai:Model"],
-                schemaEnabled = configuration.GetValue<bool?>("Ai:UseResponseSchema") ?? true,
+                schemaEnabled = schemaEnabled ?? configuration.GetValue<bool?>("Ai:UseResponseSchema") ?? true,
                 schemaHash = TextRules.Hash(JsonSerializer.Serialize(GeminiClient.ResponseSchema)), reason,
                 providerResponse = JsonSerializer.Deserialize<JsonElement>(response) }, CollectorDiagnosticFiles.Json);
             await File.WriteAllTextAsync(Path.Combine(directory, id.ToString("N") + ".json"), data, budget.Token);

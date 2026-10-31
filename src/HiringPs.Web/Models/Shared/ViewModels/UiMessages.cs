@@ -34,6 +34,7 @@ public static class UiMessages
         ["AI extraction contract: opportunity must be an object."] = "Error_AiRoleObject",
         ["AI extraction contract: invalid array, boolean, language or kind."] = "Error_AiContractTypes",
         ["AI extraction contract: invalid JSON, date or enum; return required schema with yyyy-MM-dd dates."] = "Error_AiContractFormat",
+        ["Inspira did not expose readable job details before the content timeout; the applicant-home shell is not the job announcement. Retry scheduled; no source closure inferred."] = "Error_InspiraDetails",
         ["Local geographic scope needs review."] = "Error_Geography",
         ["Location needs review."] = "Error_Location",
         ["Original title not found in source text."] = "Error_TitleEvidence",
@@ -241,7 +242,7 @@ public static class UiMessages
         {
             var code = m.Groups[1].Value;
             var model = Regex.Match(message, @"configured model ([a-zA-Z0-9._-]+)");
-            return code switch
+            var display = code switch
             {
                 "404" or "400" => t[
                     "Error_AiModel",
@@ -252,6 +253,10 @@ public static class UiMessages
                 "401" or "403" => t["Error_AiAccess", code],
                 _ => t["Error_AiProvider", code],
             };
+            var providerDetail = Regex.Match(message, @"Provider detail: (.+)");
+            return providerDetail.Success
+                ? display.Value + " " + t["Error_AiProviderDetail", providerDetail.Groups[1].Value]
+                : display.Value;
         }
 
         m = Regex.Match(

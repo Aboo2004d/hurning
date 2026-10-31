@@ -3339,4 +3339,7 @@
   <data name="AiResponseDiagnostic" xml:space="preserve"><value>AI response diagnostic: {0}</value></data>
   <data name="Error_AiContractTypes" xml:space="preserve"><value>The response contains an invalid kind, language, boolean or array.</value></data>
   <data name="Error_AiContractFormat" xml:space="preserve"><value>The response contains invalid JSON, date or enum formatting.</value></data>
+  <data name="Error_AiProviderDetail" xml:space="preserve"><value>Provider reason: {0}</value></data>
+  <data name="DiagStage_WaitInspiraJobContent" xml:space="preserve"><value>Wait for Inspira job details in the page or its frame</value></data>
+  <data name="Error_InspiraDetails" xml:space="preserve"><value>Inspira did not expose readable job details within the time limit; the Applicant Home shell is insufficient. A retry is scheduled without inferring closure.</value></data>
 </root>

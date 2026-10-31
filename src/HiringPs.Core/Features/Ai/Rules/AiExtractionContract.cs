@@ -27,7 +27,8 @@ public static class AiExtractionContract
             if (child.EnumerateObject().GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1))
                 throw new AiExtractionRejectedException("AI extraction contract: duplicate field names.");
             foreach (var field in typeof(ExtractedOpportunity).GetProperties().Where(x => x.PropertyType == typeof(string)))
-                if (child.GetProperty(JsonNamingPolicy.CamelCase.ConvertName(field.Name)).ValueKind != JsonValueKind.String)
+                if (child.GetProperty(JsonNamingPolicy.CamelCase.ConvertName(field.Name)).ValueKind != JsonValueKind.String
+                    && !(field.Name == nameof(ExtractedOpportunity.WorkMode) && child.GetProperty("workMode").ValueKind == JsonValueKind.Null))
                     throw new AiExtractionRejectedException("AI extraction contract: unknown text must be an empty string, not null.");
             if (child.GetProperty("otherDates").ValueKind != JsonValueKind.Array
                 || child.GetProperty("deadlineIsExtension").ValueKind is not (JsonValueKind.True or JsonValueKind.False)

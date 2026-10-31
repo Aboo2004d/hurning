@@ -3339,4 +3339,7 @@
   <data name="AiResponseDiagnostic" xml:space="preserve"><value>معرّف تشخيص رد النموذج: {0}</value></data>
   <data name="Error_AiContractTypes" xml:space="preserve"><value>أعاد النموذج نوع فرصة أو لغة أو قيمة منطقية أو قائمة بصيغة غير مطابقة.</value></data>
   <data name="Error_AiContractFormat" xml:space="preserve"><value>رد النموذج يحتوي تنسيق JSON أو تاريخًا أو قيمة تصنيف غير مطابقة للعقد.</value></data>
+  <data name="Error_AiProviderDetail" xml:space="preserve"><value>سبب المزود: {0}</value></data>
+  <data name="DiagStage_WaitInspiraJobContent" xml:space="preserve"><value>انتظار تفاصيل وظيفة Inspira في الصفحة أو إطارها</value></data>
+  <data name="Error_InspiraDetails" xml:space="preserve"><value>لم تظهر تفاصيل الوظيفة المقروءة في Inspira ضمن المهلة؛ صفحة Applicant Home العامة لا تكفي. ستُعاد المحاولة دون اعتبار الإعلان منتهيًا.</value></data>
 </root>

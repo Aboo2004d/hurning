@@ -581,37 +581,48 @@ public partial class BrowserCollector(
                     conf.ForbiddenWaitSeconds,
                     ct
                 );
-                diagnostics.Step("WaitSourceSelector", conf.WaitSelector, 20000);
-                if (conf.WaitSelector.Length > 0)
-                    await page.Locator(conf.WaitSelector)
-                        .First.WaitForAsync(new() { Timeout = 20000 });
-                diagnostics.Step("WaitDocumentReady", timeoutMs: 25000);
-                await page.WaitForFunctionAsync(
-                    "() => document.readyState !== 'loading'",
-                    null,
-                    new() { Timeout = 25000 }
-                );
                 string html;
-                if (source.Connector == ConnectorKind.JobsRss && conf.ContentSelector is "" or "body")
+                if (source.Connector == ConnectorKind.UnrwaInspira)
                 {
-                    diagnostics.Step("WaitJobDetail", "body", 25000);
-                    await WaitForAutomaticContentAsync(page);
-                    html = RssJobPage.ContentHtml(await page.ContentAsync());
-                }
-                else if (source.Connector == ConnectorKind.Automatic)
-                {
-                    diagnostics.Step("WaitAutomaticContent", "body", 25000);
-                    await WaitForAutomaticContentAsync(page);
-                    html = AutomaticSource.ContentHtml(await page.ContentAsync());
+                    var seconds = Math.Clamp(configuration.GetValue<int?>("Browser:InspiraDetailTimeoutSeconds") ?? 45, 15, 90);
+                    diagnostics.Step("WaitInspiraJobContent", "body", seconds * 1000);
+                    html = await InspiraJobPage.ReadAsync(page, conf.AllowedHosts.Append(new Uri(source.Url).IdnHost)
+                        .Append("inspira.un.org"), TimeSpan.FromSeconds(seconds), ct);
                 }
                 else
                 {
-                    diagnostics.Step("WaitContentSelector", conf.ContentSelector, 20000);
-                    var content = page.Locator(conf.ContentSelector)
-                        .Filter(new() { Visible = true }).First;
-                    await content.WaitForAsync(new() { Timeout = 20000 });
-                    diagnostics.Step("ReadContent", conf.ContentSelector);
-                    html = await content.InnerHTMLAsync();
+                    diagnostics.Step("WaitSourceSelector", conf.WaitSelector, 20000);
+                    if (conf.WaitSelector.Length > 0)
+                        await page.Locator(conf.WaitSelector)
+                            .First.WaitForAsync(new() { Timeout = 20000 });
+                    diagnostics.Step("WaitDocumentReady", timeoutMs: 25000);
+                    await page.WaitForFunctionAsync(
+                        "() => document.readyState !== 'loading'",
+                        null,
+                        new() { Timeout = 25000 }
+                    );
+                    if (source.Connector == ConnectorKind.JobsRss && conf.ContentSelector is "" or "body")
+                    {
+                        diagnostics.Step("WaitJobDetail", "body", 25000);
+                        await WaitForAutomaticContentAsync(page);
+                        html = RssJobPage.ContentHtml(await page.ContentAsync());
+                    }
+                    else if (source.Connector == ConnectorKind.Automatic)
+                    {
+                        diagnostics.Step("WaitAutomaticContent", "body", 25000);
+                        await WaitForAutomaticContentAsync(page);
+                        html = AutomaticSource.ContentHtml(await page.ContentAsync());
+                    }
+                    else
+                    {
+                        diagnostics.Step("WaitContentSelector", conf.ContentSelector, 20000);
+                        var content = page.Locator(conf.ContentSelector)
+                            .Filter(new() { Visible = true }).First;
+                        await content.WaitForAsync(new() { Timeout = 20000 });
+                        diagnostics.Step("ReadContent", conf.ContentSelector);
+                        html = await content.InnerHTMLAsync();
+                    }
+
                 }
 
                 var doc = await new HtmlParser().ParseDocumentAsync(html, ct);

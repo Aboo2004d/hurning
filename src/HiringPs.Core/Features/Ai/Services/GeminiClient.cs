@@ -33,7 +33,7 @@ public static class GeminiClient
         );
 
     /// <summary>يبني طلب Gemini مع مخطط الاستجابة وحدود الإدخال والإخراج المعتمدة.</summary>
-    public static object RequestBody(string instructions, string content, IConfiguration config)
+    public static object RequestBody(string instructions, string content, IConfiguration config, bool? useSchema = null)
     {
         var generation = new Dictionary<string, object>
         {
@@ -41,7 +41,7 @@ public static class GeminiClient
             ["responseMimeType"] = "application/json",
             ["maxOutputTokens"] = MaxOutputTokens(config),
         };
-        if (config.GetValue<bool?>("Ai:UseResponseSchema") ?? true)
+        if (useSchema ?? (config.GetValue<bool?>("Ai:UseResponseSchema") ?? true))
             generation["responseSchema"] = ResponseSchema;
         return new
         {
@@ -94,7 +94,7 @@ public static class GeminiClient
                         ["category"] = Text(),
                         ["employmentType"] = Text(),
                         ["experienceLevel"] = Text(),
-                        ["workMode"] = Choice(AiExtractionContract.WorkModes),
+                        ["workMode"] = Choice("On-site", "Remote", "Hybrid"),
                         ["referenceNumber"] = Text(),
                         ["duration"] = Text(),
                         ["eligibility"] = Text(),
@@ -146,6 +146,9 @@ public static class GeminiClient
         var top = (Dictionary<string, object>)ResponseSchema["properties"];
         var items = (Dictionary<string, object>)((Dictionary<string, object>)top["opportunities"])["items"];
         var fields = (Dictionary<string, object>)items["properties"];
+        // Empty enum members are rejected by some Gemini schema implementations.
+        // Null represents unknown mode on the wire and is normalized to empty internally.
+        ((Dictionary<string, object>)fields["workMode"])["nullable"] = true;
         foreach (var (name, schema) in fields)
             ((Dictionary<string, object>)schema)["description"] = name switch
             {
@@ -158,7 +161,7 @@ public static class GeminiClient
                 "locationEvidence" => "One exact continuous source quotation establishing this role's actual location.",
                 "isInPalestine" => "True for a supported Palestinian location; false for foreign; null when unresolved.",
                 "category" => "Infer the actual professional field or subject. Use exactly one canonical catalog label, not an invented alias.",
-                "workMode" => "Only an explicitly stated On-site, Remote or Hybrid mode, or empty string. Never duties, qualifications, employment type, salary or copied paragraphs. Empty for non-job kinds.",
+                "workMode" => "Only an explicitly stated On-site, Remote or Hybrid mode, or null when unknown. Never duties, qualifications, employment type, salary or copied paragraphs. Null for non-job kinds.",
                 "employmentType" => "Explicit job contract or full/part-time type only. Empty for non-job kinds.",
                 "experienceLevel" => "Concise explicit years/level requirement only. Empty for non-job kinds.",
                 "eligibility" => "Explicit applicant restrictions and qualifications. Preserve mandatory conditions here, never in workMode.",

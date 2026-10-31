@@ -82,6 +82,7 @@
 @if (Model.CaptureNote.Length > 0)
 {
     <p class="notice">@T["CaptureIncomplete"]</p>
+    <details class="diagnostic-details"><summary>@T["TechnicalDetails"]</summary><pre dir="auto">@Model.CaptureNote</pre></details>
 }
 @if (Model.Screenshot)
 {

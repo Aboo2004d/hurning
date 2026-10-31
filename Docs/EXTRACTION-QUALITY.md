@@ -7,7 +7,8 @@ and Jobs.ps feed summaries submitted as full announcements.
 ## Provider contract and bounded correction
 
 Gemini's response schema now requires every extraction field, defines each field's
-meaning and field order, and constrains `workMode` to empty, On-site, Remote or Hybrid.
+meaning and field order, and constrains `workMode` to On-site, Remote or Hybrid, with nullable unknown mode
+normalized to the existing empty stored value.
 Unknown facts can still be empty/null. The summary length remains a prompt target.
 No published prompt version or historical migration seed is rewritten.
 
@@ -84,3 +85,33 @@ prompt version 4 can remain active. Start with a few affected items using the ex
 retry action and a collection round, inspect the resulting source errors and AI usage,
 then requeue the remaining affected items. These code changes do not themselves run
 bulk SQL, reset production records or call a live provider during development.
+
+## Compatibility and Inspira follow-up
+
+Some provider schema implementations reject an empty string enum member or an overly
+complex/unsupported schema. Work mode now uses three enum values plus wire null for
+unknown/non-job mode; null is normalized to the existing empty stored string. All
+other unknown text fields still use empty strings. No database migration is needed.
+
+A schema-specific HTTP 400 permits one retry in JSON mode with explicit complete-field
+instructions and the same strict local JSON/quality checks. This is the same model,
+not a paid model substitution. The rejection is remembered for 30 minutes per account,
+model and schema hash. Credential, quota, context-limit and other request errors do
+not activate this fallback. At most one compatibility retry and one quality correction
+are allowed (three requests total); each request records its own outcome and token usage.
+The shared pause and daily budget are checked before additional requests.
+
+Provider 400/404 messages are retained in the item error and shown in the admin page,
+with the configured API key redacted. Rejected error envelopes are saved through the
+same bounded diagnostics mechanism, recording the actual schema mode sent.
+
+The supplied Inspira diagnostic showed HTTP 200 / Applicant Home with readyState
+remaining loading at WaitDocumentReady for 25 seconds. The Inspira connector now waits
+for actual job detail content instead of document.readyState, and checks same-host or
+approved-host frames. The portal shell alone is not an announcement. This wait defaults
+to 45 seconds (`Browser:InspiraDetailTimeoutSeconds`, bounded to 15–90 seconds), respects
+cancellation and reports a specific retriable failure without inferring closure.
+Failed screenshot/file capture notes are now visible in diagnostic technical details.
+
+Additional checks: `--ai-provider-compatibility-check` (fixture HTTP) and
+`--inspira-content-check` (Chromium with intercepted local HTML fixtures).

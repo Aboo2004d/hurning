@@ -88,32 +88,53 @@ public class AiExtractor
         AiExecution? execution = null
     )
     {
-        try { return await ExtractAttemptAsync(content, ct, execution, null); }
-        catch (AiExtractionRejectedException ex) when ((config.GetValue<int?>("Ai:ExtractionRepairAttempts") ?? 1) > 0 && !ct.IsCancellationRequested)
+        var schema = GeminiSchemaCompatibility.UseSchema(config);
+        var schemaFallbackUsed = !schema;
+        var correctionUsed = false;
+        string? correction = null;
+        while (true)
         {
-            if (scopes is not null)
+            try { return await ExtractAttemptAsync(content, ct, execution, correction, schema); }
+            catch (AiSchemaRejectedException) when (schema && !schemaFallbackUsed && !ct.IsCancellationRequested)
             {
-                await using var scope = scopes.CreateAsyncScope();
-                var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
-                var now = DateTimeOffset.UtcNow;
-                if (await AiGovernor.PausedUntilAsync(db, now, ct) is not null
-                    || await AiGovernor.BudgetExceededAsync(db, config, now, ct)) throw;
+                if (!await CanRetryAsync(ct)) throw;
+                schemaFallbackUsed = true;
+                schema = false;
+                GeminiSchemaCompatibility.RememberRejection(config);
             }
-            // Exactly one corrective call, separately counted in usage. Never resubmit
-            // the previous generated text as source evidence or create an unbounded loop.
-            var correction = "EXTRACTION CORRECTION v1: The previous attempt failed validation: " + ex.Reason
-                + " Re-read the supplied SOURCE DATA and return every required field independently. "
-                + "Use explicit location and date clauses with exact evidence. Infer the canonical category from the actual role. "
-                + "Never put duties or qualifications in workMode; use only its enum values. "
-                + "Do not repeat one vacancy under different child keys. Unknown facts must remain empty/null; never invent missing facts.";
-            return await ExtractAttemptAsync(content, ct, execution, correction);
+            catch (AiExtractionRejectedException ex) when (!correctionUsed
+                && (config.GetValue<int?>("Ai:ExtractionRepairAttempts") ?? 1) > 0 && !ct.IsCancellationRequested)
+            {
+                if (!await CanRetryAsync(ct)) throw;
+                correctionUsed = true;
+                correction = "EXTRACTION CORRECTION v1: The previous attempt failed validation: " + ex.Reason
+                    + " Re-read the supplied SOURCE DATA and return every required field independently. "
+                    + "Use explicit location and date clauses with exact evidence. Infer the canonical category from the actual role. "
+                    + "Never put duties or qualifications in workMode; use only its enum values. "
+                    + "Do not repeat one vacancy under different child keys. Unknown facts must remain empty/null; never invent missing facts.";
+            }
         }
     }
 
-    /// <summary>ينفذ محاولة واحدة ويسجل استهلاكها ونتيجتها وبصمة التعليمات الفعلية.</summary>
-    private async Task<ExtractionResult> ExtractAttemptAsync(string content, CancellationToken ct, AiExecution? execution, string? correction)
+    /// <summary>يحترم الإيقاف والميزانية قبل أي طلب إضافي؛ لكل طلب سجل استهلاك مستقل.</summary>
+    private async Task<bool> CanRetryAsync(CancellationToken ct)
     {
-        var instructions = (execution?.Version ?? PromptDefaults.Current()).Render()
+        if (scopes is null) return true;
+        await using var scope = scopes.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
+        var now = DateTimeOffset.UtcNow;
+        return await AiGovernor.PausedUntilAsync(db, now, ct) is null
+            && !await AiGovernor.BudgetExceededAsync(db, config, now, ct);
+    }
+
+    /// <summary>ينفذ محاولة واحدة ويسجل استهلاكها ونتيجتها وبصمة التعليمات الفعلية.</summary>
+    private async Task<ExtractionResult> ExtractAttemptAsync(string content, CancellationToken ct, AiExecution? execution, string? correction, bool useSchema)
+    {
+        var serialization = useSchema
+            ? "OUTPUT SERIALIZATION v2: For workMode only, use null when unknown or non-job, or one of On-site, Remote, Hybrid. All other unknown text fields remain empty strings."
+            : "JSON RESPONSE CONTRACT v2: Return every required key even when its value is unknown: " + string.Join(", ", AiExtractionContract.Fields)
+                + ". workMode must be empty, On-site, Remote or Hybrid only; never copy paragraphs into it. Return a valid JSON object only.";
+        var instructions = (execution?.Version ?? PromptDefaults.Current()).Render() + "\n" + serialization
             + (correction is null ? "" : "\n" + correction);
         var limit = GeminiClient.MaxInputCharacters(config);
         if (content.Length > limit)
@@ -133,7 +154,7 @@ public class AiExtractor
         string? error = null;
         try
         {
-            var result = await SendAsync(content, instructions, telemetry, ct);
+            var result = await SendAsync(content, instructions, telemetry, ct, useSchema);
             ExtractionValidator.EnsureShape(result);
             var issues = AiExtractionContract.Issues(result, content);
             if (issues.Count > 0) throw new AiExtractionRejectedException(string.Join(" ", issues));
@@ -143,9 +164,9 @@ public class AiExtractor
         catch (Exception ex)
         {
             error = ex.GetType().Name;
-            if (ex is ContentNeedsReviewException && telemetry.ResponseJson is { } responseJson)
+            if (ex is ContentNeedsReviewException or AiUnavailableException && telemetry.ResponseJson is { } responseJson)
             {
-                var diagnostic = await AiResponseDiagnostics.SaveAsync(config, execution, responseJson, ex.Message);
+                var diagnostic = await AiResponseDiagnostics.SaveAsync(config, execution, responseJson, ex.Message, useSchema);
                 if (ex is AiExtractionRejectedException rejected) rejected.DiagnosticId = diagnostic;
                 if (diagnostic is { } id) logger?.LogWarning("Rejected AI response diagnostic {DiagnosticId}", id.ToString("N"));
             }
@@ -181,7 +202,8 @@ public class AiExtractor
         string content,
         string instructions,
         AiTelemetry telemetry,
-        CancellationToken ct
+        CancellationToken ct,
+        bool useSchema
     )
     {
         var key = config["Ai:ApiKey"];
@@ -198,7 +220,7 @@ public class AiExtractor
         );
         request.Headers.Add("x-goog-api-key", key);
         request.Content = JsonContent.Create(
-            GeminiClient.RequestBody(instructions, content, config)
+            GeminiClient.RequestBody(instructions, content, config, useSchema)
         );
         HttpResponseMessage received;
         try
@@ -241,25 +263,21 @@ public class AiExtractor
                 GeminiClient.RetryAfter(response),
                 response.StatusCode != HttpStatusCode.TooManyRequests
             );
-        if (response.StatusCode == HttpStatusCode.BadRequest)
-        {
-            // Inspect only for a limit classification; never store the provider body or echoed source/key.
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (
-                System.Text.RegularExpressions.Regex.IsMatch(
-                    body,
-                    @"(?is)(?:input token|context length|context window).{0,160}(?:exceed|maximum|limit)|(?:exceed|too many).{0,120}(?:input token|context length)"
-                )
-            )
-                throw new ContentNeedsReviewException(
-                    "AI input exceeds the provider context limit; original text is saved. Use a model with a larger supported context or review manually."
-                );
-        }
-
         if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
-            throw new AiUnavailableException(
-                $"AI HTTP {(int)response.StatusCode}: check configured model {model} and request compatibility."
-            );
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            var detail = GeminiProviderError.Message(body, config);
+            var message = $"AI HTTP {(int)response.StatusCode}: check configured model {model} and request compatibility. Provider detail: {detail}";
+            var safeBody = GeminiProviderError.Sanitize(body, config);
+            try { using var errorJson = JsonDocument.Parse(safeBody); telemetry.ResponseJson = errorJson.RootElement.GetRawText(); }
+            catch (JsonException) { /* The bounded provider explanation still remains available. */ }
+            if (System.Text.RegularExpressions.Regex.IsMatch(detail,
+                @"(?is)(?:input token|context length|context window).{0,160}(?:exceed|maximum|limit)|(?:exceed|too many).{0,120}(?:input token|context length)"))
+                throw new ContentNeedsReviewException("AI input exceeds the provider context limit; original text is saved. Provider detail: " + detail);
+            if (response.StatusCode == HttpStatusCode.BadRequest && useSchema && GeminiProviderError.RejectsSchema(detail))
+                throw new AiSchemaRejectedException(message);
+            throw new AiUnavailableException(message);
+        }
         response.EnsureSuccessStatusCode();
         JsonDocument parsed;
         try
