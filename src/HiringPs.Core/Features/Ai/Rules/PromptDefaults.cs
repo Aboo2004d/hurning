@@ -57,10 +57,27 @@ DATE CONTRACT: Return publicationDate (yyyy-MM-dd or null), publicationEvidence 
 """;
 
     /// <summary>القالب الأساسي الحالي؛ يبقى القالب التاريخي ثابتًا لحماية المهاجرات والنسخ المحفوظة.</summary>
-    public static string CurrentTemplate => Template.Replace(
+    public static string TitleAndDateTemplate => Template.Replace(
         "Preserve the original title and factual evidence. Use the primary listing title and organization, never suggested or related jobs.",
         TitleInstructions
     ) + "\n" + CurrentDateInstructions;
+
+    public static string CurrentTemplate => TitleAndDateTemplate + "\n" + CategoryInstructions;
+
+    public const string CategoryPolicyMarker = "CATEGORY POLICY v1:";
+
+    /// <summary>يعرض قائمة موحدة للنموذج؛ تبقى النسخ التاريخية المحفوظة دون تعديل.</summary>
+    public static string CategoryInstructions => CategoryPolicyMarker + " Classify each opportunity separately. "
+        + "The category is a derived classification and need not be stated verbatim in the source. "
+        + "Infer the professional field from the actual role, its duties and required specialty across the full main announcement. "
+        + "For training classify the subject taught; for tenders classify the goods/services requested. "
+        + "Do not classify by the employer's industry alone, incidental software skills, location, footer or related jobs. "
+        + "Return exactly one canonical Arabic label from the catalog below, preferring the specific specialty when supported. "
+        + "Do not invent aliases, combine labels or use the opportunity kind as its field. "
+        + "Use a parent only when a more specific specialty cannot be determined. If genuinely ambiguous, return category:\"\" and explain in reviewReason. "
+        + "This policy overrides the generic keep-unknown-fields-empty rule only for source-supported category inference. "
+        + "Catalog (parent: specialties):\n"
+        + string.Join("\n", CategoryTaxonomy.Families.Select(x => x.Name + ": " + string.Join(" | ", x.Children)));
 
     public const string TitleInstructions = """
 TITLE POLICY v1: Preserve the original title and factual evidence. Copy an explicit opportunity title as written in the main announcement, without translation, shortening or rewriting. If one announcement lists distinct roles or lots under a generic heading, return one opportunity per role or lot using its original specific title, its own conditions and a stable childKey; do not use the generic heading for every role. Never take a title or organization from suggested or related listings. Formatting, punctuation, gender notation and word-order differences alone do not require review. A material difference in the role, specialty or seniority does require review. Never invent a title or combine unrelated roles.
@@ -78,7 +95,7 @@ DEFAULT DATE POLICY v1: If the announcement contains no indication of an applica
         current.LegacySnapshot = "";
         current.Template = CurrentTemplate.ReplaceLineEndings("\n");
         current.DateContract = PromptDatePolicy.CurrentDateContract;
-        current.Note = "Current default title and date policies";
+        current.Note = "Current default title, date and category policies";
         current.FinalText = current.Compose();
         return current;
     }

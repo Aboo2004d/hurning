@@ -12,7 +12,7 @@
 <p>
     @(ar ? "النسخة الفعّالة" : "Active version"): @Model.Settings?.ActivePromptVersionId · @(ar ? "بانتظار التفعيل" : "Pending version"): @(Model.Settings?.PendingPromptVersionId?.ToString() ?? "—")
 </p>
-<form method="post" class="edit-form prompt-editor">
+<form asp-controller="AiPrompt" asp-action="AiPrompt" method="post" class="edit-form prompt-editor">
     <div asp-validation-summary="All" class="validation"></div>
     <input asp-for="Version" type="hidden" />
     <div class="form-grid">

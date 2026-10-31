@@ -3315,4 +3315,12 @@
   <data name="OperationEvent_RandomSettings" xml:space="preserve"><value>تعديل إعدادات النشر العشوائي</value></data>
   <data name="RandomCode_Interrupted" xml:space="preserve"><value>انقطع التنفيذ؛ تمت مراجعة السجل دون إعادة الإرسال</value></data>
   <data name="OperationEvent_RandomPublicationRecovered" xml:space="preserve"><value>مصالحة موعد نشر منقطع</value></data>
+  <data name="Error_StoredLocationReview" xml:space="preserve"><value>حُفظ المكان السابق للمراجعة؛ الاستخراج الحالي لم يثبت موقع العمل.</value></data>
+  <data name="Error_ConflictingWorkLocations" xml:space="preserve"><value>تعارضت مواقع العمل الصريحة؛ راجع الإعلان الأصلي.</value></data>
+  <data name="Error_SourceRoleDuplicates" xml:space="preserve"><value>توجد سجلات متعددة تطابق هذا الدور لدى المصدر؛ راجع التكرار قبل الدمج.</value></data>
+  <data name="Error_CategoryClassification" xml:space="preserve"><value>تعذر تصنيف المجال بثقة؛ اختر المجال بعد مراجعة الفرصة.</value></data>
+  <data name="CategoryTaxonomyTitle" xml:space="preserve"><value>المجالات الرئيسية والتخصصات المقترحة</value></data>
+  <data name="CategoryTaxonomyHelp" xml:space="preserve"><value>راجع كل مجال قبل اعتماده. تبقى أسماء الفرص والتفضيلات القديمة محفوظة؛ التخصصات التي تعتمدها ضمن مجموعة واحدة ستتطابق معًا في التنبيهات وتُحسب مجالًا واحدًا. لا تُنقل الأسماء من مجموعات معتمدة أخرى تلقائيًا.</value></data>
+  <data name="CategoryPolicyDraft" xml:space="preserve"><value>مراجعة تعليمات استنتاج المجال للنموذج</value></data>
+  <data name="CategoryFamilyReview" xml:space="preserve"><value>مراجعة تجميع هذا المجال</value></data>
 </root>

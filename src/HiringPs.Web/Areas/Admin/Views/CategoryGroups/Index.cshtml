@@ -2,6 +2,19 @@
 @{ ViewData["Title"] = T["SimilarCategories"].Value; }
 <section class="admin-list-page category-groups">
 <header class="admin-page-heading"><div><h1>@T["SimilarCategories"]</h1><p class="muted">@T["CategoryGroupsHelp"]</p></div><a class="button" asp-controller="CategoryGroups" asp-action="Create">@T["CategoryGroupCreate"]</a></header>
+<details class="report-panel">
+<summary>@T["CategoryTaxonomyTitle"]</summary>
+<p class="notice">@T["CategoryTaxonomyHelp"]</p>
+<p><a class="button button-outline" asp-controller="AiPrompt" asp-action="CategoryPolicy">@T["CategoryPolicyDraft"]</a></p>
+<div class="operation-events">
+@foreach (var family in CategoryTaxonomy.Families) {
+<article class="operation-event"><h3>@family.Name</h3>
+<div class="category-group-labels">@foreach (var child in family.Children) { <span class="badge">@child</span> }</div>
+<a class="button button-outline" asp-action="ProposeFamily" asp-route-family="@family.Key">@T["CategoryFamilyReview"]</a>
+</article>
+}
+</div>
+</details>
 <form method="get" class="operation-filters"><label>@T["Search"]<input name="search" value="@Model.Search" maxlength="200" /></label><div class="actions"><button>@T["Filter"]</button><a class="button button-outline" asp-controller="CategoryGroups" asp-action="Index">@T["OperationReset"]</a></div></form>
 <section id="ungrouped-categories">
 <header class="member-section-heading"><h2>@T["UngroupedCategories"]</h2><span class="badge">@Model.UngroupedPager.TotalRecords</span></header>

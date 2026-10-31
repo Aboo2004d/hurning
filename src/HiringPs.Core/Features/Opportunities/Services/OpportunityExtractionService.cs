@@ -31,6 +31,10 @@ public sealed class OpportunityExtractionService(HiringDb db)
         var allReviewed = true;
         var reviewReasons = new List<string>();
         var approvedLocations = await LocationCatalog.ApprovedAsync(db, ct);
+        var approvedCategories = await db.CategoryGroupMembers.AsNoTracking().Select(x => x.Label)
+            .Concat(db.Opportunities.AsNoTracking().Where(x => x.AdminOverride
+                && (x.Status == PublicationStatus.Published || x.Status == PublicationStatus.Archived))
+                .Select(x => x.Category)).Where(x => x != "").Distinct().ToListAsync(ct);
         var sourceContent = SourceEvidence.ForItem(item);
         var activeRules = result.PromptVersionId is { } versionId
             ? await db.PromptVersions.AsNoTracking().SingleAsync(x => x.Id == versionId, ct)
@@ -41,7 +45,7 @@ public sealed class OpportunityExtractionService(HiringDb db)
             .SourceLinks.Include(x => x.Opportunity)
             .Where(x => x.SourceItemId == item.Id)
             .ToListAsync(ct);
-        var linkByKey = links.ToDictionary(x => x.ChildKey, StringComparer.OrdinalIgnoreCase);
+        var consumed = new HashSet<OpportunitySourceLink>();
         var ownIds = links.Select(x => x.OpportunityId).Distinct().ToArray();
         var knownDates = (
             await db
@@ -59,9 +63,33 @@ public sealed class OpportunityExtractionService(HiringDb db)
             .ToHashSet();
         var nearMatches = new List<(Opportunity, long, double, string)>();
         var now = DateTimeOffset.UtcNow;
-        foreach (var e in result.Opportunities)
+        foreach (var raw in result.Opportunities)
         {
-            linkByKey.TryGetValue(e.ChildKey, out var link);
+            var recovered = ExplicitExtractionRecovery.Complete(raw, null, sourceContent,
+                result.Opportunities.Count == 1, approvedLocations, approvedCategories);
+            var link = ExtractionRoleIdentity.Match(recovered.Value, links, result.Opportunities, consumed);
+            var equivalent = links.Where(x => ExtractionRoleIdentity.SameRole(recovered.Value, x.Opportunity)).ToList();
+            var duplicateHistory = equivalent.Select(x => x.OpportunityId).Distinct().Count() > 1;
+            if (duplicateHistory)
+            {
+                const string reason = "Multiple stored records match this source role; review duplicates before merging.";
+                allReviewed = false;
+                reviewReasons.Add(reason);
+                foreach (var duplicate in equivalent)
+                {
+                    consumed.Add(duplicate);
+                    if (!PromptWorkflow.Protected(duplicate.Opportunity, result.PromptVersionId))
+                    {
+                        duplicate.Opportunity.Status = PublicationStatus.NeedsReview;
+                        duplicate.Opportunity.ReviewReason = reason;
+                    }
+                }
+                if (link is null) continue;
+            }
+            if (link is not null) consumed.Add(link);
+            recovered = ExplicitExtractionRecovery.Complete(raw, link?.Opportunity, sourceContent,
+                result.Opportunities.Count == 1, approvedLocations, approvedCategories);
+            var e = recovered.Value;
             if (
                 link is not null
                 && PromptWorkflow.Protected(link.Opportunity, result.PromptVersionId)
@@ -74,6 +102,9 @@ public sealed class OpportunityExtractionService(HiringDb db)
             var candidate = prepared.Candidate;
             var checkedDates = prepared.Dates;
             var errors = prepared.Errors;
+            errors.AddRange(recovered.Warnings);
+            if (duplicateHistory)
+                errors.Add("Multiple stored records match this source role; review duplicates before merging.");
             var organizationKeys = aliases.Keys(TextRules.OrganizationKey(candidate.Organization));
             // Records of this same announcement (other lots/roles) are never its duplicates.
             var excluded = ownIds.Append(link?.OpportunityId ?? 0).Distinct().ToArray();
@@ -242,10 +273,7 @@ public sealed class OpportunityExtractionService(HiringDb db)
             reviewReasons.AddRange(errors);
         }
 
-        var currentKeys = result
-            .Opportunities.Select(x => x.ChildKey)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var removed = links.Where(x => !currentKeys.Contains(x.ChildKey)).ToList();
+        var removed = links.Where(x => !consumed.Contains(x)).ToList();
         foreach (
             var link in removed.Where(x =>
                 !PromptWorkflow.Protected(x.Opportunity, result.PromptVersionId)

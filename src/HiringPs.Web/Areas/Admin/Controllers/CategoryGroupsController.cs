@@ -2,6 +2,7 @@ using HiringPs.Core;
 using HiringPs.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HiringPs.Web.Areas.Admin.Controllers;
 
@@ -31,6 +32,26 @@ public sealed class CategoryGroupsController(CategoryGroupReadService reader,
             || !string.IsNullOrWhiteSpace(second) && !string.IsNullOrWhiteSpace(first) && CategorySimilarityRules.Suggests(first, x.Label)))
             .Select(x => x.Label).ToArray();
         input.Name = input.Members.FirstOrDefault()?.Truncate(160) ?? "";
+        return View("Editor", input);
+    }
+
+    /// <summary>يحضّر عائلة معيارية للمراجعة، مع إبقاء الانتماءات المعتمدة الأخرى دون نقل تلقائي.</summary>
+    [HttpGet]
+    public async Task<IActionResult> ProposeFamily(string family, CancellationToken ct)
+    {
+        var definition = CategoryTaxonomy.Families.FirstOrDefault(x => x.Key == family);
+        if (definition is null) return NotFound();
+        var existing = (await reader.Groups(definition.Name).ToListAsync(ct))
+            .FirstOrDefault(x => CategoryGroupMap.Key(x.Name) == CategoryGroupMap.Key(definition.Name));
+        var input = new CategoryGroupInput
+        {
+            Id = existing?.Id ?? 0, Name = existing?.Name ?? definition.Name,
+            Version = existing is null ? "" : Convert.ToBase64String(existing.Version),
+        };
+        await FillAsync(input, ct);
+        input.Members = input.Options.Where(x => x.GroupId == input.Id
+            || x.GroupId is null && CategoryTaxonomy.Family(x.Label)?.Key == definition.Key)
+            .Select(x => x.Label).ToArray();
         return View("Editor", input);
     }
 

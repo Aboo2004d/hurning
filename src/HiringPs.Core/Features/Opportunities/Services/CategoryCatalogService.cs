@@ -10,7 +10,7 @@ public sealed class CategoryCatalogService(HiringDb db) : ICategoryCatalogReadSe
     {
         var values = await db.Opportunities.AsNoTracking().Where(x => x.Category != "")
             .Select(x => x.Category).Distinct().ToArrayAsync(ct);
-        return values.Select(CategoryRules.Clean).Where(x => x.Length > 0)
+        return values.Concat(CategoryTaxonomy.Labels).Select(CategoryRules.Clean).Where(x => x.Length > 0)
             .DistinctBy(CategoryRules.Key).OrderBy(x => x).ToArray();
     }
 

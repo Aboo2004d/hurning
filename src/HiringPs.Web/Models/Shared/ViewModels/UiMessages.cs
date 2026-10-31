@@ -16,6 +16,10 @@ public static class UiMessages
 
     public static readonly Dictionary<string, string> Fixed = new(StringComparer.OrdinalIgnoreCase)
     {
+        ["Stored location retained for review; current extraction did not establish the work location."] = "Error_StoredLocationReview",
+        ["Conflicting explicit work locations; review the original announcement."] = "Error_ConflictingWorkLocations",
+        ["Multiple stored records match this source role; review duplicates before merging."] = "Error_SourceRoleDuplicates",
+        ["Category could not be reliably classified; select a field after reviewing the opportunity."] = "Error_CategoryClassification",
         ["Local geographic scope needs review."] = "Error_Geography",
         ["Location needs review."] = "Error_Location",
         ["Original title not found in source text."] = "Error_TitleEvidence",

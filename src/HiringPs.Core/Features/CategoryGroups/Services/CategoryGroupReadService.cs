@@ -33,7 +33,7 @@ public sealed class CategoryGroupReadService(HiringDb db)
     {
         var values = await db.Opportunities.AsNoTracking().Select(x => x.Category)
             .Concat(db.CategoryGroupMembers.AsNoTracking().Select(x => x.Label)).Where(x => x != "").Distinct().ToArrayAsync(ct);
-        return values.Select(CategoryRules.Clean).Where(x => x.Length > 0).OrderBy(x => x, StringComparer.Ordinal)
+        return values.Concat(CategoryTaxonomy.Labels).Select(CategoryRules.Clean).Where(x => x.Length > 0).OrderBy(x => x, StringComparer.Ordinal)
             .DistinctBy(CategoryGroupMap.Key).ToArray();
     }
     /// <summary>يعيد الانتماءات القائمة لتقييد اختيار المجال بمجموعة واحدة.</summary>

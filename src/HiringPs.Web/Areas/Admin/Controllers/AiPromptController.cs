@@ -38,6 +38,19 @@ public class AiPromptController : AdminControllerBase
         return View(input);
     }
 
+    /// <summary>يفتح مسودة تصنيف للنموذج؛ الحفظ المعتاد وحده ينشئ نسخة جديدة ويجدول تفعيلها.</summary>
+    [HttpGet]
+    public async Task<IActionResult> CategoryPolicy(CancellationToken ct)
+    {
+        var result = await AiPrompt(inspect: null, ct);
+        if (result is not ViewResult { Model: PromptEditor input } view) return result;
+        if (!input.Template.Contains(PromptDefaults.CategoryPolicyMarker, StringComparison.Ordinal))
+            input.Template += "\n" + PromptDefaults.CategoryInstructions;
+        input.Note = "Canonical category inference and main fields with specialties";
+        view.ViewName = "AiPrompt";
+        return view;
+    }
+
     [HttpPost]
     public async Task<IActionResult> AiPrompt(
         [Bind(

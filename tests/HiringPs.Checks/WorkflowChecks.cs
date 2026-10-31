@@ -42,9 +42,9 @@ public static class WorkflowChecks
             return match.Groups[1].Value.Replace("''", "'");
         }
         Check(
-            FrozenLiteral("template") == PromptDefaults.CurrentTemplate.ReplaceLineEndings("\n")
+            FrozenLiteral("template") == PromptDefaults.TitleAndDateTemplate.ReplaceLineEndings("\n")
                 && FrozenLiteral("dates") == PromptDatePolicy.CurrentDateContract,
-            "final initialization freezes the exact latest default title and date instructions"
+            "historical initialization retains its exact original title and date instructions"
         );
         Check(
             upgradeSql.Contains("IF NOT EXISTS (SELECT 1 FROM [PromptVersions] WITH (UPDLOCK, HOLDLOCK))")

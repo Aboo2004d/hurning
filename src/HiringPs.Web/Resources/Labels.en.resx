@@ -3315,4 +3315,12 @@
   <data name="OperationEvent_RandomSettings" xml:space="preserve"><value>Random publishing settings updated</value></data>
   <data name="RandomCode_Interrupted" xml:space="preserve"><value>Execution interrupted; history reconciled without resending</value></data>
   <data name="OperationEvent_RandomPublicationRecovered" xml:space="preserve"><value>Interrupted random publication reconciled</value></data>
+  <data name="Error_StoredLocationReview" xml:space="preserve"><value>Previous location retained for review; current extraction did not establish the work location.</value></data>
+  <data name="Error_ConflictingWorkLocations" xml:space="preserve"><value>Conflicting explicit work locations; review the original announcement.</value></data>
+  <data name="Error_SourceRoleDuplicates" xml:space="preserve"><value>Multiple stored records match this source role; review duplicates before merging.</value></data>
+  <data name="Error_CategoryClassification" xml:space="preserve"><value>The field could not be classified reliably; review the opportunity and select a field.</value></data>
+  <data name="CategoryTaxonomyTitle" xml:space="preserve"><value>Suggested main fields and specialties</value></data>
+  <data name="CategoryTaxonomyHelp" xml:space="preserve"><value>Review each family before approval. Existing opportunity and preference labels are preserved. Specialties approved in one group match each other in alerts and count as one field. Labels already assigned elsewhere are not moved automatically.</value></data>
+  <data name="CategoryPolicyDraft" xml:space="preserve"><value>Review AI category inference instructions</value></data>
+  <data name="CategoryFamilyReview" xml:space="preserve"><value>Review this field group</value></data>
 </root>

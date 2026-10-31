@@ -9,6 +9,18 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--category-classification-check"))
+{
+    CategoryClassificationChecks.Run();
+    return;
+}
+
+if (args.Contains("--extraction-completeness-check"))
+{
+    await ExtractionCompletenessChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--random-publishing-ui-check"))
 {
     await RandomPublishingUiChecks.RunAsync();
