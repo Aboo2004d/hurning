@@ -5,12 +5,13 @@ namespace HiringPs.Core;
 /// <summary>قوائم إدارة الفرص وعداداتها عبر إسقاطات للعرض.</summary>
 public sealed class AdminOpportunityReadService(HiringDb db)
 {
-    /// <summary>يرتب الفرص بالحالة المطلوبة ويحسب أهلية النشر بنفس سياسة الإغلاق والموعد.</summary>
+    /// <summary>يرتب الفرص حسب وقت إضافتها تنازليًا، ثم المعرّف عند التعادل، ويحسب أهلية النشر.</summary>
     public IQueryable<AdminOpportunitySummaryDto> Opportunities(PublicationStatus? status)
     {
         var today = TextRules.PalestineToday();
         return db.Opportunities.AsNoTracking().Where(x => status == null || x.Status == status)
-            .OrderByDescending(x => x.Id).Select(x => new AdminOpportunitySummaryDto(
+            .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+            .Select(x => new AdminOpportunitySummaryDto(
                 x.Id, x.Title, x.Kind, x.Organization, x.Status, x.ReviewReason,
                 x.Status == PublicationStatus.Published && (x.Deadline == null || x.Deadline >= today)
                     && string.IsNullOrWhiteSpace(x.ClosureEvidence)));
