@@ -1,5 +1,7 @@
 using HiringPs.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HiringPs.Web.Areas.Admin.Controllers;
@@ -46,6 +48,20 @@ public static class CategoryGroupChecks
         Check(!db.Database.HasPendingModelChanges(), "Category group migration matches model");
         var sql = new CategoryGroupReadService(db).Groups("education").Skip(10).Take(10).ToQueryString();
         Check(sql.Contains("OFFSET") && sql.Contains("CategoryGroupMembers"), "Group list and nested members translate to paginated SQL");
+        var connectionGate = new RefuseDatabaseConnection();
+        await using (var translationDb = new HiringDb(new DbContextOptionsBuilder<HiringDb>()
+            .UseSqlServer("Server=.;Database=translation-only").AddInterceptors(connectionGate).Options))
+        {
+            try
+            {
+                await new CategoryGroupReadService(translationDb).FindAsync(5, default);
+                throw new Exception("Expected the test connection gate to stop database access");
+            }
+            catch (TranslationCompletedException)
+            {
+                Check(connectionGate.Attempts == 1, "SQL Server translates the actual group lookup before the test blocks database access");
+            }
+        }
         var management = new CategoryGroupManagementService(db);
         Check(await management.SaveAsync(new(0, "", [], [], "Test"), default) == CategoryGroupSaveOutcome.Invalid, "Invalid approval rejected before SQL");
         Check(await management.DeleteAsync(1, [], "Test", default) == CategoryGroupSaveOutcome.Invalid, "Invalid removal rejected before SQL");
@@ -55,4 +71,16 @@ public static class CategoryGroupChecks
             Check(Attribute.IsDefined(typeof(CategoryGroupsController).GetMethod(method)!, typeof(ValidateAntiForgeryTokenAttribute)), "CSRF required for " + method);
         Console.WriteLine($"Approved category groups: {passed} checks passed; no SQL connection or external requests.");
     }
+    /// <summary>Allows provider query compilation but blocks every database connection attempt.</summary>
+    private sealed class RefuseDatabaseConnection : DbConnectionInterceptor
+    {
+        public int Attempts { get; private set; }
+        public override ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection,
+            ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
+        {
+            Attempts++;
+            throw new TranslationCompletedException();
+        }
+    }
+    private sealed class TranslationCompletedException : Exception { }
 }

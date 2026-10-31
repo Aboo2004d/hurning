@@ -96,6 +96,15 @@ internal static class ExtractionCompletenessChecks
         await db.SaveChangesAsync();
         var reader = new CategoryGroupReadService(db);
         var groupsController = new CategoryGroupsController(reader, new CategoryGroupSuggestionService(db), new CategoryGroupManagementService(db));
+        var foundGroup = await reader.FindAsync(custom.Id, default);
+        Check(foundGroup?.Id == custom.Id && foundGroup.Name == custom.Name
+            && foundGroup.Members.SequenceEqual(["الهندسة المدنية"]), "group editor lookup filters by entity ID and returns its members");
+        Check(await reader.FindAsync(int.MaxValue, default) is null, "missing group lookup returns null");
+        var edit = (ViewResult)await groupsController.Edit(custom.Id, null, default);
+        Check(edit.ViewName == "Editor" && ((CategoryGroupInput)edit.Model!).Id == custom.Id,
+            "reported category group edit route opens without a translation exception");
+        Check(await groupsController.Edit(int.MaxValue, null, default) is NotFoundResult,
+            "deleted group edit route returns not found");
         var proposal = (ViewResult)await groupsController.ProposeFamily("engineering", default);
         var proposalInput = (CategoryGroupInput)proposal.Model!;
         Check(proposalInput.Name == "الهندسة" && proposalInput.Members.Contains("الهندسة الكهربائية")

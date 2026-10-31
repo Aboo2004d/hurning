@@ -21,12 +21,16 @@ public sealed class CategoryGroupReadService(HiringDb db)
             var value = search.Trim().Truncate(200);
             query = query.Where(x => x.Name.Contains(value) || x.Members.Any(m => m.Label.Contains(value)));
         }
-        return query.OrderByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id)
-            .Select(x => new CategoryGroupSummaryDto(x.Id, x.Name, x.UpdatedAt,
-                x.Members.OrderBy(m => m.Label).Select(m => m.Label).ToArray(), x.Version));
+        return Project(query.OrderByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id));
     }
     /// <summary>يقرأ محرر مجموعة محددة أو null عند حذفها.</summary>
-    public Task<CategoryGroupSummaryDto?> FindAsync(int id, CancellationToken ct) => Groups(null).SingleOrDefaultAsync(x => x.Id == id, ct);
+    public Task<CategoryGroupSummaryDto?> FindAsync(int id, CancellationToken ct) =>
+        Project(db.CategoryGroups.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);
+
+    /// <summary>يسقط الحقول بعد ترشيح الكيان؛ الترشيح على record بعد إنشائه غير قابل للترجمة في EF.</summary>
+    private static IQueryable<CategoryGroupSummaryDto> Project(IQueryable<CategoryGroup> query) =>
+        query.Select(x => new CategoryGroupSummaryDto(x.Id, x.Name, x.UpdatedAt,
+            x.Members.OrderBy(m => m.Label).Select(m => m.Label).ToArray(), x.Version));
 
     /// <summary>يعيد أسماء الفرص والانتماءات التاريخية فقط؛ لا يقرأ اهتمامات الأعضاء الخاصة.</summary>
     public async Task<string[]> CatalogAsync(CancellationToken ct)
