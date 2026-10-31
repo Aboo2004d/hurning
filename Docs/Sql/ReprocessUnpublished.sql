@@ -1,7 +1,15 @@
--- Run against the HiringPs SQL Server database after updating the app and collector.
+-- Local test: connect to your LOCAL SQL Server instance first.
+-- USE selects the database on that connection; it does not switch servers.
+-- Update the app and collector before starting the next collection round.
 -- Requeues all source items not shared with published/archived opportunities.
 -- Draft/review/hidden opportunities in that batch lose manual override and are re-extracted.
 -- Source content, revision history, original links and social publication history are retained.
+USE [hiring];
+GO
+
+SELECT DB_NAME() AS DatabaseName, CONVERT(nvarchar(128), SERVERPROPERTY('ServerName')) AS ServerName;
+GO
+
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
@@ -39,9 +47,13 @@ BEGIN TRY
           AND opportunity.Status IN (2, 3) -- Published, Archived
     );
 
+    DECLARE @UpdatedOpportunities TABLE (Id bigint PRIMARY KEY);
+    DECLARE @UpdatedItems TABLE (Id bigint PRIMARY KEY);
+
     UPDATE opportunity
     SET Status = 0, -- Draft: temporary until the new extraction is applied
         AdminOverride = 0
+    OUTPUT inserted.Id INTO @UpdatedOpportunities (Id)
     FROM dbo.Opportunities AS opportunity
     WHERE opportunity.Status NOT IN (2, 3)
       AND EXISTS (
@@ -50,7 +62,6 @@ BEGIN TRY
           INNER JOIN @Items AS queued ON queued.Id = link.SourceItemId
           WHERE link.OpportunityId = opportunity.Id
       );
-    DECLARE @OpportunitiesCount int = @@ROWCOUNT;
 
     UPDATE item
     SET Status = 0, -- Discovered: fetch original source before AI
@@ -61,9 +72,9 @@ BEGIN TRY
         ExtractionJson = N'',
         ExtractionPromptVersionId = NULL,
         RequestedPromptVersionId = @PromptVersionId
+    OUTPUT inserted.Id INTO @UpdatedItems (Id)
     FROM dbo.SourceItems AS item
     INNER JOIN @Items AS queued ON queued.Id = item.Id;
-    DECLARE @ItemsCount int = @@ROWCOUNT;
 
     -- Report exceptions; never silently move a protected shared source into the queue.
     DECLARE @Skipped TABLE (Id bigint PRIMARY KEY, Title nvarchar(max), Reason nvarchar(200));
@@ -83,8 +94,9 @@ BEGIN TRY
 
     COMMIT TRANSACTION;
 
-    SELECT @OpportunitiesCount AS OpportunitiesPrepared,
-           @ItemsCount AS SourceItemsQueued,
+    -- Count the actual OUTPUT rows; independent of rowcount state after connection recovery.
+    SELECT (SELECT COUNT(*) FROM @UpdatedOpportunities) AS OpportunitiesPrepared,
+           (SELECT COUNT(*) FROM @UpdatedItems) AS SourceItemsQueued,
            @PromptVersionId AS RequestedPromptVersionId,
            (SELECT COUNT(*) FROM @Skipped) AS OpportunitiesNotQueued;
     SELECT Id, Title, Reason FROM @Skipped ORDER BY Id DESC;
