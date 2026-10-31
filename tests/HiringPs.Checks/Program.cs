@@ -9,6 +9,18 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--random-publishing-ui-check"))
+{
+    await RandomPublishingUiChecks.RunAsync();
+    return;
+}
+
+if (args.Contains("--random-publishing-check"))
+{
+    await RandomPublishingChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--local-collection-check"))
 {
     await LocalCollectionChecks.RunAsync();

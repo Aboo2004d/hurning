@@ -22,7 +22,7 @@ internal static class SplitRuntimeChecks
         Check(!BackgroundRegistration.RunInWeb(Config("Local")), "local web never starts server delivery workers");
         var services = new ServiceCollection().AddServerWorkers();
         var hosted = services.Where(x => x.ServiceType == typeof(IHostedService)).Select(x => x.ImplementationType).ToArray();
-        Check(hosted.Length == 2 && hosted.Contains(typeof(MembershipWorker)) && hosted.Contains(typeof(DistributionWorker)), "server starts membership/payment and publication workers only");
+        Check(hosted.Length == 3 && hosted.Contains(typeof(MembershipWorker)) && hosted.Contains(typeof(DistributionWorker)) && hosted.Contains(typeof(RandomPublicationWorker)), "server starts membership/payment and publication workers only");
         var localHosted = new ServiceCollection().AddLocalCollectionWorkers()
             .Where(x => x.ServiceType == typeof(IHostedService)).Select(x => x.ImplementationType).ToArray();
         Check(localHosted.Length == 2 && localHosted.Contains(typeof(CollectionWorker)) && localHosted.Contains(typeof(ToolMonitor))

@@ -1,0 +1,58 @@
+@model RandomPublishingPage
+@{ ViewData["Title"] = T["RandomPublishing"].Value; }
+<header class="admin-page-heading"><h1>@T["RandomPublishing"]</h1></header>
+<p class="notice">@T["RandomPublishingHelp"]</p>
+<p><a asp-controller="SocialTemplates" asp-action="Index">@T["SocialTemplates"]</a> · <a asp-controller="Integrations" asp-action="Index">@T["Integrations"]</a></p>
+<p class="muted">@T["RandomPublishingMissedHelp"]</p>
+<div class="integrations-grid">
+@foreach (var setting in Model.Settings)
+{
+    <section class="tool-card integration-card">
+        <h2>@T[setting.Provider == "LinkedIn" ? "RandomLinkedInCompany" : setting.Provider == "LinkedInPersonal" ? "RandomLinkedInPersonal" : "Facebook"]</h2>
+        <p>@(setting.Connected ? setting.AccountName : T["IntegrationNotConfigured"].Value)</p>
+        <a asp-controller="Integrations" asp-action="Index">@T["IntegrationSettings"]</a>
+        <form asp-action="Save" method="post" class="integration-settings-form" data-random-schedule
+              data-slot-label="@T["RandomSlotTime"]">
+            <input type="hidden" name="Provider" value="@setting.Provider" />
+            <input type="hidden" name="Version" value="@setting.Version" />
+            <label class="integration-toggle"><input type="checkbox" name="Enabled" value="true" checked="@setting.Enabled" /> @T["RandomEnabled"]</label>
+            <label>@T["RandomDailyCount"]
+                <input type="number" name="DailyCount" min="1" max="24" value="@setting.DailyCount" required data-random-count />
+            </label>
+            <label>@T["RandomMaxDays"]
+                <input type="number" name="MaxRemainingDays" min="0" max="3650" value="@setting.MaxRemainingDays" required />
+            </label>
+            <p class="muted">@T["RandomUnknownDeadline"]</p>
+            <div data-random-times>
+                @for (var i = 0; i < setting.DailyCount; i++)
+                {
+                    <label>@T["RandomSlotTime"] @(i + 1) — @T["PalestineTimeLabel"]
+                        <input type="time" name="Times[@i]" value="@(setting.Times.ElementAtOrDefault(i) ?? "09:00")" step="60" required />
+                    </label>
+                }
+            </div>
+            <button type="submit">@T["Save"]</button>
+        </form>
+    </section>
+}
+</div>
+<h2>@T["RandomHistory"]</h2>
+<div class="table-wrap"><table>
+    <thead><tr><th>@T["RandomDestination"]</th><th>@T["RandomScheduledAt"]</th><th>@T["Title"]</th><th>@T["Status"]</th><th>@T["RandomResult"]</th></tr></thead>
+    <tbody>
+    @foreach (var run in Model.History.Items)
+    {
+        var codeKey = "RandomCode_" + run.ResultCode.Split(':')[0];
+        var codeText = T[codeKey];
+        <tr>
+            <td>@T[run.Provider == "LinkedIn" ? "RandomLinkedInCompany" : run.Provider == "LinkedInPersonal" ? "RandomLinkedInPersonal" : "Facebook"]</td>
+            <td><bdi>@PaymentDisplay.Time(run.ScheduledAt, seconds: false)</bdi></td>
+            <td>@if (run.OpportunityId is { } id) { <a asp-controller="Opportunities" asp-action="Edit" asp-route-id="@id">@run.Title</a> } else { <span>—</span> }</td>
+            <td>@T["RandomState_" + run.State]</td>
+            <td>@(codeText.ResourceNotFound ? T["RandomResultUnconfirmed"].Value : codeText.Value)</td>
+        </tr>
+    }
+    </tbody>
+</table></div>
+<partial name="_AdminPagination" model="Model.History.Pager" />
+@section Scripts { <script src="~/js/random-publishing.js" asp-append-version="true"></script> }

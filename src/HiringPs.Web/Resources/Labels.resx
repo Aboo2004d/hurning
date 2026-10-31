@@ -3276,4 +3276,43 @@
   <data name="CollectAllQueued" xml:space="preserve"><value>تم حجز المصادر المفعّلة والمعتمدة، مع إبقاء الطلبات الجارية دون تكرار.</value></data>
   <data name="ManualRoundComplete" xml:space="preserve"><value>انتهت جولة الجمع؛ لا توجد عناصر معلّقة للمعالجة أو الذكاء الاصطناعي أو إعادة المحاولة. راجع قائمة المراجعة للفرص التي تحتاج اعتمادًا.</value></data>
   <data name="ManualRoundPending" xml:space="preserve"><value>انتهت جولة الجمع؛ عدد العناصر المعلّقة للمعالجة أو الذكاء الاصطناعي أو إعادة المحاولة: {0}. الانتظار لا يعني نشرًا ناجحًا.</value></data>
+  <data name="RandomPublishing" xml:space="preserve"><value>النشر العشوائي المجدول</value></data>
+  <data name="RandomPublishingHelp" xml:space="preserve"><value>إعداد مستقل لكل وجهة. تُختار وظائف منشورة وغير مغلقة لم تُنشر سابقًا على الوجهة نفسها. الأوقات بتوقيت فلسطين، والعدد الافتراضي منشوران، والفاصل الأدنى 5 دقائق. يبدأ التنفيذ على السيرفر فقط.</value></data>
+  <data name="RandomPublishingMissedHelp" xml:space="preserve"><value>يُنفذ الموعد خلال أقل من خمس دقائق من وقته. المواعيد الفائتة لا تُعوّض دفعة واحدة. المحاولات المحجوزة أو غير المحسومة لا تعاد تلقائيًا؛ راجع سجل العمليات والمنصة قبل أي تدخل يدوي.</value></data>
+  <data name="RandomLinkedInCompany" xml:space="preserve"><value>LinkedIn — صفحة المؤسسة</value></data>
+  <data name="RandomLinkedInPersonal" xml:space="preserve"><value>LinkedIn — الحساب الشخصي</value></data>
+  <data name="RandomEnabled" xml:space="preserve"><value>تفعيل النشر العشوائي اليومي</value></data>
+  <data name="RandomDailyCount" xml:space="preserve"><value>عدد المنشورات يوميًا (1–24)</value></data>
+  <data name="RandomMaxDays" xml:space="preserve"><value>الحد الأقصى للأيام المتبقية حتى انتهاء التقديم</value></data>
+  <data name="RandomUnknownDeadline" xml:space="preserve"><value>تُقبل أيضًا الوظائف التي لا تملك موعد نهاية. القيمة 0 تختار ما يغلق اليوم أو بلا موعد نهاية.</value></data>
+  <data name="RandomSlotTime" xml:space="preserve"><value>وقت نشر المنشور</value></data>
+  <data name="PalestineTimeLabel" xml:space="preserve"><value>توقيت فلسطين</value></data>
+  <data name="RandomHistory" xml:space="preserve"><value>سجل المواعيد والنشر العشوائي</value></data>
+  <data name="RandomDestination" xml:space="preserve"><value>وجهة النشر</value></data>
+  <data name="RandomScheduledAt" xml:space="preserve"><value>الموعد — توقيت فلسطين</value></data>
+  <data name="RandomResult" xml:space="preserve"><value>النتيجة</value></data>
+  <data name="RandomSettingsInvalid" xml:space="preserve"><value>تحقق من العدد والأيام والأوقات: وقت لكل منشور بترتيب تصاعدي وفاصل خمس دقائق على الأقل.</value></data>
+  <data name="RandomSettingsConflict" xml:space="preserve"><value>تغيرت الإعدادات أثناء تعديلك. حدّث الصفحة وأعد المحاولة.</value></data>
+  <data name="RandomSettingsSaved" xml:space="preserve"><value>تم حفظ إعدادات النشر العشوائي لهذه الوجهة.</value></data>
+  <data name="RandomState_Reserved" xml:space="preserve"><value>محجوز — لا يُعاد إرساله تلقائيًا</value></data>
+  <data name="RandomState_Published" xml:space="preserve"><value>تم النشر</value></data>
+  <data name="RandomState_Failed" xml:space="preserve"><value>فشل قبل تأكيد النشر</value></data>
+  <data name="RandomState_Skipped" xml:space="preserve"><value>تم تخطي الموعد</value></data>
+  <data name="RandomState_Unknown" xml:space="preserve"><value>نتيجة غير محسومة — تحقق من المنصة</value></data>
+  <data name="RandomResultUnconfirmed" xml:space="preserve"><value>راجع سجل العمليات وحالة الربط؛ لا تعاود الإرسال قبل التحقق.</value></data>
+  <data name="RandomCode_MissedTime" xml:space="preserve"><value>فات الموعد؛ لم يُرسل منشور متأخر</value></data>
+  <data name="RandomCode_IntegrationNotConfigured" xml:space="preserve"><value>الوجهة غير مربوطة أو الربط متوقف أو منتهي</value></data>
+  <data name="RandomCode_NoEligibleJobs" xml:space="preserve"><value>لا توجد وظائف مؤهلة لم تُنشر سابقًا</value></data>
+  <data name="RandomCode_Published" xml:space="preserve"><value>أكّدت المنصة نجاح النشر</value></data>
+  <data name="RandomCode_PreparationFailed" xml:space="preserve"><value>تعذر تجهيز طلب النشر؛ راجع الربط</value></data>
+  <data name="RandomCode_Unconfirmed" xml:space="preserve"><value>لم تُحسم النتيجة؛ لا إعادة تلقائية</value></data>
+  <data name="RandomCode_Ineligible" xml:space="preserve"><value>لم تعد الوظيفة أو إعدادات الوجهة مؤهلة</value></data>
+  <data name="RandomCode_SocialRepeatRequired" xml:space="preserve"><value>تم نشر الوظيفة بالفعل؛ مُنع التكرار</value></data>
+  <data name="RandomCode_SocialUnknown" xml:space="preserve"><value>توجد محاولة سابقة غير محسومة؛ مُنع التكرار</value></data>
+  <data name="RandomCode_SocialTextTooLong" xml:space="preserve"><value>نص القالب يتجاوز حد المنصة</value></data>
+  <data name="OperationEvent_RandomPublication" xml:space="preserve"><value>نتيجة النشر العشوائي</value></data>
+  <data name="OperationEvent_RandomPublicationSlot" xml:space="preserve"><value>موعد نشر عشوائي</value></data>
+  <data name="OperationEvent_RandomSettings" xml:space="preserve"><value>تعديل إعدادات النشر العشوائي</value></data>
+  <data name="RandomCode_Interrupted" xml:space="preserve"><value>انقطع التنفيذ؛ تمت مراجعة السجل دون إعادة الإرسال</value></data>
+  <data name="OperationEvent_RandomPublicationRecovered" xml:space="preserve"><value>مصالحة موعد نشر منقطع</value></data>
 </root>

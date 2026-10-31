@@ -1539,6 +1539,98 @@ namespace HiringPs.Core.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HiringPs.Core.RandomPublicationRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<long?>("OpportunityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PageId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ResultCode")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("ScheduledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Slot")
+                        .HasColumnType("int");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("Provider", "OpportunityId")
+                        .IsUnique()
+                        .HasFilter("[OpportunityId] IS NOT NULL");
+
+                    b.HasIndex("Provider", "Day", "Slot")
+                        .IsUnique();
+
+                    b.ToTable("RandomPublicationRuns", (string)null);
+                });
+
+            modelBuilder.Entity("HiringPs.Core.RandomPublicationSetting", b =>
+                {
+                    b.Property<string>("Provider")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("DailyCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxRemainingDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TimesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Provider");
+
+                    b.ToTable("RandomPublicationSettings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RandomSetting_Count", "[DailyCount] BETWEEN 1 AND 24");
+
+                            t.HasCheckConstraint("CK_RandomSetting_Days", "[MaxRemainingDays] BETWEEN 0 AND 3650");
+
+                            t.HasCheckConstraint("CK_RandomSetting_Provider", "[Provider] IN ('Facebook','LinkedInPersonal','LinkedIn')");
+                        });
+                });
+
             modelBuilder.Entity("HiringPs.Core.RetentionPolicy", b =>
                 {
                     b.Property<int>("Id")
@@ -2860,6 +2952,14 @@ namespace HiringPs.Core.Migrations
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HiringPs.Core.RandomPublicationRun", b =>
+                {
+                    b.HasOne("HiringPs.Core.Opportunity", null)
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("HiringPs.Core.SavedOpportunity", b =>

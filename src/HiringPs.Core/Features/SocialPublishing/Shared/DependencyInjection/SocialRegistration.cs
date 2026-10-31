@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace HiringPs.Core;
 
@@ -15,6 +17,13 @@ public static class SocialRegistration
         services.AddScoped<LinkedInPublishingClient>();
         services.AddScoped<SocialPublishing>();
         services.AddScoped<SocialTemplates>();
+        services.AddScoped<RandomPublicationSettingsService>();
+        services.AddScoped<RandomPublicationScheduler>();
+        services.AddScoped<IRandomPublicationDispatcher, RandomPublicationDispatcher>();
+        services.TryAddScoped<SocialComposeReadService>();
+        services.TryAddScoped<SocialPublicationService>(sp => new(sp.GetRequiredService<HiringDb>(),
+            sp.GetRequiredService<SocialPublishing>(), sp.GetRequiredService<ILogger<SocialPublicationService>>()));
+        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
         services.AddHttpClient("SocialProviders", client => client.Timeout = TimeSpan.FromSeconds(20))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .RemoveAllLoggers();

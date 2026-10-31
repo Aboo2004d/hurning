@@ -26,6 +26,21 @@ public sealed class SocialPublicationService(HiringDb db, SocialPublishing publi
             { return new(SocialPublicationRoute.Compose, "SocialRepeatRequired"); }
             var connection = await db.SocialConnections.SingleOrDefaultAsync(x => x.Provider == input.Provider, ct);
             if (connection is null || !connection.Enabled || connection.ExpiresAt <= DateTimeOffset.UtcNow) { return new(SocialPublicationRoute.Integrations, "IntegrationNotConfigured"); }
+            if (input.Random is { } automatic)
+            {
+                var schedule = await db.Set<RandomPublicationSetting>().AsNoTracking().SingleOrDefaultAsync(x => x.Provider == input.Provider, ct);
+                var reserved = await db.Set<RandomPublicationRun>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.Id, ct);
+                var now = DateTimeOffset.UtcNow;
+                var today = TextRules.PalestineToday();
+                if (input.ConfirmRepeat || schedule is not { Enabled: true } || reserved is null
+                    || reserved.State != RandomPublicationState.Reserved || reserved.Provider != input.Provider
+                    || reserved.OpportunityId != item.Id || automatic.PageId != connection.PageId
+                    || reserved.PageId != connection.PageId || reserved.Day != today
+                    || reserved.ScheduledAt > now || now - reserved.ScheduledAt >= TimeSpan.FromMinutes(5)
+                    || item.Kind != OpportunityKind.Job
+                    || (item.Deadline is { } end && end > today.AddDays(schedule.MaxRemainingDays)))
+                    return new(SocialPublicationRoute.InvalidRequest);
+            }
             var templateProvider = SocialPublishing.TemplateProvider(input.Provider);
             if (input.TemplateVersionId is not {} templateId || !await db.SocialTemplateVersions.AnyAsync(x => x.Id == templateId && x.Provider == templateProvider && (x.Scope == item.Kind.ToString() || x.Scope == "general"), ct)) return new(SocialPublicationRoute.InvalidRequest);
             var text = input.Text.Trim();

@@ -16,6 +16,7 @@ public static class BackgroundRegistration
         services.AddBackgroundDependencies();
         services.AddHostedService<MembershipWorker>();
         services.AddHostedService<DistributionWorker>();
+        services.AddHostedService<RandomPublicationWorker>();
         return services;
     }
 

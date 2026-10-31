@@ -3276,4 +3276,43 @@
   <data name="CollectAllQueued" xml:space="preserve"><value>Eligible sources were queued; existing pending or running requests were preserved.</value></data>
   <data name="ManualRoundComplete" xml:space="preserve"><value>Collection round finished with no pending processing, AI or retries. Opportunities needing approval remain in review.</value></data>
   <data name="ManualRoundPending" xml:space="preserve"><value>Collection round finished; pending processing, AI or retries: {0}. Pending items are not published successes.</value></data>
+  <data name="RandomPublishing" xml:space="preserve"><value>Scheduled random publishing</value></data>
+  <data name="RandomPublishingHelp" xml:space="preserve"><value>Each destination has its own settings. Selects published, open jobs not previously posted to that destination. Times use Palestine time; default count is two and minimum spacing is 5 minutes. Runs on Server only.</value></data>
+  <data name="RandomPublishingMissedHelp" xml:space="preserve"><value>Slots run less than five minutes after their scheduled time. Missed slots are not sent in a catch-up burst. Reserved or uncertain attempts are never automatically replayed; review operation history and the destination first.</value></data>
+  <data name="RandomLinkedInCompany" xml:space="preserve"><value>LinkedIn — organization page</value></data>
+  <data name="RandomLinkedInPersonal" xml:space="preserve"><value>LinkedIn — personal profile</value></data>
+  <data name="RandomEnabled" xml:space="preserve"><value>Enable daily random publishing</value></data>
+  <data name="RandomDailyCount" xml:space="preserve"><value>Daily posts (1–24)</value></data>
+  <data name="RandomMaxDays" xml:space="preserve"><value>Maximum days remaining until the deadline</value></data>
+  <data name="RandomUnknownDeadline" xml:space="preserve"><value>Jobs without a deadline are also eligible. Zero selects jobs closing today or without a deadline.</value></data>
+  <data name="RandomSlotTime" xml:space="preserve"><value>Post time</value></data>
+  <data name="PalestineTimeLabel" xml:space="preserve"><value>Palestine time</value></data>
+  <data name="RandomHistory" xml:space="preserve"><value>Random publishing schedule history</value></data>
+  <data name="RandomDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="RandomScheduledAt" xml:space="preserve"><value>Scheduled time — Palestine time</value></data>
+  <data name="RandomResult" xml:space="preserve"><value>Result</value></data>
+  <data name="RandomSettingsInvalid" xml:space="preserve"><value>Check count, days and times: one time per post, in increasing order and at least five minutes apart.</value></data>
+  <data name="RandomSettingsConflict" xml:space="preserve"><value>Settings changed while you were editing. Refresh and try again.</value></data>
+  <data name="RandomSettingsSaved" xml:space="preserve"><value>Random publishing settings saved for this destination.</value></data>
+  <data name="RandomState_Reserved" xml:space="preserve"><value>Reserved — never automatically replayed</value></data>
+  <data name="RandomState_Published" xml:space="preserve"><value>Published</value></data>
+  <data name="RandomState_Failed" xml:space="preserve"><value>Failed before publication confirmation</value></data>
+  <data name="RandomState_Skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="RandomState_Unknown" xml:space="preserve"><value>Uncertain — check the destination</value></data>
+  <data name="RandomResultUnconfirmed" xml:space="preserve"><value>Review operation history and connection state before sending again.</value></data>
+  <data name="RandomCode_MissedTime" xml:space="preserve"><value>Missed slot; no late post sent</value></data>
+  <data name="RandomCode_IntegrationNotConfigured" xml:space="preserve"><value>Connection missing, disabled or expired</value></data>
+  <data name="RandomCode_NoEligibleJobs" xml:space="preserve"><value>No eligible unpublished jobs</value></data>
+  <data name="RandomCode_Published" xml:space="preserve"><value>Publication confirmed by the destination</value></data>
+  <data name="RandomCode_PreparationFailed" xml:space="preserve"><value>Could not prepare publication; check the connection</value></data>
+  <data name="RandomCode_Unconfirmed" xml:space="preserve"><value>Uncertain outcome; no automatic replay</value></data>
+  <data name="RandomCode_Ineligible" xml:space="preserve"><value>Job or destination settings are no longer eligible</value></data>
+  <data name="RandomCode_SocialRepeatRequired" xml:space="preserve"><value>Already published; duplicate prevented</value></data>
+  <data name="RandomCode_SocialUnknown" xml:space="preserve"><value>Previous uncertain attempt; duplicate prevented</value></data>
+  <data name="RandomCode_SocialTextTooLong" xml:space="preserve"><value>Template text exceeds platform limit</value></data>
+  <data name="OperationEvent_RandomPublication" xml:space="preserve"><value>Random publication result</value></data>
+  <data name="OperationEvent_RandomPublicationSlot" xml:space="preserve"><value>Random publication slot</value></data>
+  <data name="OperationEvent_RandomSettings" xml:space="preserve"><value>Random publishing settings updated</value></data>
+  <data name="RandomCode_Interrupted" xml:space="preserve"><value>Execution interrupted; history reconciled without resending</value></data>
+  <data name="OperationEvent_RandomPublicationRecovered" xml:space="preserve"><value>Interrupted random publication reconciled</value></data>
 </root>

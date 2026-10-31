@@ -18,6 +18,9 @@ public class HiringDb(
     private readonly OperationTracking operations = new();
 
     public string ActivePaymentEnvironment => paymentEnvironment?.Name ?? "Production";
+    public DbSet<RandomPublicationSetting> RandomPublicationSettings => Set<RandomPublicationSetting>();
+    public DbSet<RandomPublicationRun> RandomPublicationRuns => Set<RandomPublicationRun>();
+
     public DbSet<PublicCatalogRevision> PublicCatalogRevisions => Set<PublicCatalogRevision>();
     public DbSet<SocialTemplateVersion> SocialTemplateVersions => Set<SocialTemplateVersion>();
     public DbSet<SocialConnection> SocialConnections => Set<SocialConnection>();
@@ -83,6 +86,8 @@ public class HiringDb(
         b.ApplyConfiguration(new AuditEntryConfiguration());
         b.ApplyConfiguration(new SocialTemplateVersionConfiguration());
         b.ApplyConfiguration(new SocialPublicationConfiguration());
+        b.ApplyConfiguration(new RandomPublicationSettingConfiguration());
+        b.ApplyConfiguration(new RandomPublicationRunConfiguration());
         b.ApplyConfiguration(new IndexNowEntryConfiguration());
         b.ApplyConfiguration(new ToolCheckRequestConfiguration());
         b.ApplyConfiguration(new ToolCheckResultConfiguration());
