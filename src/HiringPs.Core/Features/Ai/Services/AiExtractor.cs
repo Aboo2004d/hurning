@@ -88,6 +88,33 @@ public class AiExtractor
         AiExecution? execution = null
     )
     {
+        try { return await ExtractAttemptAsync(content, ct, execution, null); }
+        catch (AiExtractionRejectedException ex) when ((config.GetValue<int?>("Ai:ExtractionRepairAttempts") ?? 1) > 0 && !ct.IsCancellationRequested)
+        {
+            if (scopes is not null)
+            {
+                await using var scope = scopes.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
+                var now = DateTimeOffset.UtcNow;
+                if (await AiGovernor.PausedUntilAsync(db, now, ct) is not null
+                    || await AiGovernor.BudgetExceededAsync(db, config, now, ct)) throw;
+            }
+            // Exactly one corrective call, separately counted in usage. Never resubmit
+            // the previous generated text as source evidence or create an unbounded loop.
+            var correction = "EXTRACTION CORRECTION v1: The previous attempt failed validation: " + ex.Reason
+                + " Re-read the supplied SOURCE DATA and return every required field independently. "
+                + "Use explicit location and date clauses with exact evidence. Infer the canonical category from the actual role. "
+                + "Never put duties or qualifications in workMode; use only its enum values. "
+                + "Do not repeat one vacancy under different child keys. Unknown facts must remain empty/null; never invent missing facts.";
+            return await ExtractAttemptAsync(content, ct, execution, correction);
+        }
+    }
+
+    /// <summary>ينفذ محاولة واحدة ويسجل استهلاكها ونتيجتها وبصمة التعليمات الفعلية.</summary>
+    private async Task<ExtractionResult> ExtractAttemptAsync(string content, CancellationToken ct, AiExecution? execution, string? correction)
+    {
+        var instructions = (execution?.Version ?? PromptDefaults.Current()).Render()
+            + (correction is null ? "" : "\n" + correction);
         var limit = GeminiClient.MaxInputCharacters(config);
         if (content.Length > limit)
             throw new ContentNeedsReviewException(
@@ -101,18 +128,27 @@ public class AiExtractor
                 scopes,
                 execution,
                 config["Ai:Model"] ?? "",
-                ct
+                ct, instructions
             );
         string? error = null;
         try
         {
-            var result = await SendAsync(content, execution, telemetry, ct);
+            var result = await SendAsync(content, instructions, telemetry, ct);
+            ExtractionValidator.EnsureShape(result);
+            var issues = AiExtractionContract.Issues(result, content);
+            if (issues.Count > 0) throw new AiExtractionRejectedException(string.Join(" ", issues));
             result.PromptVersionId = execution?.Version.Id;
             return result;
         }
         catch (Exception ex)
         {
             error = ex.GetType().Name;
+            if (ex is ContentNeedsReviewException && telemetry.ResponseJson is { } responseJson)
+            {
+                var diagnostic = await AiResponseDiagnostics.SaveAsync(config, execution, responseJson, ex.Message);
+                if (ex is AiExtractionRejectedException rejected) rejected.DiagnosticId = diagnostic;
+                if (diagnostic is { } id) logger?.LogWarning("Rejected AI response diagnostic {DiagnosticId}", id.ToString("N"));
+            }
             throw;
         }
         finally
@@ -143,7 +179,7 @@ public class AiExtractor
     /// <summary>يرسل طلب المزود ويصنف نتيجته وفق قواعد الخدمة دون كشف بيانات الاعتماد.</summary>
     private async Task<ExtractionResult> SendAsync(
         string content,
-        AiExecution? execution,
+        string instructions,
         AiTelemetry telemetry,
         CancellationToken ct
     )
@@ -156,14 +192,13 @@ public class AiExtractor
             throw new AiUnavailableException("AI model is not configured; item remains queued.");
         if (!System.Text.RegularExpressions.Regex.IsMatch(model, @"\A[a-zA-Z0-9._-]+\z"))
             throw new AiUnavailableException("AI model is invalid; item remains queued.");
-        var prompt = execution?.Version ?? PromptDefaults.Current();
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         );
         request.Headers.Add("x-goog-api-key", key);
         request.Content = JsonContent.Create(
-            GeminiClient.RequestBody(prompt.Render(), content, config)
+            GeminiClient.RequestBody(instructions, content, config)
         );
         HttpResponseMessage received;
         try
@@ -238,6 +273,7 @@ public class AiExtractor
         }
         using var result = parsed;
         telemetry.Read(result.RootElement);
+        telemetry.ResponseJson = result.RootElement.GetRawText();
         return GeminiClient.ParseResponse(result.RootElement);
     }
 }

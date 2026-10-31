@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using System.Text;
 using HiringPs.Core;
@@ -407,19 +408,21 @@ public static class WorkflowSqlChecks
 
     private sealed class FixtureResponseHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken ct
-        ) =>
-            Task.FromResult(
-                new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(
-                        """{"candidates":[{"content":{"parts":[{"text":"{\"inScope\":true,\"opportunities\":[{\"childKey\":\"fixture\",\"kind\":\"Job\",\"title\":\"Fixture role\",\"organization\":\"Fixture org\",\"locations\":\"غزة\",\"locationEvidence\":\"غزة\",\"summary\":\"Fixture summary\",\"originalLanguage\":\"en\",\"isInPalestine\":true}]}"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}""",
-                        Encoding.UTF8,
-                        "application/json"
-                    ),
-                }
-            );
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var extraction = JsonSerializer.Serialize(new ExtractionResult(true, [new ExtractedOpportunity
+            {
+                ChildKey = "fixture", Kind = OpportunityKind.Job, Title = "Fixture role", Organization = "Fixture org",
+                Locations = "غزة", LocationEvidence = "غزة", Summary = "Fixture summary", OriginalLanguage = "en", IsInPalestine = true,
+                Category = "الصحة"
+            }]), AiExtractor.JsonOptions);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new {
+                    candidates = new[] { new { content = new { parts = new[] { new { text = extraction } } } } },
+                    usageMetadata = new { promptTokenCount = 10, candidatesTokenCount = 5, totalTokenCount = 15 }
+                }), Encoding.UTF8, "application/json")
+            });
+        }
     }
 }

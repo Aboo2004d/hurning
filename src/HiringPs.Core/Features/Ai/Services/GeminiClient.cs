@@ -94,7 +94,7 @@ public static class GeminiClient
                         ["category"] = Text(),
                         ["employmentType"] = Text(),
                         ["experienceLevel"] = Text(),
-                        ["workMode"] = Text(),
+                        ["workMode"] = Choice(AiExtractionContract.WorkModes),
                         ["referenceNumber"] = Text(),
                         ["duration"] = Text(),
                         ["eligibility"] = Text(),
@@ -121,6 +121,7 @@ public static class GeminiClient
                                     ["evidence"] = Text(),
                                 },
                                 ["required"] = new[] { "kind", "date", "label", "evidence" },
+                                ["propertyOrdering"] = new[] { "kind", "date", "label", "evidence" },
                             },
                         },
                         ["locationEvidence"] = Text(),
@@ -131,12 +132,52 @@ public static class GeminiClient
                         },
                         ["reviewReason"] = Text(),
                     },
-                    ["required"] = new[] { "childKey", "kind", "title", "organization" },
+                    ["required"] = AiExtractionContract.Fields,
+                    ["propertyOrdering"] = AiExtractionContract.Fields,
                 },
             },
         },
         ["required"] = new[] { "inScope", "opportunities" },
+        ["propertyOrdering"] = new[] { "inScope", "opportunities" },
     };
+
+    static GeminiClient()
+    {
+        var top = (Dictionary<string, object>)ResponseSchema["properties"];
+        var items = (Dictionary<string, object>)((Dictionary<string, object>)top["opportunities"])["items"];
+        var fields = (Dictionary<string, object>)items["properties"];
+        foreach (var (name, schema) in fields)
+            ((Dictionary<string, object>)schema)["description"] = name switch
+            {
+                "childKey" => "Stable source role reference; do not invent new identifiers on repeated processing.",
+                "title" => "Exact original specific role or lot title from the main announcement.",
+                "organization" => "Original employer/issuer name, never the recruitment platform.",
+                "originalLanguage" => "Language of the original opportunity.",
+                "summary" => "Brief overview only. The prompt's summary target applies only here.",
+                "locations" => "Actual work/training/tender location, including supported address details. Read explicit location fields. Not headquarters alone.",
+                "locationEvidence" => "One exact continuous source quotation establishing this role's actual location.",
+                "isInPalestine" => "True for a supported Palestinian location; false for foreign; null when unresolved.",
+                "category" => "Infer the actual professional field or subject. Use exactly one canonical catalog label, not an invented alias.",
+                "workMode" => "Only an explicitly stated On-site, Remote or Hybrid mode, or empty string. Never duties, qualifications, employment type, salary or copied paragraphs. Empty for non-job kinds.",
+                "employmentType" => "Explicit job contract or full/part-time type only. Empty for non-job kinds.",
+                "experienceLevel" => "Concise explicit years/level requirement only. Empty for non-job kinds.",
+                "eligibility" => "Explicit applicant restrictions and qualifications. Preserve mandatory conditions here, never in workMode.",
+                "referenceNumber" => "Explicit role, tender or lot reference; preserve unchanged.",
+                "duration" => "Explicit opportunity/contract duration, not a deadline.",
+                "cost" => "Explicit participation, document or course fees only.",
+                "applyUrl" => "Explicit HTTPS application link from this announcement, or empty. Never fabricate a fallback.",
+                "deadline" => "Explicit application/registration/bid-submission closing date as yyyy-MM-dd, or null. Never opening/publication/course-end dates.",
+                "deadlineEvidence" => "Exact continuous source closing clause with its date. Empty when no closing date is indicated.",
+                "publicationDate" => "Explicit publication date as yyyy-MM-dd or null; never an application opening date.",
+                "publicationEvidence" => "Exact continuous source publication clause or empty.",
+                "modificationDate" => "Explicit update date as yyyy-MM-dd or null.",
+                "modificationEvidence" => "Exact continuous source update clause or empty.",
+                "deadlineIsExtension" => "True only for an explicitly announced extension supported by deadlineEvidence.",
+                "otherDates" => "Other explicit dated events; do not duplicate primary dates.",
+                "reviewReason" => "Specific unresolved ambiguity only. Unknown optional deadline or applyUrl alone does not require review.",
+                _ => "Extract this field independently; do not place another field's facts here.",
+            };
+    }
 
     /// <summary>ينفذ RetryAfter وفق قواعد GeminiClient الحالية دون تغيير عقد المستدعين.</summary>
     public static TimeSpan? RetryAfter(HttpResponseMessage response)
@@ -206,13 +247,15 @@ public static class GeminiClient
             );
         try
         {
+            using var extraction = JsonDocument.Parse(text.ToString());
+            AiExtractionContract.ValidateJson(extraction.RootElement);
             return JsonSerializer.Deserialize<ExtractionResult>(text.ToString(), AiExtractor.JsonOptions)
-                ?? throw new ContentNeedsReviewException("AI returned an empty extraction.");
+                ?? throw new AiExtractionRejectedException("AI returned an empty extraction.");
         }
         catch (JsonException)
         {
-            throw new ContentNeedsReviewException(
-                "AI output does not match the extraction contract (invalid JSON, date or enum); review manually."
+            throw new AiExtractionRejectedException(
+                "AI extraction contract: invalid JSON, date or enum; return required schema with yyyy-MM-dd dates."
             );
         }
     }

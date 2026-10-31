@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Text.Json;
+using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>Checks source-backed recovery and stable identities without contacting AI or production storage.</summary>
 internal static class ExtractionCompletenessChecks
@@ -52,7 +55,7 @@ internal static class ExtractionCompletenessChecks
         await using var db = new FixtureDb(new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options);
         var tables = new[] { typeof(Opportunity), typeof(Source), typeof(SourceItem), typeof(OpportunitySourceLink),
             typeof(OpportunityDateRecord), typeof(PromptVersion), typeof(OrganizationAlias), typeof(AuditEntry),
-            typeof(OpportunityPublication), typeof(IndexNowEntry), typeof(DuplicateCandidate), typeof(CategoryGroup), typeof(CategoryGroupMember), typeof(WorkflowSettings) }
+            typeof(OpportunityPublication), typeof(IndexNowEntry), typeof(DuplicateCandidate), typeof(CategoryGroup), typeof(CategoryGroupMember), typeof(WorkflowSettings), typeof(SourceItemRevision), typeof(AiUsage), typeof(PipelineState) }
             .Select(t => db.Model.FindEntityType(t)!.GetTableName()).ToArray();
         foreach (var sql in db.Database.GenerateCreateScript().Split(';', StringSplitOptions.RemoveEmptyEntries))
             if (tables.Any(t => sql.TrimStart().StartsWith($"CREATE TABLE \"{t}\"")))
@@ -124,7 +127,116 @@ internal static class ExtractionCompletenessChecks
             "AI policy action prepares a versioned draft through the existing prompt editor");
         Check(await db.PromptVersions.CountAsync() == 1 && (await db.WorkflowSettings.SingleAsync()).PendingPromptVersionId is null
             && !historicalPrompt.Template.Contains(PromptDefaults.CategoryPolicyMarker), "opening category policy draft does not alter or activate a saved prompt");
+        // Run the actual processing service: stale paid results must not bypass the new
+        // contract, while valid unchanged results still avoid another paid request.
+        var processingConfig = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> {
+            ["Ai:ApiKey"] = "fixture", ["Ai:Model"] = "fixture-model", ["Ai:ExtractionRepairAttempts"] = "0", ["Ai:DailyTokenBudget"] = "0", ["Ai:SaveRejectedResponses"] = "false"
+        }).Build();
+        var dbOptions = new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options;
+        using var scopes = new ServiceCollection().AddScoped<HiringDb>(_ => new FixtureDb(dbOptions)).BuildServiceProvider();
+        var completeSource = "مساعد إداري الشركة الأهلية " + source;
+        await using var browser = new ProcessingBrowser(processingConfig) { Content = completeSource };
+        var good = new ExtractedOpportunity { ChildKey = "assistant", Kind = OpportunityKind.Job, Title = "مساعد إداري",
+            Organization = "الشركة الأهلية", Locations = "الخليل - فرش الهوى - مقابل كيوي مول", LocationEvidence = "الخليل - فرش الهوى - مقابل كيوي مول",
+            Category = "إدارة", EmploymentType = "دوام كامل", Summary = "مساعد إداري للعمل في الشركة", IsInPalestine = true };
+        var handler = new ProcessingReply { Extraction = new ExtractionResult(true, [good]) };
+        using var http = new HttpClient(handler);
+        var extractor = new AiExtractor(http, processingConfig, scopes.GetRequiredService<IServiceScopeFactory>());
+        var pipeline = new SourceItemProcessingService(db, browser, extractor, new OpportunityService(db), processingConfig, NullLogger<CollectionPipeline>.Instance);
+        var processingItem = new SourceItem { Source = new Source { Name = "processing fixture", Url = "https://example.test/list" },
+            ExternalId = "processing", Url = "https://example.test/job", Content = completeSource, ContentHash = ContentFingerprint.Hash(completeSource),
+            ExtractionJson = originalJson, ExtractionPromptVersionId = historicalPrompt.Id, Status = ProcessingStatus.Discovered };
+        db.SourceItems.Add(processingItem);
+        await db.SaveChangesAsync();
+        await pipeline.ProcessAsync(processingItem.Id, historicalPrompt, null, _ => Task.CompletedTask,
+            (_, _) => throw new Exception("Budget is disabled in this isolated fixture"), default);
+        Check(handler.Calls == 1 && browser.Fetches == 1 && processingItem.ExtractionJson.Contains("assistant"),
+            "invalid unchanged cache causes a fresh provider call rather than another incomplete application");
+        Check((await db.AiUsage.AsNoTracking().OrderByDescending(x => x.Id).FirstAsync()).Success == true,
+            "complete provider response records successful usage");
+        processingItem.Status = ProcessingStatus.Discovered;
+        await db.SaveChangesAsync();
+        await pipeline.ProcessAsync(processingItem.Id, historicalPrompt, null, _ => Task.CompletedTask,
+            (_, _) => throw new Exception("Budget is disabled"), default);
+        Check(handler.Calls == 1 && browser.Fetches == 2, "valid unchanged cache is still reused without extra AI cost");
+        var rejectedItem = new SourceItem { Source = processingItem.Source, ExternalId = "rejected", Url = "https://example.test/rejected",
+            Content = completeSource, ContentHash = ContentFingerprint.Hash(completeSource), Status = ProcessingStatus.Discovered };
+        db.SourceItems.Add(rejectedItem);
+        await db.SaveChangesAsync();
+        good.WorkMode = "On-site / duties and qualifications copied into the wrong field";
+        await pipeline.ProcessAsync(rejectedItem.Id, historicalPrompt, null, _ => Task.CompletedTask,
+            (_, _) => throw new Exception("Budget is disabled"), default);
+        var rejectedSaved = await db.SourceItems.AsNoTracking().SingleAsync(x => x.Id == rejectedItem.Id);
+        Check(rejectedSaved.Status == ProcessingStatus.NeedsReview && rejectedSaved.Error.Contains("workMode") && rejectedSaved.ExtractionJson == "",
+            "bad provider result leaves a specific source review reason and is never cached as a successful extraction");
+        Check((await db.AiUsage.AsNoTracking().OrderByDescending(x => x.Id).FirstAsync()).Success == false
+            && (await db.AiUsage.AsNoTracking().OrderByDescending(x => x.Id).FirstAsync()).ErrorType == nameof(AiExtractionRejectedException),
+            "HTTP 200 with mixed fields records failed extraction usage");
+        var rssItem = new SourceItem { Source = new Source { Name = "RSS fixture", Url = OpportunityRss.JobsUrl, Connector = ConnectorKind.JobsRss },
+            ExternalId = "rss", Url = "https://www.jobs.ps/jobs/fixture-123", Content = "Data Entry Operator Workplace: ...", Status = ProcessingStatus.AwaitingAi };
+        db.SourceItems.Add(rssItem);
+        await db.SaveChangesAsync();
+        browser.Content = "Data Entry Operator MSF Workplace: Gaza Responsibilities: enter approved project data into records accurately and maintain confidentiality.";
+        handler.Extraction = new ExtractionResult(true, [new ExtractedOpportunity { ChildKey = "entry", Kind = OpportunityKind.Job, Title = "Data Entry Operator", Organization = "MSF",
+            OriginalLanguage = "en", Summary = "Enter project records.", Locations = "Gaza", LocationEvidence = "Workplace: Gaza", IsInPalestine = true, Category = "إدارة" }]);
+        var beforeFetch = browser.Fetches;
+        await pipeline.ProcessAsync(rssItem.Id, historicalPrompt, null, _ => Task.CompletedTask,
+            (_, _) => throw new Exception("Budget is disabled"), default);
+        var rssSaved = await db.SourceItems.AsNoTracking().SingleAsync(x => x.Id == rssItem.Id);
+        Check(browser.Fetches == beforeFetch + 1 && rssSaved.Content.Contains("Workplace: Gaza") && rssSaved.ExtractionJson.Contains("entry"),
+            "legacy RSS summary already awaiting AI is refetched before a new extraction");
+        // A corrective attempt has its own usage row and effective prompt hash.
+        good.WorkMode = "";
+        var invalidRepair = JsonSerializer.Deserialize<ExtractedOpportunity>(JsonSerializer.Serialize(good, AiExtractor.JsonOptions), AiExtractor.JsonOptions)!;
+        invalidRepair.WorkMode = "On-site / copied duties and conditions";
+        var correctionItem = new SourceItem { SourceId = processingItem.SourceId, ExternalId = "correction", Url = "https://example.test/correction",
+            Content = completeSource, ContentHash = ContentFingerprint.Hash(completeSource), Status = ProcessingStatus.AwaitingAi };
+        db.SourceItems.Add(correctionItem);
+        await db.SaveChangesAsync();
+        processingConfig["Ai:ExtractionRepairAttempts"] = "1";
+        var firstCorrectionCall = handler.Calls + 1;
+        handler.Next = call => new ExtractionResult(true, [call == firstCorrectionCall ? invalidRepair : good]);
+        await pipeline.ProcessAsync(correctionItem.Id, historicalPrompt, null, _ => Task.CompletedTask,
+            (_, _) => throw new Exception("Budget is disabled"), default);
+        var attempts = await db.AiUsage.AsNoTracking().Where(x => x.SourceItemId == correctionItem.Id).OrderBy(x => x.Id).ToListAsync();
+        Check(attempts.Count == 2 && attempts[0].Success == false && attempts[1].Success == true
+            && attempts[0].PromptHash != attempts[1].PromptHash, "correction attempts record separate outcomes, tokens and actual instruction hashes");
+        handler.Next = _ => new ExtractionResult(true, [invalidRepair]);
+        var pauseState = new PipelineState { Id = 1, AiPausedUntil = DateTimeOffset.UtcNow.AddHours(1) };
+        db.PipelineStates.Add(pauseState);
+        await db.SaveChangesAsync();
+        var beforePause = handler.Calls;
+        try { await extractor.ExtractAsync(completeSource, default, new AiExecution(historicalPrompt, correctionItem.Id)); throw new Exception("Expected quality rejection under pause"); }
+        catch (AiExtractionRejectedException) { Check(handler.Calls == beforePause + 1, "global pause prevents an additional corrective request"); }
+        pauseState.AiPausedUntil = null;
+        await db.SaveChangesAsync();
+        processingConfig["Ai:DailyTokenBudget"] = "1";
+        var beforeBudget = handler.Calls;
+        try { await extractor.ExtractAsync(completeSource, default, new AiExecution(historicalPrompt, correctionItem.Id)); throw new Exception("Expected quality rejection at budget"); }
+        catch (AiExtractionRejectedException) { Check(handler.Calls == beforeBudget + 1, "spent token budget prevents an additional corrective request"); }
         Console.WriteLine($"Extraction completeness checks passed: {count}");
+    }
+    private sealed class ProcessingBrowser(IConfiguration config) : BrowserCollector(null!, config, null!)
+    {
+        public string Content { get; set; } = "";
+        public int Fetches { get; private set; }
+        public override Task<ContentBundle> FetchBundleAsync(Source source, string url, CancellationToken ct)
+        { Fetches++; return Task.FromResult(new ContentBundle(Content, [])); }
+    }
+    private sealed class ProcessingReply : HttpMessageHandler
+    {
+        public ExtractionResult Extraction { get; set; } = new(false, []);
+        public int Calls { get; private set; }
+        public Func<int, ExtractionResult>? Next { get; set; }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Calls++;
+            var json = JsonSerializer.Serialize(Next?.Invoke(Calls) ?? Extraction, AiExtractor.JsonOptions);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(new {
+                candidates = new[] { new { finishReason = "STOP", content = new { parts = new[] { new { text = json } } } } },
+                usageMetadata = new { promptTokenCount = 10, candidatesTokenCount = 5, totalTokenCount = 15 }
+            })) });
+        }
     }
     private sealed class FixtureDb(DbContextOptions<HiringDb> options) : HiringDb(options)
     {

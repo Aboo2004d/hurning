@@ -572,7 +572,7 @@ public static class WorkflowChecks
             return new(HttpStatusCode.OK)
             {
                 Content = new StringContent(
-                    """{"candidates":[{"content":{"parts":[{"text":"{\"inScope\":true,\"opportunities\":[]}"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}""",
+                    """{"candidates":[{"content":{"parts":[{"text":"{\"inScope\":false,\"opportunities\":[]}"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}""",
                     Encoding.UTF8,
                     "application/json"
                 ),

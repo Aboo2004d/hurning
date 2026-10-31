@@ -508,7 +508,7 @@ public partial class BrowserCollector(
         CancellationToken ct
     )
     {
-        if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
+        if (source.Connector == ConnectorKind.ReliefWebRss)
         {
             return await CollectorDiagnosticFiles.WithoutPageAsync(
                 source,
@@ -592,7 +592,13 @@ public partial class BrowserCollector(
                     new() { Timeout = 25000 }
                 );
                 string html;
-                if (source.Connector == ConnectorKind.Automatic)
+                if (source.Connector == ConnectorKind.JobsRss && conf.ContentSelector is "" or "body")
+                {
+                    diagnostics.Step("WaitJobDetail", "body", 25000);
+                    await WaitForAutomaticContentAsync(page);
+                    html = RssJobPage.ContentHtml(await page.ContentAsync());
+                }
+                else if (source.Connector == ConnectorKind.Automatic)
                 {
                     diagnostics.Step("WaitAutomaticContent", "body", 25000);
                     await WaitForAutomaticContentAsync(page);
@@ -610,10 +616,13 @@ public partial class BrowserCollector(
 
                 var doc = await new HtmlParser().ParseDocumentAsync(html, ct);
                 foreach (
-                    var e in doc.QuerySelectorAll("script,style,nav,header,footer,noscript,iframe")
+                    var e in doc.QuerySelectorAll(source.Connector == ConnectorKind.JobsRss
+                        ? "script,style,nav,footer,noscript,iframe" : "script,style,nav,header,footer,noscript,iframe")
                 )
                     e.Remove();
-                var text = Regex.Replace(doc.Body?.TextContent ?? "", "\\s+", " ").Trim();
+                var text = SourceHtmlText.Read(doc);
+                if (source.Connector == ConnectorKind.JobsRss && RssJobPage.IsSummary(text))
+                    throw new ContentNeedsReviewException("Original job detail page is incomplete; RSS summary is not sufficient for extraction.");
                 var hosts = conf.AllowedHosts.Append(new Uri(source.Url).IdnHost).ToArray();
                 var links = new List<string> { url };
                 foreach (var anchor in doc.QuerySelectorAll("a[href]"))

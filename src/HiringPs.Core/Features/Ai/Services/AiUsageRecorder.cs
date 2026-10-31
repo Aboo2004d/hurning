@@ -13,7 +13,8 @@ public static class AiUsageRecorder
         IServiceScopeFactory scopes,
         AiExecution execution,
         string model,
-        CancellationToken ct
+        CancellationToken ct,
+        string? renderedInstructions = null
     )
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -23,7 +24,7 @@ public static class AiUsageRecorder
             PromptVersionId = execution.Version.Id,
             SourceItemId = execution.SourceItemId,
             Model = model,
-            PromptHash = TextRules.Hash(execution.Version.Render()),
+            PromptHash = TextRules.Hash(renderedInstructions ?? execution.Version.Render()),
         };
         db.AiUsage.Add(usage);
         await db.SaveChangesAsync(ct);

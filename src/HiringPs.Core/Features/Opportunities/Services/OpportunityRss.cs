@@ -109,7 +109,7 @@ public static class OpportunityRss
             }
 
             var text = Regex.Replace(doc.Body?.TextContent ?? "", @"\s+", " ").Trim();
-            if (text.Length < 80)
+            if (kind == ConnectorKind.ReliefWebRss && text.Length < 80)
                 throw new ContentNeedsReviewException(
                     "RSS description incomplete; source needs review."
                 );

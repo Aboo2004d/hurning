@@ -67,8 +67,8 @@ public sealed class OpportunityExtractionService(HiringDb db)
         {
             var recovered = ExplicitExtractionRecovery.Complete(raw, null, sourceContent,
                 result.Opportunities.Count == 1, approvedLocations, approvedCategories);
-            var link = ExtractionRoleIdentity.Match(recovered.Value, links, result.Opportunities, consumed);
-            var equivalent = links.Where(x => ExtractionRoleIdentity.SameRole(recovered.Value, x.Opportunity)).ToList();
+            var link = ExtractionRoleIdentity.Match(recovered.Value, links, result.Opportunities, consumed, sourceContent);
+            var equivalent = links.Where(x => ExtractionRoleIdentity.SameSourceRole(recovered.Value, x.Opportunity, sourceContent, result.Opportunities.Count == 1)).ToList();
             var duplicateHistory = equivalent.Select(x => x.OpportunityId).Distinct().Count() > 1;
             if (duplicateHistory)
             {

@@ -20,6 +20,20 @@ public static class UiMessages
         ["Conflicting explicit work locations; review the original announcement."] = "Error_ConflictingWorkLocations",
         ["Multiple stored records match this source role; review duplicates before merging."] = "Error_SourceRoleDuplicates",
         ["Category could not be reliably classified; select a field after reviewing the opportunity."] = "Error_CategoryClassification",
+        ["AI extraction quality: workMode must contain only On-site, Remote, Hybrid or an empty value."] = "Error_AiWorkMode",
+        ["AI extraction quality: explicitly stated work location or its evidence was omitted."] = "Error_AiMissingLocation",
+        ["AI extraction quality: explicitly stated employment type was omitted."] = "Error_AiMissingEmployment",
+        ["AI extraction quality: a source-supported professional category was omitted."] = "Error_AiMissingCategory",
+        ["AI extraction quality: an explicit dated submission deadline was omitted."] = "Error_AiMissingDeadline",
+        ["AI extraction quality: job-only fields were filled for a non-job opportunity."] = "Error_AiJobFields",
+        ["AI extraction quality: repeated role identities without distinct source-supported allocations."] = "Error_AiRepeatedRoles",
+        ["Original job detail page is incomplete; RSS summary is not sufficient for extraction."] = "Error_JobDetailIncomplete",
+        ["AI extraction contract: unknown text must be an empty string, not null."] = "Error_AiTextType",
+        ["AI extraction contract: duplicate field names."] = "Error_AiDuplicateFields",
+        ["AI extraction contract: expected inScope and opportunities."] = "Error_AiRootFields",
+        ["AI extraction contract: opportunity must be an object."] = "Error_AiRoleObject",
+        ["AI extraction contract: invalid array, boolean, language or kind."] = "Error_AiContractTypes",
+        ["AI extraction contract: invalid JSON, date or enum; return required schema with yyyy-MM-dd dates."] = "Error_AiContractFormat",
         ["Local geographic scope needs review."] = "Error_Geography",
         ["Location needs review."] = "Error_Location",
         ["Original title not found in source text."] = "Error_TitleEvidence",
@@ -147,6 +161,8 @@ public static class UiMessages
     {
         if (string.IsNullOrWhiteSpace(message))
             return "";
+        var aiDiagnostic = Regex.Match(message, @"AI response diagnostic: ([a-fA-F0-9]{32})\.");
+        message = Regex.Replace(message, @"\s*AI response diagnostic: [a-fA-F0-9]{32}\.", "");
         message = Regex.Replace(message, @"\s*Diagnostic ID: [a-fA-F0-9]{32}", "");
         if (message == "LoginFailed")
             return text[message];
@@ -202,11 +218,14 @@ public static class UiMessages
             break;
         }
 
+        if (aiDiagnostic.Success) rendered.Add(text["AiResponseDiagnostic", aiDiagnostic.Groups[1].Value]);
         return string.Join(" ", rendered.Distinct());
     }
 
     private static string? Dynamic(string message, IStringLocalizer<Labels> t)
     {
+        var missingAiFields = Regex.Match(message, @"^AI extraction contract: omitted fields: ([A-Za-z, ]+)\.$");
+        if (missingAiFields.Success) return t["Error_AiMissingFields", missingAiFields.Groups[1].Value];
         if ((message.StartsWith("PDF archive ", StringComparison.Ordinal) || message.StartsWith("PDF document ", StringComparison.Ordinal)))
             return t["Error_PdfRead"];
         if (message.StartsWith("Date validation:", StringComparison.Ordinal))

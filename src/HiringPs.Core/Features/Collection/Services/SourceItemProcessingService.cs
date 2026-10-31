@@ -39,7 +39,8 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
                 await itemDb.SaveChangesAsync(ct);
                 return new(aiPausedUntil, false);
             }
-            if (item.Status != ProcessingStatus.AwaitingAi)
+            if (item.Status != ProcessingStatus.AwaitingAi
+                || item.Source.Connector == ConnectorKind.JobsRss && RssJobPage.IsSummary(item.Content))
             {
                 var bundle = await itemBrowser.FetchBundleAsync(item.Source, item.Url, ct);
                 var content = bundle.Text;
@@ -51,6 +52,7 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
                     ContentFingerprint.Matches(item.ContentHash, content)
                     && item.ExtractionJson.Length > 0
                     && item.ExtractionPromptVersionId == activePrompt.Id
+                    && AiExtractionContract.CanReuse(item.ExtractionJson, SourceEvidence.Prepare(item.Source.Connector, item.Url, content))
                 )
                 {
                     var saved =
@@ -99,6 +101,8 @@ public sealed class SourceItemProcessingService(HiringDb itemDb, BrowserCollecto
                 return new(aiPausedUntil, false);
             }
 
+            if (item.Source.Connector == ConnectorKind.JobsRss && RssJobPage.IsSummary(item.Content))
+                throw new ContentNeedsReviewException("Original job detail page is incomplete; RSS summary is not sufficient for extraction.");
             var result = await ai.ExtractAsync(
                 SourceEvidence.ForItem(item),
                 ct,

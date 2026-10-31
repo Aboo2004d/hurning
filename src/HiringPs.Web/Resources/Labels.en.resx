@@ -3323,4 +3323,20 @@
   <data name="CategoryTaxonomyHelp" xml:space="preserve"><value>Review each family before approval. Existing opportunity and preference labels are preserved. Specialties approved in one group match each other in alerts and count as one field. Labels already assigned elsewhere are not moved automatically.</value></data>
   <data name="CategoryPolicyDraft" xml:space="preserve"><value>Review AI category inference instructions</value></data>
   <data name="CategoryFamilyReview" xml:space="preserve"><value>Review this field group</value></data>
+  <data name="Error_AiWorkMode" xml:space="preserve"><value>The model mixed other details into work mode; a corrected extraction is required.</value></data>
+  <data name="Error_AiMissingLocation" xml:space="preserve"><value>The extraction omitted an explicit source work location or its evidence.</value></data>
+  <data name="Error_AiMissingEmployment" xml:space="preserve"><value>The extraction omitted the explicitly stated employment type.</value></data>
+  <data name="Error_AiMissingCategory" xml:space="preserve"><value>The extraction omitted a professional field supported by the role.</value></data>
+  <data name="Error_AiMissingDeadline" xml:space="preserve"><value>The extraction omitted an explicitly dated submission deadline.</value></data>
+  <data name="Error_AiJobFields" xml:space="preserve"><value>The model filled job-only fields for another opportunity kind.</value></data>
+  <data name="Error_AiRepeatedRoles" xml:space="preserve"><value>The model repeated a role without distinct source-supported allocations.</value></data>
+  <data name="Error_JobDetailIncomplete" xml:space="preserve"><value>The original job detail page is incomplete; its RSS summary is insufficient.</value></data>
+  <data name="Error_AiTextType" xml:space="preserve"><value>The response does not match the required text field types.</value></data>
+  <data name="Error_AiDuplicateFields" xml:space="preserve"><value>The model repeated field names in its response.</value></data>
+  <data name="Error_AiRootFields" xml:space="preserve"><value>The model omitted the required response structure.</value></data>
+  <data name="Error_AiRoleObject" xml:space="preserve"><value>The model returned an opportunity in an invalid format.</value></data>
+  <data name="Error_AiMissingFields" xml:space="preserve"><value>The model omitted required fields: {0}.</value></data>
+  <data name="AiResponseDiagnostic" xml:space="preserve"><value>AI response diagnostic: {0}</value></data>
+  <data name="Error_AiContractTypes" xml:space="preserve"><value>The response contains an invalid kind, language, boolean or array.</value></data>
+  <data name="Error_AiContractFormat" xml:space="preserve"><value>The response contains invalid JSON, date or enum formatting.</value></data>
 </root>

@@ -6,6 +6,7 @@ namespace HiringPs.Core;
 /// <summary>حقائق استهلاك وتشخيص استدعاء AI داخل الذاكرة قبل حفظ سجل الاستخدام.</summary>
 public class AiTelemetry
 {
+    public string? ResponseJson { get; set; }
     public int? HttpStatus { get; set; }
     public int? Input { get; set; }
     public int? Output { get; set; }
