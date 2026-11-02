@@ -118,6 +118,11 @@ internal static class TelegramMemberToolsChecks
         using var handler = new RecordingTelegram();
         using var http = new HttpClient(handler);
         var client = new TelegramClient(http, config);
+        await client.SynchronizeCommandsAsync(default);
+        Check(handler.Methods.Count == 6 && handler.Methods.All(x => x == "setMyCommands")
+            && handler.Payloads.All(x => x.Contains("\"search\"") && x.Contains("\"jobs\"")),
+            "Startup command catalog publishes search and jobs in default and private scopes for both languages");
+        handler.Methods.Clear(); handler.Payloads.Clear();
         var notifications = new MemberNotifications(db, client, config);
         await notifications.DeliverAsync(default);
         Check(queued.CancelledAt is not null && handler.Payloads.Count == 0, "Delivery worker cancels an ineligible queued announcement without contacting Telegram");
@@ -129,10 +134,48 @@ internal static class TelegramMemberToolsChecks
             && (await db.MemberMessages.SingleAsync(x => x.EventKey == "announcement:" + deliverId)).SentAt is not null,
             "Delivery worker sends the personalized plain text through an isolated fake transport and records success");
         var commands = new TelegramCommands(db, client, null!, null!, config);
+        await client.SendAsync(101, "Menu", default, callbacks: [("One", "jobs:m"), ("Two", "jobs:m"), ("Three", "jobs:m")]);
+        using (var menu = System.Text.Json.JsonDocument.Parse(handler.Payloads.Last()))
+            Check(menu.RootElement.GetProperty("reply_markup").GetProperty("inline_keyboard")[0].GetArrayLength() == 2,
+                "Search keyboard places two choices in each row");
+        handler.Payloads.RemoveAt(handler.Payloads.Count - 1); handler.Methods.RemoveAt(handler.Methods.Count - 1);
         await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"text\":\"/jobs city Hebron\"}}", default);
-        Check(handler.Payloads.Count == 2 && handler.Payloads.Last().Contains("Current job"), "Real /jobs command routes an activated linked member to bounded search");
+        using (var waiting = System.Text.Json.JsonDocument.Parse(handler.Payloads[^2]))
+            Check(!waiting.RootElement.GetProperty("reply_markup").TryGetProperty("remove_keyboard", out _),
+                "Loading message has no ReplyKeyboardRemove so Telegram permits editing it");
+        Check(handler.Payloads.Count == 3 && System.Text.Json.JsonDocument.Parse(handler.Payloads[^2]).RootElement.GetProperty("text").GetString()!.Contains("جار جلب النتائج")
+            && handler.Methods[^1] == "editMessageText" && handler.Payloads.Last().Contains("Current job"),
+            "Real /jobs command replaces its loading message with bounded search results");
         await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":999,\"type\":\"private\"},\"text\":\"/jobs city Hebron\"}}", default);
-        Check(handler.Payloads.Count == 2, "Commands cannot search on behalf of a different Telegram chat");
+        Check(handler.Payloads.Count == 3, "Commands cannot search on behalf of a different Telegram chat");
+        foreach (var commandText in new[] { "/help", "/status", "/start", "/payment_status" })
+        {
+            var beforeCommand = handler.Methods.Count;
+            await commands.HandleAsync(System.Text.Json.JsonSerializer.Serialize(new { message = new { from = new { id = 101 },
+                chat = new { id = 101, type = "private" }, text = commandText } }), default);
+            Check(handler.Methods.Skip(beforeCommand).SequenceEqual(new[] { "sendMessage", "editMessageText" }),
+                commandText + " replaces loading with its terminal response");
+        }
+        await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"contact\":{\"phone_number\":\"123\"}}}", default);
+        Check(handler.Methods.Last() == "editMessageText" && handler.Payloads.Last().Contains("verification button"),
+            "Contact without its owner ID ends loading with a verification instruction");
+        var beforeAbandoned = handler.Methods.Count;
+        await using (await client.BeginReplyAsync(101, 77, default)) { /* Simulate cancellation/no terminal handler reply. */ }
+        Check(handler.Methods.Skip(beforeAbandoned).SequenceEqual(new[] { "editMessageText", "editMessageText" })
+            && handler.Payloads.Last().Contains("Request interrupted"), "Interrupted reply scope replaces loading using an independent cleanup token");
+        handler.EditError = "Bad Request: message is not modified";
+        var beforeUnchanged = handler.Methods.Count;
+        await using (await client.BeginReplyAsync(101, 77, default)) { await client.SendAsync(101, "Completed", default); }
+        Check(handler.Methods.Skip(beforeUnchanged).All(x => x == "editMessageText"), "Unchanged-message response never creates a duplicate");
+        handler.EditError = "Bad Request: message to edit not found";
+        var beforeDeleted = handler.Methods.Count;
+        await using (await client.BeginReplyAsync(101, 77, default)) { await client.SendAsync(101, "Completed", default); }
+        Check(handler.Methods.Skip(beforeDeleted).SequenceEqual(new[] { "editMessageText", "sendMessage", "deleteMessage", "editMessageText" }),
+            "Uneditable message falls back once, removes old loading and then edits the replacement");
+        var beforeContact = handler.Methods.Count;
+        await using (await client.BeginReplyAsync(101, null, default)) { await client.SendAsync(101, "Share your number", default, contactButton: true); }
+        Check(handler.Methods.Skip(beforeContact).SequenceEqual(new[] { "sendMessage", "sendMessage", "deleteMessage" }),
+            "Contact-sharing keyboard deletes its temporary loading message");
         string Text() => System.Text.Json.JsonDocument.Parse(handler.Payloads.Last()).RootElement.GetProperty("text").GetString()!;
         (string Text, string Data)[] Buttons() => System.Text.Json.JsonDocument.Parse(handler.Payloads.Last()).RootElement
             .GetProperty("reply_markup").GetProperty("inline_keyboard").EnumerateArray().SelectMany(row => row.EnumerateArray())
@@ -147,10 +190,13 @@ internal static class TelegramMemberToolsChecks
             "Category menu shows one approved main group instead of duplicate aliases");
         var categoryPick = Buttons().Single(x => x.Text == "Finance").Data;
         var callbackJson = System.Text.Json.JsonSerializer.Serialize(new { callback_query = new { id = "fixture-callback", from = new { id = 101 },
-            message = new { chat = new { id = 101, type = "private" } }, data = categoryPick } });
+            message = new { message_id = 77, chat = new { id = 101, type = "private" } }, data = categoryPick } });
+        var beforeClick = handler.Methods.Count;
         await commands.HandleAsync(callbackJson, default);
-        Check(handler.Methods[^2] == "answerCallbackQuery" && handler.Methods[^1] == "sendMessage" && Text().Contains("حسب المجال: Finance"),
-            "Button press is acknowledged and chosen category appears in the filter summary");
+        Check(handler.Methods.Skip(beforeClick).SequenceEqual(new[] { "answerCallbackQuery", "editMessageText", "editMessageText" })
+            && Text().Contains("حسب المجال: Finance")
+            && System.Text.Json.JsonDocument.Parse(handler.Payloads.Last()).RootElement.GetProperty("message_id").GetInt32() == 77,
+            "Button press acknowledges and replaces the same message through loading and the chosen filter");
         await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "عرض النتائج").Data, default);
         Check(Text().Contains("Current job 0"), "Explicit Show results applies the selected category");
         Check(Buttons().Any(x => x.Text == "وظائف أخرى") && Buttons().Any(x => x.Text == "تعديل الفلاتر"),
@@ -279,7 +325,7 @@ internal static class TelegramMemberToolsChecks
             var text = help.RootElement.GetProperty("text").GetString()!;
             var buttons = help.RootElement.GetProperty("reply_markup").GetProperty("inline_keyboard")
                 .EnumerateArray().SelectMany(row => row.EnumerateArray()).ToArray();
-            Check(text.StartsWith("📋 دليل") && text.Contains("\n\u2066/search\u2069\n") && !text.Contains("https://"),
+            Check(text.StartsWith("📋 دليل") && text.Replace("\r\n", "\n").Contains("\n\u2066/search\u2069\n") && !text.Contains("https://"),
                 "Arabic help isolates current commands on separate lines and keeps raw URLs out of the guide");
             Check(buttons.Count(x => x.TryGetProperty("callback_data", out _)) == 1
                 && buttons.Count(x => x.TryGetProperty("url", out _)) == 4,
@@ -322,17 +368,35 @@ internal static class TelegramMemberToolsChecks
             var worker = new MembershipWorker(localProvider.GetRequiredService<IServiceScopeFactory>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<MembershipWorker>.Instance);
             var tick = typeof(MembershipWorker).GetMethod("TickAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
             await (Task)tick.Invoke(worker, new object[] { CancellationToken.None })!;
+            Check((await db.TelegramInbox.AsNoTracking().SingleAsync(x => x.Id == 700001)).ProcessedAt is null,
+                "Notification worker no longer owns interactive updates");
+            await db.MembershipRuntimeStates.Where(x => x.Id == 1).ExecuteUpdateAsync(x => x.SetProperty(y => y.LockedUntil, now.AddHours(1)));
+            var inboxWorker = new TelegramInboxWorker(localProvider.GetRequiredService<IServiceScopeFactory>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<TelegramInboxWorker>.Instance);
+            var inboxTick = typeof(TelegramInboxWorker).GetMethod("TickAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            await (Task)inboxTick.Invoke(inboxWorker, new object[] { CancellationToken.None })!;
             Check((await db.TelegramInbox.AsNoTracking().SingleAsync(x => x.Id == 700001)).ProcessedAt is not null,
-                "Opted-in local worker actually processes bot updates without payment recovery services or tables");
+                "Dedicated inbox worker processes commands while notification lease is held, without payment services");
             Check((await db.MemberMessages.AsNoTracking().SingleAsync(x => x.EventKey == "announcement:" + localBroadcast)).SentAt is not null,
                 "Local worker delivers an explicitly queued admin announcement through the fake Telegram transport");
             var automatic = await db.MemberMessages.AsNoTracking().SingleAsync(x => x.EventKey == "local-no-automatic-alert");
             Check(automatic.Attempts == 0 && automatic.SentAt is null && automatic.CancelledAt is null
                 && await db.OpportunityPublications.CountAsync(x => !x.Completed) == pendingPublications,
                 "Local testing neither claims automatic alerts nor expands publication notifications");
+            await db.MembershipRuntimeStates.Where(x => x.Id == 2).ExecuteUpdateAsync(x => x.SetProperty(y => y.LockedUntil, now.AddHours(1)));
+            for (var i = 0; i < 8; i++) db.TelegramInbox.Add(new() { Id = 710000 + i, Json = "{}" });
+            await db.SaveChangesAsync();
+            await (Task)inboxTick.Invoke(inboxWorker, new object[] { CancellationToken.None })!;
+            Check(await db.TelegramInbox.AsNoTracking().CountAsync(x => x.Id >= 710000 && x.Attempts == 0) == 8,
+                "Another inbox owner prevents claiming updates");
+            await db.MembershipRuntimeStates.Where(x => x.Id == 2).ExecuteUpdateAsync(x => x.SetProperty(y => y.LockedUntil, (DateTimeOffset?)null));
+            await (Task)inboxTick.Invoke(inboxWorker, new object[] { CancellationToken.None })!;
+            Check(await db.TelegramInbox.AsNoTracking().CountAsync(x => x.Id >= 710000 && x.ProcessedAt != null) == 8
+                && (await db.MembershipRuntimeStates.AsNoTracking().SingleAsync(x => x.Id == 2)).LockedUntil is null,
+                "Inbox drains more than three updates per tick and releases its independent lease");
             localConfig["Telegram:LocalTestingEnabled"] = "false";
             db.TelegramInbox.Add(new() { Id = 700002, Json = "{}" }); await db.SaveChangesAsync();
             await (Task)tick.Invoke(worker, new object[] { CancellationToken.None })!;
+            await (Task)inboxTick.Invoke(inboxWorker, new object[] { CancellationToken.None })!;
             Check((await db.TelegramInbox.AsNoTracking().SingleAsync(x => x.Id == 700002)).Attempts == 0,
                 "Local bot processing stays off without the explicit local testing opt-in");
         }
@@ -356,13 +420,19 @@ internal static class TelegramMemberToolsChecks
     }
     private sealed class RecordingTelegram : HttpMessageHandler
     {
+        public string? EditError { get; set; }
         public List<string> Payloads { get; } = [];
         public List<string> Methods { get; } = [];
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Methods.Add(request.RequestUri!.Segments.Last());
             Payloads.Add(await request.Content!.ReadAsStringAsync(ct));
-            return new(System.Net.HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true}") };
+            if (Methods.Last() == "editMessageText" && EditError is { } error)
+            {
+                EditError = null;
+                return new(System.Net.HttpStatusCode.BadRequest) { Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(new { ok = false, description = error })) };
+            }
+            return new(System.Net.HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"message_id\":77}}") };
         }
     }
     private sealed class FixtureDb(DbContextOptions<HiringDb> options) : HiringDb(options)

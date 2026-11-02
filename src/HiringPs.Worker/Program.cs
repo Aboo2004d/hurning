@@ -122,8 +122,10 @@ if (!isProbe)
     builder.Services.AddLahza();
     builder.Services.AddJawwalPay();
     builder
-        .Services.AddHttpClient<TelegramClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
+        .Services.AddHttpClient(nameof(TelegramClient), client => client.Timeout = TimeSpan.FromSeconds(20))
         .RemoveAllLoggers();
+    builder.Services.AddScoped(sp => new TelegramClient(
+        sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(TelegramClient)), builder.Configuration));
     builder.Services.AddScoped<CollectionPipeline>();
     // Gemini HTTP Client
     builder.Services.AddHttpClient<AiExtractor>();

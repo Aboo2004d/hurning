@@ -101,39 +101,6 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
             return;
         try
         {
-            var command = scope.ServiceProvider.GetRequiredService<TelegramCommands>();
-            var inbox = await db
-                .TelegramInbox.Where(x =>
-                    x.ProcessedAt == null
-                    && x.Attempts < 8
-                    && (x.LockedUntil == null || x.LockedUntil < now)
-                )
-                .OrderBy(x => x.Id)
-                .Take(3)
-                .ToListAsync(ct);
-            foreach (var update in inbox)
-            {
-                update.Attempts++;
-                update.LockedUntil = now.AddMinutes(1);
-                await db.SaveChangesAsync(ct);
-                try
-                {
-                    await command.HandleAsync(update.Json, ct);
-                    update.ProcessedAt = DateTimeOffset.UtcNow;
-                    update.Json = "{}"; // Contact payloads are discarded after processing.
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    db.Audit.Add(OperationTracking.Create(OperationArea.Telegram, OperationOutcome.Failed,
-                        "Update", $"Update {update.Id}; Attempt {update.Attempts}; {ex.GetType().Name}"));
-                    logger.LogWarning(
-                        "Telegram update {UpdateId} could not be processed ({ExceptionType}).",
-                        update.Id,
-                        ex.GetType().Name
-                    );
-                }
-                await db.SaveChangesAsync(ct);
-            }
             var notifications = scope.ServiceProvider.GetRequiredService<MemberNotifications>();
             await new TelegramMemberMessaging(db, scope.ServiceProvider.GetRequiredService<IConfiguration>()).ExpandAsync(ct);
             if (!local)

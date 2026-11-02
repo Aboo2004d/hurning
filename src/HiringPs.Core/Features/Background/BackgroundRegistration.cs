@@ -15,6 +15,7 @@ public static class BackgroundRegistration
     {
         services.AddBackgroundDependencies();
         services.AddHostedService<MembershipWorker>();
+        services.AddHostedService<TelegramInboxWorker>();
         services.AddHostedService<DistributionWorker>();
         services.AddHostedService<RandomPublicationWorker>();
         return services;
@@ -40,6 +41,7 @@ public static class BackgroundRegistration
         {
             services.AddBackgroundDependencies();
             services.AddHostedService<MembershipWorker>();
+            services.AddHostedService<TelegramInboxWorker>();
         }
         return services;
     }

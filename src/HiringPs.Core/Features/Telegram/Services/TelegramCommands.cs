@@ -17,6 +17,46 @@ public sealed class TelegramCommands(
     public async Task HandleAsync(string body, CancellationToken ct)
     {
         using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        var callback = root.TryGetProperty("callback_query", out var update);
+        if (!callback && !root.TryGetProperty("message", out update)) return;
+        if (update.ValueKind != JsonValueKind.Object
+            || !update.TryGetProperty("from", out var sender) || sender.ValueKind != JsonValueKind.Object
+            || !sender.TryGetProperty("id", out var user) || !user.TryGetInt64(out var from)) return;
+        var message = update;
+        if (callback && !update.TryGetProperty("message", out message)) return;
+        if (message.ValueKind != JsonValueKind.Object || !message.TryGetProperty("chat", out var chat)
+            || chat.ValueKind != JsonValueKind.Object || !chat.TryGetProperty("type", out var type)
+            || type.GetString() != "private" || !chat.TryGetProperty("id", out var id)
+            || !id.TryGetInt64(out var chatId) || chatId != from) return;
+        long? messageId = null;
+        if (callback)
+        {
+            if (!update.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.String
+                || data.GetString() is not { } action || !action.StartsWith("jobs:", StringComparison.Ordinal) || action.Length > 64
+                || !update.TryGetProperty("id", out var callbackId) || callbackId.ValueKind != JsonValueKind.String
+                || callbackId.GetString() is not { Length: >= 1 and <= 200 } acknowledgement) return;
+            await telegram.AnswerCallbackAsync(acknowledgement, ct);
+            if (message.TryGetProperty("message_id", out var mid) && mid.TryGetInt64(out var number) && number > 0) messageId = number;
+        }
+        else if (!message.TryGetProperty("contact", out _) && (!message.TryGetProperty("text", out var text)
+            || text.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(text.GetString()))) return;
+
+        await using var response = await telegram.BeginReplyAsync(chatId, messageId, ct);
+        using var operation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        operation.CancelAfter(TimeSpan.FromSeconds(30));
+        try { await HandleCoreAsync(body, operation.Token); }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            await telegram.SendAsync(chatId, "تعذّر جلب النتائج الآن. حاول مجددًا. / Unable to fetch results. Please try again.", ct);
+            if (ex is OperationCanceledException) throw new TimeoutException("Telegram command timed out.");
+            throw;
+        }
+    }
+
+    private async Task HandleCoreAsync(string body, CancellationToken ct)
+    {
+        using var document = JsonDocument.Parse(body);
         if (document.RootElement.TryGetProperty("callback_query", out var callback))
         {
             if (callback.ValueKind != JsonValueKind.Object
@@ -33,7 +73,6 @@ public sealed class TelegramCommands(
             var action = callbackData.GetString() ?? "";
             var acknowledgement = callbackId.GetString() ?? "";
             if (!action.StartsWith("jobs:", StringComparison.Ordinal) || action.Length > 64 || acknowledgement.Length is < 1 or > 200) return;
-            await telegram.AnswerCallbackAsync(acknowledgement, ct);
             await new TelegramJobNavigator(db, telegram, configuration).OpenAsync(callbackUser, privateChat, action, ct);
             return;
         }
@@ -58,13 +97,14 @@ public sealed class TelegramCommands(
             {
                 try
                 {
-                    await verification.ContactAsync(
+                    if (!await verification.ContactAsync(
                         from,
                         chatId,
                         own.GetInt64(),
                         phone.GetString() ?? "",
                         ct
-                    );
+                    ))
+                        await telegram.SendAsync(chatId, "تعذّر التحقق من الرقم. افتح طلب الربط من الموقع مجددًا. / Cannot verify this number. Open a new link from the website.", ct);
                 }
                 catch (InvalidOperationException)
                 {
@@ -75,6 +115,8 @@ public sealed class TelegramCommands(
                     );
                 }
             }
+            else
+                await telegram.SendAsync(chatId, "شارك رقمك من الزر الخاص بالتحقق. / Share your own number using the verification button.", ct);
             return;
         }
         var text = message.TryGetProperty("text", out var field) ? field.GetString() ?? "" : "";

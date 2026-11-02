@@ -149,8 +149,8 @@ internal static class TelegramBotSetupChecks
             .Where(x => x.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)).Select(x => x.ImplementationType).ToArray();
         Check(Hosted(Runtime("Local", false)).Length == 0 && Hosted(Runtime("Server", true)).Length == 0,
             "Local bot opt-in does not add workers by default or change server registrations");
-        Check(Hosted(Runtime("Local", true)).SequenceEqual(new[] { typeof(MembershipWorker) }),
-            "Local testing adds only the bot-capable membership worker, never social/random publication workers");
+        Check(Hosted(Runtime("Local", true)).SequenceEqual(new[] { typeof(MembershipWorker), typeof(TelegramInboxWorker) }),
+            "Local testing adds notification and dedicated inbox workers, never social/random publication workers");
         Console.WriteLine($"Telegram bot setup: {checks} checks passed; all Bot API calls used local mock handlers.");
     }
 
