@@ -9,4 +9,5 @@ public enum MemberMessageKind
     Subscription = 3,
     Verification = 4,
     Review = 5,
+    Announcement = 6,
 }

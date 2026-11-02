@@ -29,7 +29,8 @@ public sealed class TelegramClient(HttpClient http, IConfiguration configuration
         CancellationToken ct,
         bool contactButton = false,
         (string Text, string Url)[]? buttons = null,
-        string language = "ar"
+        string language = "ar",
+        (string Text, string Data)[]? callbacks = null
     )
     {
         if (!Ready)
@@ -59,20 +60,34 @@ public sealed class TelegramClient(HttpClient http, IConfiguration configuration
                     .Select(x => new[] { new { text = x.Text, url = x.Url } })
                     .ToArray(),
             };
+        if (callbacks is { Length: > 0 })
+        {
+            if (callbacks.Length > 20 || callbacks.Any(x => string.IsNullOrWhiteSpace(x.Data)
+                || System.Text.Encoding.UTF8.GetByteCount(x.Data) > 64))
+                throw new ArgumentException("Invalid callback buttons.", nameof(callbacks));
+            var rows = callbacks.Select(x => new object[] { new { text = x.Text, callback_data = x.Data } }).ToList();
+            if (buttons is { Length: > 0 })
+                rows.AddRange(buttons.Select(x => new object[] { new { text = x.Text, url = x.Url } }));
+            keyboard = new { inline_keyboard = rows.ToArray() };
+        }
+        await CallAsync("sendMessage", new { chat_id = chatId, text, reply_markup = keyboard,
+            link_preview_options = new { is_disabled = true } }, ct);
+    }
+
+    public async Task AnswerCallbackAsync(string id, CancellationToken ct)
+    {
+        try { await CallAsync("answerCallbackQuery", new { callback_query_id = id }, ct); }
+        // Old buttons remain usable after Telegram's short acknowledgement window has expired.
+        catch (TelegramDeliveryException ex) when (ex.Status == 400) { }
+    }
+
+    private async Task CallAsync(string method, object payload, CancellationToken ct)
+    {
+        if (!Ready) throw new InvalidOperationException("TelegramUnavailable");
         HttpResponseMessage result;
         try
         {
-            result = await http.PostAsJsonAsync(
-                "https://api.telegram.org/bot" + Token + "/sendMessage",
-                new
-                {
-                    chat_id = chatId,
-                    text,
-                    reply_markup = keyboard,
-                    link_preview_options = new { is_disabled = true },
-                },
-                ct
-            );
+            result = await http.PostAsJsonAsync("https://api.telegram.org/bot" + Token + "/" + method, payload, ct);
         }
         catch (HttpRequestException)
         {

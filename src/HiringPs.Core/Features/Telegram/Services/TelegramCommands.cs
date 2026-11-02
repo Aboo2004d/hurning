@@ -17,6 +17,26 @@ public sealed class TelegramCommands(
     public async Task HandleAsync(string body, CancellationToken ct)
     {
         using var document = JsonDocument.Parse(body);
+        if (document.RootElement.TryGetProperty("callback_query", out var callback))
+        {
+            if (callback.ValueKind != JsonValueKind.Object
+                || !callback.TryGetProperty("from", out var callbackFrom)
+                || !callbackFrom.TryGetProperty("id", out var callbackSender) || !callbackSender.TryGetInt64(out var callbackUser)
+                || !callback.TryGetProperty("message", out var callbackMessage)
+                || !callbackMessage.TryGetProperty("chat", out var callbackChat)
+                || !callbackChat.TryGetProperty("type", out var callbackType) || callbackType.GetString() != "private"
+                || !callbackChat.TryGetProperty("id", out var callbackChatId) || !callbackChatId.TryGetInt64(out var privateChat)
+                || privateChat != callbackUser
+                || !callback.TryGetProperty("data", out var callbackData) || callbackData.ValueKind != JsonValueKind.String
+                || !callback.TryGetProperty("id", out var callbackId) || callbackId.ValueKind != JsonValueKind.String)
+                return;
+            var action = callbackData.GetString() ?? "";
+            var acknowledgement = callbackId.GetString() ?? "";
+            if (!action.StartsWith("jobs:", StringComparison.Ordinal) || action.Length > 64 || acknowledgement.Length is < 1 or > 200) return;
+            await telegram.AnswerCallbackAsync(acknowledgement, ct);
+            await new TelegramJobNavigator(db, telegram, configuration).OpenAsync(callbackUser, privateChat, action, ct);
+            return;
+        }
         if (
             !document.RootElement.TryGetProperty("message", out var message)
             || !message.TryGetProperty("from", out var sender)
@@ -116,6 +136,18 @@ public sealed class TelegramCommands(
         }
         switch (name)
         {
+            case "/jobs":
+            case "/search":
+            case "/بحث":
+            case "بحث":
+                if (command.Length == 1)
+                {
+                    await new TelegramJobNavigator(db, telegram, configuration).OpenAsync(from, chatId, "jobs:m", ct);
+                    break;
+                }
+                await telegram.SendAsync(chatId, await new TelegramJobSearch(db, configuration)
+                    .ReplyAsync(member.UserId, command.Length == 2 ? command[1] : "", ct), ct);
+                break;
             case "/stop":
                 member.NotificationsEnabled = false;
                 await db.SaveChangesAsync(ct);
@@ -204,28 +236,20 @@ public sealed class TelegramCommands(
                     buttons: [(en ? "Open my account" : "فتح حسابي", site)]
                 );
                 break;
+            case "/help":
             default:
                 await telegram.SendAsync(
                     chatId,
-                    "/start — "
-                        + (en ? "Account link and status" : "ربط الحساب وحالته")
-                        + "\n/status — "
-                        + (en ? "Plan and alerts" : "الباقة والتنبيهات")
-                        + "\n/stop — "
-                        + (en ? "Stop opportunity alerts" : "إيقاف تنبيهات الفرص")
-                        + "\n/payment_status orderId — "
-                        + (en ? "Check your payment" : "التحقق من الدفع")
-                        + "\n/help\n"
-                        + site
-                        + "/Plans\n"
-                        + site
-                        + "/Preferences",
+                    TelegramHelp.Text(en),
                     ct,
                     buttons:
                     [
+                        (en ? "My account" : "حسابي", site),
                         (en ? "My plan" : "باقتي", site + "/Plans"),
                         (en ? "My preferences" : "تفضيلاتي", site + "/Preferences"),
-                    ]
+                        (en ? "Account settings" : "إعدادات الحساب", site + "/Settings"),
+                    ],
+                    callbacks: [(en ? "Search jobs" : "البحث عن وظائف", "jobs:m")]
                 );
                 break;
         }

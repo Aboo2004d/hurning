@@ -52,8 +52,9 @@ internal static class TelegramBotSetupChecks
                 Check(payload.RootElement.GetProperty("secret_token").GetString() == secret, "registration sends the configured verification secret");
                 Check(!payload.RootElement.GetProperty("drop_pending_updates").GetBoolean(), "registration preserves pending updates");
                 Check(payload.RootElement.GetProperty("allowed_updates")[0].GetString() == "message", "message commands are enabled");
+                Check(payload.RootElement.GetProperty("allowed_updates").EnumerateArray().Any(x => x.GetString() == "callback_query"), "inline button callbacks are enabled");
                 current = payload.RootElement.GetProperty("url").GetString()!;
-                allowedUpdates = new[] { "message" };
+                allowedUpdates = new[] { "message", "callback_query" };
                 result = true;
             }
             else throw new Exception("Unexpected bot operation: " + method);
@@ -67,6 +68,9 @@ internal static class TelegramBotSetupChecks
         var result = await service.RegisterAsync(default);
         Check(result.Verified && current == "https://hiring.example/integrations/telegram", "activation registers and verifies the actual application callback route");
         Check(calls.All(x => x.Method != "sendMessage" && x.Method != "deleteWebhook"), "setup never sends messages or deletes the webhook queue");
+        allowedUpdates = new[] { "message" };
+        Check((await service.CheckAsync(default)).State == TelegramBotSetupState.UpdatesDisabled,
+            "legacy message-only registration requires callback updates to be enabled");
         allowedUpdates = new[] { "callback_query" };
         Check((await service.CheckAsync(default)).State == TelegramBotSetupState.UpdatesDisabled,
             "matching URL does not hide a disabled message update subscription");

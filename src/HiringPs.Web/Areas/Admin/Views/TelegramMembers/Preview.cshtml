@@ -1,0 +1,11 @@
+@model TelegramMemberInput
+@{ ViewData["Title"] = T["Preview"].Value; }
+<h1>@ViewData["Title"]</h1>
+<p>@T["TelegramMemberRecipients"]: @ViewBag.Count</p>
+<p class="muted">@T["TelegramMemberPreviewNote"]</p>
+<pre style="white-space:pre-wrap">@ViewBag.Sample</pre>
+<form asp-action="Send" method="post">
+    <input type="hidden" name="approval" value="@ViewBag.Approval" />
+    <button type="submit" disabled="@(ViewBag.Count == 0)">@T["TelegramMemberSend"]</button>
+</form>
+<a asp-action="Compose" asp-route-userId="@Model.UserId">@T["Back"]</a>

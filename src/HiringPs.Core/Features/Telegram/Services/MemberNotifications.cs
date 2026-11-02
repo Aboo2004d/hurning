@@ -303,6 +303,13 @@ public sealed class MemberNotifications(
             await db.Entry(message).ReloadAsync(ct);
             var member = await db.MemberProfiles.SingleAsync(x => x.UserId == message.UserId, ct);
             message.Attempts++;
+            if (message.Kind == MemberMessageKind.Announcement
+                && !await new TelegramMemberMessaging(db, configuration).CanDeliverAsync(message, ct))
+            {
+                message.CancelledAt = now;
+                await db.SaveChangesAsync(ct);
+                continue;
+            }
             if (member.TelegramChatId is null)
             {
                 message.LastError = "TelegramNotLinked";

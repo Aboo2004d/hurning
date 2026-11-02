@@ -31,7 +31,7 @@ public sealed class TelegramBotSetupService(HttpClient http, IConfiguration conf
                 : TelegramBotSetupState.Registered;
             if (state == TelegramBotSetupState.Registered && info.TryGetProperty("allowed_updates", out var updates)
                 && updates.ValueKind == JsonValueKind.Array && updates.GetArrayLength() > 0
-                && !updates.EnumerateArray().Any(x => x.ValueKind == JsonValueKind.String && x.GetString() == "message"))
+                && new[] { "message", "callback_query" }.Any(required => !updates.EnumerateArray().Any(x => x.ValueKind == JsonValueKind.String && x.GetString() == required)))
                 state = TelegramBotSetupState.UpdatesDisabled;
             DateTimeOffset? lastError = null;
             if (info.TryGetProperty("last_error_date", out var date) && date.ValueKind == JsonValueKind.Number && date.TryGetInt64(out var seconds))
@@ -63,7 +63,7 @@ public sealed class TelegramBotSetupService(HttpClient http, IConfiguration conf
             await CallAsync("setWebhook", new
             {
                 url = before.ExpectedWebhook, secret_token = Secret,
-                allowed_updates = new[] { "message" }, drop_pending_updates = false,
+                allowed_updates = new[] { "message", "callback_query" }, drop_pending_updates = false,
             }, ct);
         }
         catch (TelegramBotSetupException ex)

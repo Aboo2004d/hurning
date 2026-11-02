@@ -3257,7 +3257,7 @@
   <data name="TelegramBotState_IdentityMismatch" xml:space="preserve"><value>Bot identity does not match the configured username</value></data>
   <data name="TelegramBotState_NotRegistered" xml:space="preserve"><value>No bot webhook is registered</value></data>
   <data name="TelegramBotState_DifferentWebhook" xml:space="preserve"><value>Bot webhook points to another address</value></data>
-  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>Webhook matches but message updates are not enabled</value></data>
+  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>Webhook matches but message or button updates are not enabled</value></data>
   <data name="TelegramBotState_Registered" xml:space="preserve"><value>Webhook registered for this site</value></data>
   <data name="TelegramBotIssue_Origin" xml:space="preserve"><value>Set Seo:PublicOrigin to the public HTTPS site origin without a path or extra components.</value></data>
   <data name="TelegramBotIssue_Token" xml:space="preserve"><value>Complete Telegram:BotToken in server settings.</value></data>
@@ -3342,4 +3342,27 @@
   <data name="Error_AiProviderDetail" xml:space="preserve"><value>Provider reason: {0}</value></data>
   <data name="DiagStage_WaitInspiraJobContent" xml:space="preserve"><value>Wait for Inspira job details in the page or its frame</value></data>
   <data name="Error_InspiraDetails" xml:space="preserve"><value>Inspira did not expose readable job details within the time limit; the Applicant Home shell is insufficient. A retry is scheduled without inferring closure.</value></data>
+  <data name="TelegramMemberTools" xml:space="preserve"><value>Member messages and bot search</value></data>
+  <data name="TelegramMemberCompose" xml:space="preserve"><value>Compose a Telegram message</value></data>
+  <data name="TelegramMemberSearch" xml:space="preserve"><value>Job search settings</value></data>
+  <data name="TelegramMemberAudience" xml:space="preserve"><value>Query audience / recipients</value></data>
+  <data name="TelegramMemberAll" xml:space="preserve"><value>All activated Telegram-linked accounts</value></data>
+  <data name="TelegramMemberPaid" xml:space="preserve"><value>Active paid subscribers only</value></data>
+  <data name="TelegramMemberCriteria" xml:space="preserve"><value>Available search criteria (enable at least one)</value></data>
+  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>Members send /jobs or بحث, choose category, location or organization, then pick from the buttons. Results show five current jobs with navigation and back buttons.</value></data>
+  <data name="TelegramMemberHistory" xml:space="preserve"><value>Recent announcements</value></data>
+  <data name="TelegramMemberDeliveryNote" xml:space="preserve"><value>Messages enter the server delivery queue immediately. Audience expansion does not mean delivery is complete; check notification delivery. The worker does not run in local collection mode.</value></data>
+  <data name="TelegramMemberExpanded" xml:space="preserve"><value>Queue expansion complete</value></data>
+  <data name="TelegramMemberExpanding" xml:space="preserve"><value>Queue expansion pending</value></data>
+  <data name="TelegramMemberSingle" xml:space="preserve"><value>Specific member ID (leave empty for the whole audience)</value></data>
+  <data name="TelegramMemberVariables" xml:space="preserve"><value>Optional variables: name and website link. Omit any variable you do not need; messages use plain text.</value></data>
+  <data name="TelegramMemberOptOut" xml:space="preserve"><value>Suspended, unlinked and notification-disabled accounts are excluded.</value></data>
+  <data name="TelegramMemberRecipients" xml:space="preserve"><value>Eligible recipients now</value></data>
+  <data name="TelegramMemberPreviewNote" xml:space="preserve"><value>Sample for the first recipient. Variables are personalized; eligibility may change before delivery. Preview expires after 15 minutes.</value></data>
+  <data name="TelegramMemberSend" xml:space="preserve"><value>Send now</value></data>
+  <data name="TelegramMemberQueued" xml:space="preserve"><value>Message queued. Track delivery in notification history.</value></data>
+  <data name="TelegramMemberTemplateInvalid" xml:space="preserve"><value>Enter up to 3500 characters, at most 4000 after variable expansion. Only {{name}} and {{site}} are supported.</value></data>
+  <data name="City" xml:space="preserve"><value>City</value></data>
+  <data name="Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="TelegramMemberButtonsSetup" xml:space="preserve"><value>After upgrading, re-register the webhook from bot setup on the server to receive button presses.</value></data>
 </root>

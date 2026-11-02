@@ -3257,7 +3257,7 @@
   <data name="TelegramBotState_IdentityMismatch" xml:space="preserve"><value>هوية البوت لا تطابق اسم المستخدم في الإعدادات</value></data>
   <data name="TelegramBotState_NotRegistered" xml:space="preserve"><value>لم يسجل عنوان استقبال للبوت</value></data>
   <data name="TelegramBotState_DifferentWebhook" xml:space="preserve"><value>البوت مربوط بعنوان آخر</value></data>
-  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>العنوان صحيح لكن استقبال رسائل البوت غير مفعّل</value></data>
+  <data name="TelegramBotState_UpdatesDisabled" xml:space="preserve"><value>العنوان صحيح لكن استقبال الرسائل أو ضغطات الأزرار غير مفعّل</value></data>
   <data name="TelegramBotState_Registered" xml:space="preserve"><value>عنوان الاستقبال مسجل لهذا الموقع</value></data>
   <data name="TelegramBotIssue_Origin" xml:space="preserve"><value>اضبط Seo:PublicOrigin بعنوان HTTPS العام للموقع دون مسار أو بيانات إضافية.</value></data>
   <data name="TelegramBotIssue_Token" xml:space="preserve"><value>أكمل Telegram:BotToken في إعدادات السيرفر.</value></data>
@@ -3342,4 +3342,27 @@
   <data name="Error_AiProviderDetail" xml:space="preserve"><value>سبب المزود: {0}</value></data>
   <data name="DiagStage_WaitInspiraJobContent" xml:space="preserve"><value>انتظار تفاصيل وظيفة Inspira في الصفحة أو إطارها</value></data>
   <data name="Error_InspiraDetails" xml:space="preserve"><value>لم تظهر تفاصيل الوظيفة المقروءة في Inspira ضمن المهلة؛ صفحة Applicant Home العامة لا تكفي. ستُعاد المحاولة دون اعتبار الإعلان منتهيًا.</value></data>
+  <data name="TelegramMemberTools" xml:space="preserve"><value>رسائل الأعضاء والبحث عبر البوت</value></data>
+  <data name="TelegramMemberCompose" xml:space="preserve"><value>رسالة فورية عبر تليجرام</value></data>
+  <data name="TelegramMemberSearch" xml:space="preserve"><value>إعدادات البحث عن الوظائف</value></data>
+  <data name="TelegramMemberAudience" xml:space="preserve"><value>من يحق له الاستعلام / فئة المستلمين</value></data>
+  <data name="TelegramMemberAll" xml:space="preserve"><value>جميع الحسابات المفعّلة المرتبطة بتليجرام</value></data>
+  <data name="TelegramMemberPaid" xml:space="preserve"><value>أصحاب الاشتراك المدفوع الساري فقط</value></data>
+  <data name="TelegramMemberCriteria" xml:space="preserve"><value>معايير البحث المتاحة (اختر واحدًا على الأقل عند التفعيل)</value></data>
+  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>يرسل العضو /jobs أو «بحث»، ثم يختار حسب المجال أو المكان أو الجهة، ويختار من القوائم عبر الأزرار. تظهر خمس وظائف سارية في الصفحة مع أزرار للتنقل والرجوع.</value></data>
+  <data name="TelegramMemberHistory" xml:space="preserve"><value>آخر الرسائل الجماعية</value></data>
+  <data name="TelegramMemberDeliveryNote" xml:space="preserve"><value>تُدرج الرسائل فورًا في طابور التسليم على السيرفر. اكتمال تجهيز المستلمين لا يعني اكتمال التسليم؛ راجع سجل الإشعارات. العامل لا يعمل في وضع الجمع المحلي.</value></data>
+  <data name="TelegramMemberExpanded" xml:space="preserve"><value>اكتمل تجهيز الطابور</value></data>
+  <data name="TelegramMemberExpanding" xml:space="preserve"><value>بانتظار تجهيز الطابور</value></data>
+  <data name="TelegramMemberSingle" xml:space="preserve"><value>معرّف عضو محدد (اتركه فارغًا للإرسال للفئة كاملة)</value></data>
+  <data name="TelegramMemberVariables" xml:space="preserve"><value>متغيرات اختيارية: الاسم ورابط الموقع. احذف المتغير من النص إن لم ترغب به؛ الرسالة نص عادي.</value></data>
+  <data name="TelegramMemberOptOut" xml:space="preserve"><value>تُستبعد الحسابات المعلقة وغير المرتبطة ومن أوقفوا الإشعارات.</value></data>
+  <data name="TelegramMemberRecipients" xml:space="preserve"><value>عدد المستلمين المؤهلين الآن</value></data>
+  <data name="TelegramMemberPreviewNote" xml:space="preserve"><value>هذه معاينة لأول مستلم. يتبدل الاسم والرابط لكل عضو، وقد يتغير العدد إذا تغيرت أهلية الحسابات قبل الإرسال. صلاحية المعاينة 15 دقيقة.</value></data>
+  <data name="TelegramMemberSend" xml:space="preserve"><value>إرسال الآن</value></data>
+  <data name="TelegramMemberQueued" xml:space="preserve"><value>أُضيفت الرسالة لطابور التسليم. يمكنك متابعة النتيجة في سجل الإشعارات.</value></data>
+  <data name="TelegramMemberTemplateInvalid" xml:space="preserve"><value>أدخل نصًا حتى 3500 حرف وبحد أقصى 4000 بعد استبدال المتغيرات. استخدم فقط {{name}} و{{site}} أو احذفهما.</value></data>
+  <data name="City" xml:space="preserve"><value>المدينة</value></data>
+  <data name="Preview" xml:space="preserve"><value>معاينة</value></data>
+  <data name="TelegramMemberButtonsSetup" xml:space="preserve"><value>لاستقبال ضغطات الأزرار بعد التحديث، أعد تسجيل الربط من صفحة إعداد البوت على السيرفر.</value></data>
 </root>

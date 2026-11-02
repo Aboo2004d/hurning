@@ -13,6 +13,7 @@
     <p>@T["SuspensionReason"]: @Model.SuspensionReason</p>
     <a asp-controller="Subscriptions" asp-action="Index" asp-route-q="@ViewBag.Email">@T["Subscriptions"]</a>
     <a asp-controller="Payments" asp-action="Index" asp-route-q="@ViewBag.Email">@T["Payments"]</a>
+    <p><a asp-action="Preferences" asp-route-id="@Model.UserId">@T["Preferences"]</a> · <a asp-controller="TelegramMembers" asp-action="Compose" asp-route-userId="@Model.UserId">@T["TelegramMemberCompose"]</a></p>
     <form asp-action="Suspend" method="post" class="membership-card">
         <input name="id" value="@Model.UserId" type="hidden" />
         <input name="suspended" value="@((!Model.Suspended).ToString())" type="hidden" />

@@ -2237,6 +2237,71 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("TelegramInbox");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.TelegramMemberBroadcast", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AfterUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(3500)
+                        .HasColumnType("nvarchar(3500)");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("PaidOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Completed", "CreatedAt");
+
+                    b.ToTable("TelegramMemberBroadcasts");
+                });
+
+            modelBuilder.Entity("HiringPs.Core.TelegramMemberSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("CategoryEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CityEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("OrganizationEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PaidOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("SearchEnabled")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TelegramMemberSettings");
+                });
+
             modelBuilder.Entity("HiringPs.Core.ToolCheckRequest", b =>
                 {
                     b.Property<long>("Id")

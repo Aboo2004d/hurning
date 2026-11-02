@@ -129,6 +129,7 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
                 await db.SaveChangesAsync(ct);
             }
             var notifications = scope.ServiceProvider.GetRequiredService<MemberNotifications>();
+            await new TelegramMemberMessaging(db, scope.ServiceProvider.GetRequiredService<IConfiguration>()).ExpandAsync(ct);
             await notifications.ExpandPublicationsAsync(ct);
             await notifications.RemindersAsync(ct);
             await notifications.DeliverAsync(ct);

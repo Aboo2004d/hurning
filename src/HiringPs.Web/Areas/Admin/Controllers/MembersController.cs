@@ -44,6 +44,41 @@ public class MembersController(
         return View(member);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Preferences(string id, [FromServices] HiringPs.Web.Services.Membership.MemberPreferencePageService preferences, CancellationToken ct)
+    {
+        var member = await db.MemberProfiles.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == id, ct);
+        if (member is null) return NotFound();
+        ViewBag.MemberId = id;
+        ViewBag.MemberName = member.Name;
+        return View(await preferences.ReadAsync(id, member.SavedRemindersEnabled, ct));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Preferences(string id, PreferenceInput input, string? addCategory, string? removeCategory,
+        string? addLocation, string? removeLocation, string? bulkAction,
+        [FromServices] HiringPs.Web.Services.Membership.MemberPreferencePageService preferences, CancellationToken ct)
+    {
+        var member = await db.MemberProfiles.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == id, ct);
+        if (member is null) return NotFound();
+        if (!ModelState.IsValid) return BadRequest();
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        if (!await preferences.EditAsync(id, input, addCategory, removeCategory, addLocation, removeLocation, bulkAction, ct))
+        {
+            if (!input.LimitExceeded) return BadRequest();
+            ViewBag.MemberId = id;
+            ViewBag.MemberName = member.Name;
+            ModelState.Clear();
+            ViewData["PreferenceNotice"] = "PreferenceLimitExceeded";
+            return View(input);
+        }
+        membership.Audit(User.Identity?.Name ?? "Admin", "Member.PreferencesUpdated", "Member " + id);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        TempData["Notice"] = "SavedChanges";
+        return RedirectToAction(nameof(Preferences), new { id });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Suspend(
         string id,

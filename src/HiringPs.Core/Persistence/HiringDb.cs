@@ -70,6 +70,8 @@ public class HiringDb(
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
     public DbSet<PaymentReview> PaymentReviews => Set<PaymentReview>();
     public DbSet<MemberChallenge> MemberChallenges => Set<MemberChallenge>();
+    public DbSet<TelegramMemberSetting> TelegramMemberSettings => Set<TelegramMemberSetting>();
+    public DbSet<TelegramMemberBroadcast> TelegramMemberBroadcasts => Set<TelegramMemberBroadcast>();
     public DbSet<MemberMessage> MemberMessages => Set<MemberMessage>();
     public DbSet<OpportunityPublication> OpportunityPublications => Set<OpportunityPublication>();
 
@@ -83,6 +85,7 @@ public class HiringDb(
         base.OnModelCreating(b);
         b.Entity<CategoryGroup>().Property(x => x.NormalizedName).UseCollation("Latin1_General_100_BIN2");
         b.Entity<CategoryGroupMember>().Property(x => x.NormalizedKey).UseCollation("Latin1_General_100_BIN2");
+        b.Entity<TelegramMemberBroadcast>().HasIndex(x => new { x.Completed, x.CreatedAt });
         b.ApplyConfiguration(new AuditEntryConfiguration());
         b.ApplyConfiguration(new SocialTemplateVersionConfiguration());
         b.ApplyConfiguration(new SocialPublicationConfiguration());

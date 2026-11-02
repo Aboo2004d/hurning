@@ -1,0 +1,17 @@
+@model PreferenceInput
+@{ ViewData["Title"] = T["Preferences"].Value + " — " + ViewBag.MemberName; }
+<h1>@ViewData["Title"]</h1>
+<a asp-action="Details" asp-route-id="@ViewBag.MemberId">@T["MemberDetails"]</a>
+@if (ViewData["PreferenceNotice"] is string notice) { <p class="notice">@T[notice]</p> }
+@if (Model.CategoryLimit is { } limit) { <p>@T["MaxPreferredCategories"]: @limit</p> }
+<form asp-action="Preferences" method="post" class="membership-card">
+    <input type="hidden" name="id" value="@ViewBag.MemberId" />
+    <fieldset><legend>@T["OpportunityTypes"]</legend>
+    @foreach (var kind in Enum.GetValues<OpportunityKind>())
+    { <label class="check"><input type="checkbox" name="Kinds" value="@kind" checked="@Model.Kinds.Contains(kind)" />@T[kind.ToString()]</label> }
+    </fieldset>
+    <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Categories", "Category", Model.Categories, Model.AvailableCategories, Model.CategoryLimit, Model.CategoryGroups)' />
+    <partial name="/Areas/Member/Views/Preferences/_PreferenceChoices.cshtml" model='new PreferenceChoices("Locations", "Location", Model.Locations, Model.AvailableLocations)' />
+    <label class="check"><input asp-for="SavedReminders" />@T["SavedReminders"]</label>
+    <button type="submit">@T["Save"]</button>
+</form>
