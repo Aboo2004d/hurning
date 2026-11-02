@@ -29,6 +29,21 @@ public static class BackgroundRegistration
         return services;
     }
 
+    /// <summary>Explicit local bot opt-in, independent of automatic server publication/payment workers.</summary>
+    public static bool LocalTelegramTesting(IConfiguration configuration) =>
+        ApplicationRuntime.Mode(configuration) == ApplicationRuntimeMode.Local
+        && configuration.GetValue<bool>("Telegram:LocalTestingEnabled");
+
+    public static IServiceCollection AddLocalTelegramTesting(this IServiceCollection services, IConfiguration configuration)
+    {
+        if (LocalTelegramTesting(configuration))
+        {
+            services.AddBackgroundDependencies();
+            services.AddHostedService<MembershipWorker>();
+        }
+        return services;
+    }
+
     /// <summary>يسجل اعتماديات الجمع والفحص دون تشغيل أي مهمة خلفية.</summary>
     public static IServiceCollection AddBackgroundDependencies(this IServiceCollection services)
     {

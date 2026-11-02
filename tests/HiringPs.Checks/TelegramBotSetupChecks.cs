@@ -128,6 +128,29 @@ internal static class TelegramBotSetupChecks
         Check(audit.Actor == "Fixture admin" && audit.Action == "Activity.Telegram.Succeeded.WebhookRegistration"
             && !audit.Detail.Contains(token) && !audit.Detail.Contains(secret) && page.ViewName == "Index",
             "successful activation renders verified state and records its actor without credentials");
+        settings["Runtime:Mode"] = "Local";
+        settings["Telegram:LocalTestingEnabled"] = "true";
+        settings["Seo:PublicOrigin"] = "https://local-fixture.ngrok-free.dev";
+        var localService = new TelegramBotSetupService(http, Config());
+        var localState = await localService.CheckAsync(default);
+        Check(localState.LocalRuntime && localState.LocalTestingEnabled
+            && localState.ExpectedWebhook == "https://local-fixture.ngrok-free.dev/integrations/telegram"
+            && localState.State == TelegramBotSetupState.DifferentWebhook,
+            "Local ngrok setup uses the explicitly configured HTTPS origin instead of the production webhook");
+        var localResult = await localService.RegisterAsync(default);
+        Check(localResult.Verified && current == "https://local-fixture.ngrok-free.dev/integrations/telegram",
+            "Explicit local registration can move the webhook to ngrok without dropping pending updates");
+        settings["Telegram:LocalTestingEnabled"] = "false";
+        Check((await new TelegramBotSetupService(http, Config()).CheckAsync(default)) is { LocalRuntime: true, LocalTestingEnabled: false },
+            "Local setup reports when the message consumer is disabled even if the webhook is registered");
+        IConfiguration Runtime(string mode, bool enabled) => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Runtime:Mode"] = mode, ["Telegram:LocalTestingEnabled"] = enabled.ToString() }).Build();
+        Type?[] Hosted(IConfiguration config) => new Microsoft.Extensions.DependencyInjection.ServiceCollection().AddLocalTelegramTesting(config)
+            .Where(x => x.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)).Select(x => x.ImplementationType).ToArray();
+        Check(Hosted(Runtime("Local", false)).Length == 0 && Hosted(Runtime("Server", true)).Length == 0,
+            "Local bot opt-in does not add workers by default or change server registrations");
+        Check(Hosted(Runtime("Local", true)).SequenceEqual(new[] { typeof(MembershipWorker) }),
+            "Local testing adds only the bot-capable membership worker, never social/random publication workers");
         Console.WriteLine($"Telegram bot setup: {checks} checks passed; all Bot API calls used local mock handlers.");
     }
 

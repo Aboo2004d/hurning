@@ -264,7 +264,7 @@ public sealed class MemberNotifications(
     }
 
     /// <summary>يحجز الرسائل المستحقة ويرسلها مع حفظ النتيجة والمهلة وحالة المحاولة.</summary>
-    public async Task DeliverAsync(CancellationToken ct)
+    public async Task DeliverAsync(CancellationToken ct, bool announcementsOnly = false)
     {
         if (!telegram.Ready)
             return;
@@ -275,6 +275,7 @@ public sealed class MemberNotifications(
                 x.SentAt == null
                 && x.CancelledAt == null
                 && x.AvailableAt <= now
+                && (!announcementsOnly || x.Kind == MemberMessageKind.Announcement)
                 && (x.LockedUntil == null || x.LockedUntil < now)
             )
             .OrderBy(x => x.Id)

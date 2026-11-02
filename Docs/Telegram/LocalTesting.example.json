@@ -1,0 +1,11 @@
+{
+  "Runtime": {
+    "Mode": "Local"
+  },
+  "Seo": {
+    "PublicOrigin": "https://your-tunnel.ngrok-free.dev"
+  },
+  "Telegram": {
+    "LocalTestingEnabled": true
+  }
+}

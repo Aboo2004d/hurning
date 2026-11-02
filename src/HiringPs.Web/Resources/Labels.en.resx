@@ -3365,4 +3365,8 @@
   <data name="City" xml:space="preserve"><value>City</value></data>
   <data name="Preview" xml:space="preserve"><value>Preview</value></data>
   <data name="TelegramMemberButtonsSetup" xml:space="preserve"><value>After upgrading, re-register the webhook from bot setup on the server to receive button presses.</value></data>
+  <data name="TelegramBotLocalTestingOn" xml:space="preserve"><value>Local bot testing is enabled: member commands and explicit admin announcements are processed. This option does not start automatic payment recovery, opportunity alerts or social publishing.</value></data>
+  <data name="TelegramBotLocalTestingOff" xml:space="preserve"><value>Bot processing is off in local mode. Set Telegram:LocalTestingEnabled to true in local configuration and restart the application to test it.</value></data>
+  <data name="TelegramBotOriginConfiguration" xml:space="preserve"><value>The webhook address comes from Seo:PublicOrigin, not the current browser address. To test ngrok, set it to the tunnel HTTPS origin, restart, and re-register the webhook.</value></data>
+  <data name="TelegramBotSingleWebhook" xml:space="preserve"><value>Each bot has one webhook. Registering ngrok temporarily redirects updates from the server to your computer. Re-register from the server to restore it.</value></data>
 </root>

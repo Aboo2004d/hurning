@@ -35,6 +35,12 @@
                 <dt>@T["Details"]</dt><dd>@BidiText.Render(Model.LastError)</dd>
             }
         </dl>
+        @if (Model.LocalRuntime)
+        {
+            <p class="notice" role="status">@T[Model.LocalTestingEnabled ? "TelegramBotLocalTestingOn" : "TelegramBotLocalTestingOff"]</p>
+        }
+        <p class="muted">@T["TelegramBotOriginConfiguration"]</p>
+        <p class="muted">@T["TelegramBotSingleWebhook"]</p>
         <p class="muted">@T["TelegramBotDeliveryNote"]</p>
         <p class="muted">@T["TelegramBotActivationNote"]</p>
         <div class="actions">

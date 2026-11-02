@@ -76,7 +76,12 @@ public sealed class TelegramBotSetupService(HttpClient http, IConfiguration conf
     /// <summary>يتحقق من إعدادات السيرفر قبل إجراء أي اتصال خارجي.</summary>
     private TelegramBotStatusDto InitialStatus()
     {
-        var status = new TelegramBotStatusDto { BotUsername = Clean(configuration["Telegram:BotUsername"] ?? "") };
+        var status = new TelegramBotStatusDto
+        {
+            BotUsername = Clean(configuration["Telegram:BotUsername"] ?? ""),
+            LocalRuntime = ApplicationRuntime.Mode(configuration) == ApplicationRuntimeMode.Local,
+            LocalTestingEnabled = BackgroundRegistration.LocalTelegramTesting(configuration),
+        };
         if (!configuration.GetValue<bool>("Telegram:Enabled"))
             return status with { State = TelegramBotSetupState.Disabled };
         string origin;

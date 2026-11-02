@@ -5,6 +5,8 @@ public sealed record TelegramBotStatusDto
 {
     public TelegramBotSetupState State { get; init; }
     public bool Configured { get; init; }
+    public bool LocalRuntime { get; init; }
+    public bool LocalTestingEnabled { get; init; }
     public string BotUsername { get; init; } = "";
     public string ExpectedWebhook { get; init; } = "";
     public string CurrentWebhook { get; init; } = "";

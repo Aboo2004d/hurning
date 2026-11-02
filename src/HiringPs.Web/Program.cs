@@ -153,7 +153,10 @@ builder.Services.AddBackgroundDependencies();
 if (BackgroundRegistration.RunInWeb(builder.Configuration))
     builder.Services.AddServerWorkers();
 else
+{
     builder.Services.AddLocalCollectionWorkers();
+    builder.Services.AddLocalTelegramTesting(builder.Configuration);
+}
 builder.Services.AddSingleton<UrlPolicy>();
 builder.Services.AddScoped<BrowserCollector>();
 builder.Services.AddScoped<AttachmentReader>();

@@ -62,26 +62,32 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HiringDb>();
         var telegram = scope.ServiceProvider.GetRequiredService<TelegramClient>();
-        var zeroOrders = await db
-            .PaymentOrders.AsNoTracking()
-            .Where(x =>
-                x.GatewayEnvironment == db.ActivePaymentEnvironment
-                && x.Gateway == "discount"
-                && x.AmountIls == 0
-                && x.DiscountPercent == 100
-                && x.State == PaymentState.AwaitingPayment
-            )
-            .OrderBy(x => x.CreatedAt)
-            .Select(x => x.Id)
-            .Take(5)
-            .ToListAsync(ct);
-        foreach (var id in zeroOrders)
-            await RecoverPaymentAsync(id, "Discount recovery", ct);
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var local = ApplicationRuntime.Mode(configuration) == ApplicationRuntimeMode.Local;
+        if (local && !BackgroundRegistration.LocalTelegramTesting(configuration)) return;
         var now = DateTimeOffset.UtcNow;
-        var recovery = scope.ServiceProvider.GetRequiredService<PaymentRecoveryService>();
-        var pending = await recovery.CandidatesAsync(ct);
-        foreach (var id in pending)
-            await RecoverPaymentAsync(id, "Payment reconciliation", ct);
+        if (!local)
+        {
+            var zeroOrders = await db
+                .PaymentOrders.AsNoTracking()
+                .Where(x =>
+                    x.GatewayEnvironment == db.ActivePaymentEnvironment
+                    && x.Gateway == "discount"
+                    && x.AmountIls == 0
+                    && x.DiscountPercent == 100
+                    && x.State == PaymentState.AwaitingPayment
+                )
+                .OrderBy(x => x.CreatedAt)
+                .Select(x => x.Id)
+                .Take(5)
+                .ToListAsync(ct);
+            foreach (var id in zeroOrders)
+                await RecoverPaymentAsync(id, "Discount recovery", ct);
+            var recovery = scope.ServiceProvider.GetRequiredService<PaymentRecoveryService>();
+            var pending = await recovery.CandidatesAsync(ct);
+            foreach (var id in pending)
+                await RecoverPaymentAsync(id, "Payment reconciliation", ct);
+        }
         if (!telegram.Ready)
             return;
         if (
@@ -130,9 +136,13 @@ public sealed class MembershipWorker(IServiceScopeFactory scopes, ILogger<Member
             }
             var notifications = scope.ServiceProvider.GetRequiredService<MemberNotifications>();
             await new TelegramMemberMessaging(db, scope.ServiceProvider.GetRequiredService<IConfiguration>()).ExpandAsync(ct);
-            await notifications.ExpandPublicationsAsync(ct);
-            await notifications.RemindersAsync(ct);
-            await notifications.DeliverAsync(ct);
+            if (!local)
+            {
+                await notifications.ExpandPublicationsAsync(ct);
+                await notifications.RemindersAsync(ct);
+            }
+            // Local testing handles user-initiated commands and explicit admin announcements only.
+            await notifications.DeliverAsync(ct, announcementsOnly: local);
             // Retain update IDs briefly for duplicate detection without retaining contact data.
             await db
                 .TelegramInbox.Where(x => x.ReceivedAt < now.AddDays(-7))

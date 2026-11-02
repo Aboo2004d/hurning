@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 internal static class TelegramMemberToolsChecks
 {
@@ -26,7 +27,7 @@ internal static class TelegramMemberToolsChecks
         connection.CreateCollation("Latin1_General_100_BIN2", string.CompareOrdinal);
         using var db = new FixtureDb(new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options);
         var tables = new[] { typeof(IdentityUser), typeof(MemberProfile), typeof(MemberPreference), typeof(MemberSubscription), typeof(MembershipPlanVersion),
-            typeof(MemberMessage), typeof(TelegramMemberSetting), typeof(TelegramMemberBroadcast), typeof(AuditEntry), typeof(Opportunity),
+            typeof(MemberMessage), typeof(TelegramInbox), typeof(MembershipRuntimeState), typeof(TelegramMemberSetting), typeof(TelegramMemberBroadcast), typeof(AuditEntry), typeof(Opportunity),
             typeof(OpportunityPublication), typeof(IndexNowEntry), typeof(CategoryGroup), typeof(CategoryGroupMember) }
             .Select(t => db.Model.FindEntityType(t)!.GetTableName()).ToArray();
         foreach (var sql in db.Database.GenerateCreateScript().Split(';', StringSplitOptions.RemoveEmptyEntries))
@@ -301,6 +302,40 @@ internal static class TelegramMemberToolsChecks
         Check(Text().Contains("Wrong category") && Buttons().Any(button => button.Text == "Edit filters"),
             "English combined search applies all filters and offers localized navigation");
         profiles[1].Language = "ar"; await db.SaveChangesAsync();
+        var localConfig = new ConfigurationBuilder().AddInMemoryCollection(config.AsEnumerable()).AddInMemoryCollection(new Dictionary<string, string?>
+        { ["Runtime:Mode"] = "Local", ["Telegram:LocalTestingEnabled"] = "true" }).Build();
+        var localServices = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        localServices.AddSingleton<IConfiguration>(localConfig);
+        localServices.AddScoped<HiringDb>(_ => new FixtureDb(new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options));
+        localServices.AddSingleton(client);
+        localServices.AddScoped(sp => new TelegramCommands(sp.GetRequiredService<HiringDb>(), client, null!, null!, localConfig));
+        localServices.AddScoped(sp => new MemberNotifications(sp.GetRequiredService<HiringDb>(), client, localConfig));
+        using (var localProvider = localServices.BuildServiceProvider())
+        {
+            db.MembershipRuntimeStates.Add(new() { Id = 1 });
+            db.TelegramInbox.Add(new() { Id = 700001, Json = "{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"text\":\"/search\"}}" });
+            db.MemberMessages.Add(new() { UserId = "free", Kind = MemberMessageKind.Opportunity, EventKey = "local-no-automatic-alert", Text = "Automatic alert" });
+            await db.SaveChangesAsync();
+            var localBroadcast = Guid.NewGuid();
+            await messaging.QueueAsync(localBroadcast, "Local announcement", false, "free", "Fixture", default);
+            var pendingPublications = await db.OpportunityPublications.CountAsync(x => !x.Completed);
+            var worker = new MembershipWorker(localProvider.GetRequiredService<IServiceScopeFactory>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<MembershipWorker>.Instance);
+            var tick = typeof(MembershipWorker).GetMethod("TickAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            await (Task)tick.Invoke(worker, new object[] { CancellationToken.None })!;
+            Check((await db.TelegramInbox.AsNoTracking().SingleAsync(x => x.Id == 700001)).ProcessedAt is not null,
+                "Opted-in local worker actually processes bot updates without payment recovery services or tables");
+            Check((await db.MemberMessages.AsNoTracking().SingleAsync(x => x.EventKey == "announcement:" + localBroadcast)).SentAt is not null,
+                "Local worker delivers an explicitly queued admin announcement through the fake Telegram transport");
+            var automatic = await db.MemberMessages.AsNoTracking().SingleAsync(x => x.EventKey == "local-no-automatic-alert");
+            Check(automatic.Attempts == 0 && automatic.SentAt is null && automatic.CancelledAt is null
+                && await db.OpportunityPublications.CountAsync(x => !x.Completed) == pendingPublications,
+                "Local testing neither claims automatic alerts nor expands publication notifications");
+            localConfig["Telegram:LocalTestingEnabled"] = "false";
+            db.TelegramInbox.Add(new() { Id = 700002, Json = "{}" }); await db.SaveChangesAsync();
+            await (Task)tick.Invoke(worker, new object[] { CancellationToken.None })!;
+            Check((await db.TelegramInbox.AsNoTracking().SingleAsync(x => x.Id == 700002)).Attempts == 0,
+                "Local bot processing stays off without the explicit local testing opt-in");
+        }
         for (var i = 0; i < 205; i++)
             db.MemberProfiles.Add(new() { UserId = "batch-" + i.ToString("D3"), Name = "Batch", Activated = true,
                 TelegramChatId = i + 1000, TelegramUserId = i + 1000, CreatedAt = now.AddDays(-1) });
