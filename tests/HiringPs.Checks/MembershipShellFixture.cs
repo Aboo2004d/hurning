@@ -143,6 +143,33 @@ public class ListingShellFixtureController : Controller
 [Area("Admin"), Authorize(Roles = "Admin")]
 public class AdminShellFixtureController : Controller
 {
+    public IActionResult PreferenceSettings() => View("/Areas/Admin/Views/PreferenceSettings/Index.cshtml",
+        new MemberPreferenceSetting { NonSubscriberCategoryLimit = 2 });
+
+    public IActionResult MemberMessageTools()
+    {
+        ViewBag.Broadcasts = new List<TelegramMemberBroadcast>();
+        return View("/Areas/Admin/Views/TelegramMembers/Index.cshtml", new TelegramMemberSetting());
+    }
+
+    public IActionResult MemberMessageCompose() => View("/Areas/Admin/Views/TelegramMembers/Compose.cshtml", new TelegramMemberInput());
+
+    public IActionResult MemberMessagePreview()
+    {
+        ViewBag.Count = 0;
+        ViewBag.Sample = "مرحبًا، هذه معاينة رسالة إدارية للمشتركين.";
+        ViewBag.Approval = "fixture-preview";
+        return View("/Areas/Admin/Views/TelegramMembers/Preview.cshtml", new TelegramMemberInput());
+    }
+
+    public IActionResult MemberPreferences()
+    {
+        ViewBag.MemberId = "fixture";
+        ViewBag.MemberName = "عضو تجريبي";
+        return View("/Areas/Admin/Views/Members/Preferences.cshtml", new PreferenceInput
+        { CategoryLimit = 2, AvailableCategories = ["محاسبة", "تقنية المعلومات"], AvailableLocations = ["الخليل", "رام الله"] });
+    }
+
     public IActionResult TelegramBot(string state = "DifferentWebhook") => View("/Areas/Admin/Views/TelegramBot/Index.cshtml", new TelegramBotStatusDto
     {
         State = Enum.Parse<TelegramBotSetupState>(state), Configured = state != "Disabled", BotUsername = "HiringFixtureBot",

@@ -1,0 +1,16 @@
+@model MemberPreferenceSetting
+@{ ViewData["Title"] = T["PreferenceSettingsTitle"].Value; }
+<section class="admin-list-page">
+    <header class="admin-page-heading">
+        <div><h1>@ViewData["Title"]</h1><p class="muted">@T["FreePreferenceLimitHelp"]</p></div>
+        <a class="button button-outline admin-action" asp-controller="Members" asp-action="Index"><span class="fa-solid fa-user" aria-hidden="true"></span>@T["Members"]</a>
+    </header>
+    <form method="post" class="membership-card">
+        <label asp-for="NonSubscriberCategoryLimit">@T["FreePreferenceLimitLabel"]</label>
+        <input asp-for="NonSubscriberCategoryLimit" type="number" min="0" max="1000" required aria-describedby="free-quota-help" />
+        <span asp-validation-for="NonSubscriberCategoryLimit" class="validation-summary-errors"></span>
+        <p id="free-quota-help" class="muted">@T["FreePreferenceLimitZero"]</p>
+        <p class="notice">@T["FreePreferenceLimitExisting"]</p>
+        <div class="actions"><button class="button admin-action" type="submit"><span class="fa-solid fa-floppy-disk" aria-hidden="true"></span>@T["Save"]</button></div>
+    </form>
+</section>

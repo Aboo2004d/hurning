@@ -4,8 +4,10 @@
 <p>@T["TelegramMemberRecipients"]: @ViewBag.Count</p>
 <p class="muted">@T["TelegramMemberPreviewNote"]</p>
 <pre style="white-space:pre-wrap">@ViewBag.Sample</pre>
-<form asp-action="Send" method="post">
-    <input type="hidden" name="approval" value="@ViewBag.Approval" />
-    <button type="submit" disabled="@(ViewBag.Count == 0)">@T["TelegramMemberSend"]</button>
-</form>
-<a asp-action="Compose" asp-route-userId="@Model.UserId">@T["Back"]</a>
+<div class="actions">
+    <form asp-action="Send" method="post">
+        <input type="hidden" name="approval" value="@ViewBag.Approval" />
+        <button class="button admin-action" type="submit" disabled="@(ViewBag.Count == 0)"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["TelegramMemberSend"]</button>
+    </form>
+    <a class="button button-outline admin-action" asp-action="Compose" asp-route-userId="@Model.UserId"><span class="fa-solid fa-list" aria-hidden="true"></span>@T["Back"]</a>
+</div>

@@ -3369,4 +3369,10 @@
   <data name="TelegramBotLocalTestingOff" xml:space="preserve"><value>Bot processing is off in local mode. Set Telegram:LocalTestingEnabled to true in local configuration and restart the application to test it.</value></data>
   <data name="TelegramBotOriginConfiguration" xml:space="preserve"><value>The webhook address comes from Seo:PublicOrigin, not the current browser address. To test ngrok, set it to the tunnel HTTPS origin, restart, and re-register the webhook.</value></data>
   <data name="TelegramBotSingleWebhook" xml:space="preserve"><value>Each bot has one webhook. Registering ngrok temporarily redirects updates from the server to your computer. Re-register from the server to restore it.</value></data>
+  <data name="PreferenceSettingsTitle" xml:space="preserve"><value>Preference settings</value></data>
+  <data name="FreePreferenceLimitLabel" xml:space="preserve"><value>Maximum preferred categories for non-subscribers</value></data>
+  <data name="FreePreferenceLimitHelp" xml:space="preserve"><value>Set the category quota for accounts without a current subscription. Subscribers retain the limits in their purchased plans.</value></data>
+  <data name="FreePreferenceLimitZero" xml:space="preserve"><value>Enter 0 to 1000. Zero disables category selection for non-subscribers.</value></data>
+  <data name="FreePreferenceLimitRange" xml:space="preserve"><value>Enter a whole number from 0 to 1000.</value></data>
+  <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>Lowering the quota preserves existing selections. Members must reduce their categories to the available quota when saving. The current free quota also applies after a subscription expires.</value></data>
 </root>

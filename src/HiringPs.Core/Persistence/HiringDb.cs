@@ -59,6 +59,7 @@ public class HiringDb(
     public DbSet<ToolWorkerState> ToolWorkers => Set<ToolWorkerState>();
 
     public DbSet<MemberProfile> MemberProfiles => Set<MemberProfile>();
+    public DbSet<MemberPreferenceSetting> MemberPreferenceSettings => Set<MemberPreferenceSetting>();
     public DbSet<MemberPreference> MemberPreferences => Set<MemberPreference>();
     public DbSet<SavedOpportunity> SavedOpportunities => Set<SavedOpportunity>();
     public DbSet<OpportunityAccessRule> OpportunityAccessRules => Set<OpportunityAccessRule>();
@@ -120,6 +121,8 @@ public class HiringDb(
         b.ApplyConfiguration(new TelegramInboxConfiguration());
         b.ApplyConfiguration(new PaymentGatewaySettingConfiguration());
         b.ApplyConfiguration(new PublicCatalogRevisionConfiguration());
+        b.Entity<MemberPreferenceSetting>().ToTable(table => table.HasCheckConstraint(
+            "CK_MemberPreferenceSettings_Limit", "[NonSubscriberCategoryLimit] BETWEEN 0 AND 1000"));
         b.ApplyConfiguration(new MemberProfileConfiguration());
         b.ApplyConfiguration(new MemberPreferenceConfiguration());
         b.ApplyConfiguration(new SavedOpportunityConfiguration());

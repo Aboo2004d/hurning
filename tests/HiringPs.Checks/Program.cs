@@ -9,6 +9,18 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--preference-settings-ui-check"))
+{
+    await PreferenceSettingsUiChecks.RunAsync();
+    return;
+}
+
+if (args.Contains("--free-preference-limit-check"))
+{
+    await FreePreferenceLimitChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--telegram-member-tools-check"))
 {
     await TelegramMemberToolsChecks.RunAsync();

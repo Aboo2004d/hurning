@@ -1,6 +1,8 @@
 @model TelegramMemberInput
 @{ ViewData["Title"] = T["TelegramMemberCompose"].Value; }
-<h1>@ViewData["Title"]</h1>
+<header class="admin-page-heading"><h1>@ViewData["Title"]</h1>
+    <a class="button button-outline admin-action" asp-action="Index"><span class="fa-solid fa-list" aria-hidden="true"></span>@T["Back"]</a>
+</header>
 <form asp-action="Preview" method="post" class="membership-card">
     <div asp-validation-summary="All"></div>
     <input asp-for="Id" type="hidden" />
@@ -9,5 +11,5 @@
     <p>@T["TelegramMemberVariables"] <code>{{name}}</code> · <code>{{site}}</code></p>
     <label>@T["Message"]<textarea asp-for="Body" maxlength="3500" rows="8" required></textarea></label>
     <p class="muted">@T["TelegramMemberOptOut"]</p>
-    <button type="submit">@T["Preview"]</button>
+    <div class="actions"><button class="button admin-action" type="submit"><span class="fa-solid fa-eye" aria-hidden="true"></span>@T["Preview"]</button></div>
 </form>

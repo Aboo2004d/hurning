@@ -569,6 +569,22 @@ namespace HiringPs.Core.Migrations
                     b.ToTable("MemberPreferences");
                 });
 
+            modelBuilder.Entity("HiringPs.Core.MemberPreferenceSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NonSubscriberCategoryLimit")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MemberPreferenceSettings", t =>
+                        {
+                            t.HasCheckConstraint("CK_MemberPreferenceSettings_Limit", "[NonSubscriberCategoryLimit] BETWEEN 0 AND 1000");
+                        });
+                });
+
             modelBuilder.Entity("HiringPs.Core.MemberProfile", b =>
                 {
                     b.Property<string>("UserId")

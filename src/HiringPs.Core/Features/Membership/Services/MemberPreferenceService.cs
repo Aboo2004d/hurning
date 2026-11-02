@@ -13,7 +13,9 @@ public sealed class MemberPreferenceService(HiringDb db)
         var limits = await db.MemberSubscriptions.AsNoTracking()
             .Where(x => x.UserId == owner && !x.Cancelled && x.StartsAt <= now && x.EndsAt > now)
             .Select(x => x.PlanVersion.MaxPreferredCategories).ToArrayAsync(ct);
-        return PreferenceLimitRules.Effective(limits);
+        return limits.Length == 0
+            ? await new MemberPreferenceSettingsService(db).ReadAsync(ct)
+            : PreferenceLimitRules.Effective(limits);
     }
     /// <summary>يقرأ اختيارات العضو فقط؛ البيانات التاريخية غير الصالحة تحتفظ بسلوك الخطأ السابق.</summary>
     public async Task<MemberPreferenceDto> ReadAsync(string owner, CancellationToken ct)

@@ -188,7 +188,8 @@ public static class MembershipChecks
 
     public static async Task ShellAsync(
         bool preview = false,
-        string environmentName = "Development"
+        string environmentName = "Development",
+        Func<string, Task>? inspect = null
     )
     {
         var root = Path.GetFullPath("src/HiringPs.Web");
@@ -346,6 +347,12 @@ public static class MembershipChecks
         {
             await File.WriteAllTextAsync("/tmp/hiring-membership-shell-url", app.Urls.Single());
             await app.WaitForShutdownAsync();
+            return;
+        }
+        if (inspect is not null)
+        {
+            try { await inspect(app.Urls.Single()); }
+            finally { await app.StopAsync(); }
             return;
         }
         try

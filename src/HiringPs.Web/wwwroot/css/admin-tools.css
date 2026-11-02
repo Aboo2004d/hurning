@@ -202,3 +202,5 @@
 .template-preview-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.9; padding: 1rem; background: var(--soft); border-radius: 12px; }
 .template-history-version { border-block-end: 1px solid var(--line); padding-block: 1rem; }
 
+/* Shared identity and accessible disabled state for administrator actions. */
+.admin-action:disabled { opacity: .55; cursor: not-allowed; }

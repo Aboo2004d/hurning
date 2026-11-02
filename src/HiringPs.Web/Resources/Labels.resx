@@ -3369,4 +3369,10 @@
   <data name="TelegramBotLocalTestingOff" xml:space="preserve"><value>معالجة رسائل البوت متوقفة في الوضع المحلي. للتجربة اضبط Telegram:LocalTestingEnabled على true في الإعدادات المحلية ثم أعد تشغيل التطبيق.</value></data>
   <data name="TelegramBotOriginConfiguration" xml:space="preserve"><value>عنوان الربط يأتي من Seo:PublicOrigin في الإعدادات، وليس من عنوان الصفحة المفتوحة. لتجربة ngrok ضع رابط HTTPS للنفق في هذا الإعداد ثم أعد التشغيل وتسجيل الربط.</value></data>
   <data name="TelegramBotSingleWebhook" xml:space="preserve"><value>لكل بوت عنوان استقبال واحد فقط؛ ربط البوت بـ ngrok يحوّل رسائله من السيرفر إلى جهازك مؤقتًا. للعودة أعد تسجيل الربط من السيرفر.</value></data>
+  <data name="PreferenceSettingsTitle" xml:space="preserve"><value>إعدادات التفضيلات</value></data>
+  <data name="FreePreferenceLimitLabel" xml:space="preserve"><value>الحد الأقصى للمجالات المفضلة لغير المشتركين</value></data>
+  <data name="FreePreferenceLimitHelp" xml:space="preserve"><value>حدّد عدد المجالات التي يمكن اختيارها للحسابات دون اشتراك سارٍ. تبقى حدود المشتركين حسب الباقات المشتراة.</value></data>
+  <data name="FreePreferenceLimitZero" xml:space="preserve"><value>من 0 إلى 1000. القيمة 0 تمنع اختيار المجالات لغير المشتركين.</value></data>
+  <data name="FreePreferenceLimitRange" xml:space="preserve"><value>أدخل عددًا صحيحًا من 0 إلى 1000.</value></data>
+  <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>خفض الحد لا يحذف الاختيارات المحفوظة. عند تعديل التفضيلات، يلزم تقليل المجالات إلى الحد المتاح، ويطبق الحد الجديد عند انتهاء الاشتراك أيضًا.</value></data>
 </root>

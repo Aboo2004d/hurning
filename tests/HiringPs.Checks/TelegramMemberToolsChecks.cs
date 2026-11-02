@@ -26,7 +26,7 @@ internal static class TelegramMemberToolsChecks
         await connection.OpenAsync();
         connection.CreateCollation("Latin1_General_100_BIN2", string.CompareOrdinal);
         using var db = new FixtureDb(new DbContextOptionsBuilder<HiringDb>().UseSqlite(connection).Options);
-        var tables = new[] { typeof(IdentityUser), typeof(MemberProfile), typeof(MemberPreference), typeof(MemberSubscription), typeof(MembershipPlanVersion),
+        var tables = new[] { typeof(IdentityUser), typeof(MemberProfile), typeof(MemberPreference), typeof(MemberPreferenceSetting), typeof(MemberSubscription), typeof(MembershipPlanVersion),
             typeof(MemberMessage), typeof(TelegramInbox), typeof(MembershipRuntimeState), typeof(TelegramMemberSetting), typeof(TelegramMemberBroadcast), typeof(AuditEntry), typeof(Opportunity),
             typeof(OpportunityPublication), typeof(IndexNowEntry), typeof(CategoryGroup), typeof(CategoryGroupMember) }
             .Select(t => db.Model.FindEntityType(t)!.GetTableName()).ToArray();

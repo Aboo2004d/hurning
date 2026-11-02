@@ -1,6 +1,9 @@
 @model TelegramMemberSetting
 @{ ViewData["Title"] = T["TelegramMemberTools"].Value; }
-<header class="admin-page-heading"><h1>@ViewData["Title"]</h1><a class="button" asp-action="Compose">@T["TelegramMemberCompose"]</a></header>
+<header class="admin-page-heading"><h1>@ViewData["Title"]</h1><div class="actions">
+    <a class="button admin-action" asp-action="Compose"><span class="fa-solid fa-paper-plane" aria-hidden="true"></span>@T["TelegramMemberCompose"]</a>
+    <a class="button button-outline admin-action" asp-controller="PreferenceSettings" asp-action="Index"><span class="fa-solid fa-sliders" aria-hidden="true"></span>@T["PreferenceSettingsTitle"]</a>
+</div></header>
 <form asp-action="Settings" method="post" class="membership-card">
     <h2>@T["TelegramMemberSearch"]</h2>
     <label class="check"><input asp-for="SearchEnabled" />@T["Enabled"]</label>
@@ -9,7 +12,7 @@
     <label class="check"><input asp-for="CityEnabled" />@T["City"]</label>
     <label class="check"><input asp-for="OrganizationEnabled" />@T["Organization"]</label>
     <label class="check"><input asp-for="CategoryEnabled" />@T["Category"]</label>
-    <button type="submit">@T["Save"]</button>
+    <div class="actions"><button class="button admin-action" type="submit"><span class="fa-solid fa-floppy-disk" aria-hidden="true"></span>@T["Save"]</button></div>
     <p class="muted">@T["TelegramMemberSearchHelp"]</p>
     <pre dir="ltr">/jobs</pre>
     <p>@T["TelegramMemberButtonsSetup"] <a asp-controller="TelegramBot" asp-action="Index">@T["TelegramBotSetup"]</a></p>
