@@ -137,7 +137,7 @@ internal static class TelegramMemberToolsChecks
             .GetProperty("reply_markup").GetProperty("inline_keyboard").EnumerateArray().SelectMany(row => row.EnumerateArray())
             .Select(button => (button.GetProperty("text").GetString()!, button.GetProperty("callback_data").GetString()!)).ToArray();
         await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"text\":\"بحث\"}}", default);
-        Check(Buttons().Select(x => x.Text).SequenceEqual(new[] { "حسب المجال", "حسب المكان", "حسب الجهة" }),
+        Check(Buttons().Take(3).Select(x => x.Text).SequenceEqual(new[] { "حسب المجال", "حسب المكان", "حسب الجهة" }),
             "Arabic search command opens three criterion buttons");
         var categoryMenu = Buttons()[0].Data;
         var navigator = new TelegramJobNavigator(db, client, config);
@@ -148,27 +148,32 @@ internal static class TelegramMemberToolsChecks
         var callbackJson = System.Text.Json.JsonSerializer.Serialize(new { callback_query = new { id = "fixture-callback", from = new { id = 101 },
             message = new { chat = new { id = 101, type = "private" } }, data = categoryPick } });
         await commands.HandleAsync(callbackJson, default);
-        Check(handler.Methods[^2] == "answerCallbackQuery" && handler.Methods[^1] == "sendMessage" && Text().Contains("Current job 0"),
-            "Button press is acknowledged and selected category returns matching jobs");
-        Check(Buttons().Any(x => x.Text == "وظائف أخرى") && Buttons().Any(x => x.Text == "اختيار آخر"),
+        Check(handler.Methods[^2] == "answerCallbackQuery" && handler.Methods[^1] == "sendMessage" && Text().Contains("حسب المجال: Finance"),
+            "Button press is acknowledged and chosen category appears in the filter summary");
+        await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "عرض النتائج").Data, default);
+        Check(Text().Contains("Current job 0"), "Explicit Show results applies the selected category");
+        Check(Buttons().Any(x => x.Text == "وظائف أخرى") && Buttons().Any(x => x.Text == "تعديل الفلاتر"),
             "Results offer next-page and change-selection buttons");
         await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "وظائف أخرى").Data, default);
         Check(Text().Contains("Current job 6") && Buttons().Any(x => x.Text == "الوظائف السابقة"), "Results next/previous buttons preserve the filter");
         await navigator.OpenAsync(101, 101, "jobs:c:city:1", default);
         Check(Buttons().Any(x => x.Text == "الخليل"), "Location menu offers places with current jobs");
         await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "الخليل").Data, default);
-        Check(Text().Contains("Current job"), "Selecting a place returns its jobs");
+        Check(Text().Contains("حسب المكان: الخليل"), "Selected location is retained before showing results");
+        await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "عرض النتائج").Data, default);
+        Check(Text().Contains("Current job"), "Selected location filters the results");
         db.Opportunities.Add(new Opportunity { Title = "Other organization branch", Organization = "Fixture Company Branch", Locations = "الخليل", Status = PublicationStatus.Published });
         await db.SaveChangesAsync();
         await navigator.OpenAsync(101, 101, "jobs:c:organization:1", default);
         var company = Buttons().Single(x => x.Text == "Fixture Company").Data;
         await navigator.OpenAsync(101, 101, company, default);
+        await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "عرض النتائج").Data, default);
         Check(Text().Contains("Current job") && !Text().Contains("Other organization branch"), "Organization choice matches that organization exactly");
         await navigator.OpenAsync(101, 101, "jobs:p:organization:0000000000000000:1", default);
-        Check(Text().Contains("اختر من القائمة") && !Text().Contains("Current job"), "Stale or forged option keys return to valid choices");
+        Check(Text().Contains("راجع الفلاتر") && !Text().Contains("Current job"), "Stale or forged option keys require review before searching");
         settings.CityEnabled = false; await db.SaveChangesAsync();
         await navigator.OpenAsync(101, 101, "jobs:p:city:" + TelegramJobNavigator.Key("الخليل") + ":1", default);
-        Check(!Buttons().Any(x => x.Data.Contains(":city:")) && !Text().Contains("Current job"), "Previously issued buttons cannot bypass a newly disabled criterion");
+        Check(!Buttons().Any(x => x.Text == "حسب المكان") && !Text().Contains("Current job"), "Previously issued buttons cannot bypass a newly disabled criterion");
         settings.CityEnabled = true; settings.PaidOnly = true; await db.SaveChangesAsync();
         await commands.HandleAsync(callbackJson, default);
         Check(Text().Contains("اشتراكًا") && !Text().Contains("Current job"), "Callbacks recheck newly changed audience permissions");
@@ -180,12 +185,93 @@ internal static class TelegramMemberToolsChecks
             Locations = "نابلس", Status = PublicationStatus.Published });
         await db.SaveChangesAsync();
         await navigator.OpenAsync(101, 101, "jobs:c:organization:1", default);
-        Check(Buttons().Count(x => x.Data.StartsWith("jobs:p:")) == 8 && Buttons().Any(x => x.Text == "خيارات أخرى"),
+        Check(Buttons().Count(x => x.Data.StartsWith("jobs:f:p:")) == 8 && Buttons().Any(x => x.Text == "خيارات أخرى"),
             "Long option catalogs are paginated to eight choices");
         Check(Buttons().All(x => System.Text.Encoding.UTF8.GetByteCount(x.Data) <= 64), "Callback payloads stay within Telegram's 64-byte limit");
         await navigator.OpenAsync(101, 101, Buttons().Single(x => x.Text == "خيارات أخرى").Data, default);
-        Check(Buttons().Any(x => x.Text == "الخيارات السابقة") && Buttons().Any(x => x.Text == "العودة لخيارات البحث"),
+        Check(Buttons().Any(x => x.Text == "الخيارات السابقة") && Buttons().Any(x => x.Text == "العودة للفلاتر"),
             "Option pages support previous and back-to-search navigation");
+        db.Opportunities.AddRange(
+            new Opportunity { Title = "Wrong city", Organization = "Fixture Company", Locations = "نابلس", Category = "Accounting", Status = PublicationStatus.Published, CreatedAt = now.AddMinutes(-20) },
+            new Opportunity { Title = "Wrong organization", Organization = "Another Company", Locations = "الخليل", Category = "Accounting", Status = PublicationStatus.Published, CreatedAt = now.AddMinutes(-21) },
+            new Opportunity { Title = "Wrong category", Organization = "Fixture Company", Locations = "الخليل", Category = "IT", Status = PublicationStatus.Published, CreatedAt = now.AddMinutes(-22) },
+            new Opportunity { Title = "Approved alias match", Organization = "Fixture Company", Locations = "Hebron", Category = "محاسبة", Status = PublicationStatus.Published, CreatedAt = now.AddMinutes(-23) });
+        await db.SaveChangesAsync();
+        async Task Click(string label) => await navigator.OpenAsync(101, 101, Buttons().Single(button => button.Text == label).Data, default);
+        await navigator.OpenAsync(101, 101, "jobs:m", default);
+        Check(Text().Contains("حسب المكان: الكل") && Text().Contains("حسب الجهة: الكل") && Text().Contains("حسب المجال: الكل"),
+            "New search defaults every independent filter to All");
+        await Click("حسب المكان"); await Click("الخليل");
+        await Click("حسب الجهة");
+        Check(Buttons().Any(button => button.Text == "Another Company") && !Buttons().Any(button => button.Text.StartsWith("Extra Organization")),
+            "Organization choices depend on the selected location");
+        await Click("Fixture Company"); await Click("حسب المجال");
+        Check(Buttons().Any(button => button.Text == "Finance") && Buttons().Any(button => button.Text == "IT")
+            && Buttons().All(button => System.Text.Encoding.UTF8.GetByteCount(button.Data) <= 64),
+            "Category options retain both prior selections within Telegram payload limits");
+        await Click("Finance");
+        var tripleResults = Buttons().Single(button => button.Text == "عرض النتائج").Data;
+        Check(Text().Contains("حسب المكان: الخليل") && Text().Contains("حسب الجهة: Fixture Company") && Text().Contains("حسب المجال: Finance"),
+            "All three selections remain visible together in the search summary");
+        Check(Buttons().All(button => System.Text.Encoding.UTF8.GetByteCount(button.Data) <= 64),
+            "Fully populated combined-filter callbacks fit within 64 bytes");
+        await Click("عرض النتائج");
+        Check(Text().Contains("Current job 0") && !Text().Contains("Wrong city") && !Text().Contains("Wrong organization") && !Text().Contains("Wrong category"),
+            "Combined results require location AND exact organization AND approved category");
+        await Click("وظائف أخرى");
+        Check(Text().Contains("Current job 6") && Text().Contains("Approved alias match")
+            && !Text().Contains("Wrong city") && !Text().Contains("Wrong organization") && !Text().Contains("Wrong category"),
+            "All three filters and category aliases are preserved on subsequent result pages");
+        await Click("الوظائف السابقة");
+        Check(Text().Contains("Current job 0") && !Text().Contains("Approved alias match"), "Previous result page retains the same combined filters");
+        await Click("تعديل الفلاتر"); await Click("حسب الجهة");
+        Check(Buttons().Any(button => button.Text == "Another Company") && !Buttons().Any(button => button.Text == "Fixture Company Branch"),
+            "Editing one filter narrows its choices using the other two");
+        await Click("Another Company"); await Click("عرض النتائج");
+        Check(Text().Contains("Wrong organization") && !Text().Contains("Current job"), "Changing one selection preserves the other two filters");
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(Text().Contains("Current job 0") && !Text().Contains("Wrong organization"),
+            "Earlier result buttons retain their own complete selection instead of a shared mutable session");
+        await Click("تعديل الفلاتر"); await Click("حسب الجهة"); await Click("الكل");
+        Check(Text().Contains("حسب الجهة: الكل") && Text().Contains("حسب المكان: الخليل") && Text().Contains("حسب المجال: Finance"),
+            "All clears only its own filter while preserving the other choices");
+        await Click("عرض النتائج"); await Click("وظائف أخرى");
+        Check(Text().Contains("Wrong organization") && !Text().Contains("Wrong city") && !Text().Contains("Wrong category"),
+            "Two selected filters still combine when organization is All");
+        await Click("مسح الفلاتر");
+        Check(Text().Contains("حسب المكان: الكل") && Text().Contains("حسب الجهة: الكل") && Text().Contains("حسب المجال: الكل"),
+            "Clear filters resets every selection together");
+        await Click("عرض النتائج");
+        Check(Text().Contains("Extra option job"), "All filters cleared lists current published jobs");
+        settings.CityEnabled = false; await db.SaveChangesAsync();
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(Text().Contains("راجع الفلاتر") && !Buttons().Any(button => button.Text == "حسب المكان") && !Text().Contains("Current job"),
+            "Disabling a selected filter forces a review instead of silently widening results");
+        Check(!(await search.FiltersAsync("free", new(City: "الخليل"), 1, default)).Text.Contains("Current job"),
+            "Combined query API also rejects a disabled selected criterion");
+        settings.CityEnabled = true; settings.PaidOnly = true; await db.SaveChangesAsync();
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(Text().Contains("اشتراكًا") && !Text().Contains("Current job"), "Combined results recheck paid-only access on every click");
+        settings.PaidOnly = false; profiles[1].Suspended = true; await db.SaveChangesAsync();
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(!Text().Contains("Current job") && Text().Contains("فعّله"), "Suspension revokes previously issued combined-search buttons");
+        profiles[1].Suspended = false; await db.SaveChangesAsync();
+        var matching = await db.Opportunities.Where(item => item.Status == PublicationStatus.Published && item.Organization == "Fixture Company"
+            && (item.Category == "Accounting" || item.Category == "محاسبة") && (item.Locations == "الخليل" || item.Locations == "Hebron")).ToListAsync();
+        foreach (var item in matching) item.Status = PublicationStatus.Archived;
+        await db.SaveChangesAsync();
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(Text().Contains("لا توجد وظائف سارية مطابقة") && Buttons().Any(button => button.Text == "تعديل الفلاتر"),
+            "A valid combination that becomes empty offers filter editing rather than unrelated jobs");
+        foreach (var item in await db.Opportunities.Where(item => item.Category == "Accounting" || item.Category == "محاسبة").ToListAsync()) item.Category = "IT";
+        await db.SaveChangesAsync();
+        await navigator.OpenAsync(101, 101, tripleResults, default);
+        Check(Text().Contains("راجع الفلاتر") && Text().Contains("حسب المجال: الكل") && Text().Contains("حسب المكان: الخليل"),
+            "Disappearing options retain other choices and require review before broadening the search");
+        await navigator.OpenAsync(101, 101, "jobs:f:r:forged:1", default);
+        Check(Text().Contains("راجع الفلاتر") && !Text().Contains("Current job"), "Malformed filter snapshots never trigger a results query");
+        Check(!(await search.FiltersAsync("free", TelegramJobFilters.Empty, 101, default)).Text.Contains("Extra option job"),
+            "Combined pagination remains bounded");
         await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"text\":\"/help\"}}", default);
         using (var help = System.Text.Json.JsonDocument.Parse(handler.Payloads.Last()))
         {
@@ -205,6 +291,15 @@ internal static class TelegramMemberToolsChecks
         await commands.HandleAsync("{\"message\":{\"from\":{\"id\":101},\"chat\":{\"id\":101,\"type\":\"private\"},\"text\":\"/help\"}}", default);
         Check(Text().StartsWith("📋 Bot help") && Text().Contains("/search") && Text().Contains("ORDER_ID"),
             "Help follows member language and explains the payment command argument");
+        await navigator.OpenAsync(101, 101, "jobs:m", default);
+        await Click("By location"); await Click("Hebron");
+        await Click("By organization"); await Click("Fixture Company");
+        await Click("By category"); await Click("IT");
+        Check(Text().Contains("By location: Hebron") && Text().Contains("By organization: Fixture Company") && Text().Contains("By category: IT"),
+            "English menus preserve the same three canonical filters with localized location names");
+        await Click("Show results");
+        Check(Text().Contains("Wrong category") && Buttons().Any(button => button.Text == "Edit filters"),
+            "English combined search applies all filters and offers localized navigation");
         profiles[1].Language = "ar"; await db.SaveChangesAsync();
         for (var i = 0; i < 205; i++)
             db.MemberProfiles.Add(new() { UserId = "batch-" + i.ToString("D3"), Name = "Batch", Activated = true,

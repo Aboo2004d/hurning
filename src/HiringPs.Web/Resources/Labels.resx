@@ -3349,7 +3349,7 @@
   <data name="TelegramMemberAll" xml:space="preserve"><value>جميع الحسابات المفعّلة المرتبطة بتليجرام</value></data>
   <data name="TelegramMemberPaid" xml:space="preserve"><value>أصحاب الاشتراك المدفوع الساري فقط</value></data>
   <data name="TelegramMemberCriteria" xml:space="preserve"><value>معايير البحث المتاحة (اختر واحدًا على الأقل عند التفعيل)</value></data>
-  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>يرسل العضو /jobs أو «بحث»، ثم يختار حسب المجال أو المكان أو الجهة، ويختار من القوائم عبر الأزرار. تظهر خمس وظائف سارية في الصفحة مع أزرار للتنقل والرجوع.</value></data>
+  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>يرسل العضو /search أو «بحث»، ويحدد أي مجموعة من المكان والجهة والمجال، ثم يضغط عرض النتائج. تطابق النتائج جميع الفلاتر المختارة، ويمكن ترك أي فلتر على الكل أو تعديل الفلاتر ومسحها.</value></data>
   <data name="TelegramMemberHistory" xml:space="preserve"><value>آخر الرسائل الجماعية</value></data>
   <data name="TelegramMemberDeliveryNote" xml:space="preserve"><value>تُدرج الرسائل فورًا في طابور التسليم على السيرفر. اكتمال تجهيز المستلمين لا يعني اكتمال التسليم؛ راجع سجل الإشعارات. العامل لا يعمل في وضع الجمع المحلي.</value></data>
   <data name="TelegramMemberExpanded" xml:space="preserve"><value>اكتمل تجهيز الطابور</value></data>

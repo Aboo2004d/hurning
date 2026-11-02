@@ -57,38 +57,72 @@ public sealed class TelegramJobSearch(HiringDb db, IConfiguration configuration)
         var settings = access.Settings;
         var en = member.Language == "en";
         if (page is < 1 or > 100 || value.Length is < 2 or > 1000) return new(Help(settings, en), false);
+        var canonical = field switch
+        {
+            "city" or "مدينة" when settings.CityEnabled => "city",
+            "organization" or "جهة" when settings.OrganizationEnabled => "organization",
+            "category" or "مجال" when settings.CategoryEnabled => "category",
+            _ => null,
+        };
+        if (canonical is null) return new(Help(settings, en), false);
+        var query = await FilteredAsync(TelegramJobFilters.Empty.With(canonical, value), exactOrganization, ct);
+        var next = includeNextCommand ? "/jobs " + field + " " + value + " | " + (page + 1) : null;
+        return await ReadPageAsync(query, member.Language, page, next, ct);
+    }
+
+    public async Task<TelegramJobReply> FiltersAsync(string userId, TelegramJobFilters filters, int page, CancellationToken ct)
+    {
+        var access = await AccessAsync(userId, ct);
+        if (access.Error is not null) return new(access.Error, false);
+        var en = access.Member!.Language == "en";
+        if (page is < 1 or > 100 || new[] { filters.City, filters.Organization, filters.Category }
+            .Any(value => value is not null && (value.Length is < 2 or > 1000)))
+            return new(Help(access.Settings, en), false);
+        if ((filters.City is not null && !access.Settings.CityEnabled)
+            || (filters.Organization is not null && !access.Settings.OrganizationEnabled)
+            || (filters.Category is not null && !access.Settings.CategoryEnabled))
+            return new(en ? "A selected filter was disabled. Open search again." : "تم تعطيل أحد الفلاتر المختارة. افتح البحث مجددًا.", false);
+        return await ReadPageAsync(await FilteredAsync(filters, true, ct), access.Member.Language, page, null, ct);
+    }
+
+    /// <summary>Shared SQL AND predicates for results and dependent option lists; callers enforce account access.</summary>
+    internal async Task<IQueryable<Opportunity>> FilteredAsync(TelegramJobFilters filters, bool exactOrganization, CancellationToken ct)
+    {
         var query = PublicOpportunityScope.Current(db.Opportunities.AsNoTracking(), TextRules.PalestineToday())
             .Where(x => x.Kind == OpportunityKind.Job);
-        switch (field)
+        if (filters.City is { } location)
         {
-            case "city" when settings.CityEnabled:
-            case "مدينة" when settings.CityEnabled:
-                var city = LocationSearch.Normalize(value);
-                if (city.Length < 2) return new(Help(settings, en), false);
-                query = query.Where(x => (" " + x.LocationSearchText + " ").Contains(" " + city + " "));
-                break;
-            case "organization" when settings.OrganizationEnabled:
-            case "جهة" when settings.OrganizationEnabled:
-                query = exactOrganization ? query.Where(x => x.Organization == value) : query.Where(x => x.Organization.Contains(value));
-                break;
-            case "category" when settings.CategoryEnabled:
-            case "مجال" when settings.CategoryEnabled:
-                var groups = await new CategoryGroupReadService(db).MapAsync(ct);
-                var labels = await query.Where(x => x.Category != "").Select(x => x.Category).Distinct().ToArrayAsync(ct);
-                var selected = labels.Where(x => groups.Matches(value, x) || (groups.GroupName(x) is { } group && CategoryRules.Key(group) == CategoryRules.Key(value))).ToArray();
-                query = query.Where(x => selected.Contains(x.Category));
-                break;
-            default: return new(Help(settings, en), false);
+            var city = LocationSearch.Normalize(location);
+            query = city.Length < 2 ? query.Where(x => false)
+                : query.Where(x => (" " + x.LocationSearchText + " ").Contains(" " + city + " "));
         }
+        if (filters.Organization is { } organization)
+            query = exactOrganization ? query.Where(x => x.Organization == organization)
+                : query.Where(x => x.Organization.Contains(organization));
+        if (filters.Category is { } category)
+        {
+            var groups = await new CategoryGroupReadService(db).MapAsync(ct);
+            var labels = await query.Where(x => x.Category != "").Select(x => x.Category).Distinct().ToArrayAsync(ct);
+            var selected = labels.Where(x => groups.Matches(category, x)
+                || (groups.GroupName(x) is { } group && CategoryRules.Key(group) == CategoryRules.Key(category))).ToArray();
+            query = query.Where(x => selected.Contains(x.Category));
+        }
+        return query;
+    }
+
+    private async Task<TelegramJobReply> ReadPageAsync(IQueryable<Opportunity> query, string language, int page,
+        string? nextCommand, CancellationToken ct)
+    {
+        var en = language == "en";
         var rows = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
             .Skip((page - 1) * 5).Take(6).Select(x => new { x.Id, x.Title, x.Organization, x.Locations }).ToListAsync(ct);
         if (rows.Count == 0) return new(en ? "No matching current jobs." : "لا توجد وظائف سارية مطابقة.", false);
-        var origin = (configuration["Seo:PublicOrigin"] ?? "https://hiring.ps").TrimEnd('/') + "/" + member.Language;
+        var origin = (configuration["Seo:PublicOrigin"] ?? "https://hiring.ps").TrimEnd('/') + "/" + language;
         // Only publicly listed card fields are returned; details links retain the website's access rules.
         var text = (en ? "Page " : "الصفحة ") + page + "\n\n" + string.Join("\n\n", rows.Take(5).Select(x =>
             x.Title.Truncate(140) + "\n" + x.Organization.Truncate(90) + " · " + x.Locations.Truncate(90)
             + "\n" + origin + "/Opportunities/Details/" + x.Id));
-        if (includeNextCommand && rows.Count > 5 && page < 100) text += "\n\n" + (en ? "Next: " : "التالي: ") + "/jobs " + field + " " + value + " | " + (page + 1);
+        if (nextCommand is not null && rows.Count > 5 && page < 100) text += "\n\n" + (en ? "Next: " : "التالي: ") + nextCommand;
         return new(text, rows.Count > 5 && page < 100);
     }
 }

@@ -11,7 +11,8 @@ public static class TelegramHelp
 
             🔎 Search for jobs
             {Command("/search")}
-            Choose a search criterion, then select from the buttons.
+            Choose location, organization and/or category, then press Show results.
+            Leave any filter on All, or use Clear filters to start over.
 
             👤 Start and account status
             {Command("/start")}
@@ -37,7 +38,8 @@ public static class TelegramHelp
 
             🔎 البحث عن وظائف
             {Command("/search")}
-            اختر طريقة البحث، ثم اختر من القوائم بالأزرار.
+            حدد المكان والجهة والمجال، أو اترك أي فلتر على «الكل»، ثم اضغط «عرض النتائج».
+            يمكنك تعديل اختياراتك أو مسح الفلاتر بالأزرار.
             يمكنك أيضًا إرسال كلمة «بحث».
 
             👤 بدء الاستخدام وحالة الحساب

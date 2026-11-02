@@ -3349,7 +3349,7 @@
   <data name="TelegramMemberAll" xml:space="preserve"><value>All activated Telegram-linked accounts</value></data>
   <data name="TelegramMemberPaid" xml:space="preserve"><value>Active paid subscribers only</value></data>
   <data name="TelegramMemberCriteria" xml:space="preserve"><value>Available search criteria (enable at least one)</value></data>
-  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>Members send /jobs or بحث, choose category, location or organization, then pick from the buttons. Results show five current jobs with navigation and back buttons.</value></data>
+  <data name="TelegramMemberSearchHelp" xml:space="preserve"><value>Members send /search or بحث, select any combination of location, organization and category, then choose Show results. Results match all selected filters; each can be left on All, edited or cleared.</value></data>
   <data name="TelegramMemberHistory" xml:space="preserve"><value>Recent announcements</value></data>
   <data name="TelegramMemberDeliveryNote" xml:space="preserve"><value>Messages enter the server delivery queue immediately. Audience expansion does not mean delivery is complete; check notification delivery. The worker does not run in local collection mode.</value></data>
   <data name="TelegramMemberExpanded" xml:space="preserve"><value>Queue expansion complete</value></data>

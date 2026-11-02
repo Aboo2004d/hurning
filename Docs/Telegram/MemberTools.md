@@ -14,7 +14,9 @@ Open `/ar/Admin/TelegramMembers` (also under Content & messages in the admin nav
 
 ## Job queries
 
-The main flow uses buttons: start search → choose category, location or organization → choose a catalog value → see matching jobs. Only enabled criteria appear. Option lists and job results have next/previous and back/change-selection buttons. Options come from current published jobs, categories use approved main groups, and organization selections match the selected organization exactly. Stale or forged callbacks never bypass current account or search permissions.
+The main flow uses buttons: start search → select any combination of location, organization and category → review the summary → Show results. Results must match **every** selected criterion (AND). Each filter starts on All; selecting All clears only that filter. Clear filters resets all three. Editing a filter offers catalog values that match the other selected filters. Results have next/previous and Edit filters buttons that preserve the entire selection.
+
+Only enabled criteria appear. Options come from current published jobs, categories use approved main groups, and selected organizations match exactly. Compact callback keys preserve each menu’s complete selection without a mutable user session or additional database tables. Missing, malformed, ambiguous or newly disabled selections return to the summary with a review notice before any results can be widened. Already issued one-criterion buttons reopen their selection in this new flow. Every click still checks current membership/search permission.
 
 Typed queries also remain available:
 
