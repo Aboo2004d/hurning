@@ -754,7 +754,7 @@
         <value>الصور والخطوط والفيديو التي يمنعها المجمّع عمدًا لا تُحتسب أعطال شبكة. حظر النطاق بسبب السياسة يُسجل بشكل منفصل.</value>
     </data>
   <data name="CaptureIncomplete" xml:space="preserve">
-        <value>بعض ملفات التشخيص غير متاحة؛ راجع مسار التخزين وصلاحياته. المعلومات الأساسية محفوظة في سجل العمليات.</value>
+        <value>بعض ملفات التشخيص غير متاحة لهذه النسخة؛ قد تكون على جهاز الجمع أو في مسار آخر. يعرض التقرير المعلومات المتاحة من سجل العمليات؛ غياب الملف لا يثبت تعذّر حفظه.</value>
     </data>
   <data name="DiagOp_Discovery" xml:space="preserve">
         <value>اكتشاف روابط الإعلانات</value>
@@ -3375,4 +3375,5 @@
   <data name="FreePreferenceLimitZero" xml:space="preserve"><value>من 0 إلى 1000. القيمة 0 تمنع اختيار المجالات لغير المشتركين.</value></data>
   <data name="FreePreferenceLimitRange" xml:space="preserve"><value>أدخل عددًا صحيحًا من 0 إلى 1000.</value></data>
   <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>خفض الحد لا يحذف الاختيارات المحفوظة. عند تعديل التفضيلات، يلزم تقليل المجالات إلى الحد المتاح، ويطبق الحد الجديد عند انتهاء الاشتراك أيضًا.</value></data>
+<data name="DiagnosticDownloadReport" xml:space="preserve"><value>تنزيل تقرير التشخيص JSON</value></data>
 </root>

@@ -142,9 +142,9 @@ public sealed class CollectorDiagnosticSession : IDisposable
                     JsonSerializer.Serialize(data, CollectorDiagnosticFiles.Json)
                 );
             }
-            catch
+            catch (Exception storageError)
             {
-                data.CaptureNote = "Capture storage unavailable; metadata only.";
+                data.CaptureNote = "Capture storage unavailable (" + storageError.GetType().Name + "); metadata retained in audit.";
             }
 
             throw new CollectorDiagnosticException(data, ex);

@@ -39,27 +39,33 @@ public static class CollectorDiagnosticFiles
         Path.Combine(DirectoryPath(configuration), id.ToString("N") + (image ? ".jpg" : ".json"));
 
     /// <summary>ينشئ تفاصيل تدقيق محدودة تربط العملية بملف التشخيص دون محتواه.</summary>
-    public static string AuditDetail(CollectorDiagnostic data, long? itemId = null) =>
-        JsonSerializer.Serialize(
-            new
-            {
-                id = data.Id.ToString("N"),
-                data.SourceId,
-                itemId,
-                data.Operation,
-                data.At,
-                data.Stage,
-                data.HttpStatus,
-                data.ElapsedMs,
-                data.StageElapsedMs,
-                data.TimeoutMs,
-                selector = data.Selector.Length > 150 ? data.Selector[..150] : data.Selector,
-                finalUrl = data.FinalUrl.Length > 300 ? data.FinalUrl[..300] : data.FinalUrl,
-                data.ExceptionType,
-                data.Screenshot,
-                data.CaptureNote,
-            }
-        );
+    public static string AuditDetail(CollectorDiagnostic data, long? itemId = null)
+    {
+        var fields = new Dictionary<string, object?>
+        {
+            ["id"] = data.Id.ToString("N"), ["SourceId"] = data.SourceId, ["itemId"] = itemId,
+            ["Operation"] = data.Operation.Truncate(60), ["At"] = data.At, ["Stage"] = data.Stage.Truncate(60),
+            ["HttpStatus"] = data.HttpStatus, ["ElapsedMs"] = data.ElapsedMs, ["StageElapsedMs"] = data.StageElapsedMs,
+            ["TimeoutMs"] = data.TimeoutMs, ["selector"] = data.Selector.Truncate(150),
+            ["finalUrl"] = SafeUrl(data.FinalUrl).Truncate(300), ["requestedUrl"] = SafeUrl(data.RequestedUrl).Truncate(250),
+            ["ExceptionType"] = data.ExceptionType.Truncate(100), ["Screenshot"] = data.Screenshot,
+            ["CaptureNote"] = data.CaptureNote.Truncate(200), ["Title"] = data.Title.Truncate(80),
+            ["ReadyState"] = data.ReadyState.Truncate(20), ["SelectorMatches"] = data.SelectorMatches,
+            ["SelectorVisible"] = data.SelectorVisible,
+            ["Network"] = data.Network.Take(3).Select(x => new NetworkDiagnostic(SafeUrl(x.Url).Truncate(120), x.Type.Truncate(20), x.Reason.Truncate(60), x.Status)).ToArray(),
+        };
+        var json = JsonSerializer.Serialize(fields);
+        if (json.Length > 2000) { fields.Remove("Network"); json = JsonSerializer.Serialize(fields); }
+        // AuditEntry.Detail is limited to 2000 characters. Keep valid JSON, never truncate the serialized document.
+        while (json.Length > 2000)
+        {
+            var key = fields.Where(x => x.Key != "id" && x.Value is string value && value.Length > 20)
+                .OrderByDescending(x => ((string)x.Value!).Length).First().Key;
+            fields[key] = ((string)fields[key]!)[..(((string)fields[key]!).Length / 2)];
+            json = JsonSerializer.Serialize(fields);
+        }
+        return json;
+    }
 
     /// <summary>يسجل فشل الجمع عندما لم تُنشأ صفحة متصفح بعد.</summary>
     public static async Task<T> WithoutPageAsync<T>(
@@ -106,9 +112,9 @@ public static class CollectorDiagnosticFiles
                     JsonSerializer.Serialize(report, Json)
                 );
             }
-            catch
+            catch (Exception storageError)
             {
-                report.CaptureNote = "Capture storage unavailable; metadata only.";
+                report.CaptureNote = "Capture storage unavailable (" + storageError.GetType().Name + "); metadata retained in audit.";
             }
 
             throw new CollectorDiagnosticException(report, ex);

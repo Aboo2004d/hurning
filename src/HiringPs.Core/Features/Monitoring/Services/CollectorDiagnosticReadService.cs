@@ -32,6 +32,9 @@ public sealed class CollectorDiagnosticReadService(HiringDb db, IConfiguration c
 
         using var metadata = JsonDocument.Parse(audit.Detail);
         var root = metadata.RootElement;
+        T? Optional<T>(string name) => root.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null
+            ? value.Deserialize<T>(CollectorDiagnosticFiles.Json) : default;
+        var captureNote = Optional<string>("CaptureNote");
         return new CollectorDiagnostic
         {
             Id = id,
@@ -49,7 +52,15 @@ public sealed class CollectorDiagnosticReadService(HiringDb db, IConfiguration c
             ElapsedMs = root.GetProperty("ElapsedMs").GetInt64(),
             StageElapsedMs = root.GetProperty("StageElapsedMs").GetInt64(),
             ExceptionType = root.GetProperty("ExceptionType").GetString() ?? "",
-            CaptureNote = "Capture storage unavailable; metadata only.",
+            RequestedUrl = Optional<string>("requestedUrl") ?? "",
+            Title = Optional<string>("Title") ?? "",
+            ReadyState = Optional<string>("ReadyState") ?? "",
+            SelectorMatches = Optional<int?>("SelectorMatches"),
+            SelectorVisible = Optional<bool?>("SelectorVisible"),
+            Network = Optional<List<NetworkDiagnostic>>("Network") ?? [],
+            Screenshot = File.Exists(CollectorDiagnosticFiles.FilePath(configuration, id, true)),
+            CaptureNote = "Capture file unavailable on this instance; showing retained audit metadata."
+                + (string.IsNullOrEmpty(captureNote) ? "" : " " + captureNote),
         };
     }
 

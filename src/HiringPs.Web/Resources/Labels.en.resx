@@ -754,7 +754,7 @@
         <value>Intentionally blocked images/fonts/media are excluded. Policy-blocked hosts are recorded separately.</value>
     </data>
   <data name="CaptureIncomplete" xml:space="preserve">
-        <value>Some capture files are unavailable; check shared storage and permissions. Basic metadata is retained in the audit log.</value>
+        <value>Some capture files are unavailable on this instance; they may be on the collector machine or another path. Available audit metadata is shown. A missing file alone does not establish a write failure.</value>
     </data>
   <data name="DiagOp_Discovery" xml:space="preserve">
         <value>Discover listings</value>
@@ -3375,4 +3375,5 @@
   <data name="FreePreferenceLimitZero" xml:space="preserve"><value>Enter 0 to 1000. Zero disables category selection for non-subscribers.</value></data>
   <data name="FreePreferenceLimitRange" xml:space="preserve"><value>Enter a whole number from 0 to 1000.</value></data>
   <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>Lowering the quota preserves existing selections. Members must reduce their categories to the available quota when saving. The current free quota also applies after a subscription expires.</value></data>
+<data name="DiagnosticDownloadReport" xml:space="preserve"><value>Download diagnostic JSON</value></data>
 </root>

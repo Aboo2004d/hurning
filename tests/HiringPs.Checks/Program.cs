@@ -9,6 +9,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 
+if (args.Contains("--diagnostic-retention-check"))
+{
+    await CollectorDiagnosticRetentionChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--preference-settings-ui-check"))
 {
     await PreferenceSettingsUiChecks.RunAsync();

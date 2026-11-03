@@ -30,6 +30,14 @@ public class DiagnosticsController : AdminControllerBase
     }
 
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> DiagnosticReport(Guid id, CancellationToken ct)
+    {
+        var report = await diagnostics.ReadAsync(id, ct);
+        return report is null ? NotFound() : File(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(report,
+            CollectorDiagnosticFiles.Json), "application/json", id.ToString("N") + ".json");
+    }
+
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> DiagnosticImage(Guid id, CancellationToken ct)
     {
         var path = await diagnostics.ImagePathAsync(id, ct);
