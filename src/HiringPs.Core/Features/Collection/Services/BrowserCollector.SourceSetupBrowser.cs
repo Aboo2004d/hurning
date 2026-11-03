@@ -42,6 +42,17 @@ public partial class BrowserCollector
         return SourceSetupRules.Snapshot(await page.ContentAsync(), page.Url);
     }
 
+    /// <summary>Inspects the real failed detail URL with heading/container evidence for a bounded setup repair.</summary>
+    public virtual async Task<SourceSetupSnapshot> InspectDetailForSetupAsync(string url, CancellationToken ct)
+    {
+        SourceSetupRules.Website(url);
+        var source = new Source { Url = url, Connector = ConnectorKind.Automatic };
+        await using var context = await ContextAsync(source, ct, setup: true);
+        var page = await context.NewPageAsync();
+        await OpenSetupPageAsync(page, url, ct);
+        return SourceSetupRules.DetailSnapshot(await page.ContentAsync(), page.Url);
+    }
+
     /// <summary>يعرض عينة من نتائج إعدادات المصدر قبل حفظها.</summary>
     public virtual async Task<SourceSetupPreview> PreviewSetupAsync(
         Source source,

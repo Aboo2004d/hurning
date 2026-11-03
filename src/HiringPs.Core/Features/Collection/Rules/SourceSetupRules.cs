@@ -174,6 +174,32 @@ public static class SourceSetupRules
         );
     }
 
+    /// <summary>Includes bounded detail structure, not just anchor parents from a listing snapshot.</summary>
+    public static SourceSetupSnapshot DetailSnapshot(string html, string url)
+    {
+        var snapshot = Snapshot(html, url);
+        var doc = new HtmlParser().ParseDocument(html);
+        foreach (var node in doc.QuerySelectorAll("script,style,noscript,iframe,input,textarea,select,svg,img,picture,video,audio,canvas")) node.Remove();
+        foreach (var element in doc.All)
+            foreach (var attribute in element.Attributes.ToArray())
+                if (attribute.Name is not ("class" or "id" or "href" or "role" or "aria-label" or "title" or "itemprop"))
+                    element.RemoveAttribute(attribute.Name);
+        var fragments = new List<string>();
+        foreach (var heading in doc.QuerySelectorAll("h1").Take(5))
+        {
+            var ancestor = heading;
+            for (var level = 0; level < 4 && ancestor.ParentElement is { } parent && parent.LocalName != "html"; level++) ancestor = parent;
+            fragments.Add(ancestor.OuterHtml.Truncate(20000));
+        }
+        fragments.AddRange(doc.QuerySelectorAll("main,article,[itemprop='description']").Take(5).Select(node => node.OuterHtml.Truncate(20000)));
+        fragments.AddRange(doc.QuerySelectorAll("a[href]").Take(50).Select(node => (node.ParentElement?.OuterHtml ?? node.OuterHtml).Truncate(800)));
+        return snapshot with
+        {
+            Text = (doc.Body?.TextContent ?? "").Truncate(12000),
+            Html = string.Join('\n', fragments.Distinct()).Truncate(40000),
+        };
+    }
+
     /// <summary>يختصر صفحة كبيرة مع الاحتفاظ بالأدلة اللازمة لاقتراح الإعدادات.</summary>
     private static SourceSetupSnapshot LargePageSnapshot(string html, string url)
     {

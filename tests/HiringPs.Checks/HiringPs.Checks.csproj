@@ -11,5 +11,6 @@
     </ItemGroup>
     <ItemGroup>
         <None Update="Fixtures/Pdf/*.pdf" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="Fixtures/SourceSetup/*.html" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>

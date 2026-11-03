@@ -185,7 +185,8 @@ if (args.Contains("--membership-check"))
 
 if (args.Contains("--source-setup-check"))
 {
-    await SourceSetupChecks.RunAsync();
+    var detailIndex = Array.IndexOf(args, "--detail-html");
+    await SourceSetupChecks.RunAsync(detailIndex >= 0 && detailIndex + 1 < args.Length ? args[detailIndex + 1] : null);
     return;
 }
 

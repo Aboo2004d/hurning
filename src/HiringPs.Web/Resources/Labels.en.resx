@@ -1498,7 +1498,7 @@
         <value>Suggest and test settings</value>
     </data>
   <data name="SourceSetupCost" xml:space="preserve">
-        <value>This sends public page content to AI and uses up to two requests from your quota. It does not queue announcements, publish, save or enable a source automatically.</value>
+        <value>This sends public page content to AI and uses up to three requests from your quota. It does not queue announcements, publish, save or enable a source automatically.</value>
     </data>
   <data name="SourceSetupLoading" xml:space="preserve">
         <value>Reading the page, analyzing it and testing the proposal… This may take a few minutes.</value>

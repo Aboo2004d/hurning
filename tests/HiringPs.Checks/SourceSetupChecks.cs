@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 public static class SourceSetupChecks
 {
-    public static async Task RunAsync()
+    public static async Task RunAsync(string? detailHtmlPath = null)
     {
         var passed = 0;
         void Check(bool value, string name)
@@ -202,6 +202,89 @@ public static class SourceSetupChecks
                 "failed preview cannot produce an applicable proposal"
             );
         }
+        var detailHtml = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SourceSetup", "DevelopersDetail.html"));
+        const string detailUrl = "https://example.ps/jobs/1";
+        var detailSnapshot = SourceSetupRules.DetailSnapshot(detailHtml, detailUrl);
+        Check(detailSnapshot.Html.Contains("job-body") && detailSnapshot.Html.Contains("job-title-main")
+            && detailSnapshot.Html.Contains("موعد الانتهاء") && !detailSnapshot.Html.Contains("fixture-private-input")
+            && !detailSnapshot.Html.Contains("fixture-private-script"), "detail evidence retains heading/body/date structure while removing form values and scripts");
+        var detailDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(detailHtml);
+        const string correctSelector = "div.col-md-9.order-1.order-md-2";
+        var fullAnnouncement = detailDoc.QuerySelectorAll(correctSelector);
+        Check(detailDoc.QuerySelectorAll(".job__title").Length == 0 && fullAnnouncement.Length == 1
+            && fullAnnouncement[0].TextContent.Contains("المتطلبات") && fullAnnouncement[0].TextContent.Contains("موعد الانتهاء")
+            && !fullAnnouncement[0].TextContent.Contains("Related job"), "observed Developers detail structure has a complete isolated container, not the nonexistent proposed title selector");
+        SourceSetupSuggestion DetailProposal(string selector) => new()
+        {
+            Supported = true, Name = "Fixture jobs", ListingUrl = listingUrl, Connector = "BrowserSelectors",
+            ListingLinkSelector = "a.job", ContentSelector = selector, Explanation = "Fixture repair",
+        };
+        CollectorDiagnostic Broken(string stage = "WaitContentSelector", string? final = null, int status = 200) => new()
+        {
+            Stage = stage, Selector = ".job__title", SelectorMatches = 0, SelectorVisible = false,
+            HttpStatus = status, ReadyState = "complete", RequestedUrl = detailUrl, FinalUrl = final ?? detailUrl,
+        };
+        await using var repairBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = detailSnapshot, PreviewFailures = 1, PreviewDiagnostic = Broken() };
+        var repairAi = new FixtureAi(DetailProposal(".job__title"), DetailProposal(correctSelector));
+        using var repairHttp = new HttpClient(repairAi);
+        var repaired = await new SourceSetupAssistant(repairHttp, repairBrowser, configuration).SuggestAsync(listingUrl, "ar", default);
+        Check(repairAi.Calls == 2 && repairBrowser.DetailInspections == 1 && repairBrowser.Previews == 2
+            && repaired.Url == listingUrl && JsonSerializer.Deserialize<SourceConfiguration>(repaired.ConfigurationJson)!.ContentSelector == correctSelector,
+            "missing detail selector gets exactly one evidence-based correction and must pass a second real preview");
+        Check(repairAi.Payloads[1].GetProperty("detailPage").GetProperty("Html").GetString()!.Contains("job-body")
+            && repairAi.Payloads[1].GetProperty("previousAttempt").GetProperty("contentSelector").GetString() == ".job__title"
+            && repairAi.PinFlags.SequenceEqual(new[] { false, true }) && repairAi.Instructions.All(text => text == SourceSetupAssistant.Instructions),
+            "corrective request contains actual detail DOM and failed selector as untrusted data and keeps listing pinned");
+        await using var boundedBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = detailSnapshot, PreviewFailures = 2, PreviewDiagnostic = Broken() };
+        var boundedAi = new FixtureAi(DetailProposal(".job__title"), DetailProposal(".still-missing"));
+        using var boundedHttp = new HttpClient(boundedAi);
+        try { await new SourceSetupAssistant(boundedHttp, boundedBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Second failure accepted"); }
+        catch (CollectorDiagnosticException ex)
+        {
+            Check(boundedAi.Calls == 2 && boundedBrowser.Previews == 2 && (string?)ex.Data["SourceSetupStage"] == "SourceSetupStagePreview",
+                "failed correction is rejected without an unbounded repair loop or a successful source result");
+        }
+        foreach (var diagnostic in new[] { Broken("WaitDocumentReady"), Broken(status: 403), Broken(final: "https://other.ps/jobs/1") })
+        {
+            await using var guardedBrowser = new FixtureBrowser(configuration, home, listing) { PreviewFailures = 1, PreviewDiagnostic = diagnostic };
+            var guardedAi = new FixtureAi(DetailProposal(".job__title"));
+            using var guardedHttp = new HttpClient(guardedAi);
+            try { await new SourceSetupAssistant(guardedHttp, guardedBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Guarded preview accepted"); }
+            catch (CollectorDiagnosticException)
+            { Check(guardedAi.Calls == 1 && guardedBrowser.DetailInspections == 0, "navigation failures, blocked pages and cross-host targets do not trigger selector correction"); }
+        }
+        await using var threeBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = detailSnapshot, PreviewFailures = 1, PreviewDiagnostic = Broken() };
+        var threeAi = new FixtureAi(Proposal(listingUrl), DetailProposal(".job__title"), DetailProposal(correctSelector));
+        using var threeHttp = new HttpClient(threeAi);
+        await new SourceSetupAssistant(threeHttp, threeBrowser, configuration).SuggestAsync(homeUrl, "ar", default);
+        Check(threeAi.Calls == 3 && threeBrowser.Previews == 2 && threeAi.Payloads[2].GetProperty("page").GetProperty("Url").GetString() == listingUrl,
+            "homepage to listing plus selector repair remains bounded to three AI requests with the correct listing evidence");
+        var switched = DetailProposal(correctSelector); switched.ListingUrl = homeUrl;
+        await using var switchBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = detailSnapshot, PreviewFailures = 1, PreviewDiagnostic = Broken() };
+        var switchAi = new FixtureAi(DetailProposal(".job__title"), switched);
+        using var switchHttp = new HttpClient(switchAi);
+        try { await new SourceSetupAssistant(switchHttp, switchBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Changed listing accepted"); }
+        catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnseenUrl" && switchBrowser.Previews == 1, "correction cannot switch the listing or apply an unobserved source URL"); }
+        if (detailHtmlPath is not null)
+        {
+            var actualHtml = await File.ReadAllTextAsync(detailHtmlPath);
+            var actualDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(actualHtml);
+            var actualContainer = actualDoc.QuerySelectorAll(correctSelector);
+            Check(actualDoc.QuerySelectorAll(".job__title").Length == 0 && actualContainer.Length == 1
+                && actualContainer[0].QuerySelector(".job-title-main") is not null
+                && actualContainer[0].QuerySelector(".job-body .job-rich-text") is not null
+                && actualContainer[0].TextContent.Contains("موعد الانتهاء")
+                && !actualContainer[0].TextContent.Contains("وظائف ذات صلة"),
+                "uploaded actual job HTML confirms the absent failed selector and complete isolated replacement container");
+            var actualSnapshot = SourceSetupRules.DetailSnapshot(actualHtml, "https://jobs.developers.ps/ar/Jobs/JobDetails/84");
+            Check(actualSnapshot.Html.Contains("job-body") && actualSnapshot.Html.Contains("job-header-card")
+                && actualSnapshot.Html.Length <= 40000 && actualSnapshot.Text.Length <= 12000,
+                "bounded detail inspection retains real uploaded heading/body evidence for corrective AI input");
+        }
         Console.WriteLine(
             $"{passed} source setup checks passed; fixture HTTP only, no database writes or external AI requests."
         );
@@ -218,6 +301,12 @@ public static class SourceSetupChecks
         {
             get; private set;
         }
+        public SourceSetupSnapshot? Detail { get; set; }
+        public int DetailInspections { get; private set; }
+        public int PreviewFailures { get; set; }
+        public CollectorDiagnostic? PreviewDiagnostic { get; set; }
+        public override Task<SourceSetupSnapshot> InspectDetailForSetupAsync(string url, CancellationToken ct)
+        { DetailInspections++; return Task.FromResult(Detail ?? throw new Exception("No fixture detail")); }
         public bool FailPreview
         {
             get; set;
@@ -238,6 +327,11 @@ public static class SourceSetupChecks
         )
         {
             Previews++;
+            if (PreviewFailures > 0)
+            {
+                PreviewFailures--;
+                throw new CollectorDiagnosticException(PreviewDiagnostic!, new TimeoutException("Fixture selector timeout"));
+            }
             if (FailPreview)
                 throw new InvalidOperationException("SourceSetupNoLinks");
             return Task.FromResult(
@@ -252,6 +346,7 @@ public static class SourceSetupChecks
         {
             get; private set;
         }
+        public List<JsonElement> Payloads { get; } = [];
         public List<bool> PinFlags { get; } = [];
         public List<string> Instructions { get; } = [];
 
@@ -275,6 +370,7 @@ public static class SourceSetupChecks
                     .GetProperty("text")
                     .GetString()!
             );
+            Payloads.Add(user.RootElement.Clone());
             PinFlags.Add(user.RootElement.GetProperty("pinListing").GetBoolean());
             var suggestion = suggestions[Calls++];
             return new HttpResponseMessage(HttpStatusCode.OK)
