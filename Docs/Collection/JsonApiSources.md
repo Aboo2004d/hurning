@@ -14,6 +14,14 @@ The public API observed on 2026-11-04 is `https://api.jobmatch.ps/api/v1/jobs`. 
 
 The preset is the only site-specific part: a declarative mapping in `SourceApiProfiles`. It is not an executable adapter. Other compatible APIs can use the same dropdown connector with their own JSON mapping, without adding a preset or modifying the worker.
 
+## Foras: all opportunity types
+
+The same connector now also recognizes `https://foras.ps/`, `/home` and `/opportunities`. Use the setup assistant, apply the tested proposal and save normally. Its canonical listing is `https://foras.ps/opportunities`. No category filter is sent: jobs, courses, scholarships and other opportunity types remain available to the existing scope/extraction rules.
+
+The public frontend uses POST `/api/v1/Opportunities/filteredJobs` with `pageNumber`, `pageSize` and ordering in a JSON search body. Live checks confirmed pages 1 and 2 return different records. Although some frontend widgets send zero, zero repeats the first page; collection starts at 1. Pagination uses `totalRecords` and a configured page size of 10. Details use GET `/api/v1/Opportunities/{id}`, with the public link `/opportunities/job-details/{id}`.
+
+Foras returns a root detail object and translations in arrays. Exact paths such as `info[language=ar].description` select the language independently of array order. Both Arabic and English evidence is retained; complete English content can satisfy the content requirement when Arabic is absent. Duplicate matches are treated as ambiguous, never selected arbitrarily. Application URLs and publisher metadata are retained; publisher metadata is not proof of the actual hiring organization. No external application or submission endpoint is called.
+
 ## Mapping another public API
 
 Example `ConfigurationJson` for a numbered API with different field names:
@@ -44,9 +52,9 @@ Example `ConfigurationJson` for a numbered API with different field names:
 }
 ```
 
-Paths are dotted object-property names; `Fields` emits configured scalar values or arrays of scalars. `Html: true` strips executable/layout markup, retains readable text and public HTTPS anchor links. The complete `ContentPath` must be emitted as a content field and contain at least 80 readable characters. List summaries do not substitute for detail bodies. `SuccessPath`, if nonempty, must point to boolean `true`. Pages start at 1 and require explicit integer current/last-page metadata. Identity placeholders `{id}` and `{slug}` must be whole path segments and the public item URL must carry the identity needed for the detail API. Query filters in the listing template are preserved across pages. Templates do not execute scripts or JSONPath expressions.
+Paths are dotted object-property names with optional exact array selectors, for example `info[language=ar].name`; an empty `DetailPath` reads the root object. `Fields` emits configured scalar values or arrays of scalars. `Html: true` strips executable/layout markup, retains readable text and public HTTPS anchor links. The complete `ContentPath` and optional `ContentFallbackPaths` must be emitted as content fields; at least one must contain 80 readable characters. List summaries do not substitute for detail bodies. `SuccessPath`, if nonempty, must point to boolean `true`. Pages start at 1. Pagination requires explicit integer current/last-page metadata, or `TotalCountPath` plus `PageSize` with empty current/last-page paths. Total-count pages must contain the expected number of raw rows, including the partial final page. Identity placeholders `{id}` and `{slug}` must be whole path segments and the public item URL must carry the identity needed for the detail API. Query filters in the listing template are preserved across pages. Templates do not execute scripts or JSONPath expressions.
 
-This first version supports GET, object envelopes, public HTTPS, and numbered pagination. Authentication, POST search, cursor/link pagination, root arrays, files requiring separate attachment downloads, or incompatible detail identities need an explicit shared-reader extension. The setup assistant does not guess API endpoints for unknown sites or automatically trust an AI-generated mapping. Inspect an actual response and review a mapping first. Never put API secrets in source JSON.
+The reader supports GET or public read-only POST search listings, GET details, object envelopes, public HTTPS, and numbered pagination. `ListingMethod` defaults to GET. POST search requires a JSON object `ListingBodyTemplate` with a numeric `{page}` placeholder; other methods are rejected. Its checkpoint cursor carries a `#page=N` marker that is never sent to the API. Authentication, cursor/link pagination, root arrays, files requiring separate attachment downloads, or incompatible detail identities need an explicit shared-reader extension. The setup assistant does not guess API endpoints for unknown sites or automatically trust an AI-generated mapping. Inspect an actual response and review a mapping first. Never put API secrets in source JSON.
 
 ## Collection behavior
 
@@ -64,8 +72,9 @@ dotnet run --project tests/HiringPs.Checks --no-build -- --source-setup-check
 
 The API checks use mock HTTP, public-host DNS validation, and isolated SQLite; no production database or external AI requests. They cover different API schemas, filters, full detail evidence, metadata failures, identity safety, body bounds, resumability, transactional persistence and stable-ID deduplication.
 
-Explicit read-only live probe (three public GETs when a next page exists; honors the probe environment's HTTP proxy):
+Explicit live probes (public read-only listing/detail requests; honor the probe environment's HTTP proxy):
 
 ```bash
 dotnet run --project tests/HiringPs.Checks --no-build -- --json-api-live-check
+dotnet run --project tests/HiringPs.Checks --no-build -- --foras-api-live-check
 ```

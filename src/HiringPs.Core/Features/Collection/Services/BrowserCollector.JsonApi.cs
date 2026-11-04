@@ -10,7 +10,7 @@ public partial class BrowserCollector
                 var api = conf.Api!;
                 var reader = ApiReader;
                 var completed = discovery?.Checkpoint.CompletedPages ?? 0;
-                if (completed > 0 && discovery?.Checkpoint.NextUrl != JsonApiReader.PageUrl(api, completed + 1))
+                if (completed > 0 && discovery?.Checkpoint.NextUrl != JsonApiReader.PageCursor(api, completed + 1))
                     throw new InvalidOperationException("API checkpoint does not match its page template.");
                 var result = new Dictionary<string, string>();
                 for (var page = completed + 1; page <= conf.MaxPages; page++)
@@ -19,7 +19,7 @@ public partial class BrowserCollector
                     var batch = await reader.ReadPageAsync(source, page, ct);
                     foreach (var item in batch.Items) result[item.Id] = item.Url;
                     await SaveDiscoveryPageAsync(new(batch.Items,
-                        batch.HasNext ? JsonApiReader.PageUrl(api, page + 1) : null, page), ct);
+                        batch.HasNext ? JsonApiReader.PageCursor(api, page + 1) : null, page), ct);
                     if (!batch.HasNext) return result.Select(x => (x.Key, x.Value)).ToList();
                 }
                 throw new InvalidOperationException("API pagination limit reached; source needs review. Increase MaxPages before resuming.");

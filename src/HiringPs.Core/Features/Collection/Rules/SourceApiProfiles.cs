@@ -8,6 +8,8 @@ public static class SourceApiProfiles
 {
     public static Source? ForWebsite(string url)
     {
+        var foras = Foras(url);
+        if (foras is not null) return foras;
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https"
             || !uri.IsDefaultPort || uri.UserInfo.Length > 0 || uri.IdnHost != "jobmatch.ps"
             || uri.AbsolutePath.TrimEnd('/') is not ("" or "/jobs")) return null;
@@ -44,4 +46,50 @@ public static class SourceApiProfiles
         return new() { Name = "Jobmatch — وظائف فلسطين", Url = listing,
             Connector = ConnectorKind.JsonApi, ConfigurationJson = JsonSerializer.Serialize(conf) };
     }
+    private static Source? Foras(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https"
+            || !uri.IsDefaultPort || uri.UserInfo.Length > 0 || uri.IdnHost != "foras.ps"
+            || uri.AbsolutePath.TrimEnd('/') is not ("" or "/home" or "/opportunities")) return null;
+        if (uri.Query.Length > 0)
+            throw new InvalidOperationException("Foras all-opportunities preset requires the unfiltered listing URL.");
+        const string listing = "https://foras.ps/opportunities";
+        var conf = new SourceConfiguration
+        {
+            AllowedHosts = ["foras.ps"], MaxPages = 50,
+            Api = new()
+            {
+                ListingMethod = "POST",
+                ListingUrlTemplate = "https://foras.ps/api/v1/Opportunities/filteredJobs",
+                ListingBodyTemplate = """{"pageNumber":{page},"pageSize":10,"orderBy":"date","orderByDirection":"Desc"}""",
+                ItemUrlTemplate = "https://foras.ps/opportunities/job-details/{id}",
+                DetailUrlTemplate = "https://foras.ps/api/v1/Opportunities/{id}",
+                SuccessPath = "", ItemsPath = "result", DetailPath = "", SlugPath = "id",
+                CurrentPagePath = "", LastPagePath = "", TotalCountPath = "totalRecords", PageSize = 10,
+                ContentPath = "info[language=ar].description", ContentFallbackPaths = ["info[language=en].description"],
+                Fields = [
+                    new("Title (Arabic)", "info[language=ar].name"),
+                    new("Title (English)", "info[language=en].name"),
+                    new("Publishing organization (Arabic)", "companyInfo[language=ar].name"),
+                    new("Publishing organization (English)", "companyInfo[language=en].name"),
+                    new("Opportunity category (Arabic)", "categoryInfo[language=ar].name"),
+                    new("Opportunity category (English)", "categoryInfo[language=en].name"),
+                    new("Location (Arabic)", "cityInfo[language=ar].name"),
+                    new("Location (English)", "cityInfo[language=en].name"),
+                    new("Application deadline", "endDate"),
+                    new("Description (Arabic)", "info[language=ar].description", true),
+                    new("Description (English)", "info[language=en].description", true),
+                    new("Benefits (Arabic)", "info[language=ar].benifits", true),
+                    new("Benefits (English)", "info[language=en].benifits", true),
+                    new("Application process (Arabic)", "info[language=ar].applicationProcess", true),
+                    new("Application process (English)", "info[language=en].applicationProcess", true),
+                    new("Application URL", "applyUrl")
+                ]
+            }
+        };
+        JsonApiReader.Validate(listing, conf);
+        return new() { Name = "Foras — جميع الفرص", Url = listing, Connector = ConnectorKind.JsonApi,
+            ConfigurationJson = JsonSerializer.Serialize(conf) };
+    }
+
 }

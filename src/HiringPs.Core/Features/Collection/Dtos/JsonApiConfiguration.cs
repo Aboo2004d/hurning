@@ -3,6 +3,11 @@ namespace HiringPs.Core;
 /// <summary>Declarative public JSON API mapping; paths are object property names, never executable expressions.</summary>
 public sealed class JsonApiConfiguration
 {
+    public string ListingMethod { get; set; } = "GET";
+    public string ListingBodyTemplate { get; set; } = "";
+    public string TotalCountPath { get; set; } = "";
+    public int PageSize { get; set; }
+    public string[] ContentFallbackPaths { get; set; } = [];
     public string ListingUrlTemplate { get; set; } = "";
     public string ItemUrlTemplate { get; set; } = "";
     public string DetailUrlTemplate { get; set; } = "";

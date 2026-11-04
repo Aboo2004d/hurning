@@ -67,7 +67,7 @@ public partial class BrowserCollector
             if (first.Items.Count == 0) throw new InvalidOperationException("SourceSetupNoLinks");
             var detail = await reader.ReadDetailAsync(source, first.Items[0].Url, ct);
             return new(first.Items.Take(10).Select(x => x.Url).ToArray(),
-                first.HasNext ? JsonApiReader.PageUrl(apiConf.Api!, 2) : null, detail.Text.Truncate(1200));
+                first.HasNext ? JsonApiReader.PageCursor(apiConf.Api!, 2) : null, detail.Text.Truncate(1200));
         }
         if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
         {

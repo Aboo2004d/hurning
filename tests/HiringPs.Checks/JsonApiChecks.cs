@@ -151,6 +151,7 @@ public static class JsonApiChecks
         transport.Mode = "large";
         await RejectAsync(async () => await reader.ReadPageAsync(source, 1, default), "API response size is bounded");
         await CheckStoreAsync(Check);
+        await JsonApiPostChecks.RunAsync();
         Console.WriteLine($"JSON API: {count} checks passed; mock HTTP and isolated SQLite, no AI calls or production database.");
     }
 

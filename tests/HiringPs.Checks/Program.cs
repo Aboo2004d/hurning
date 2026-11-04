@@ -189,6 +189,12 @@ if (args.Contains("--membership-check"))
     return;
 }
 
+if (args.Contains("--foras-api-live-check"))
+{
+    await JsonApiPostChecks.RunLiveAsync();
+    return;
+}
+
 if (args.Contains("--json-api-live-check"))
 {
     await JsonApiChecks.RunLiveAsync();

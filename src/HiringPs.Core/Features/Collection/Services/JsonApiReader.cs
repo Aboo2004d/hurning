@@ -1,13 +1,14 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 
 namespace HiringPs.Core;
 
-/// <summary>Shared, bounded GET-only reader for administrator-configured public JSON APIs.</summary>
+/// <summary>Shared, bounded public search/detail reader for administrator-configured public JSON APIs.</summary>
 public sealed class JsonApiReader : IDisposable
 {
     private readonly UrlPolicy policy;
@@ -52,8 +53,20 @@ public sealed class JsonApiReader : IDisposable
         var api = conf.Api ?? throw new InvalidOperationException("API mapping is required.");
         if (conf.MaxPages is < 1 or > 50 || api.Fields is null || api.Fields.Length is < 1 or > 40)
             throw new InvalidOperationException("Invalid API bounds or fields.");
-        if (!api.ListingUrlTemplate.Contains("{page}", StringComparison.Ordinal))
-            throw new InvalidOperationException("API listing template requires {page}.");
+        if (api.ListingMethod is not ("GET" or "POST"))
+            throw new InvalidOperationException("API listing method must be GET or POST.");
+        if (api.ListingMethod == "GET" && (!api.ListingUrlTemplate.Contains("{page}", StringComparison.Ordinal) || api.ListingBodyTemplate.Length > 0))
+            throw new InvalidOperationException("API GET listing template requires {page} and no body.");
+        if (api.ListingMethod == "POST")
+        {
+            if (!api.ListingBodyTemplate.Contains("{page}", StringComparison.Ordinal) || api.ListingBodyTemplate.Length > 4000)
+                throw new InvalidOperationException("API POST search body requires {page} within 4000 characters.");
+            using var body = JsonDocument.Parse(PageBody(api, 1));
+            if (body.RootElement.ValueKind != JsonValueKind.Object)
+                throw new InvalidOperationException("API POST search body must be a JSON object.");
+        }
+        if (api.TotalCountPath.Length > 0 && (api.CurrentPagePath.Length > 0 || api.LastPagePath.Length > 0 || api.PageSize is < 1 or > 250))
+            throw new InvalidOperationException("API total-count pagination requires PageSize and empty current/last-page paths.");
         CheckUrl(PageUrl(api, 1), conf, sourceUrl);
         foreach (var template in new[] { api.ItemUrlTemplate, api.DetailUrlTemplate })
         {
@@ -66,13 +79,15 @@ public sealed class JsonApiReader : IDisposable
             if (!TemplatePathIsSafe(template))
                 throw new InvalidOperationException("API identity placeholders must be complete path segments.");
         }
-        foreach (var path in new[] { api.ItemsPath, api.DetailPath, api.IdPath, api.ContentPath,
-            api.SlugPath, api.CurrentPagePath, api.LastPagePath }.Concat(api.Fields.Select(x => x.Path)))
-            if (!Regex.IsMatch(path, @"\A[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*\z"))
-                throw new InvalidOperationException("API paths must use dotted object property names.");
-        if (api.SuccessPath.Length > 0 && !Regex.IsMatch(api.SuccessPath, @"\A[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*\z"))
-            throw new InvalidOperationException("Invalid API success path.");
-        if (!api.Fields.Any(f => f.Path == api.ContentPath && f.Html))
+        var paths = new[] { api.ItemsPath, api.IdPath, api.ContentPath, api.SlugPath }
+            .Concat(api.ContentFallbackPaths).Concat(api.Fields.Select(x => x.Path));
+        paths = paths.Concat(api.TotalCountPath.Length > 0 ? [api.TotalCountPath] : [api.CurrentPagePath, api.LastPagePath]);
+        if (api.DetailPath.Length > 0) paths = paths.Append(api.DetailPath);
+        if (api.SuccessPath.Length > 0) paths = paths.Append(api.SuccessPath);
+        foreach (var path in paths)
+            if (!Regex.IsMatch(path, @"\A[a-zA-Z0-9_]+(?:\[[a-zA-Z0-9_]+=[a-zA-Z0-9_-]+\])?(?:\.[a-zA-Z0-9_]+(?:\[[a-zA-Z0-9_]+=[a-zA-Z0-9_-]+\])?)*\z"))
+                throw new InvalidOperationException("API paths must use dotted properties with optional exact array selectors.");
+        if (new[] { api.ContentPath }.Concat(api.ContentFallbackPaths).Any(path => !api.Fields.Any(f => f.Path == path && f.Html)))
             throw new InvalidOperationException("API fields must include the full content path as HTML/text content.");
         if (api.Fields.Any(f => string.IsNullOrWhiteSpace(f.Label) || f.Label.Length > 80 || f.Label.Contains('\n')))
             throw new InvalidOperationException("Invalid API field label.");
@@ -80,7 +95,7 @@ public sealed class JsonApiReader : IDisposable
             || (api.DetailUrlTemplate.Contains("{slug}") && !api.ItemUrlTemplate.Contains("{slug}")))
             throw new InvalidOperationException("API item URL must contain the detail identity.");
         var first = PageUrl(api, 1);
-        if (first.Length > 1500 || PageUrl(api, 2) == first)
+        if (first.Length > 1500 || PageCursor(api, 50).Length > 1500 || (api.ListingMethod == "GET" && PageUrl(api, 2) == first))
             throw new InvalidOperationException("Invalid API page template.");
     }
 
@@ -103,15 +118,35 @@ public sealed class JsonApiReader : IDisposable
     public static string PageUrl(JsonApiConfiguration api, int page) =>
         api.ListingUrlTemplate.Replace("{page}", page.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
 
+    public static string PageBody(JsonApiConfiguration api, int page) =>
+        api.ListingBodyTemplate.Replace("{page}", page.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+    // POST page state lives in the body. The fragment is a checkpoint marker, never sent over HTTP.
+    public static string PageCursor(JsonApiConfiguration api, int page) =>
+        api.ListingMethod == "POST" ? PageUrl(api, page) + "#page=" + page.ToString(CultureInfo.InvariantCulture) : PageUrl(api, page);
+
     private static string Expand(string template, string id, string slug) =>
         template.Replace("{id}", Uri.EscapeDataString(id), StringComparison.Ordinal)
             .Replace("{slug}", Uri.EscapeDataString(slug), StringComparison.Ordinal);
 
     public static JsonElement At(JsonElement value, string path)
     {
+        if (path.Length == 0) return value;
         foreach (var segment in path.Split('.'))
-            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segment, out value))
+        {
+            var match = Regex.Match(segment, @"\A(?<name>[a-zA-Z0-9_]+)(?:\[(?<key>[a-zA-Z0-9_]+)=(?<value>[a-zA-Z0-9_-]+)\])?\z");
+            if (!match.Success || value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(match.Groups["name"].Value, out value))
                 return default;
+            if (match.Groups["key"].Success)
+            {
+                if (value.ValueKind != JsonValueKind.Array) return default;
+                var rows = value.EnumerateArray().Where(row => row.ValueKind == JsonValueKind.Object
+                    && row.TryGetProperty(match.Groups["key"].Value, out var key)
+                    && key.ValueKind == JsonValueKind.String && key.GetString() == match.Groups["value"].Value).Take(2).ToArray();
+                if (rows.Length != 1) return default;
+                value = rows[0];
+            }
+        }
         return value;
     }
 
@@ -133,14 +168,32 @@ public sealed class JsonApiReader : IDisposable
     {
         Success(root, api);
         var items = At(root, api.ItemsPath);
-        var current = At(root, api.CurrentPagePath);
-        var last = At(root, api.LastPagePath);
-        if (items.ValueKind != JsonValueKind.Array || items.GetArrayLength() > 250
-            || current.ValueKind != JsonValueKind.Number || !current.TryGetInt32(out var n) || n != page
-            || last.ValueKind != JsonValueKind.Number || !last.TryGetInt32(out var end) || end < page)
-            throw new InvalidOperationException("Unexpected API items or pagination metadata.");
-        if (items.GetArrayLength() == 0 && (page != 1 || end != 1))
-            throw new InvalidOperationException("API returned an empty intermediate page.");
+        if (page < 1 || items.ValueKind != JsonValueKind.Array || items.GetArrayLength() > 250)
+            throw new InvalidOperationException("Unexpected API items or page number.");
+        bool hasNext;
+        if (api.TotalCountPath.Length > 0)
+        {
+            var totalValue = At(root, api.TotalCountPath);
+            if (totalValue.ValueKind != JsonValueKind.Number || !totalValue.TryGetInt32(out var total) || total < 0
+                || api.PageSize is < 1 or > 250)
+                throw new InvalidOperationException("Unexpected API total-count metadata.");
+            var offset = (long)(page - 1) * api.PageSize;
+            var expected = Math.Min(api.PageSize, Math.Max(0, (long)total - offset));
+            if ((page > 1 && offset >= total) || items.GetArrayLength() != expected)
+                throw new InvalidOperationException("API page length does not match its total-count metadata.");
+            hasNext = offset + items.GetArrayLength() < total;
+        }
+        else
+        {
+            var current = At(root, api.CurrentPagePath);
+            var last = At(root, api.LastPagePath);
+            if (current.ValueKind != JsonValueKind.Number || !current.TryGetInt32(out var n) || n != page
+                || last.ValueKind != JsonValueKind.Number || !last.TryGetInt32(out var end) || end < page)
+                throw new InvalidOperationException("Unexpected API pagination metadata.");
+            if (items.GetArrayLength() == 0 && (page != 1 || end != 1))
+                throw new InvalidOperationException("API returned an empty intermediate page.");
+            hasNext = page < end;
+        }
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var item in items.EnumerateArray())
         {
@@ -152,7 +205,7 @@ public sealed class JsonApiReader : IDisposable
             if (url.Length > 1000) throw new InvalidOperationException("API item URL is too long.");
             result[id] = url;
         }
-        return (result.Select(x => (x.Key, x.Value)).ToList(), page < end);
+        return (result.Select(x => (x.Key, x.Value)).ToList(), hasNext);
     }
 
     private static bool UsesSlug(JsonApiConfiguration api) =>
@@ -165,7 +218,7 @@ public sealed class JsonApiReader : IDisposable
         Source source, int page, CancellationToken ct)
     {
         var conf = Configuration(source);
-        using var json = await ReadAsync(PageUrl(conf.Api!, page), source, conf, ct);
+        using var json = await ReadAsync(PageUrl(conf.Api!, page), source, conf, ct, conf.Api!.ListingMethod == "POST" ? PageBody(conf.Api!, page) : null);
         var parsed = ParsePage(json.RootElement, conf.Api!, page);
         foreach (var item in parsed.Items) CheckUrl(item.Url, conf, source.Url);
         return parsed;
@@ -199,7 +252,7 @@ public sealed class JsonApiReader : IDisposable
             || (expectedId.Length > 0 && Scalar(At(item, api.IdPath)) != expectedId)
             || (expectedSlug.Length > 0 && Scalar(At(item, api.SlugPath)) != expectedSlug))
             throw new InvalidOperationException("API returned a different or missing job detail.");
-        if (PlainText(Scalar(At(item, api.ContentPath))).Length < 80)
+        if (!new[] { api.ContentPath }.Concat(api.ContentFallbackPaths).Any(path => PlainText(Scalar(At(item, path))).Length >= 80))
             throw new ContentNeedsReviewException("API detail content is incomplete; summary is not sufficient for extraction.");
         var lines = new List<string>();
         foreach (var field in api.Fields)
@@ -226,14 +279,15 @@ public sealed class JsonApiReader : IDisposable
         return Regex.Replace(doc.Body?.TextContent ?? "", @"[^\S\n]+", " ").Trim();
     }
 
-    private async Task<JsonDocument> ReadAsync(string url, Source source, SourceConfiguration conf, CancellationToken ct)
+    private async Task<JsonDocument> ReadAsync(string url, Source source, SourceConfiguration conf, CancellationToken ct, string? body = null)
     {
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
         budget.CancelAfter(TimeSpan.FromSeconds(40));
         ct = budget.Token;
         CheckUrl(url, conf, source.Url);
         await policy.ValidateAsync(url, conf.AllowedHosts.Append(new Uri(source.Url).IdnHost), ct);
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var request = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, url);
+        if (body is not null) request.Content = new StringContent(body, Encoding.UTF8, "application/json");
         request.Headers.Accept.ParseAdd("application/json");
         request.Headers.UserAgent.ParseAdd("HiringPs/1.0 (+https://hiring.ps)");
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
