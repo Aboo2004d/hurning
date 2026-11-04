@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 
 namespace HiringPs.Core;
@@ -168,7 +169,7 @@ public static class SourceSetupRules
         return new(
             url,
             (doc.Title ?? "").Truncate(200),
-            (doc.Body?.TextContent ?? "").Truncate(12000),
+            CompactText(doc.Body?.TextContent ?? "").Truncate(12000),
             string.Join('\n', fragments).Truncate(40000),
             links
         );
@@ -185,20 +186,33 @@ public static class SourceSetupRules
                 if (attribute.Name is not ("class" or "id" or "href" or "role" or "aria-label" or "title" or "itemprop"))
                     element.RemoveAttribute(attribute.Name);
         var fragments = new List<string>();
-        foreach (var heading in doc.QuerySelectorAll("h1").Take(5))
+        var primaryText = new List<string>();
+        foreach (var heading in doc.QuerySelectorAll("h1").Where(h => h.Closest("nav,footer,form,dialog,[role='dialog'],.modal") is null).Take(5))
         {
             var ancestor = heading;
-            for (var level = 0; level < 4 && ancestor.ParentElement is { } parent && parent.LocalName != "html"; level++) ancestor = parent;
-            fragments.Add(ancestor.OuterHtml.Truncate(20000));
+            // A heading can be deeply nested in a title/header card. Walk far enough to
+            // retain sibling description/requirements cards, without taking the whole body.
+            for (var level = 0; level < 8 && ancestor.ParentElement is { } parent && parent.LocalName is not ("html" or "body"); level++)
+            {
+                ancestor = parent;
+                if (ancestor.QuerySelectorAll("p,li").Any(p => CompactText(p.TextContent).Length >= 80
+                    && p.Closest("nav,header,footer,form,dialog,[role='dialog'],.modal") is null)) break;
+            }
+            fragments.Add(CompactHtml(ancestor.OuterHtml).Truncate(30000));
+            primaryText.Add(CompactText(ancestor.TextContent));
         }
-        fragments.AddRange(doc.QuerySelectorAll("main,article,[itemprop='description']").Take(5).Select(node => node.OuterHtml.Truncate(20000)));
-        fragments.AddRange(doc.QuerySelectorAll("a[href]").Take(50).Select(node => (node.ParentElement?.OuterHtml ?? node.OuterHtml).Truncate(800)));
+        fragments.AddRange(doc.QuerySelectorAll("main,article,[itemprop='description']").Take(5).Select(node => CompactHtml(node.OuterHtml).Truncate(20000)));
+        fragments.AddRange(doc.QuerySelectorAll("a[href]").Take(50).Select(node => CompactHtml(node.ParentElement?.OuterHtml ?? node.OuterHtml).Truncate(800)));
         return snapshot with
         {
-            Text = (doc.Body?.TextContent ?? "").Truncate(12000),
+            // Put the actual heading/body evidence before navigation and optional dialogs.
+            Text = string.Join('\n', primaryText.Append(CompactText(doc.Body?.TextContent ?? ""))).Truncate(12000),
             Html = string.Join('\n', fragments.Distinct()).Truncate(40000),
         };
     }
+
+    private static string CompactText(string text) => Regex.Replace(text, @"\s+", " ").Trim();
+    private static string CompactHtml(string html) => Regex.Replace(html, @">\s+<", "><");
 
     /// <summary>يختصر صفحة كبيرة مع الاحتفاظ بالأدلة اللازمة لاقتراح الإعدادات.</summary>
     private static SourceSetupSnapshot LargePageSnapshot(string html, string url)
@@ -231,7 +245,7 @@ public static class SourceSetupRules
         var fragments = sampled.Length <= 100 ? sampled : Enumerable.Range(0, 100)
             .Select(i => sampled[(int)((long)i * (sampled.Length - 1) / 99)]).ToArray();
         return new(url, (doc.Title ?? "").Truncate(200),
-            (doc.Body?.TextContent ?? "").Truncate(12000),
+            CompactText(doc.Body?.TextContent ?? "").Truncate(12000),
             string.Join('\n', fragments.Select(x =>
                 (x.Element.ParentElement?.OuterHtml ?? x.Element.OuterHtml).Truncate(800))).Truncate(40000),
             links);

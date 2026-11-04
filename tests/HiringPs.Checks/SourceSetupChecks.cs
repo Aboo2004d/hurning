@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 public static class SourceSetupChecks
 {
-    public static async Task RunAsync(string? detailHtmlPath = null)
+    public static async Task RunAsync(string? detailHtmlPath = null, string? publicDetailHtmlPath = null)
     {
         var passed = 0;
         void Check(bool value, string name)
@@ -269,6 +269,50 @@ public static class SourceSetupChecks
         using var switchHttp = new HttpClient(switchAi);
         try { await new SourceSetupAssistant(switchHttp, switchBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Changed listing accepted"); }
         catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnseenUrl" && switchBrowser.Previews == 1, "correction cannot switch the listing or apply an unobserved source URL"); }
+        var listingWithActions = AutomaticSource.Discover("""
+            <div><a href="/companies/login">أضف وظيفة شاغرة</a></div>
+            <div><a href="/jobs/create">Post a job</a></div>
+            <div><a href="/accounts/login?returnUrl=/job/1.html">وظائف الشركات: تسجيل الدخول</a></div>
+            <div><a href="/job/52857.html">Fixture communications</a></div>
+            <div><a href="/job/52858.html">موظف تسجيل بيانات</a></div>
+            """, new Uri("https://example.ps/jobs"));
+        Check(listingWithActions.Links.SequenceEqual(new[] { "https://example.ps/job/52857.html", "https://example.ps/job/52858.html" }),
+            "Automatic discovery excludes login and post-a-job actions without excluding real job titles containing registration terminology");
+        var nestedHtml = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SourceSetup", "NestedPublicAnnouncement.html"));
+        var nestedSnapshot = SourceSetupRules.DetailSnapshot(nestedHtml, detailUrl);
+        var nestedDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(nestedSnapshot.Html);
+        var nestedMain = nestedDoc.QuerySelector(".col-lg-8");
+        Check(nestedMain is not null && nestedMain.QuerySelector("h1")!.TextContent.Contains("موظفة خدمة زبائن")
+            && nestedMain.TextContent.Contains("المتطلبات") && nestedMain.TextContent.Contains("2030-11-20")
+            && !nestedMain.TextContent.Contains("RELATED_ONLY"),
+            "Deeply nested heading evidence includes sibling description, requirements and deadline rather than only the title card");
+        Check(nestedSnapshot.Text.StartsWith("موظفة خدمة زبائن") && nestedSnapshot.Html.IndexOf("job-card-body", StringComparison.Ordinal)
+            < nestedSnapshot.Html.IndexOf("/login", StringComparison.Ordinal)
+            && !nestedSnapshot.Html.Contains("PRIVATE_") && !nestedSnapshot.Text.Contains("PRIVATE_"),
+            "Public announcement evidence precedes optional dialogs and login navigation, without form values or script contents");
+        var paddedSnapshot = SourceSetupRules.DetailSnapshot(nestedHtml.Replace("<header>", "<header>" + new string(' ', 18000)), detailUrl);
+        Check(paddedSnapshot.Text.Contains("المتطلبات") && paddedSnapshot.Text.Length <= 12000 && paddedSnapshot.Html.Length <= 40000,
+            "Source indentation cannot consume the inspection budget before readable announcement content");
+        var semanticHeaderSnapshot = SourceSetupRules.DetailSnapshot("<div class='announcement'><header><h1>عنوان داخل ترويسة الإعلان</h1></header><p>" + new string('ع', 100) + "</p></div>", detailUrl);
+        Check(semanticHeaderSnapshot.Html.Contains("class=\"announcement\"") && semanticHeaderSnapshot.Html.Contains("عنوان داخل ترويسة الإعلان"),
+            "A heading in the announcement's semantic header remains eligible for full-content evidence");
+        var loginSnapshot = SourceSetupRules.DetailSnapshot("<h1>تسجيل الدخول</h1><form><label>البريد الإلكتروني</label><label>كلمة المرور</label><input value='PRIVATE_LOGIN'></form>", detailUrl);
+        Check(loginSnapshot.Text.Contains("كلمة المرور") && !loginSnapshot.Text.Contains("موظفة خدمة زبائن")
+            && !loginSnapshot.Html.Contains("PRIVATE_LOGIN"), "A real login-only page retains authentication evidence without fabricated announcement content");
+        if (publicDetailHtmlPath is not null)
+        {
+            var uploadedHtml = await File.ReadAllTextAsync(publicDetailHtmlPath);
+            var uploadedSnapshot = SourceSetupRules.DetailSnapshot(uploadedHtml, "https://www.wenak.ps/job/52857.html");
+            var uploadedDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(uploadedSnapshot.Html);
+            var uploadedMain = uploadedDoc.QuerySelector(".col-lg-8");
+            Check(uploadedMain is not null && uploadedMain.QuerySelector("h1")!.TextContent.Contains("موظفة خدمة زبائن")
+                && uploadedMain.TextContent.Contains("المتطلبات") && uploadedMain.TextContent.Contains("2026-11-20")
+                && uploadedMain.TextContent.Contains("المهام والمسؤوليات"),
+                "Uploaded Wenak HTML retains the public job heading, complete body, requirements and deadline in one evidenced container");
+            Check(uploadedSnapshot.Text.StartsWith("موظفة خدمة زبائن") && uploadedSnapshot.Text.Contains("المتطلبات")
+                && uploadedSnapshot.Html.Length <= 40000 && uploadedSnapshot.Text.Length <= 12000,
+                "Actual uploaded-page evidence stays readable and bounded despite navigation, indentation and optional dialogs");
+        }
         const string automaticFailure = "Automatic content discovery is uncertain; source needs review.";
         var divHtml = """
             <div class="announcement-shell"><h1>مهندس برمجيات</h1>

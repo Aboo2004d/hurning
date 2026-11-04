@@ -39,6 +39,11 @@ public static class AutomaticSource
                 continue;
             if (a.GetAttribute("href")!.StartsWith('#'))
                 continue;
+            // Posting/login actions can sit outside semantic navigation and contain "job".
+            // They are not announcement details, even when their path has multiple segments.
+            if (Regex.IsMatch(uri.AbsolutePath, @"/(?:login|log-in|signin|sign-in|register|signup|sign-up)(?:/|$)", RegexOptions.IgnoreCase)
+                || Regex.IsMatch(label, @"^(?:(?:أضف|اضف|إضافة|اضافة|أنشر|انشر)\s+(?:وظيفة|إعلان|اعلان)|(?:add|post|submit|create)\s+(?:a\s+)?(?:job|vacancy|advertisement))(?=\s|$)", RegexOptions.IgnoreCase))
+                continue;
             var card = a.Closest("article,li,tr,[itemtype*='JobPosting']");
             var evidence = label + " " + uri.AbsolutePath + " " + uri.Query;
             var specificPath =

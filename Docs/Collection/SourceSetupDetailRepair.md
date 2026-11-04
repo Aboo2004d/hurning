@@ -30,3 +30,19 @@ dotnet run --project tests/HiringPs.Checks -- --source-setup-check --detail-html
 ```
 
 The fixture uses the observed Developers page structure with synthetic sample text. AI and preview orchestration checks use in-process fakes; optional uploaded HTML verification is local and does not contact Gemini or the source site.
+
+## Public details behind optional dialogs
+
+The uploaded Wenak detail example contains a public `h1`, deadline, description, responsibilities and requirements behind an optional newsletter dialog, plus separate login/application UI. Those controls do not establish authentication for reading the announcement. The setup prompt now explicitly distinguishes reading details from logging in to apply, and requires observed main-page/URL evidence before claiming authentication.
+
+The detail inspection copy previously stopped four ancestors above `h1`. In this example that captured a nested title/header wrapper while excluding sibling description and requirement cards. Detail inspection now walks up to eight ancestors, stopping before `body`, preferring a container with a substantial paragraph/list item. It puts that bounded heading/body evidence before navigation/optional dialogs. Whitespace is compacted before applying the existing 12,000-text/40,000-HTML budgets. Scripts, form values and executable attributes remain excluded; the live page is unchanged. This does not click a modal, subscribe, log in, submit an application, bypass protection, or infer that every dialog is optional.
+
+Automatic link discovery also excludes explicit login/register routes and add/post-a-job actions outside semantic navigation, so a posting button is not mistaken for an announcement. Actual job links, including titles referring to registration/data entry, remain eligible.
+
+Regression checks use a synthetic nested public announcement with a newsletter overlay and hidden login form. The optional local-file check verifies the actual uploaded Wenak page's heading, full body, requirements and deadline in the captured `.col-lg-8` container; it does not contact Wenak or Gemini:
+
+```sh
+dotnet run --project tests/HiringPs.Checks -- --source-setup-check --public-detail-html /path/to/saved-wenak-detail.html
+```
+
+The source still must pass its actual setup preview on the collector host. The development environment's earlier Wenak request returned HTTP 403; inspecting a saved public page does not prove live collection access from every host.

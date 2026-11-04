@@ -210,7 +210,9 @@ if (args.Contains("--json-api-check"))
 if (args.Contains("--source-setup-check"))
 {
     var detailIndex = Array.IndexOf(args, "--detail-html");
-    await SourceSetupChecks.RunAsync(detailIndex >= 0 && detailIndex + 1 < args.Length ? args[detailIndex + 1] : null);
+    var publicDetailIndex = Array.IndexOf(args, "--public-detail-html");
+    await SourceSetupChecks.RunAsync(detailIndex >= 0 && detailIndex + 1 < args.Length ? args[detailIndex + 1] : null,
+        publicDetailIndex >= 0 && publicDetailIndex + 1 < args.Length ? args[publicDetailIndex + 1] : null);
     return;
 }
 
