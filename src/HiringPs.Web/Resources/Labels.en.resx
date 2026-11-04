@@ -3380,4 +3380,5 @@
   <data name="ConnectorHelp_JsonApi" xml:space="preserve"><value>Shared reader for public JSON APIs. Configure Api in the JSON settings with listing/detail URL templates, field paths and numbered pagination. Chromium is not required.</value></data>
   <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>Testing API listing and detail</value></data>
   <data name="SourceSetupApiFailed" xml:space="preserve"><value>The source API could not be tested. Review the HTTP status and response details below, then retry.</value></data>
+  <data name="DiagStage_ReadAutomaticContent" xml:space="preserve"><value>Identifying the announcement content container</value></data>
 </root>

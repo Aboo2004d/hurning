@@ -269,6 +269,72 @@ public static class SourceSetupChecks
         using var switchHttp = new HttpClient(switchAi);
         try { await new SourceSetupAssistant(switchHttp, switchBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Changed listing accepted"); }
         catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnseenUrl" && switchBrowser.Previews == 1, "correction cannot switch the listing or apply an unobserved source URL"); }
+        const string automaticFailure = "Automatic content discovery is uncertain; source needs review.";
+        var divHtml = """
+            <div class="announcement-shell"><h1>مهندس برمجيات</h1>
+              <div class="announcement-date">موعد الانتهاء: 2030-12-01</div>
+              <div class="announcement-body">تعلن مؤسسة الاختبار عن حاجتها إلى مهندس برمجيات للعمل في تطوير الأنظمة وتحسين الخدمات.
+              المتطلبات: خبرة عملية في تطوير التطبيقات وقواعد البيانات، والقدرة على التعاون مع فريق العمل وتوثيق الحلول.</div>
+            </div><div class="related"><a href="/jobs/2">وظيفة أخرى مرتبطة وليست جزءا من الإعلان الأصلي</a></div>
+            """;
+        try { AutomaticSource.ContentHtml(divHtml); throw new Exception("Ambiguous markup was accepted"); }
+        catch (ContentNeedsReviewException ex) { Check(ex.Message == automaticFailure, "Automatic reader still refuses a page without a confidently identified content container"); }
+        var divDetail = SourceSetupRules.DetailSnapshot(divHtml, detailUrl);
+        SourceSetupSuggestion AutomaticProposal() => new()
+            { Supported = true, Name = "Fixture jobs", ListingUrl = listingUrl, Connector = "Automatic", Explanation = "Fixture automatic discovery" };
+        CollectorDiagnostic Uncertain(string stage = "ReadAutomaticContent", int status = 200, string? final = null) => new()
+            { Operation = "Detail", Stage = stage, Selector = "body", SelectorMatches = 1, HttpStatus = status,
+                ReadyState = "complete", RequestedUrl = detailUrl, FinalUrl = final ?? detailUrl };
+        await using var automaticBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = divDetail, PreviewFailures = 1, PreviewDiagnostic = Uncertain(), PreviewError = new ContentNeedsReviewException(automaticFailure) };
+        var automaticAi = new FixtureAi(AutomaticProposal(), DetailProposal(".announcement-shell"));
+        using var automaticHttp = new HttpClient(automaticAi);
+        var automaticRepaired = await new SourceSetupAssistant(automaticHttp, automaticBrowser, configuration).SuggestAsync(listingUrl, "ar", default);
+        Check(automaticAi.Calls == 2 && automaticBrowser.Previews == 2 && automaticBrowser.DetailInspections == 1
+            && automaticRepaired.Connector == (int)ConnectorKind.BrowserSelectors
+            && JsonSerializer.Deserialize<SourceConfiguration>(automaticRepaired.ConfigurationJson)!.ContentSelector == ".announcement-shell",
+            "Uncertain Automatic detail gets one evidence-based BrowserSelectors repair and must pass production preview again");
+        var previous = automaticAi.Payloads[1].GetProperty("previousAttempt");
+        Check(previous.GetProperty("connector").GetString() == "Automatic"
+            && previous.GetProperty("stage").GetString() == "ReadAutomaticContent"
+            && previous.GetProperty("selectorMatches").GetInt32() == 1
+            && automaticAi.Payloads[1].GetProperty("detailPage").GetProperty("Html").GetString()!.Contains("announcement-body"),
+            "Correction context reports the actual Automatic failure rather than falsely claiming a selector matched zero elements");
+        await using var automaticThreeBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = divDetail, PreviewFailures = 1, PreviewDiagnostic = Uncertain(), PreviewError = new ContentNeedsReviewException(automaticFailure) };
+        var automaticThreeAi = new FixtureAi(Proposal(listingUrl), AutomaticProposal(), DetailProposal(".announcement-shell"));
+        using var automaticThreeHttp = new HttpClient(automaticThreeAi);
+        await new SourceSetupAssistant(automaticThreeHttp, automaticThreeBrowser, configuration).SuggestAsync(homeUrl, "ar", default);
+        Check(automaticThreeAi.Calls == 3 && automaticThreeBrowser.Previews == 2,
+            "Homepage-to-listing Automatic repair remains within the existing three-request limit");
+        foreach (var diagnostic in new[] { Uncertain(status: 403), Uncertain(stage: "WaitDocumentReady"), Uncertain(final: "https://other.ps/jobs/1"), Uncertain(final: listingUrl) })
+        {
+            await using var guardBrowser = new FixtureBrowser(configuration, home, listing)
+                { Detail = divDetail, PreviewFailures = 1, PreviewDiagnostic = diagnostic, PreviewError = new ContentNeedsReviewException(automaticFailure) };
+            var guardAi = new FixtureAi(AutomaticProposal());
+            using var guardHttp = new HttpClient(guardAi);
+            try { await new SourceSetupAssistant(guardHttp, guardBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Unsafe Automatic repair accepted"); }
+            catch (CollectorDiagnosticException) { Check(guardAi.Calls == 1 && guardBrowser.DetailInspections == 0,
+                "Automatic repair excludes blocked pages, readiness failures, cross-host targets and the listing itself"); }
+        }
+        await using var timeoutBrowser = new FixtureBrowser(configuration, home, listing)
+            { PreviewFailures = 1, PreviewDiagnostic = Uncertain("WaitAutomaticContent") };
+        var timeoutAi = new FixtureAi(AutomaticProposal());
+        using var timeoutHttp = new HttpClient(timeoutAi);
+        try { await new SourceSetupAssistant(timeoutHttp, timeoutBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Timeout repaired"); }
+        catch (CollectorDiagnosticException) { Check(timeoutAi.Calls == 1 && timeoutBrowser.DetailInspections == 0, "Automatic timeout does not masquerade as content-structure uncertainty"); }
+        await using var secondFailBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = divDetail, PreviewFailures = 2, PreviewDiagnostic = Uncertain(), PreviewError = new ContentNeedsReviewException(automaticFailure) };
+        var secondFailAi = new FixtureAi(AutomaticProposal(), DetailProposal(".announcement-shell"));
+        using var secondFailHttp = new HttpClient(secondFailAi);
+        try { await new SourceSetupAssistant(secondFailHttp, secondFailBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Second Automatic repair accepted"); }
+        catch (CollectorDiagnosticException) { Check(secondFailAi.Calls == 2 && secondFailBrowser.Previews == 2, "A failed corrected preview stops without a repair loop or applicable proposal"); }
+        await using var repeatAutoBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = divDetail, PreviewFailures = 1, PreviewDiagnostic = Uncertain(), PreviewError = new ContentNeedsReviewException(automaticFailure) };
+        var repeatAutoAi = new FixtureAi(AutomaticProposal(), AutomaticProposal());
+        using var repeatAutoHttp = new HttpClient(repeatAutoAi);
+        try { await new SourceSetupAssistant(repeatAutoHttp, repeatAutoBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Unchanged Automatic repair accepted"); }
+        catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupInvalidReply" && repeatAutoBrowser.Previews == 1, "Correction must produce a concrete BrowserSelectors mapping"); }
         if (detailHtmlPath is not null)
         {
             var actualHtml = await File.ReadAllTextAsync(detailHtmlPath);
@@ -305,6 +371,7 @@ public static class SourceSetupChecks
         public int DetailInspections { get; private set; }
         public int PreviewFailures { get; set; }
         public CollectorDiagnostic? PreviewDiagnostic { get; set; }
+        public Exception? PreviewError { get; set; }
         public override Task<SourceSetupSnapshot> InspectDetailForSetupAsync(string url, CancellationToken ct)
         { DetailInspections++; return Task.FromResult(Detail ?? throw new Exception("No fixture detail")); }
         public bool FailPreview
@@ -330,7 +397,7 @@ public static class SourceSetupChecks
             if (PreviewFailures > 0)
             {
                 PreviewFailures--;
-                throw new CollectorDiagnosticException(PreviewDiagnostic!, new TimeoutException("Fixture selector timeout"));
+                throw new CollectorDiagnosticException(PreviewDiagnostic!, PreviewError ?? new TimeoutException("Fixture selector timeout"));
             }
             if (FailPreview)
                 throw new InvalidOperationException("SourceSetupNoLinks");

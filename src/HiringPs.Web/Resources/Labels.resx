@@ -3380,4 +3380,5 @@
   <data name="ConnectorHelp_JsonApi" xml:space="preserve"><value>موصل موحد لواجهات JSON العامة: اضبط Api في إعدادات JSON لتحديد روابط القائمة والتفاصيل ومسارات الحقول وترقيم الصفحات. لا يحتاج Chromium.</value></data>
   <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>اختبار قائمة وتفاصيل API</value></data>
   <data name="SourceSetupApiFailed" xml:space="preserve"><value>تعذر اختبار واجهة API للمصدر. راجع رمز HTTP وبنية الاستجابة في التفاصيل أدناه ثم أعد المحاولة.</value></data>
+  <data name="DiagStage_ReadAutomaticContent" xml:space="preserve"><value>تحديد محتوى الإعلان تلقائيًا</value></data>
 </root>

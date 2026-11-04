@@ -622,6 +622,7 @@ public partial class BrowserCollector(
                     {
                         diagnostics.Step("WaitAutomaticContent", "body", 25000);
                         await WaitForAutomaticContentAsync(page);
+                        diagnostics.Step("ReadAutomaticContent", "body");
                         html = AutomaticSource.ContentHtml(await page.ContentAsync());
                     }
                     else
