@@ -16,11 +16,14 @@ public partial class BrowserCollector(
     UrlPolicy policy,
     IConfiguration configuration,
     AttachmentReader attachmentReader,
-    BrowserHost? host = null
+    BrowserHost? host = null,
+    JsonApiReader? apiReader = null
 ) : IAsyncDisposable
 {
     // Without a shared host (web scopes, probes) this collector owns its browser as before.
     private BrowserHost? ownedHost;
+    private JsonApiReader? ownedApiReader;
+    private JsonApiReader ApiReader => apiReader ?? (ownedApiReader ??= new JsonApiReader(policy));
 
     private BrowserHost Host => host ?? (ownedHost ??= new BrowserHost(configuration));
 
@@ -191,6 +194,8 @@ public partial class BrowserCollector(
     {
         if (!source.Enabled || !source.UsageApproved)
             throw new InvalidOperationException("Source must be enabled and usage approved.");
+        if (source.Connector == ConnectorKind.JsonApi)
+            return await DiscoverApiAsync(source, ct);
         if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
             return await CollectorDiagnosticFiles.WithoutPageAsync(
                 source,
@@ -508,6 +513,12 @@ public partial class BrowserCollector(
         CancellationToken ct
     )
     {
+        if (source.Connector == ConnectorKind.JsonApi)
+            return await CollectorDiagnosticFiles.WithoutPageAsync(source, "Detail", "ReadApi", url, configuration,
+                async () =>
+                {
+                    return await ApiReader.ReadDetailAsync(source, url, ct);
+                }, ct);
         if (source.Connector == ConnectorKind.ReliefWebRss)
         {
             return await CollectorDiagnosticFiles.WithoutPageAsync(
@@ -790,6 +801,7 @@ public partial class BrowserCollector(
     /// <summary>يغلق الموارد التي يملكها المكون مع احترام ملكية المتصفح المشتركة.</summary>
     public async ValueTask DisposeAsync()
     {
+        ownedApiReader?.Dispose();
         // A shared host belongs to the worker container and is disposed at shutdown.
         if (ownedHost is not null)
             await ownedHost.DisposeAsync();

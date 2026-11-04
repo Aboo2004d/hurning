@@ -22,4 +22,5 @@ public class SourceConfiguration
     public int MaxPages { get; set; } = 10;
     public string AppName { get; set; } = "";
     public int ForbiddenWaitSeconds { get; set; } = 20;
+    public JsonApiConfiguration? Api { get; set; }
 }

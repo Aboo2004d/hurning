@@ -94,6 +94,7 @@ public static class SourceHealth
                 ConnectorKind.JobsRss
                 or ConnectorKind.ReliefWebRss
                 or ConnectorKind.UnrwaInspira
+                or ConnectorKind.JsonApi
             );
 
     // Published records absent from the listing for N complete discovery passes go to review.

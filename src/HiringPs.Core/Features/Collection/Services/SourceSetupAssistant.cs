@@ -32,6 +32,16 @@ You help an administrator configure a public Palestinian opportunities source. A
         try
         {
             SourceSetupRules.Website(url);
+            var apiPreset = SourceApiProfiles.ForWebsite(url);
+            if (apiPreset is not null)
+            {
+                stage = "SourceSetupStageApiPreview";
+                var apiPreview = await browser.PreviewSetupAsync(apiPreset, ct);
+                return new(apiPreset.Name, apiPreset.Url, (int)apiPreset.Connector, apiPreset.ConfigurationJson,
+                    language == "en"
+                        ? "Public JSON API preset: tested the first listing page and one full announcement. No AI request was used. Review before saving."
+                        : "إعداد API عام: تم اختبار أول صفحة وإعلان كامل دون استهلاك طلبات AI. راجع العينة قبل الحفظ.", apiPreview);
+            }
             _ = ProviderConfiguration();
             stage = "SourceSetupStageRead";
             var snapshot = await browser.InspectForSetupAsync(url, ct);

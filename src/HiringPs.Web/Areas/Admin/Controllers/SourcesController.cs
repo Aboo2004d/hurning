@@ -206,6 +206,7 @@ public class SourcesController : AdminControllerBase
                 : ex;
             var error =
                 codes.Contains(ex.Message) ? ex.Message
+                : ex.Data["SourceSetupStage"] as string == "SourceSetupStageApiPreview" ? "SourceSetupApiFailed"
                 : original is TimeoutException ? "SourceSetupTimeout"
                 : original is System.Net.Http.HttpRequestException ? "SourceSetupNetworkFailed"
                 : original is System.Text.Json.JsonException ? "SourceSetupInvalidReply"

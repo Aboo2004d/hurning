@@ -92,6 +92,8 @@ public sealed class SourceManagementService(HiringDb db, UrlPolicy urlPolicy)
                 throw new InvalidOperationException(
                     "UNRWA/Inspira connector requires https://careers.un.org/jobfeed."
                 );
+            if (input.Connector == ConnectorKind.JsonApi)
+                JsonApiReader.Validate(input.Url, conf);
             if (input.Enabled && input.Connector == ConnectorKind.ReliefWeb)
                 throw new InvalidOperationException(
                     "ReliefWeb adapter is pending appname approval and verification."

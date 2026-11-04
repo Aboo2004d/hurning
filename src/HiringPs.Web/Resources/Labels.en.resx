@@ -1498,7 +1498,7 @@
         <value>Suggest and test settings</value>
     </data>
   <data name="SourceSetupCost" xml:space="preserve">
-        <value>This sends public page content to AI and uses up to three requests from your quota. It does not queue announcements, publish, save or enable a source automatically.</value>
+        <value>Known API presets are tested directly without AI. For other sites this sends public page content to AI and uses up to three requests from your quota. It does not queue announcements, publish, save or enable a source automatically.</value>
     </data>
   <data name="SourceSetupLoading" xml:space="preserve">
         <value>Reading the page, analyzing it and testing the proposal… This may take a few minutes.</value>
@@ -3376,4 +3376,8 @@
   <data name="FreePreferenceLimitRange" xml:space="preserve"><value>Enter a whole number from 0 to 1000.</value></data>
   <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>Lowering the quota preserves existing selections. Members must reduce their categories to the available quota when saving. The current free quota also applies after a subscription expires.</value></data>
 <data name="DiagnosticDownloadReport" xml:space="preserve"><value>Download diagnostic JSON</value></data>
+  <data name="Connector_JsonApi" xml:space="preserve"><value>Public JSON API</value></data>
+  <data name="ConnectorHelp_JsonApi" xml:space="preserve"><value>Shared reader for public JSON APIs. Configure Api in the JSON settings with listing/detail URL templates, field paths and numbered pagination. Chromium is not required.</value></data>
+  <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>Testing API listing and detail</value></data>
+  <data name="SourceSetupApiFailed" xml:space="preserve"><value>The source API could not be tested. Review the HTTP status and response details below, then retry.</value></data>
 </root>

@@ -1498,7 +1498,7 @@
         <value>اقتراح الإعدادات واختبارها</value>
     </data>
   <data name="SourceSetupCost" xml:space="preserve">
-        <value>يرسل هذا الطلب محتوى الصفحات العامة إلى AI ويستهلك حتى ثلاثة طلبات من حصتك عند الحاجة لتصحيح محدد المحتوى من صفحة إعلان فعلية. لا يجمع إعلانات للنشر ولا يحفظ أو يفعّل المصدر تلقائيًا.</value>
+        <value>تُختبر إعدادات API المعروفة مباشرة دون AI. للمواقع الأخرى، يرسل هذا الطلب محتوى الصفحات العامة إلى AI ويستهلك حتى ثلاثة طلبات من حصتك عند الحاجة لتصحيح محدد المحتوى من صفحة إعلان فعلية. لا يجمع إعلانات للنشر ولا يحفظ أو يفعّل المصدر تلقائيًا.</value>
     </data>
   <data name="SourceSetupLoading" xml:space="preserve">
         <value>جارٍ قراءة الصفحة وتحليلها واختبار الاقتراح… قد يستغرق ذلك بضع دقائق.</value>
@@ -3376,4 +3376,8 @@
   <data name="FreePreferenceLimitRange" xml:space="preserve"><value>أدخل عددًا صحيحًا من 0 إلى 1000.</value></data>
   <data name="FreePreferenceLimitExisting" xml:space="preserve"><value>خفض الحد لا يحذف الاختيارات المحفوظة. عند تعديل التفضيلات، يلزم تقليل المجالات إلى الحد المتاح، ويطبق الحد الجديد عند انتهاء الاشتراك أيضًا.</value></data>
 <data name="DiagnosticDownloadReport" xml:space="preserve"><value>تنزيل تقرير التشخيص JSON</value></data>
+  <data name="Connector_JsonApi" xml:space="preserve"><value>API عام (JSON)</value></data>
+  <data name="ConnectorHelp_JsonApi" xml:space="preserve"><value>موصل موحد لواجهات JSON العامة: اضبط Api في إعدادات JSON لتحديد روابط القائمة والتفاصيل ومسارات الحقول وترقيم الصفحات. لا يحتاج Chromium.</value></data>
+  <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>اختبار قائمة وتفاصيل API</value></data>
+  <data name="SourceSetupApiFailed" xml:space="preserve"><value>تعذر اختبار واجهة API للمصدر. راجع رمز HTTP وبنية الاستجابة في التفاصيل أدناه ثم أعد المحاولة.</value></data>
 </root>

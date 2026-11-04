@@ -11,4 +11,5 @@ public enum ConnectorKind
     UnrwaInspira = 5,
     JobsRss = 6,
     ReliefWebRss = 7,
+    JsonApi = 8,
 }

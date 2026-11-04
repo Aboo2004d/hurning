@@ -13,7 +13,7 @@ There is no retry loop: a direct listing needs at most two AI calls with correct
 
 The detail sample retains at most 40,000 HTML characters and 12,000 text characters, removes scripts, styles and form values, and includes the heading's ancestor structure instead of relying only on anchor-parent fragments. The live page is not rewritten. No external CDN allowlist expansion is made, and no worker architecture, opportunity extraction schema or saved source configuration is changed.
 
-This repairs initial setup proposals. It does not make every website supported, grant the model autonomous browsing, bypass login/challenges, or automatically reconfigure already saved sources when a website changes. Such sources still need a new setup preview and administrator review. API-only or interactive sites may require their own connector.
+This repairs initial setup proposals. It does not make every website supported, grant the model autonomous browsing, bypass login/challenges, or automatically reconfigure already saved sources when a website changes. Such sources still need a new setup preview and administrator review. Compatible public JSON APIs can use the [shared JSON API connector](JsonApiSources.md) with a tested field/pagination mapping. Interactive or incompatible protocols may still need a shared-reader extension.
 
 Verification:
 

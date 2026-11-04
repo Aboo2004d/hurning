@@ -59,6 +59,16 @@ public partial class BrowserCollector
         CancellationToken ct
     )
     {
+        if (source.Connector == ConnectorKind.JsonApi)
+        {
+            var apiConf = JsonApiReader.Configuration(source);
+            var reader = ApiReader;
+            var first = await reader.ReadPageAsync(source, 1, ct);
+            if (first.Items.Count == 0) throw new InvalidOperationException("SourceSetupNoLinks");
+            var detail = await reader.ReadDetailAsync(source, first.Items[0].Url, ct);
+            return new(first.Items.Take(10).Select(x => x.Url).ToArray(),
+                first.HasNext ? JsonApiReader.PageUrl(apiConf.Api!, 2) : null, detail.Text.Truncate(1200));
+        }
         if (source.Connector is ConnectorKind.JobsRss or ConnectorKind.ReliefWebRss)
         {
             var feed = await OpportunityRss.ReadAsync(source, policy, ct);

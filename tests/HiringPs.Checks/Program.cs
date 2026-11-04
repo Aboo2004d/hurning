@@ -189,6 +189,18 @@ if (args.Contains("--membership-check"))
     return;
 }
 
+if (args.Contains("--json-api-live-check"))
+{
+    await JsonApiChecks.RunLiveAsync();
+    return;
+}
+
+if (args.Contains("--json-api-check"))
+{
+    await JsonApiChecks.RunAsync();
+    return;
+}
+
 if (args.Contains("--source-setup-check"))
 {
     var detailIndex = Array.IndexOf(args, "--detail-html");

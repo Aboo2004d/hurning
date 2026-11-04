@@ -24,6 +24,7 @@ public sealed class DiscoveryBatchStore(HiringDb pageDb)
         await SaveDiscoveredAsync(
             pageDb,
             sourceId,
+            connector,
             batch,
             savedRun,
             activePromptId,
@@ -57,6 +58,7 @@ public sealed class DiscoveryBatchStore(HiringDb pageDb)
     private static async Task SaveDiscoveredAsync(
         HiringDb pageDb,
         int sourceId,
+        ConnectorKind connector,
         DiscoveryBatch batch,
         ScrapeRun savedRun,
         int activePromptId,
@@ -89,6 +91,8 @@ public sealed class DiscoveryBatchStore(HiringDb pageDb)
                 continue;
             }
             item.LastSeenAt = seen;
+            // API identity stays stable when a source changes the human-readable slug.
+            if (connector == ConnectorKind.JsonApi) item.Url = entry.Url;
             // Published items are re-fetched only once their last verification is old enough.
             if (
                 item.Status == ProcessingStatus.Published
