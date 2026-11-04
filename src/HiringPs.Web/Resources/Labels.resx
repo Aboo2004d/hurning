@@ -3381,4 +3381,9 @@
   <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>اختبار قائمة وتفاصيل API</value></data>
   <data name="SourceSetupApiFailed" xml:space="preserve"><value>تعذر اختبار واجهة API للمصدر. راجع رمز HTTP وبنية الاستجابة في التفاصيل أدناه ثم أعد المحاولة.</value></data>
   <data name="DiagStage_ReadAutomaticContent" xml:space="preserve"><value>تحديد محتوى الإعلان تلقائيًا</value></data>
+  <data name="SourceSetupAiRateLimited" xml:space="preserve"><value>رفض Gemini الطلب بسبب حد الطلبات أو الحصة (HTTP 429). قد تكون حصة مؤقتة أو يومية؛ راجع حصة مشروع المفتاح وجرّب بعد توفرها. لم تُعد المحاولة تلقائيًا.</value></data>
+  <data name="SourceSetupAiAccessDenied" xml:space="preserve"><value>رفض Gemini الوصول (HTTP 401 أو 403). راجع صلاحية المفتاح وأذونات المشروع وإتاحة النموذج؛ هذا لا يعني بالضرورة أن الحصة انتهت.</value></data>
+  <data name="SourceSetupAiModelNotFound" xml:space="preserve"><value>لم يجد Gemini المورد أو النموذج المطلوب (HTTP 404). راجع اسم النموذج وإتاحته للمشروع وإصدار API.</value></data>
+  <data name="SourceSetupAiRequestInvalid" xml:space="preserve"><value>رفض Gemini صيغة الطلب أو إعداداته (HTTP 400 أو 422). راجع النموذج وإعدادات الطلب وسجل الخادم لتحديد السبب.</value></data>
+  <data name="SourceSetupAiProviderUnavailable" xml:space="preserve"><value>أعاد Gemini خطأ في الخدمة (HTTP 5xx). جرّب لاحقًا؛ لم تُعد المحاولة تلقائيًا ولم تُحفظ إعدادات المصدر.</value></data>
 </root>

@@ -278,6 +278,25 @@ public static class SourceSetupChecks
             """, new Uri("https://example.ps/jobs"));
         Check(listingWithActions.Links.SequenceEqual(new[] { "https://example.ps/job/52857.html", "https://example.ps/job/52858.html" }),
             "Automatic discovery excludes login and post-a-job actions without excluding real job titles containing registration terminology");
+        foreach (var (status, code) in new[] { (400, "SourceSetupAiRequestInvalid"), (401, "SourceSetupAiAccessDenied"),
+            (403, "SourceSetupAiAccessDenied"), (404, "SourceSetupAiModelNotFound"), (429, "SourceSetupAiRateLimited"),
+            (503, "SourceSetupAiProviderUnavailable"), (418, "SourceSetupAiRejected") })
+        {
+            using var rejectedHandler = new RejectedProvider((HttpStatusCode)status);
+            using var rejectedHttp = new HttpClient(rejectedHandler);
+            await using var rejectedBrowser = new FixtureBrowser(configuration, home, listing);
+            try { await new SourceSetupAssistant(rejectedHttp, rejectedBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Provider rejection accepted"); }
+            catch (InvalidOperationException ex) when (ex.Message == "SourceSetupAiRejected")
+            {
+                Check(ex.InnerException is HttpRequestException httpError && (int?)httpError.StatusCode == status
+                    && httpError.Message.Contains($"HTTP {status}") && httpError.Message.Contains("gemini-fixture")
+                    && !ex.ToString().Contains("PRIVATE_PROVIDER_BODY") && !ex.ToString().Contains("fixture-key")
+                    && SourceSetupAssistant.ProviderRejectionCode(status) == code,
+                    $"Provider HTTP {status} survives classification without exposing response bodies or API keys");
+                Check(rejectedHandler.Calls == 1 && rejectedBrowser.Previews == 0,
+                    $"Provider HTTP {status} does not trigger an automatic billable retry or applicable source preview");
+            }
+        }
         var nestedHtml = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SourceSetup", "NestedPublicAnnouncement.html"));
         var nestedSnapshot = SourceSetupRules.DetailSnapshot(nestedHtml, detailUrl);
         var nestedDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(nestedSnapshot.Html);
@@ -313,6 +332,42 @@ public static class SourceSetupChecks
                 && uploadedSnapshot.Html.Length <= 40000 && uploadedSnapshot.Text.Length <= 12000,
                 "Actual uploaded-page evidence stays readable and bounded despite navigation, indentation and optional dialogs");
         }
+        SourceSetupSuggestion ListingOnlyRefusal() => new()
+            { Supported = false, Explanation = "Full announcement markup is absent from the listing sample." };
+        await using var refusalBrowser = new FixtureBrowser(configuration, home, listing) { Detail = nestedSnapshot };
+        var refusalAi = new FixtureAi(ListingOnlyRefusal(), DetailProposal(".col-lg-8"));
+        using var refusalHttp = new HttpClient(refusalAi);
+        var reconsidered = await new SourceSetupAssistant(refusalHttp, refusalBrowser, configuration).SuggestAsync(listingUrl, "ar", default);
+        Check(refusalAi.Calls == 2 && refusalBrowser.DetailInspections == 1 && refusalBrowser.Previews == 1
+            && reconsidered.Connector == (int)ConnectorKind.BrowserSelectors
+            && refusalAi.Payloads[1].GetProperty("detailPage").GetProperty("Html").GetString()!.Contains("job-card-body")
+            && refusalAi.Payloads[1].GetProperty("rejectedListingProposal").GetString()!.Contains("listing sample"),
+            "A listing-only refusal gets one observed detail inspection and evidence-based reconsideration before production preview");
+        await using var noDetailBrowser = new FixtureBrowser(configuration, home, listing);
+        var noDetailAi = new FixtureAi(ListingOnlyRefusal());
+        using var noDetailHttp = new HttpClient(noDetailAi);
+        try { await new SourceSetupAssistant(noDetailHttp, noDetailBrowser, configuration).SuggestAsync(homeUrl, "ar", default); throw new Exception("No observed detail was accepted"); }
+        catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnsupported" && noDetailAi.Calls == 1 && noDetailBrowser.DetailInspections == 0,
+            "Refusal without an observed announcement link cannot trigger a guessed detail fetch"); }
+        await using var protectedBrowser = new FixtureBrowser(configuration, home, listing) { Detail = loginSnapshot };
+        var protectedAi = new FixtureAi(ListingOnlyRefusal(), new SourceSetupSuggestion { Supported = false, Explanation = "The actual inspected page is login-only." });
+        using var protectedHttp = new HttpClient(protectedAi);
+        try { await new SourceSetupAssistant(protectedHttp, protectedBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Protected page accepted"); }
+        catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnsupported" && protectedAi.Calls == 2 && protectedBrowser.Previews == 0,
+            "Actual login-only detail remains unsupported after evidence inspection without forced support or a retry loop"); }
+        await using var refusalLimitBrowser = new FixtureBrowser(configuration, home, listing)
+            { Detail = nestedSnapshot, PreviewFailures = 1, PreviewDiagnostic = Broken() };
+        var refusalLimitAi = new FixtureAi(Proposal(listingUrl), ListingOnlyRefusal(), DetailProposal(".col-lg-8"));
+        using var refusalLimitHttp = new HttpClient(refusalLimitAi);
+        try { await new SourceSetupAssistant(refusalLimitHttp, refusalLimitBrowser, configuration).SuggestAsync(homeUrl, "ar", default); throw new Exception("Fourth AI request accepted"); }
+        catch (CollectorDiagnosticException) { Check(refusalLimitAi.Calls == 3 && refusalLimitBrowser.Previews == 1 && refusalLimitBrowser.DetailInspections == 1,
+            "Homepage, listing refusal and reconsideration use at most three calls; a failed preview cannot make a fourth correction request"); }
+        await using var redirectBrowser = new FixtureBrowser(configuration, home, listing) { Detail = nestedSnapshot with { Url = "https://other.ps/jobs/1" } };
+        var redirectAi = new FixtureAi(ListingOnlyRefusal());
+        using var redirectHttp = new HttpClient(redirectAi);
+        try { await new SourceSetupAssistant(redirectHttp, redirectBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Cross-host inspection accepted"); }
+        catch (InvalidOperationException ex) { Check(ex.Message == "SourceSetupUnseenUrl" && redirectAi.Calls == 1 && redirectBrowser.Previews == 0,
+            "Cross-host detail redirects cannot enter reconsideration context"); }
         const string automaticFailure = "Automatic content discovery is uncertain; source needs review.";
         var divHtml = """
             <div class="announcement-shell"><h1>مهندس برمجيات</h1>
@@ -448,6 +503,17 @@ public static class SourceSetupChecks
             return Task.FromResult(
                 new SourceSetupPreview(["https://example.ps/jobs/1"], null, "Sample announcement")
             );
+        }
+    }
+
+    private sealed class RejectedProvider(HttpStatusCode status) : HttpMessageHandler
+    {
+        public int Calls { get; private set; }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Calls++;
+            return Task.FromResult(new HttpResponseMessage(status)
+                { Content = new StringContent("PRIVATE_PROVIDER_BODY fixture-key") });
         }
     }
 

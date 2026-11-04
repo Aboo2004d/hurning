@@ -3381,4 +3381,9 @@
   <data name="SourceSetupStageApiPreview" xml:space="preserve"><value>Testing API listing and detail</value></data>
   <data name="SourceSetupApiFailed" xml:space="preserve"><value>The source API could not be tested. Review the HTTP status and response details below, then retry.</value></data>
   <data name="DiagStage_ReadAutomaticContent" xml:space="preserve"><value>Identifying the announcement content container</value></data>
+  <data name="SourceSetupAiRateLimited" xml:space="preserve"><value>Gemini rejected the request due to a rate or quota limit (HTTP 429). Check the key project quota; the limit may be temporary or daily. No automatic retry was made.</value></data>
+  <data name="SourceSetupAiAccessDenied" xml:space="preserve"><value>Gemini denied access (HTTP 401 or 403). Check the key, project permissions and model availability; this does not establish quota exhaustion.</value></data>
+  <data name="SourceSetupAiModelNotFound" xml:space="preserve"><value>Gemini could not find the requested model or resource (HTTP 404). Check the model name, project availability and API version.</value></data>
+  <data name="SourceSetupAiRequestInvalid" xml:space="preserve"><value>Gemini rejected the request format or configuration (HTTP 400 or 422). Review the model, request settings and server logs.</value></data>
+  <data name="SourceSetupAiProviderUnavailable" xml:space="preserve"><value>Gemini returned a service error (HTTP 5xx). Try later; no automatic retry was made and source settings were not saved.</value></data>
 </root>

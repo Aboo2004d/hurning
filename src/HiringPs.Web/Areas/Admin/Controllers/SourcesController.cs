@@ -204,8 +204,12 @@ public class SourcesController : AdminControllerBase
             var original = ex is CollectorDiagnosticException diagnostic
                 ? diagnostic.InnerException ?? ex
                 : ex;
+            var providerError = ex.Message == "SourceSetupAiRejected"
+                && ex.InnerException is System.Net.Http.HttpRequestException { StatusCode: { } providerStatus }
+                    ? SourceSetupAssistant.ProviderRejectionCode((int)providerStatus) : null;
             var error =
-                codes.Contains(ex.Message) ? ex.Message
+                providerError is not null ? providerError
+                : codes.Contains(ex.Message) ? ex.Message
                 : ex.Data["SourceSetupStage"] as string == "SourceSetupStageApiPreview" ? "SourceSetupApiFailed"
                 : original is TimeoutException ? "SourceSetupTimeout"
                 : original is System.Net.Http.HttpRequestException ? "SourceSetupNetworkFailed"

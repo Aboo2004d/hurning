@@ -46,3 +46,23 @@ dotnet run --project tests/HiringPs.Checks -- --source-setup-check --public-deta
 ```
 
 The source still must pass its actual setup preview on the collector host. The development environment's earlier Wenak request returned HTTP 403; inspecting a saved public page does not prove live collection access from every host.
+
+## Reconsidering an initial listing-only refusal
+
+A successful provider HTTP response can still contain a model proposal with `supported:false` before the production preview is reached. Previously that refusal ended setup immediately, even when the listing sample contained an observed announcement URL and the refusal merely stated that full detail markup was missing.
+
+When a proposal is unsupported and the three-request budget has room, the assistant now looks for one announcement link using the existing conservative discovery rules over the bounded listing HTML. The URL must also occur in the snapshot's observed links, have a different path from the listing (excluding pagination-only links), and remain on the same approved host. It never invents a detail URL or takes one from the rejected proposal. The real detail page is inspected, its final host checked, and the model gets that evidence plus the prior refusal as untrusted context. The reconsidered proposal still passes normal candidate validation and the production preview. No observed link means no extra inspection or AI request. A real login-only page may remain unsupported; support is never forced. Navigation failures remain failures rather than being concealed by a guessed selector.
+
+All AI calls now share an explicit per-setup counter capped at three, including homepage/listing analysis, refusal reconsideration and preview repair. When the budget is exhausted, a failed preview cannot trigger a fourth request. Known JSON API presets still bypass AI setup entirely.
+
+## Provider HTTP rejection versus model refusal
+
+Non-success HTTP responses retain the observed status and configured model name in a nested `HttpRequestException`, without exposing the provider response body or API key. The administrator UI distinguishes:
+
+- 429: provider rate/quota limit; temporary versus daily exhaustion is not inferred.
+- 401/403: access/key/project/model permissions.
+- 404: requested model/resource availability.
+- 400/422: request format or settings.
+- 5xx: provider service error.
+
+No automatic retry, paid fallback or credential change is made. A provider HTTP 200 containing `supported:false` remains a separate source-proposal refusal. Rejection statuses continue to be retained in the existing `Source.SetupAi` audit telemetry. Earlier generic `SourceSetupAiRejected` messages do not establish which HTTP status occurred; the corresponding HTTP client log or audit entry is needed.
