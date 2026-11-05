@@ -245,8 +245,11 @@ You help an administrator configure a public Palestinian opportunities source. A
             );
             telemetry.HttpStatus = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)
+            {
+                var providerDetail = await SourceSetupProviderDiagnostic.ReadAsync(response, key, ct);
                 throw new InvalidOperationException("SourceSetupAiRejected",
-                    new HttpRequestException($"Gemini returned HTTP {(int)response.StatusCode} for model {model}.", null, response.StatusCode));
+                    new HttpRequestException($"Gemini request returned HTTP {(int)response.StatusCode} for model {model}. {providerDetail}", null, response.StatusCode));
+            }
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var data = new MemoryStream();
             var chunk = new byte[8192];

@@ -297,6 +297,53 @@ public static class SourceSetupChecks
                     $"Provider HTTP {status} does not trigger an automatic billable retry or applicable source preview");
             }
         }
+        using (var detailedHandler = new RejectedProvider(HttpStatusCode.ServiceUnavailable,
+            JsonSerializer.Serialize(new { error = new { status = "UNAVAILABLE", message = "High demand; api_key=PRIVATE_RESPONSE_KEY" } })))
+        using (var detailedHttp = new HttpClient(detailedHandler))
+        {
+            await using var detailedBrowser = new FixtureBrowser(configuration, home, listing);
+            try { await new SourceSetupAssistant(detailedHttp, detailedBrowser, configuration).SuggestAsync(listingUrl, "ar", default); throw new Exception("Detailed provider rejection accepted"); }
+            catch (InvalidOperationException ex) when (ex.Message == "SourceSetupAiRejected")
+            {
+                Check(ex.InnerException is HttpRequestException { StatusCode: HttpStatusCode.ServiceUnavailable }
+                    && ex.ToString().Contains("UNAVAILABLE") && ex.ToString().Contains("High demand")
+                    && !ex.ToString().Contains("PRIVATE_RESPONSE_KEY") && detailedHandler.Calls == 1,
+                    "Setup surfaces a sanitized provider reason with the original status and no additional request");
+            }
+        }
+        using (var providerResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new { error = new
+            { status = "UNAVAILABLE", message = "Model overloaded. fixture-key api_key=PRIVATE_OTHER_KEY password='PRIVATE LONG PASSWORD' Bearer PRIVATE_BEARER https://user:privatepwd@example.org/" } }), System.Text.Encoding.UTF8, "application/json")
+        })
+        {
+            providerResponse.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(12));
+            var summary = await SourceSetupProviderDiagnostic.ReadAsync(providerResponse, "fixture-key", default);
+            Check(summary.Contains("UNAVAILABLE") && summary.Contains("Model overloaded") && summary.Contains("12 seconds")
+                && !summary.Contains("fixture-key") && !summary.Contains("PRIVATE") && !summary.Contains("privatepwd"),
+                "Structured provider reason and Retry-After are retained while credentials are redacted before logging");
+        }
+        using (var htmlResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            { Content = new StringContent("<html>PRIVATE_UPSTREAM_ERROR</html>", System.Text.Encoding.UTF8, "text/html") })
+        {
+            var summary = await SourceSetupProviderDiagnostic.ReadAsync(htmlResponse, "fixture-key", default);
+            Check(summary.Contains("text/html") && summary.Contains("No readable structured") && !summary.Contains("PRIVATE_UPSTREAM_ERROR"),
+                "Non-JSON upstream errors remain distinguishable without echoing raw HTML");
+        }
+        using (var hugeResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            { Content = new StringContent(new string('x', 17 * 1024) + "PRIVATE_ERROR_TAIL") })
+        {
+            var summary = await SourceSetupProviderDiagnostic.ReadAsync(hugeResponse, "fixture-key", default);
+            Check(summary.Length < 300 && summary.Contains("size limit") && !summary.Contains("PRIVATE_ERROR_TAIL"),
+                "Oversized provider error bodies remain bounded and do not replace the original HTTP failure");
+        }
+        using (var invalidResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            { Content = new StringContent("{invalid PRIVATE_BODY", System.Text.Encoding.UTF8, "application/json") })
+        {
+            var summary = await SourceSetupProviderDiagnostic.ReadAsync(invalidResponse, "fixture-key", default);
+            Check(summary.Contains("No readable structured") && !summary.Contains("PRIVATE_BODY"),
+                "Malformed provider JSON cannot hide the original rejection or expose response bytes");
+        }
         var nestedHtml = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SourceSetup", "NestedPublicAnnouncement.html"));
         var nestedSnapshot = SourceSetupRules.DetailSnapshot(nestedHtml, detailUrl);
         var nestedDoc = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(nestedSnapshot.Html);
@@ -506,14 +553,14 @@ public static class SourceSetupChecks
         }
     }
 
-    private sealed class RejectedProvider(HttpStatusCode status) : HttpMessageHandler
+    private sealed class RejectedProvider(HttpStatusCode status, string? body = null) : HttpMessageHandler
     {
         public int Calls { get; private set; }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Calls++;
             return Task.FromResult(new HttpResponseMessage(status)
-                { Content = new StringContent("PRIVATE_PROVIDER_BODY fixture-key") });
+                { Content = new StringContent(body ?? "PRIVATE_PROVIDER_BODY fixture-key", System.Text.Encoding.UTF8, body is null ? "text/plain" : "application/json") });
         }
     }
 
