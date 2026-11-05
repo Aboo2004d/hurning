@@ -66,7 +66,6 @@ public class HomeController(
             Sort = order,
             Today = today,
         };
-        model.ClosingSoon = result.ClosingSoon;
         await FillSavedAsync(model, ct);
         model.Cities = filters
             .Locations.Select(x => new FilterOption(x, CityCatalog.Display(x, english)))
@@ -83,10 +82,38 @@ public class HomeController(
             FilterLabels.Experience,
             english
         );
-        ViewBag.Facets = !archive && !model.HasFilters && page == 1 ? await catalog.FacetsAsync(ct) : null;
-        ViewBag.Stats = archive ? null : await catalog.StatsAsync(ct);
         return View(model);
     }
+
+    [HttpGet, OutputCache(PolicyName = SiteCache.Listing)]
+    public async Task<IActionResult> HomeStats(OpportunityKind? kind, bool refresh, CancellationToken ct)
+    {
+        if (kind is not null && !Enum.IsDefined(kind.Value)) return BadRequest();
+        return PartialView("_HomeStats", new HomeStatsSectionModel(await catalog.StatsAsync(ct, refresh), kind));
+    }
+
+    [HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> ClosingWeek(CancellationToken ct)
+    {
+        var model = new ListingModel
+        {
+            Today = TextRules.PalestineToday(),
+            AllowedDetails = await membership.DetailKindsAsync(User.FindFirstValue(ClaimTypes.NameIdentifier), User.IsInRole("Admin"), ct),
+        };
+        model.ClosingSoon = await listings.ClosingWeekAsync(model.Today, ct);
+        return PartialView("_ClosingWeek", model);
+    }
+
+    [HttpGet, OutputCache(PolicyName = SiteCache.Listing)]
+    public async Task<IActionResult> BrowseCities(OpportunityKind? kind, bool refresh, CancellationToken ct)
+    {
+        if (kind is not null && !Enum.IsDefined(kind.Value)) return BadRequest();
+        return PartialView("_BrowseCities", new HomeBrowseSectionModel(await catalog.FacetsAsync(ct, refresh), kind));
+    }
+
+    [HttpGet, OutputCache(PolicyName = SiteCache.Listing)]
+    public async Task<IActionResult> BrowseOrganizations(bool refresh, CancellationToken ct) =>
+        PartialView("_BrowseOrganizations", await catalog.FacetsAsync(ct, refresh));
 
     internal async Task FillSavedAsync(ListingModel model, CancellationToken ct)
     {

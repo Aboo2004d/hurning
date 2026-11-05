@@ -30,7 +30,7 @@ public class AiExtractor
         this.scopes = scopes;
         this.logger = logger;
         client.Timeout = TimeSpan.FromSeconds(
-            Math.Clamp(config.GetValue<int?>("Ai:TimeoutSeconds") ?? 180, 30, 300)
+            AiRequestLimits.TimeoutSeconds(config)
         );
     }
 
@@ -229,7 +229,7 @@ public class AiExtractor
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new AiTransientException(
+            throw new AiRequestTimeoutException(
                 $"AI request timed out after {client.Timeout.TotalSeconds:0} seconds; retry scheduled, saved content retained."
             );
         }

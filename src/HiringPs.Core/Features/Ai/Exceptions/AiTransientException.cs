@@ -12,3 +12,6 @@ namespace HiringPs.Core;
 
 /// <summary>مكون AiTransientException ضمن مجال Ai؛ يحافظ على عقد وسلوك تحديث المنصة.</summary>
 public class AiTransientException(string message) : Exception(message);
+
+/// <summary>يميز انتهاء مهلة طلب AI عن بقية أخطاء الاتصال المؤقتة.</summary>
+public sealed class AiRequestTimeoutException(string message) : AiTransientException(message);

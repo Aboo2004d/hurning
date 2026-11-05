@@ -10,10 +10,11 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalog
 {
     private readonly PublicCatalogCache coherence = coherence ?? new();
 
-    private async Task<T> CachedAsync<T>(string key, Func<ICacheEntry, Task<T>> create)
+    private async Task<T> CachedAsync<T>(string key, Func<ICacheEntry, Task<T>> create, bool refresh = false)
     {
         if (revisionMonitor is not null) await revisionMonitor.RefreshAsync(CancellationToken.None);
         var snapshot = coherence.Snapshot();
+        if (refresh) cache.Remove(key + ":" + snapshot.Version);
         return (await cache.GetOrCreateAsync(key + ":" + snapshot.Version, entry =>
         {
             entry.AddExpirationToken(snapshot.Changed);
@@ -97,7 +98,7 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalog
         )!;
 
     /// <summary>Kind × city and organization pages that currently have at least one public opportunity.</summary>
-    public Task<BrowseFacets> FacetsAsync(CancellationToken ct) =>
+    public Task<BrowseFacets> FacetsAsync(CancellationToken ct, bool refresh = false) =>
         CachedAsync(
             "browse-facets",
             async entry =>
@@ -147,10 +148,10 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalog
                     .ToList();
                 return new BrowseFacets(cities, organizations);
             }
-        )!;
+        , refresh)!;
 
     /// <summary>Current counts per kind and organizations for the home page header.</summary>
-    public Task<HomeStatsDto> StatsAsync(CancellationToken ct) =>
+    public Task<HomeStatsDto> StatsAsync(CancellationToken ct, bool refresh = false) =>
         CachedAsync(
             "home-stats",
             async entry =>
@@ -170,5 +171,5 @@ public sealed class PublicCatalog(HiringDb db, IMemoryCache cache, PublicCatalog
                 var fresh = await current.CountAsync(x => x.CreatedAt >= since, ct);
                 return new HomeStatsDto(counts, organizations, fresh);
             }
-        )!;
+        , refresh)!;
 }

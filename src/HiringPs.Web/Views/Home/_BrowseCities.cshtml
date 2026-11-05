@@ -1,0 +1,20 @@
+@model HomeBrowseSectionModel
+@{ var english = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"; var cities = Model.Facets.Cities.Where(x => Model.Kind is null || x.Kind == Model.Kind).Take(12).ToList(); }
+@if (cities.Count > 0) {
+                <div>
+                    <h2><span class="fa-solid fa-city" aria-hidden="true"></span>@T["BrowseByCity"]</h2>
+                    <ul>
+                        @foreach (var facet in cities)
+                        {
+                            var kindLabel = T[facet.Kind == OpportunityKind.Job ? "Jobs" : facet.Kind.ToString()].Value;
+                            <li>
+                                <a class="chip kind-@facet.Kind.ToString().ToLowerInvariant()" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(facet.Kind, facet.City))">
+                                    <span class="kind-dot" aria-hidden="true"></span>
+                                    <span>@string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, facet.City.Name(english))</span>
+                                    <span class="chip-count">@facet.Count</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+}

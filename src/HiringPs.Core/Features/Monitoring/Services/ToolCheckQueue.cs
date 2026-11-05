@@ -126,19 +126,28 @@ public static class ToolCheckQueue
                         .PromptVersions.AsNoTracking()
                         .SingleAsync(x => x.Id == active.ActivePromptVersionId, ct);
                     using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    budget.CancelAfter(TimeSpan.FromSeconds(60));
+                    var checkSeconds = AiRequestLimits.TimeoutSeconds(config);
+                    budget.CancelAfter(TimeSpan.FromSeconds(checkSeconds));
                     var extractor =
                         Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AiExtractor>(
                             services
                         );
-                    var reply = await extractor.ExtractAsync(
+                    try
+                    {
+                        var reply = await extractor.ExtractAsync(
                         "Diagnostic connectivity sample only. No actual announcement or opportunity is provided. Return inScope:false and an empty opportunities array.",
                         budget.Token,
                         new(prompt, null)
-                    );
-                    result = reply.Opportunities is null
-                        ? new(key, ToolState.Problem, "AiInvalidResponse")
-                        : new(key, ToolState.Ready, "AiResponded");
+                        );
+                        result = reply.Opportunities is null
+                            ? new(key, ToolState.Problem, "AiInvalidResponse")
+                            : new(key, ToolState.Ready, "AiResponded");
+                    }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested && budget.IsCancellationRequested)
+                    {
+                        result = new(key, ToolState.Problem, "AiCheckTimeout",
+                            $"AI diagnostic reached its configured {checkSeconds}-second budget before a complete validated response. This check uses the active extraction prompt; the transport cancellation alone does not identify a server or network fault.");
+                    }
                 }
                 else if (key is "GoogleLogin" or "Facebook" or "LinkedIn" or "LinkedInPersonal")
                     result = await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<SocialPublishing>(services).ProbeAsync(key, ct);
@@ -174,6 +183,10 @@ public static class ToolCheckQueue
                     code,
                     ToolFailureDetail.Describe(ex, config, 1000)
                 );
+            }
+            catch (AiRequestTimeoutException ex) when (key == "AiLive")
+            {
+                result = new(key, ToolState.Problem, "AiCheckTimeout", ToolFailureDetail.Describe(ex, config, 1000));
             }
             catch (AiTransientException ex)
             {

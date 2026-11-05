@@ -1,0 +1,30 @@
+@model HomeStatsSectionModel
+@{ var stats = Model.Stats; }
+
+        <nav class="kind-tabs" aria-label="@T["OpportunityTypes"]">
+            <a href="@Url.Action("Index", "Home", new { archive = (string?)null })"
+               aria-current="@(Model.Kind is null ? "page" : null)">
+                <span>@T["AllOpportunities"]</span>
+                <span class="kind-count">@stats.Total</span>
+            </a>
+            @foreach (var kind in PublicListingKinds.Tabs)
+            {
+                <a class="kind-@kind.ToString().ToLowerInvariant()" href="@Url.Action("Index", "Home", new { kind })"
+                   aria-current="@(PublicListingKinds.Group(Model.Kind) == kind ? "page" : null)">
+                    <span class="kind-dot" aria-hidden="true"></span>
+                    <span>@T[PublicListingKinds.Label(kind)]</span>
+                    <span class="kind-count">@stats.GroupCount(kind)</span>
+                </a>
+            }
+        </nav>
+        @if (Model.Kind is null)
+        {
+            <ul class="hero-stats">
+                <li><strong>@stats.Total</strong> @T["StatOpenOpportunities"]</li>
+                <li><strong>@stats.Organizations</strong> @T["StatOrganizations"]</li>
+                @if (stats.NewToday > 0)
+                {
+                    <li><strong>@stats.NewToday</strong> @T["StatNewToday"]</li>
+                }
+            </ul>
+        }

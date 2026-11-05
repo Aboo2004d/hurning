@@ -2991,3 +2991,15 @@ article.detail-panel {
 .category-group-choice input { flex: 0 0 auto; width: auto; margin-block-start: .3rem; }
 .category-group-choice[hidden] { display: none; }
 @media (max-width: 700px) { .category-group-choices { grid-template-columns: minmax(0, 1fr); } .category-group-editor { padding: 1rem; } }
+/* مؤشرات مستقلة للأقسام المؤجلة، مع حجز مساحة المحتوى خلال الطلب. */
+.home-deferred { min-width: 0; }
+.home-deferred[aria-busy="true"] { min-height: 100px; }
+.browse-links .home-deferred[aria-busy="true"] { min-height: 220px; }
+.home-section-loading { display: flex; align-items: center; justify-content: center; gap: .75rem; min-height: 100px; padding: 1rem; }
+.home-section-loading[hidden], .home-section-error[hidden], .home-section-manual[hidden] { display: none; }
+.home-section-spinner { width: 1.4rem; height: 1.4rem; border: 3px solid #d7e8e2; border-top-color: #087b68; border-radius: 50%; animation: home-section-spin .8s linear infinite; }
+.home-section-error { padding: 1rem; text-align: center; }
+.home-section-toolbar { display: flex; justify-content: flex-end; margin-block: .5rem; }
+.home-section-toolbar .button { font-size: .85rem; padding: .4rem .75rem; gap: .4rem; }
+@keyframes home-section-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .home-section-spinner { animation: none; } }

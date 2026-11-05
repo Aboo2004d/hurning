@@ -1,0 +1,22 @@
+@model DeferredHomeSectionModel
+<div class="home-deferred" data-home-section="@Model.Key" data-url="@Model.Url" data-lazy="@(Model.Lazy ? "true" : "false")" aria-busy="true">
+    <div class="home-section-toolbar">
+        <button type="button" class="button button-outline" data-section-refresh aria-label="@T["HomeSectionRefresh"]: @Model.Title">
+            <span class="fa-solid fa-rotate-right" aria-hidden="true"></span> @T["HomeSectionRefresh"]
+        </button>
+    </div>
+    <div class="home-section-loading" role="status">
+        <span class="home-section-spinner" aria-hidden="true"></span>
+        <span>@T["HomeSectionLoading"]: @Model.Title</span>
+    </div>
+    <div data-section-results data-empty-text="@T["HomeSectionEmpty"]"></div>
+    <div class="home-section-error" role="status" hidden>
+        <p>@T["HomeSectionFailed"]</p>
+        <button type="button" class="button button-outline" data-section-retry>@T["HomeSectionRetry"]</button>
+    </div>
+    @if (Model.Lazy)
+    {
+        <button type="button" class="button button-outline home-section-manual" data-section-load hidden>@T["HomeSectionLoad"]</button>
+    }
+    <noscript><p>@T["HomeSectionNeedsJs"]</p></noscript>
+</div>

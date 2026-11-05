@@ -1,0 +1,18 @@
+@model BrowseFacets
+@{ var organizations = Model.Organizations.Take(12).ToList(); }
+@if (organizations.Count > 0) {
+                <div>
+                    <h2><span class="fa-solid fa-building" aria-hidden="true"></span>@T["BrowseByOrganization"]</h2>
+                    <ul>
+                        @foreach (var organization in organizations)
+                        {
+                            <li>
+                                <a class="chip" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organization.Slug))">
+                                    <span dir="auto">@organization.Name</span>
+                                    <span class="chip-count">@organization.Count</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+}

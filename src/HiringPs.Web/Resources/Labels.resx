@@ -3386,4 +3386,13 @@
   <data name="SourceSetupAiModelNotFound" xml:space="preserve"><value>لم يجد Gemini المورد أو النموذج المطلوب (HTTP 404). راجع اسم النموذج وإتاحته للمشروع وإصدار API.</value></data>
   <data name="SourceSetupAiRequestInvalid" xml:space="preserve"><value>رفض Gemini صيغة الطلب أو إعداداته (HTTP 400 أو 422). راجع النموذج وإعدادات الطلب وسجل الخادم لتحديد السبب.</value></data>
   <data name="SourceSetupAiProviderUnavailable" xml:space="preserve"><value>أعاد Gemini خطأ في الخدمة (HTTP 5xx). جرّب لاحقًا؛ لم تُعد المحاولة تلقائيًا ولم تُحفظ إعدادات المصدر.</value></data>
+  <data name="HomeStatsTitle" xml:space="preserve"><value>إحصاءات الفرص</value></data>
+  <data name="HomeSectionLoading" xml:space="preserve"><value>جارٍ تحميل</value></data>
+  <data name="HomeSectionFailed" xml:space="preserve"><value>تعذر تحميل هذا القسم. يمكنك إعادة المحاولة.</value></data>
+  <data name="HomeSectionRetry" xml:space="preserve"><value>إعادة المحاولة</value></data>
+  <data name="HomeSectionLoad" xml:space="preserve"><value>تحميل القسم</value></data>
+  <data name="HomeSectionNeedsJs" xml:space="preserve"><value>فعّل JavaScript لعرض هذا القسم الإضافي.</value></data>
+  <data name="ToolCode_AiCheckTimeout" xml:space="preserve"><value>انتهت مهلة فحص AI المضبوطة قبل اكتمال الرد. راجع مدة الفحص وإعداد Ai:TimeoutSeconds واتصال السيرفر بالمزوّد.</value></data>
+  <data name="HomeSectionRefresh" xml:space="preserve"><value>تحديث</value></data>
+  <data name="HomeSectionEmpty" xml:space="preserve"><value>لا توجد نتائج لهذا القسم حاليًا.</value></data>
 </root>

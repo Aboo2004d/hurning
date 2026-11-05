@@ -10,8 +10,8 @@
     var signedIn = User.Identity?.IsAuthenticated == true;
     var member = signedIn && !User.IsInRole("Admin");
     var currentUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
-    var facets = ViewBag.Facets as BrowseFacets;
-    var stats = ViewBag.Stats as HomeStatsDto;
+
+
     string ListingUrl(int page, string? sort = null)
     {
         var values = Model.RouteValues(page);
@@ -36,38 +36,15 @@
                placeholder="@T["SearchPlaceholder"]" />
         <button class="button" type="submit" form="listing-form">@T["Search"]</button>
     </div>
-    @if (stats is not null)
+    @if (!Model.Archive)
     {
-        <nav class="kind-tabs" aria-label="@T["OpportunityTypes"]">
-            <a href="@Url.Action("Index", "Home", new { archive = Model.Archive ? "true" : null })"
-               aria-current="@(Model.Kind is null ? "page" : null)">
-                <span>@T["AllOpportunities"]</span>
-                <span class="kind-count">@stats.Total</span>
-            </a>
-            @foreach (var kind in PublicListingKinds.Tabs)
-            {
-                <a class="kind-@kind.ToString().ToLowerInvariant()" href="@Url.Action("Index", "Home", new { kind })"
-                   aria-current="@(PublicListingKinds.Group(Model.Kind) == kind ? "page" : null)">
-                    <span class="kind-dot" aria-hidden="true"></span>
-                    <span>@T[PublicListingKinds.Label(kind)]</span>
-                    <span class="kind-count">@stats.GroupCount(kind)</span>
-                </a>
-            }
-        </nav>
-        @if (Model.Kind is null)
-        {
-            <ul class="hero-stats">
-                <li><strong>@stats.Total</strong> @T["StatOpenOpportunities"]</li>
-                <li><strong>@stats.Organizations</strong> @T["StatOrganizations"]</li>
-                @if (stats.NewToday > 0)
-                {
-                    <li><strong>@stats.NewToday</strong> @T["StatNewToday"]</li>
-                }
-            </ul>
-        }
+        <partial name="_DeferredSection" model="@(new DeferredHomeSectionModel("stats", Url.Action("HomeStats", new { kind = Model.Kind })!, T["HomeStatsTitle"].Value))" />
     }
 </section>
-<partial name="/Views/Home/_ClosingWeek.cshtml" model="Model" />
+@if (!Model.Archive && !Model.HasFilters && Model.Page == 1 && Model.Sort == ListingSort.Newest && (Model.Kind is null || Model.Kind == OpportunityKind.Job))
+{
+    <partial name="_DeferredSection" model="@(new DeferredHomeSectionModel("closing", Url.Action("ClosingWeek")!, T["ClosingThisWeek"].Value))" />
+}
 <form method="get" asp-action="Index" id="listing-form">
     @if (Model.Archive)
     {
@@ -177,51 +154,12 @@
     </div>
 </form>
 
-@if (facets is not null)
+@if (!Model.Archive && !Model.HasFilters && Model.Page == 1)
 {
-    var cities = facets.Cities.Where(x => Model.Kind is null || x.Kind == Model.Kind).Take(12).ToList();
-    var organizations = facets.Organizations.Take(12).ToList();
-    @if (cities.Count > 0 || organizations.Count > 0)
-    {
-        <section class="browse-links" aria-label="@T["BrowseOpportunities"]">
-            @if (cities.Count > 0)
-            {
-                <div>
-                    <h2><span class="fa-solid fa-city" aria-hidden="true"></span>@T["BrowseByCity"]</h2>
-                    <ul>
-                        @foreach (var facet in cities)
-                        {
-                            var kindLabel = T[facet.Kind == OpportunityKind.Job ? "Jobs" : facet.Kind.ToString()].Value;
-                            <li>
-                                <a class="chip kind-@facet.Kind.ToString().ToLowerInvariant()" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.City(facet.Kind, facet.City))">
-                                    <span class="kind-dot" aria-hidden="true"></span>
-                                    <span>@string.Format(CultureInfo.CurrentCulture, T["BrowseCityHeading"].Value, kindLabel, facet.City.Name(english))</span>
-                                    <span class="chip-count">@facet.Count</span>
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-            @if (organizations.Count > 0)
-            {
-                <div>
-                    <h2><span class="fa-solid fa-building" aria-hidden="true"></span>@T["BrowseByOrganization"]</h2>
-                    <ul>
-                        @foreach (var organization in organizations)
-                        {
-                            <li>
-                                <a class="chip" href="@Url.Content("~" + HiringPs.Web.Controllers.BrowsePaths.Organization(organization.Slug))">
-                                    <span dir="auto">@organization.Name</span>
-                                    <span class="chip-count">@organization.Count</span>
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-        </section>
-    }
+    <section class="browse-links" aria-label="@T["BrowseOpportunities"]">
+        <partial name="_DeferredSection" model="@(new DeferredHomeSectionModel("cities", Url.Action("BrowseCities", new { kind = Model.Kind })!, T["BrowseByCity"].Value, true))" />
+        <partial name="_DeferredSection" model="@(new DeferredHomeSectionModel("organizations", Url.Action("BrowseOrganizations")!, T["BrowseByOrganization"].Value, true))" />
+    </section>
 }
 
 @if (member)
@@ -242,4 +180,8 @@
             <input type="hidden" name="id" value="@item.Id" />
         </form>
     }
+}
+
+@section Scripts {
+    <script src="~/js/home-sections.js" asp-append-version="true" defer></script>
 }

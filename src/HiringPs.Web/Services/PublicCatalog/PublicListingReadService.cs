@@ -17,20 +17,14 @@ public sealed class PublicListingReadService(HiringDb db, HiringPs.Web.Models.Pu
         var result = await PageAsync(Order(query, sort), page, requireResults: false, ct);
         if (result is null)
             return null;
-        List<OpportunityCardDto> closing = [];
-        var hasFilters = !string.IsNullOrEmpty(input.Query) || !string.IsNullOrEmpty(input.City)
-            || !string.IsNullOrEmpty(input.Category) || !string.IsNullOrEmpty(input.Employment)
-            || !string.IsNullOrEmpty(input.Experience);
-        if (!archive && (input.Kind is null || input.Kind == OpportunityKind.Job)
-            && !hasFilters && page == 1 && sort == ListingSort.Newest)
-        {
-            closing = await scoped
-                .Where(x => x.Kind == OpportunityKind.Job && x.Deadline != null && x.Deadline <= today.AddDays(7))
-                .OrderBy(x => x.Deadline).ThenByDescending(x => x.SortDate).Take(4)
-                .Select(PublicOpportunityProjection.Card).ToListAsync(ct);
-        }
-        return new(result, filters, closing);
+        return new(result, filters, []);
     }
+
+    public Task<List<OpportunityCardDto>> ClosingWeekAsync(DateOnly today, CancellationToken ct) =>
+        db.Opportunities.AsNoTracking().Current(today)
+            .Where(x => x.Kind == OpportunityKind.Job && x.Deadline != null && x.Deadline <= today.AddDays(7))
+            .OrderBy(x => x.Deadline).ThenByDescending(x => x.SortDate).Take(4)
+            .Select(PublicOpportunityProjection.Card).ToListAsync(ct);
 
     /// <summary>يقرأ صفحة مدينة حالية؛ الصفحة الفارغة أو غير الموجودة تعيد null كما في مسار التصفح السابق.</summary>
     public Task<OpportunityPageDto?> CityAsync(OpportunityKind kind, string searchKey, int page, DateOnly today, CancellationToken ct) =>
