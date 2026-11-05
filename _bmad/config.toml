@@ -1,0 +1,11 @@
+[core]
+user_name = "Developer"
+communication_language = "Arabic"
+project_name = "HiringPs"
+document_output_language = "Arabic"
+output_folder = "_bmad-output"
+[modules.bmm]
+user_skill_level = "intermediate"
+planning_artifacts = "{project-root}/_bmad-output/planning-artifacts"
+implementation_artifacts = "{project-root}/_bmad-output/implementation-artifacts"
+project_knowledge = "{project-root}/Docs"
