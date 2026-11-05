@@ -66,3 +66,9 @@ Non-success HTTP responses retain the observed status and configured model name 
 - 5xx: provider service error.
 
 No automatic retry, paid fallback or credential change is made. A provider HTTP 200 containing `supported:false` remains a separate source-proposal refusal. Rejection statuses continue to be retained in the existing `Source.SetupAi` audit telemetry. Earlier generic `SourceSetupAiRejected` messages do not establish which HTTP status occurred; the corresponding HTTP client log or audit entry is needed.
+
+## Inspecting repeated provider 503 responses
+
+Setup HTTP errors now include a bounded diagnostic summary of the provider error envelope. It retains the response media type, an enum-like `error.status`, a sanitized `error.message` (at most 800 characters), and `Retry-After` when present. Inspecting the error body is limited to 16 KiB, JSON depth 16 and five seconds within the existing request cancellation budget. Invalid/oversized/non-JSON bodies produce a summary note while preserving the original HTTP status. Raw response bodies, arbitrary JSON fields and headers are not logged. The configured key, common credential assignments, bearer tokens, URL credentials and recognizable Google API key patterns are redacted before constructing the logged exception.
+
+This is diagnostic information, not a fix for provider unavailability. It does not add retries, switch models or consume an extra AI request. The existing UI classification and audit HTTP status remain unchanged. A non-JSON 503 is reported as such rather than being treated as proof of a specific Google capacity/quota issue. To compare the source-helper request with extraction independently, use Admin → Tools → **Actual AI connection**; that existing test uses the application's configured key/model and a short diagnostic input rather than the site's page content.
